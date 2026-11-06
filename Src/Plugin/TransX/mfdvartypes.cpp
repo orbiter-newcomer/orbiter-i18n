@@ -471,7 +471,7 @@ void MFDvarfloat::showadjustment(oapi::Sketchpad *sketchpad, int width, int line
 		length=sprintf(buffer,"Micro");
 		break;
 	case AutoMin:
-		length=sprintf(buffer,"Auto-Min™");
+		length=sprintf(buffer,"Auto-Minâ„¢");
 		break;
 	case Reset:
 		length=sprintf(buffer,"Reset");

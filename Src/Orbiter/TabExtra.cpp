@@ -17,6 +17,7 @@
 #include "Log.h"
 #include "Help.h"
 #include "resource.h"
+#include "Localization.h"
 #include "resource2.h"
 
 using std::max;
@@ -77,7 +78,7 @@ void orbiter::ExtraTab::GetConfig (const Config *cfg)
 	RegisterExtraParam(new ExtraLogfileOptions(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraPerformanceSettings(this), ht); TRACENEW
 	m_internalPrm = m_ExtPrm.size();
-	SetWindowText (GetDlgItem (hTab, IDC_EXT_TEXT), "Advanced and addon-specific configuration parameters.\r\n\r\nClick on an item to get a description.\r\n\r\nDouble-click to open or expand.");
+	orbiter::SetWindowTextUtf8(GetDlgItem (hTab, IDC_EXT_TEXT), orbiter::Tr("Advanced and addon-specific configuration parameters.\r\n\r\nClick on an item to get a description.\r\n\r\nDouble-click to open or expand."));
 	int listw = cfg->CfgWindowPos.LaunchpadExtListWidth;
 	if (!listw) {
 		RECT r;
@@ -151,13 +152,16 @@ HTREEITEM orbiter::ExtraTab::RegisterExtraParam (LaunchpadItem *item, HTREEITEM 
 	// if a name is provided, add item to tree list
 	char *name = item->Name();
 	if (name) {
-		TV_INSERTSTRUCT tvis;
+		// Unicode insert: translated names are UTF-8 and would be garbled by the
+		// ANSI tree view message.
+		std::wstring wname = orbiter::Utf8ToWideString(orbiter::Tr(name));
+		TVINSERTSTRUCTW tvis;
 		tvis.item.mask = TVIF_TEXT | TVIF_PARAM;
-		tvis.item.pszText = name;
+		tvis.item.pszText = const_cast<LPWSTR>(wname.c_str());
 		tvis.item.lParam = (LPARAM)item;
 		tvis.hInsertAfter = TVI_LAST;
 		tvis.hParent = (parent ? parent : NULL);
-		hti = TreeView_InsertItem (GetDlgItem (hTab, IDC_EXT_LIST), &tvis);
+		hti = (HTREEITEM)SendDlgItemMessageW(hTab, IDC_EXT_LIST, TVM_INSERTITEMW, 0, (LPARAM)&tvis);
 	} else hti = 0;
 	item->hItem = (LAUNCHPADITEM_HANDLE)hti;
 	return hti;
@@ -185,18 +189,21 @@ HTREEITEM orbiter::ExtraTab::FindExtraParam (const char *name, const HTREEITEM p
 	HTREEITEM hti = FindExtraParamChild (parent);
 	if (!name) return hti; // no name given - return first child
 
-	char cbuf[256];
+	// Tree items are stored as Unicode text (see RegisterExtraParam), so they
+	// must be read back with the Unicode message as well.
+	wchar_t wbuf[256];
 	HWND hCtrl = GetDlgItem (hTab, IDC_EXT_LIST);
-	TV_ITEM tvi;
-	tvi.pszText = cbuf;
+	TV_ITEMW tvi;
+	tvi.pszText = wbuf;
 	tvi.cchTextMax = 256;
 	tvi.hItem = hti;
 	tvi.mask = TVIF_HANDLE | TVIF_TEXT;
-	
+	std::wstring wname = orbiter::Utf8ToWideString(orbiter::Tr(name));
+
 	// step through the list
-	while (TreeView_GetItem (hCtrl, &tvi)) {
-		if (!_stricmp (name, tvi.pszText)) return tvi.hItem;
-		tvi.hItem = TreeView_GetNextSibling (hCtrl, tvi.hItem);
+	while (SendMessageW(hCtrl, TVM_GETITEMW, 0, (LPARAM)&tvi)) {
+		if (!_wcsicmp (wname.c_str(), tvi.pszText)) return tvi.hItem;
+		tvi.hItem = (HTREEITEM)SendMessageW(hCtrl, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)tvi.hItem);
 	}
 
 	return 0;
@@ -229,8 +236,8 @@ BOOL orbiter::ExtraTab::OnNotify(HWND hDlg, int idCtrl, LPNMHDR pnmh)
 		case TVN_SELCHANGED: {
 			LaunchpadItem* func = (LaunchpadItem*)pnmtv->itemNew.lParam;
 			char* desc = func->Description();
-			if (desc) SetWindowText(GetDlgItem(hDlg, IDC_EXT_TEXT), desc);
-			else SetWindowText(GetDlgItem(hDlg, IDC_EXT_TEXT), "");
+			if (desc) orbiter::SetWindowTextUtf8(GetDlgItem(hDlg, IDC_EXT_TEXT), desc);
+			else orbiter::SetWindowTextUtf8(GetDlgItem(hDlg, IDC_EXT_TEXT), "");
 			} return TRUE;
 		case NM_DBLCLK: {
 			TVITEM tvi;
@@ -318,12 +325,12 @@ INT_PTR CALLBACK BuiltinLaunchpadItem::DlgProc (HWND hWnd, UINT uMsg, WPARAM wPa
 
 char *ExtraPropagation::Name ()
 {
-	return (char*)"Time propagation";
+	return (char*)orbiter::Tr("Time propagation");
 }
 
 char *ExtraPropagation::Description ()
 {
-	return (char*)"Select and configure the time propagation methods Orbiter uses to update vessel positions and velocities from one time frame to the next.";
+	return (char*)orbiter::Tr("Select and configure the time propagation methods Orbiter uses to update vessel positions and velocities from one time frame to the next.");
 }
 
 //-----------------------------------------------------------------------------
@@ -337,12 +344,12 @@ int ExtraDynamics::PropId[NPROP_METHOD] = {
 
 char *ExtraDynamics::Name ()
 {
-	return (char*)"Dynamic state propagators";
+	return (char*)orbiter::Tr("Dynamic state propagators");
 }
 
 char *ExtraDynamics::Description ()
 {
-	return (char*)"Select the numerical integration methods used for dynamic state updates.\r\n\r\nState propagators affect the accuracy and stability of spacecraft orbits and trajectory calculations.";
+	return (char*)orbiter::Tr("Select the numerical integration methods used for dynamic state updates.\r\n\r\nState propagators affect the accuracy and stability of spacecraft orbits and trajectory calculations.");
 }
 
 bool ExtraDynamics::clbkOpen (HWND hParent)
@@ -762,12 +769,12 @@ INT_PTR CALLBACK ExtraAngDynamics::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam,
 
 char *ExtraStabilisation::Name ()
 {
-	return (char*)"Orbit stabilisation";
+	return (char*)orbiter::Tr("Orbit stabilisation");
 }
 
 char *ExtraStabilisation::Description ()
 {
-	return (char*)"Select the parameters that determine the conditions when Orbiter switches between dynamic and stabilised state updates.";
+	return (char*)orbiter::Tr("Select the parameters that determine the conditions when Orbiter switches between dynamic and stabilised state updates.");
 }
 
 bool ExtraStabilisation::clbkOpen (HWND hParent)
@@ -895,12 +902,12 @@ INT_PTR CALLBACK ExtraStabilisation::DlgProc (HWND hWnd, UINT uMsg, WPARAM wPara
 
 char *ExtraInstruments::Name ()
 {
-	return (char*)"Instruments and panels";
+	return (char*)orbiter::Tr("Instruments and panels");
 }
 
 char *ExtraInstruments::Description ()
 {
-	return (char*)"Select general configuration parameters for spacecraft instruments, MFD displays and instrument panels.";
+	return (char*)orbiter::Tr("Select general configuration parameters for spacecraft instruments, MFD displays and instrument panels.");
 }
 
 //-----------------------------------------------------------------------------
@@ -909,12 +916,12 @@ char *ExtraInstruments::Description ()
 
 char *ExtraMfdConfig::Name()
 {
-	return (char*)"MFD parameter configuration";
+	return (char*)orbiter::Tr("MFD parameter configuration");
 }
 
 char *ExtraMfdConfig::Description ()
 {
-	return (char*)"Select display parameters for multifunctional displays (MFD).";
+	return (char*)orbiter::Tr("Select display parameters for multifunctional displays (MFD).");
 }
 
 bool ExtraMfdConfig::clbkOpen (HWND hParent)
@@ -1022,12 +1029,12 @@ INT_PTR CALLBACK ExtraMfdConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 char *ExtraVesselConfig::Name ()
 {
-	return (char*)"Vessel configuration";
+	return (char*)orbiter::Tr("Vessel configuration");
 }
 
 char *ExtraVesselConfig::Description ()
 {
-	return (char*)"Configure spacecraft parameters";
+	return (char*)orbiter::Tr("Configure spacecraft parameters");
 }
 
 //=============================================================================
@@ -1036,12 +1043,12 @@ char *ExtraVesselConfig::Description ()
 
 char *ExtraPlanetConfig::Name ()
 {
-	return (char*)"Celestial body configuration";
+	return (char*)orbiter::Tr("Celestial body configuration");
 }
 
 char *ExtraPlanetConfig::Description ()
 {
-	return (char*)"Configure options for celestial objects";
+	return (char*)orbiter::Tr("Configure options for celestial objects");
 }
 
 //=============================================================================
@@ -1050,12 +1057,12 @@ char *ExtraPlanetConfig::Description ()
 
 char *ExtraDebug::Name ()
 {
-	return (char*)"Debugging options";
+	return (char*)orbiter::Tr("Debugging options");
 }
 
 char *ExtraDebug::Description ()
 {
-	return (char*)"Various options that are useful for debugging and special tasks. Not generally used for standard simulation sessions.";
+	return (char*)orbiter::Tr("Various options that are useful for debugging and special tasks. Not generally used for standard simulation sessions.");
 }
 
 //-----------------------------------------------------------------------------
@@ -1064,12 +1071,12 @@ char *ExtraDebug::Description ()
 
 char *ExtraShutdown::Name ()
 {
-	return (char*)"Orbiter shutdown options";
+	return (char*)orbiter::Tr("Orbiter shutdown options");
 }
 
 char *ExtraShutdown::Description ()
 {
-	return (char*)"Set the behaviour of Orbiter after closing the simulation window: return to Launchpad, respawn or terminate.";
+	return (char*)orbiter::Tr("Set the behaviour of Orbiter after closing the simulation window: return to Launchpad, respawn or terminate.");
 }
 
 bool ExtraShutdown::clbkOpen (HWND hParent)
@@ -1141,12 +1148,12 @@ INT_PTR CALLBACK ExtraShutdown::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 char *ExtraFixedStep::Name ()
 {
-	return (char*)"Fixed time steps";
+	return (char*)orbiter::Tr("Fixed time steps");
 }
 
 char *ExtraFixedStep::Description ()
 {
-	return (char*)"This option assigns a fixed simulation time interval to each frame. Useful for debugging, and when numerical accuracy and stability of the dynamic propagators are important (for example, to generate trajectory data or when recording high-fidelity playbacks).\r\n\r\nWarning: Selecting this option leads to nonlinear time flow and a simulation that is no longer real-time.";
+	return (char*)orbiter::Tr("This option assigns a fixed simulation time interval to each frame. Useful for debugging, and when numerical accuracy and stability of the dynamic propagators are important (for example, to generate trajectory data or when recording high-fidelity playbacks).\r\n\r\nWarning: Selecting this option leads to nonlinear time flow and a simulation that is no longer real-time.");
 }
 
 bool ExtraFixedStep::clbkOpen (HWND hParent)
@@ -1255,12 +1262,12 @@ INT_PTR CALLBACK ExtraFixedStep::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 char *ExtraRenderingOptions::Name ()
 {
-	return (char*)"Rendering options";
+	return (char*)orbiter::Tr("Rendering options");
 }
 
 char *ExtraRenderingOptions::Description ()
 {
-	return (char*)"Some rendering options that can be used for debugging problems.";
+	return (char*)orbiter::Tr("Some rendering options that can be used for debugging problems.");
 }
 
 bool ExtraRenderingOptions::clbkOpen (HWND hParent)
@@ -1324,12 +1331,12 @@ INT_PTR CALLBACK ExtraRenderingOptions::DlgProc (HWND hWnd, UINT uMsg, WPARAM wP
 
 char *ExtraPerformanceSettings::Name ()
 {
-	return (char*)"Performance options";
+	return (char*)orbiter::Tr("Performance options");
 }
 
 char *ExtraPerformanceSettings::Description ()
 {
-	return (char*)"This option can be used to modify Windows environment parameters that can improve the simulator performance.";
+	return (char*)orbiter::Tr("This option can be used to modify Windows environment parameters that can improve the simulator performance.");
 }
 
 bool ExtraPerformanceSettings::clbkOpen (HWND hParent)
@@ -1404,12 +1411,12 @@ INT_PTR CALLBACK ExtraPerformanceSettings::DlgProc (HWND hWnd, UINT uMsg, WPARAM
 
 char *ExtraLaunchpadOptions::Name ()
 {
-	return (char*)"Launchpad options";
+	return (char*)orbiter::Tr("Launchpad options");
 }
 
 char *ExtraLaunchpadOptions::Description ()
 {
-	return (char*)"Configure the behaviour of the Orbiter Launchpad dialog.";
+	return (char*)orbiter::Tr("Configure the behaviour of the Orbiter Launchpad dialog.");
 }
 
 bool ExtraLaunchpadOptions::clbkOpen (HWND hParent)
@@ -1485,12 +1492,12 @@ INT_PTR CALLBACK ExtraLaunchpadOptions::DlgProc (HWND hWnd, UINT uMsg, WPARAM wP
 
 char *ExtraLogfileOptions::Name ()
 {
-	return (char*)"Logfile options";
+	return (char*)orbiter::Tr("Logfile options");
 }
 
 char *ExtraLogfileOptions::Description ()
 {
-	return (char*)"Configure options for log file output.";
+	return (char*)orbiter::Tr("Configure options for log file output.");
 }
 
 bool ExtraLogfileOptions::clbkOpen (HWND hParent)
@@ -1583,4 +1590,44 @@ bool LaunchpadItem::clbkOpen (HWND hLaunchpad)
 int LaunchpadItem::clbkWriteConfig ()
 {
 	return 0;
+}
+
+//-----------------------------------------------------------------------------
+// Re-apply the active language to the entry names in the Extra list.
+
+void orbiter::ExtraTab::RefreshLocalization()
+{
+	HWND hTree = GetDlgItem (hTab, IDC_EXT_LIST);
+	if (!hTree) return;
+
+	std::vector<HTREEITEM> items;
+	HTREEITEM top = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_ROOT, 0);
+	while (top) {
+		items.push_back(top);
+		HTREEITEM child = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_CHILD, (LPARAM)top);
+		while (child) {
+			items.push_back(child);
+			child = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)child);
+		}
+		top = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)top);
+	}
+
+	for (HTREEITEM hItem : items) {
+		TVITEMW tvi;
+		memset(&tvi, 0, sizeof(tvi));
+		tvi.mask = TVIF_PARAM;
+		tvi.hItem = hItem;
+		if (!SendMessageW(hTree, TVM_GETITEMW, 0, (LPARAM)&tvi)) continue;
+		LaunchpadItem* pItem = (LaunchpadItem*)tvi.lParam;
+		if (!pItem) continue;
+		const char* name = pItem->Name();
+		if (!name) continue;
+		std::wstring wtext = orbiter::Utf8ToWideString(name);
+		TVITEMW set;
+		memset(&set, 0, sizeof(set));
+		set.mask = TVIF_TEXT;
+		set.hItem = hItem;
+		set.pszText = const_cast<LPWSTR>(wtext.c_str());
+		SendMessageW(hTree, TVM_SETITEMW, 0, (LPARAM)&set);
+	}
 }

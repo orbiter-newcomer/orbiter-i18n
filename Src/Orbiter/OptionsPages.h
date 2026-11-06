@@ -56,6 +56,10 @@ public:
 	 * \brief Update config object from dialog controls
 	 */
 	void UpdateConfig();
+	/**
+	 * \brief Re-applies the active UI language to the options page tree entries.
+	 */
+	void RefreshLocalization();
 
 	void SwitchPage(const char* name);
 
@@ -146,6 +150,10 @@ public:
 	 * \return Page window handle
 	 */
 	HWND HPage() const { return m_hPage; }
+	/**
+	 * \brief Returns the tree view item handle of the page.
+	 */
+	HTREEITEM TreeItem() const { return m_hItem; }
 
 	/**
 	 * \brief Creates the page window and assigns \ref m_hPage.

@@ -110,7 +110,7 @@ set(Qt5_x64_DIR
 )
 
 if(MSVC)
-  add_compile_options(/we4311 /DNOMINMAX)
+  add_compile_options(/we4311 /DNOMINMAX /utf-8)
   add_link_options("/NODEFAULTLIB:\"LIBCMTD\"")
 else()
   set(CMAKE_BUILD_WITH_INSTALL_RPATH true)

@@ -13,6 +13,7 @@
 #include "Util.h"
 #include "Help.h"
 #include "resource.h"
+#include "Localization.h"
 #include "about.hpp"
 
 //-----------------------------------------------------------------------------
@@ -40,12 +41,10 @@ void orbiter::AboutTab::Create ()
 	SetWindowText (GetDlgItem (hTab, IDC_ABT_TXT_BUILDDATE), SIG4);
 	SetWindowText (GetDlgItem (hTab, IDC_ABT_TXT_CPR), SIG1B);
 	SetWindowText (GetDlgItem (hTab, IDC_ABT_TXT_WEBADDR), SIG2 "\n" SIG5 "\n" SIG6);
-	SendDlgItemMessage(hTab, IDC_ABT_LBOX_COMPONENT, LB_ADDSTRING, 0,
-		(LPARAM)"D3D9Client module by Jarmo Nikkanen and Peter Schneider"
-	);
-	SendDlgItemMessage(hTab, IDC_ABT_LBOX_COMPONENT, LB_ADDSTRING, 0,
-		(LPARAM)"XRSound module Copyright (c) Doug Beachy"
-	);
+	orbiter::ListBoxAddStringUtf8(GetDlgItem(hTab, IDC_ABT_LBOX_COMPONENT),
+		orbiter::Tr("D3D9Client module by Jarmo Nikkanen and Peter Schneider"));
+	orbiter::ListBoxAddStringUtf8(GetDlgItem(hTab, IDC_ABT_LBOX_COMPONENT),
+		orbiter::Tr("XRSound module Copyright (c) Doug Beachy"));
 }
 
 //-----------------------------------------------------------------------------

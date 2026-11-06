@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 
 #include "MenuInfoBar.h"
+#include "Localization.h"
 #include "Camera.h"
 #include "Dialogs.h"
 #include "DlgMenuCfg.h"
@@ -417,7 +418,8 @@ public:
 		}
 
 		ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(buttonSize, buttonSize));
-		const char *label = item.label.c_str();
+		const char *label = item.label.c_str();   // stable widget ID
+		const char *disp = orbiter::Tr(item.label.c_str());  // displayed (localized) text
 		bool ret = false;
 		
 		if(item.dragging) {
@@ -442,7 +444,7 @@ public:
 					}
 				}
 			}
-			ImVec2 textsize = ImGui::CalcTextSize(label, NULL, true);
+			ImVec2 textsize = ImGui::CalcTextSize(disp, NULL, true);
 			ImVec2 textpos = ImVec2(bb.Min.x + (bb.Max.x - bb.Min.x) / 2.0f - textsize.x / 2.0f, bb.Max.y);
 			if (item.animStateScroll != 0.0f) {
 				// If animState != 0, it means the current button has been swapped recently
@@ -459,11 +461,11 @@ public:
 				ImGui::InvisibleButton(label, ImVec2(buttonSize, buttonSize));
 				ImVec2 offset = ImVec2(item.animStateScroll * buttonSize, 0);
 				window->DrawList->AddImage(item.texId, bb.Min - offset, bb.Max - offset);
-				window->DrawList->AddText(textpos - offset, 0xffffffff, label);
+				window->DrawList->AddText(textpos - offset, 0xffffffff, disp);
 			} else {
 				ret = ImGui::ImageButton(label, item.texId, ImVec2(buttonSize, buttonSize));
 				if(!disableText)
-					window->DrawList->AddText(textpos, 0xffffffff, label);
+					window->DrawList->AddText(textpos, 0xffffffff, disp);
 			}
 		}
 
@@ -501,7 +503,7 @@ public:
 				// If it's outside the menu and it's not the only button remaining,
 				// add a red background and show a removal message
 				window->DrawList->AddRectFilled(dragPos, dragPos + imageSize, 0xbfbfbfff);
-				const char *label = "Remove from menu";
+				const char *label = orbiter::Tr("Remove from menu");
 				ImVec2 textSize = ImGui::CalcTextSize(label, NULL, true);
 				window->DrawList->AddText(dragPos + ImVec2(prm.MenuButtonHoverSize / 2.0f - textSize.x / 2.0f, prm.MenuButtonHoverSize), 0xffffffff, label);
 			} else {
@@ -660,7 +662,7 @@ public:
 				tl.x += size.x/4.5f*1.5f;
 				br.x += size.x/4.5f*1.5f;
 				drawList->AddRectFilled(tl, br, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,1.0,0.0,alpha)));
-				drawList->AddText(pos + ImVec2(size.x + 2,0), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,1.0,1.0,alpha)), "Pause");
+				drawList->AddText(pos + ImVec2(size.x + 2,0), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,1.0,1.0,alpha)), orbiter::Tr("Pause"));
 			}
 			break;
 		case 2: // Fast forward
@@ -719,9 +721,9 @@ public:
 				DrawSymbol(3);
 			}
 			if(td.SimT1 < 1e7) {
-				ImGui::TextColored(white, "Sim % 9.0fs", td.SimT1);
+				ImGui::TextColored(white, "%s % 9.0fs", orbiter::Tr("Sim"), td.SimT1);
 			} else {
-				ImGui::TextColored(white, "Sim ..%07.0fs", fmod (td.SimT1, 1e7));
+				ImGui::TextColored(white, "%s ..%07.0fs", orbiter::Tr("Sim"), fmod (td.SimT1, 1e7));
 			}
 
 			if(!g_pOrbiter->IsRunning()) {
@@ -772,27 +774,27 @@ public:
 			ImGui::PushFont(ImGuiFont::MONO);
 
 			Body *tgt = g_camera->Target();
-			ImGui::TextColored(white, "Tgt %s", tgt->Name());
+			ImGui::TextColored(white, "%s %s", orbiter::Tr("Tgt"), orbiter::Tr(tgt->Name()));
 
 			if (g_camera->IsExternal()) {
 				switch (g_camera->GetExtMode()) {
-					case CAMERA_TARGETRELATIVE:   ImGui::TextColored(white, "Cam track (rel-pos)"); break;
-					case CAMERA_ABSDIRECTION:     ImGui::TextColored(white, "Cam track (abs-dir)"); break;
-					case CAMERA_GLOBALFRAME:      ImGui::TextColored(white, "Cam track (global frame)"); break;
-					case CAMERA_TARGETTOOBJECT:   ImGui::TextColored(white, "Cam target to %s", g_camera->GetDirRef()->Name()); break;
-					case CAMERA_TARGETFROMOBJECT: ImGui::TextColored(white, "Cam target from %s", g_camera->GetDirRef()->Name()); break;
-					case CAMERA_GROUNDOBSERVER:   ImGui::TextColored(white, "Cam ground %s", g_camera->GroundObserver_TargetLock() ? "(tgt-lock)" : "(free)"); break;
+					case CAMERA_TARGETRELATIVE:   ImGui::TextColored(white, "%s", orbiter::Tr("Cam track (rel-pos)")); break;
+					case CAMERA_ABSDIRECTION:     ImGui::TextColored(white, "%s", orbiter::Tr("Cam track (abs-dir)")); break;
+					case CAMERA_GLOBALFRAME:      ImGui::TextColored(white, "%s", orbiter::Tr("Cam track (global frame)")); break;
+					case CAMERA_TARGETTOOBJECT:   ImGui::TextColored(white, "%s %s", orbiter::Tr("Cam target to"), g_camera->GetDirRef()->Name()); break;
+					case CAMERA_TARGETFROMOBJECT: ImGui::TextColored(white, "%s %s", orbiter::Tr("Cam target from"), g_camera->GetDirRef()->Name()); break;
+					case CAMERA_GROUNDOBSERVER:   ImGui::TextColored(white, "%s %s", orbiter::Tr("Cam ground"), g_camera->GroundObserver_TargetLock() ? orbiter::Tr("(tgt-lock)") : orbiter::Tr("(free)")); break;
 				}
 			} else {
-				ImGui::TextColored(white, "Cam Cockpit");
+				ImGui::TextColored(white, "%s", orbiter::Tr("Cam Cockpit"));
 			}
-			ImGui::TextColored(white, "FoV % 0.0f°", 2.0*Deg(g_camera->Aperture()));
+			ImGui::TextColored(white, "%s % 0.0f°", orbiter::Tr("FoV"), 2.0*Deg(g_camera->Aperture()));
 			if (g_camera->IsExternal()) {
 				ImGui::SameLine();
-				ImGui::TextColored(white, "   Dst %s", DistStr (g_camera->Distance())+1);
+				ImGui::TextColored(white, "   %s %s", orbiter::Tr("Dst"), DistStr (g_camera->Distance())+1);
 			} else {
 				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(0,0,0,0), "   Dst %s", DistStr (g_camera->Distance())+1);
+				ImGui::TextColored(ImVec4(0,0,0,0), "   %s %s", orbiter::Tr("Dst"), DistStr (g_camera->Distance())+1);
 			}
 
 			if(prm.FPS == 1)

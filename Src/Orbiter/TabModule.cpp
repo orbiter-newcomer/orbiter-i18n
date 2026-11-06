@@ -10,6 +10,7 @@
 #include "Launchpad.h"
 #include "TabModule.h"
 #include "resource.h"
+#include "Localization.h"
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -76,7 +77,7 @@ BOOL orbiter::ModuleTab::OnInitDialog (HWND hWnd, WPARAM wParam, LPARAM lParam)
 void orbiter::ModuleTab::GetConfig (const Config *cfg)
 {
 	RefreshLists();
-	SetWindowText (GetDlgItem (hTab, IDC_MOD_INFO), "Optional Orbiter plugin modules.\r\n\r\nDouble-click on a category to show or hide its entries.\r\n\r\nCheck or uncheck items to activate the corresponding modules.\r\n\r\nSelect an item to see a description of the module function.");
+	orbiter::SetWindowTextUtf8(GetDlgItem (hTab, IDC_MOD_INFO), orbiter::Tr("Optional Orbiter plugin modules.\r\n\r\nDouble-click on a category to show or hide its entries.\r\n\r\nCheck or uncheck items to activate the corresponding modules.\r\n\r\nSelect an item to see a description of the module function."));
 	int listw = cfg->CfgWindowPos.LaunchpadModListWidth;
 	if (!listw) {
 		RECT r;
@@ -149,7 +150,7 @@ void orbiter::ModuleTab::RefreshLists ()
 	HWND hTree = GetDlgItem (hTab, IDC_MOD_TREE);
 	TreeView_DeleteAllItems (hTree);
 
-	TV_INSERTSTRUCT tvis;
+	TVINSERTSTRUCTW tvis;
 	tvis.item.mask = TVIF_TEXT | TVIF_PARAM;
 
 	int idx, len;
@@ -213,12 +214,14 @@ void orbiter::ModuleTab::RefreshLists ()
 			// find the category entry
 			HTREEITEM catItem = GetCategoryItem(catstr);
 
-			// tree view entry
-			tvis.item.pszText = rec->name;
+			// tree view entry (Unicode insert: the tree also contains translated
+			// category names)
+			std::wstring wmname = orbiter::Utf8ToWideString(rec->name);
+			tvis.item.pszText = const_cast<LPWSTR>(wmname.c_str());
 			tvis.item.lParam = (LPARAM)rec;
 			tvis.hInsertAfter = TVI_SORT;
 			tvis.hParent = catItem;
-			HTREEITEM hti = TreeView_InsertItem(hTree, &tvis);
+			HTREEITEM hti = (HTREEITEM)SendMessageW(hTree, TVM_INSERTITEMW, 0, (LPARAM)&tvis);
 		}
 	}
 	counter = 0;
@@ -228,25 +231,27 @@ HTREEITEM orbiter::ModuleTab::GetCategoryItem (char *cat)
 {
 	HWND hTree = GetDlgItem (hTab, IDC_MOD_TREE);
 	HTREEITEM root = TreeView_GetRoot (hTree);
-	char cbuf[256];
-	TVITEM item;
+	// Category names are localized; the tree is stored as Unicode text.
+	std::wstring wcat = orbiter::Utf8ToWideString(orbiter::Tr(cat));
+	wchar_t wbuf[256];
+	TVITEMW item;
 	item.mask = TVIF_TEXT;
-	item.pszText = cbuf;
+	item.pszText = wbuf;
 	item.cchTextMax = 256;
 	item.hItem = root;
 
-	while (TreeView_GetItem (hTree, &item)) {
-		if (!strcmp (cat, cbuf)) return item.hItem;
-		item.hItem = TreeView_GetNextSibling (hTree, item.hItem);
+	while (SendMessageW(hTree, TVM_GETITEMW, 0, (LPARAM)&item)) {
+		if (!_wcsicmp (wcat.c_str(), wbuf)) return item.hItem;
+		item.hItem = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)item.hItem);
 	}
 	// not found - create new category item
-	TV_INSERTSTRUCT tvis;
+	TVINSERTSTRUCTW tvis;
 	tvis.item.mask = TVIF_TEXT | TVIF_PARAM;
-	tvis.item.pszText = cat;
+	tvis.item.pszText = const_cast<LPWSTR>(wcat.c_str());
 	tvis.item.lParam = NULL;
 	tvis.hInsertAfter = TVI_SORT;
 	tvis.hParent = NULL;
-	return TreeView_InsertItem (hTree, &tvis);
+	return (HTREEITEM)SendMessageW(hTree, TVM_INSERTITEMW, 0, (LPARAM)&tvis);
 }
 
 void orbiter::ModuleTab::ExpandCollapseAll (bool expand)
@@ -417,4 +422,35 @@ BOOL orbiter::ModuleTab::OnMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		return 0;
 	}
 	return NULL;
+}
+//-----------------------------------------------------------------------------
+// Re-apply the active language to the module category names.
+
+void orbiter::ModuleTab::RefreshLocalization()
+{
+	HWND hTree = GetDlgItem (hTab, IDC_MOD_TREE);
+	if (!hTree) return;
+
+	HTREEITEM item = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_ROOT, 0);
+	while (item) {
+		wchar_t wbuf[256];
+		TVITEMW tvi;
+		memset(&tvi, 0, sizeof(tvi));
+		tvi.mask = TVIF_TEXT | TVIF_HANDLE;
+		tvi.hItem = item;
+		tvi.pszText = wbuf;
+		tvi.cchTextMax = 256;
+		if (SendMessageW(hTree, TVM_GETITEMW, 0, (LPARAM)&tvi)) {
+			std::string cur = orbiter::WideToUtf8String(wbuf);
+			std::string next = orbiter::RetranslateCurrent(cur.c_str());
+			std::wstring wnext = orbiter::Utf8ToWideString(next.c_str());
+			TVITEMW set;
+			memset(&set, 0, sizeof(set));
+			set.mask = TVIF_TEXT;
+			set.hItem = item;
+			set.pszText = const_cast<LPWSTR>(wnext.c_str());
+			SendMessageW(hTree, TVM_SETITEMW, 0, (LPARAM)&set);
+		}
+		item = (HTREEITEM)SendMessageW(hTree, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)item);
+	}
 }

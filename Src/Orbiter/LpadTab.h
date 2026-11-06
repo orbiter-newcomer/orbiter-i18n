@@ -63,6 +63,8 @@ namespace orbiter {
 		virtual void Show();
 		virtual void Hide();
 		virtual void LaunchpadShowing(bool show) {}
+		virtual void RefreshLocalization() {}
+		// re-apply the active language to dynamically created contents
 		inline bool IsActive() const { return bActive; }
 		inline HWND TabWnd() const { return hTab; }
 		inline HWND LaunchpadWnd() const { return pLp->hDlg; }

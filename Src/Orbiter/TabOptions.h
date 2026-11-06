@@ -18,6 +18,7 @@ namespace orbiter {
 	public:
 		OptionsTab(const orbiter::LaunchpadDialog* lp);
 		void Create();
+		void RefreshLocalization();
 
 		bool DynamicSize() const { return true; }
 

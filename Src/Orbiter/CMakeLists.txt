@@ -59,6 +59,7 @@ set(common_src
 	htmlctrl.c
 	Select.cpp
 	OptionsPages.cpp
+	Localization.cpp
 # Body classes
 	Body.cpp
 	BodyIntegrator.cpp

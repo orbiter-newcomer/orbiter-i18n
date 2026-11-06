@@ -129,7 +129,7 @@ void Create()
 	vObj = NULL;
 	hDlg = NULL;
 
-	dwCmd = oapiRegisterCustomCmd((char*)"D3D9 Atmospheric Controls", (char*)"This dialog allows to control various atmospheric parameters and effects", OpenDlgClbk, NULL);
+	dwCmd = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Atmospheric Controls"), (char*)oapiTr("This dialog allows to control various atmospheric parameters and effects"), OpenDlgClbk, NULL);
 
 	Slider.resize(ATM_SLIDER_COUNT);
 

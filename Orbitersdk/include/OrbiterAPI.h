@@ -2474,6 +2474,16 @@ protected:
 OAPIFUNC int oapiGetOrbiterVersion ();
 
 /**
+ * \brief Translates an English user interface string into the active language.
+ * \param english English source string as displayed in English mode
+ * \return translated string (UTF-8) if a translation exists, otherwise the
+ *   source string itself. The returned pointer stays valid for the lifetime of
+ *   the process.
+ * \note Intended for plugin user interfaces, e.g. loading screen text.
+ */
+OAPIFUNC const char *oapiTr (const char *english);
+
+/**
  * \brief Returns the API version number against which the module
  *   was linked.
  * \return module version number

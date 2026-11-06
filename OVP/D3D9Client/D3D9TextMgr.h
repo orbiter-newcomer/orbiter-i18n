@@ -85,6 +85,7 @@ public:
 	int			GetLineSpace();
 
 	float		Length2(const char *str, int len = -1);
+	float		Length2(LPCWSTR str, int len = -1);
 	float		Length(BYTE c);
 	int			GetIndex(const char *pText, float pos, int len = -1);
 

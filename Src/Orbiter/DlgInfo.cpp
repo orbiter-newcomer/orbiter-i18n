@@ -1,3 +1,4 @@
+#include "Localization.h"
 // Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
@@ -26,7 +27,7 @@ void DlgInfo::AddCbodyNode(const CelestialBody *cbody) {
     if (is_selected)
         node_flags |= ImGuiTreeNodeFlags_Selected;
     if(cbody->nSecondary()) {
-        bool node_open = ImGui::TreeNodeEx(cbody->Name(), node_flags);
+        bool node_open = ImGui::TreeNodeEx(orbiter::Tr(cbody->Name()), node_flags);
         if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             m_SelectedTarget = cbody->Name();
         if(node_open) {
@@ -36,7 +37,7 @@ void DlgInfo::AddCbodyNode(const CelestialBody *cbody) {
             ImGui::TreePop();
         }
     } else {
-        ImGui::TreeNodeEx(cbody->Name(), node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+        ImGui::TreeNodeEx(orbiter::Tr(cbody->Name()), node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
         if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             m_SelectedTarget = cbody->Name();
     }
@@ -46,19 +47,19 @@ void DlgInfo::DrawTree() {
     for (int i = 0; i < g_psys->nStar(); i++)
         AddCbodyNode (g_psys->GetStar(i));
 
-    if (ImGui::TreeNode("Spaceports")) {
+    if (ImGui::TreeNode(orbiter::Tr("Spaceports"))) {
         for (int i = 0; i < g_psys->nGrav(); i++) {
             Body *obj = g_psys->GetGravObj (i);
             if (obj->Type() != OBJTP_PLANET) continue;
             Planet *planet = (Planet*)obj;
             if (g_psys->nBase(planet) > 0) {
-				if(ImGui::TreeNode(planet->Name())) {
+				if(ImGui::TreeNode(orbiter::Tr(planet->Name()))) {
 					for (int j = 0; j < g_psys->nBase(planet); j++) {
 						const char *name = g_psys->GetBase (planet,j)->Name();
 						const bool is_selected = m_SelectedTarget == name;
 						ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 						if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
-						ImGui::TreeNodeEx(name, node_flags);
+						ImGui::TreeNodeEx(orbiter::Tr(name), node_flags);
 						if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
 							m_SelectedTarget = name;
 					}
@@ -68,13 +69,13 @@ void DlgInfo::DrawTree() {
         }
         ImGui::TreePop();
     }
-    if (ImGui::TreeNode("Vessels")) {
+    if (ImGui::TreeNode(orbiter::Tr("Vessels"))) {
         for (int i = 0; i < g_psys->nVessel(); i++) {
             const char *name = g_psys->GetVessel(i)->Name();
             const bool is_selected = m_SelectedTarget == name;
             ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
             if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
-            ImGui::TreeNodeEx(name, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+            ImGui::TreeNodeEx(orbiter::Tr(name), node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
                 m_SelectedTarget = name;
         }
@@ -98,72 +99,72 @@ void DlgInfo::DrawInfo() {
         DrawInfoBase(base);
         return;
     }
-    ImGui::Text("Select an object on the left panel");
+    ImGui::Text(orbiter::Tr("Select an object on the left panel"));
 }
 
 void DlgInfo::DrawInfoVessel(Vessel *vessel) {
     ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-    if(ImGui::BeginAnimatedCollapsingHeader("Designation", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Designation"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table Designation", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Name");
+                ImGui::TextUnformatted(orbiter::Tr("Name"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(vessel->Name());
+                ImGui::TextUnformatted(orbiter::Tr(vessel->Name()));
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Class");
+                ImGui::TextUnformatted(orbiter::Tr("Class"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(vessel->ClassName());
+                ImGui::TextUnformatted(orbiter::Tr(vessel->ClassName()));
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Transponder Frequency");
+                ImGui::TextUnformatted(orbiter::Tr("Transponder Frequency"));
                 ImGui::TableSetColumnIndex(1);
                 float f;
                 if (vessel->GetXpdrFreq (f))
                     ImGui::Text("%0.2fMHz", f);
                 else
-                    ImGui::TextUnformatted("N/A");
+                    ImGui::TextUnformatted(orbiter::Tr("N/A"));
             ImGui::EndTable();
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(ImGui::BeginAnimatedCollapsingHeader("Physical Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Physical Parameters"), ImGuiTreeNodeFlags_DefaultOpen)) {
         // Total mass, dry mass, propellant mass, mean radius, P. moment of inertias
         if (ImGui::BeginTable("table Physical Parameters", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Total mass");
+                ImGui::TextUnformatted(orbiter::Tr("Total mass"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%g kg", vessel->Mass());
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Dry mass");
+                ImGui::TextUnformatted(orbiter::Tr("Dry mass"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%g kg", vessel->EmptyMass());
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Propellant mass");
+                ImGui::TextUnformatted(orbiter::Tr("Propellant mass"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%g kg", vessel->FuelMass());
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Mean radius");
+                ImGui::TextUnformatted(orbiter::Tr("Mean radius"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s m", DistStr (vessel->Size())+1);
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("P. moments of inertia");
+                ImGui::TextUnformatted(orbiter::Tr("P. moments of inertia"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::Text("(%4g, %4g, %4g) kg.m²", vessel->PMI().x, vessel->PMI().y, vessel->PMI().z);
+                ImGui::Text(orbiter::Tr("(%4g, %4g, %4g) kg.m²"), vessel->PMI().x, vessel->PMI().y, vessel->PMI().z);
 
             ImGui::EndTable();
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(ImGui::BeginAnimatedCollapsingHeader("Thrusters Group Ratings (vacuum)", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Thrusters Group Ratings (vacuum)"), ImGuiTreeNodeFlags_DefaultOpen)) {
         //Main, retro, hover   
         const THGROUP_TYPE thgrp[3] = {THGROUP_MAIN, THGROUP_RETRO, THGROUP_HOVER};
         const char *thrtype[] = {"Main", "Retro", "Hover"};
@@ -172,13 +173,13 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
             for (int i = 0; i < 3; i++) {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted(thrtype[i]);
+                    ImGui::TextUnformatted(orbiter::Tr(thrtype[i]));
                     ImGui::TableSetColumnIndex(1);
                     double th = vessel->GetThrusterGroupMaxth (thgrp[i]);
                     if (th > 0.0) {
                         ImGui::Text("%sN", FloatStr (th)+1);
                     } else {
-                        ImGui::Text("N/A");
+                        ImGui::Text(orbiter::Tr("N/A"));
                     }
             }
             ImGui::EndTable();
@@ -188,49 +189,49 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
 
     const Body *ref = vessel->ElRef();
     const Elements *el = vessel->Els();
-    if(el && ref && ImGui::BeginAnimatedCollapsingHeader("Osculating Elements (Ecliptic Frame)", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(el && ref && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Osculating Elements (Ecliptic Frame)"), ImGuiTreeNodeFlags_DefaultOpen)) {
         //Reference, semi major axis, excentricity, inclination, longitude of AN, longitude of periapsis, mean longitude
         if (ImGui::BeginTable("table Osculating Elements", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Reference");
+                ImGui::TextUnformatted(orbiter::Tr("Reference"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(ref->Name());
+                ImGui::TextUnformatted(orbiter::Tr(ref->Name()));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Semi-major Axis (a)");
+                ImGui::TextUnformatted(orbiter::Tr("Semi-major Axis (a)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s m", SciStr (el->a, 5));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Excentricity (e)");
+                ImGui::TextUnformatted(orbiter::Tr("Excentricity (e)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%g", el->e);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Inclination (igg)");
+                ImGui::TextUnformatted(orbiter::Tr("Inclination (igg)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->i*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Longitude of Ascending Node");
+                ImGui::TextUnformatted(orbiter::Tr("Longitude of Ascending Node"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->theta*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Longitude of Periapsis");
+                ImGui::TextUnformatted(orbiter::Tr("Longitude of Periapsis"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->omegab*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Mean longitude");
+                ImGui::TextUnformatted(orbiter::Tr("Mean longitude"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->MeanLng()*DEG);
             ImGui::EndTable();
@@ -239,58 +240,58 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
     }
 
     const SurfParam *sp = vessel->GetSurfParam();
-    if(sp && ImGui::BeginAnimatedCollapsingHeader("Surface-relative Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(sp && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Surface-relative Parameters"), ImGuiTreeNodeFlags_DefaultOpen)) {
         //reference, position, altitude, ground speed, vertical speed, heading, pitch, bank
         if (ImGui::BeginTable("table Surface-relative Parameters", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Reference");
+                ImGui::TextUnformatted(orbiter::Tr("Reference"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(sp->ref->Name());
+                ImGui::TextUnformatted(orbiter::Tr(sp->ref->Name()));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Position");
+                ImGui::TextUnformatted(orbiter::Tr("Position"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%07.3f°%c %06.3f°%c", fabs(sp->lng)*DEG, sp->lng >= 0.0 ? 'E':'W', fabs(sp->lat)*DEG, sp->lat >= 0.0 ? 'N':'S');
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Altitude");
+                ImGui::TextUnformatted(orbiter::Tr("Altitude"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%sm", DistStr (sp->alt)+1);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Ground Speed");
+                ImGui::TextUnformatted(orbiter::Tr("Ground Speed"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%sm/s", FloatStr (sp->groundspd)+1);
 
             Vector V (mul (sp->L2H, tmul (vessel->ProxyBody()->GRot(), sp->groundvel_glob)));
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Vertical Speed");
+                ImGui::TextUnformatted(orbiter::Tr("Vertical Speed"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%sm/s", FloatStr (V.y)+1);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Heading");
+                ImGui::TextUnformatted(orbiter::Tr("Heading"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.0f°", sp->dir*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Pitch");
+                ImGui::TextUnformatted(orbiter::Tr("Pitch"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.0f°", sp->pitch*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Bank");
+                ImGui::TextUnformatted(orbiter::Tr("Bank"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%0.0f° %s", fabs(sp->bank)*DEG, sp->bank >= 0.0 ? "left":"right");
+                ImGui::Text("%0.0f° %s", fabs(sp->bank)*DEG, orbiter::Tr(sp->bank >= 0.0 ? "left" : "right"));
 
             ImGui::EndTable();
         }
@@ -298,7 +299,7 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
     }
 
    	if (vessel->isInAtmosphere()) {
-        if(ImGui::BeginAnimatedCollapsingHeader("Atmospheric Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Atmospheric Parameters"), ImGuiTreeNodeFlags_DefaultOpen)) {
             // Temperature, density, pressure
             if (ImGui::BeginTable("table Atmospheric Parameters", 2, flags))
             {
@@ -307,19 +308,19 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
                 vessel->AtmPressureAndDensity (p, rho);
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Temperature");
+                    ImGui::TextUnformatted(orbiter::Tr("Temperature"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%0.2f K", T);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Density");
+                    ImGui::TextUnformatted(orbiter::Tr("Density"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%0.4g kg/m^3", rho);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Pressure");
+                    ImGui::TextUnformatted(orbiter::Tr("Pressure"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%sPa", FloatStr(p)+1);
 
@@ -327,7 +328,7 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
             }
             ImGui::EndAnimatedCollapsingHeader();
         }
-        if(ImGui::BeginAnimatedCollapsingHeader("Aerodynamic Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Aerodynamic Parameters"), ImGuiTreeNodeFlags_DefaultOpen)) {
             // Dynamic pressure, true airspeed, mach number, lift, drag, weight, lift/drag ratio, angle of attack
             if (ImGui::BeginTable("table Aerodynamic Parameters", 2, flags))
             {
@@ -339,57 +340,57 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Dynamic Pressure");
+                    ImGui::TextUnformatted(orbiter::Tr("Dynamic Pressure"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%sPa", FloatStr(dynp)+1);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("True Airspeed");
+                    ImGui::TextUnformatted(orbiter::Tr("True Airspeed"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text( "%sm/s", FloatStr(sp->airspd)+1);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Mach Number");
+                    ImGui::TextUnformatted(orbiter::Tr("Mach Number"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%g", M);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Lift");
+                    ImGui::TextUnformatted(orbiter::Tr("Lift"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%sN", FloatStr(L)+(L >= 0 ? 1:0));
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Drag");
+                    ImGui::TextUnformatted(orbiter::Tr("Drag"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%sN", FloatStr(D)+1);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Weight");
+                    ImGui::TextUnformatted(orbiter::Tr("Weight"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%sN", FloatStr(vessel->GetWeight())+1);
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Lift/Drag Ratio");
+                    ImGui::TextUnformatted(orbiter::Tr("Lift/Drag Ratio"));
                     ImGui::TableSetColumnIndex(1);
                     if (D)
                         ImGui::Text("%g", L/D);
                     else
-                        ImGui::TextUnformatted("N/A");
+                        ImGui::TextUnformatted(orbiter::Tr("N/A"));
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Angle of Attack");
+                    ImGui::TextUnformatted(orbiter::Tr("Angle of Attack"));
                     ImGui::TableSetColumnIndex(1);
                     if(sp)
                         ImGui::Text("%+0.1f°", -atan2 (sp->groundvel_ship.y, sp->groundvel_ship.z)*DEG);
                     else
-                        ImGui::TextUnformatted("N/A");
+                        ImGui::TextUnformatted(orbiter::Tr("N/A"));
 
                 ImGui::EndTable();
             }
@@ -398,7 +399,7 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
     }
 
     if (vessel->nDock()) {
-        if(ImGui::BeginAnimatedCollapsingHeader("Docking Ports", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Docking Ports"), ImGuiTreeNodeFlags_DefaultOpen)) {
             // port 1,2,3...
             if (ImGui::BeginTable("table Docking Ports", 2, flags))
             {
@@ -409,12 +410,12 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
                     else
                         buf[0]='\0';
                     Vessel *mate = vessel->DockMate (i);
-                    if (mate) sprintf (buf+strlen(buf), "[Docked to %s]", mate->Name());
-                    else strcat (buf, "[free]");
+                    if (mate) sprintf (buf+strlen(buf), "[%s %s]", orbiter::Tr("Docked to"), orbiter::Tr(mate->Name()));
+                    else sprintf (buf+strlen(buf), "[%s]", orbiter::Tr("free"));
 
                     ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Port %d", i+1);
+                        ImGui::Text(orbiter::Tr("Port %d"), i+1);
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(buf);
                 }
@@ -425,38 +426,38 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
         }
     }
 
-    if(ImGui::BeginAnimatedCollapsingHeader("State Propagation", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("State Propagation"), ImGuiTreeNodeFlags_DefaultOpen)) {
         // update mode, state propagator, subsamples, gravity sources
         if (ImGui::BeginTable("table State Propagation", 2, flags))
         {
             if (vessel->GetStatus() == FLIGHTSTATUS_LANDED) {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Update mode");
+                    ImGui::TextUnformatted(orbiter::Tr("Update mode"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted("IDLE (landed)");
+                    ImGui::TextUnformatted(orbiter::Tr("IDLE (landed)"));
             } else if (vessel->isAttached()) {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Update mode");
+                    ImGui::TextUnformatted(orbiter::Tr("Update mode"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted("PASSIVE (attached)");
+                    ImGui::TextUnformatted(orbiter::Tr("PASSIVE (attached)"));
             } else {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Update mode");
+                    ImGui::TextUnformatted(orbiter::Tr("Update mode"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted("ACTIVE (dynamic)");
+                    ImGui::TextUnformatted(orbiter::Tr("ACTIVE (dynamic)"));
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("State Propagator");
+                    ImGui::TextUnformatted(orbiter::Tr("State Propagator"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted(vessel->isOrbitStabilised() ? "stabilised" : vessel->CurPropagatorStr());
+                    ImGui::TextUnformatted(orbiter::Tr(vessel->isOrbitStabilised() ? "stabilised" : vessel->CurPropagatorStr()));
 
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Subsamples");
+                    ImGui::TextUnformatted(orbiter::Tr("Subsamples"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("%d", vessel->CurPropagatorSubsamples());
 
@@ -465,11 +466,11 @@ void DlgInfo::DrawInfoVessel(Vessel *vessel) {
                 const GFieldData &gfd = vessel->GetGFieldData();
                 for (int i = 0; i < gfd.ngrav; i++) {
                     if (i) strcat (cbuf, ", ");
-                    strcat (cbuf, g_psys->GetGravObj(gfd.gravidx[i])->Name());
+                    strcat (cbuf, orbiter::Tr(g_psys->GetGravObj(gfd.gravidx[i])->Name()));
                 }
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Gravity Sources");
+                    ImGui::TextUnformatted(orbiter::Tr("Gravity Sources"));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::TextUnformatted(cbuf);
 
@@ -494,44 +495,44 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
     }
 
     ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-    if(ImGui::BeginAnimatedCollapsingHeader("Designation", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Designation"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody designation", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Name");
+                ImGui::TextUnformatted(orbiter::Tr("Name"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(cbody->Name());
+                ImGui::TextUnformatted(orbiter::Tr(cbody->Name()));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Primary");
+                ImGui::TextUnformatted(orbiter::Tr("Primary"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(cbody->ElRef() ? cbody->ElRef()->Name() : "N/A");
+                ImGui::TextUnformatted(cbody->ElRef() ? orbiter::Tr(cbody->ElRef()->Name()) : orbiter::Tr("N/A"));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Solar System");
+                ImGui::TextUnformatted(orbiter::Tr("Solar System"));
                 ImGui::TableSetColumnIndex(1);
                 const char *psys_name = g_psys->Name().c_str();
-                ImGui::TextUnformatted(psys_name ? psys_name : "N/A");
+                ImGui::TextUnformatted(psys_name ? orbiter::Tr(psys_name) : orbiter::Tr("N/A"));
 
             ImGui::EndTable();
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(ImGui::BeginAnimatedCollapsingHeader("Physical Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Physical Parameters"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody designation", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Mass");
+                ImGui::TextUnformatted(orbiter::Tr("Mass"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s kg", SciStr (cbody->Mass(), 4));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Mean Radius");
+                ImGui::TextUnformatted(orbiter::Tr("Mean Radius"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s m", SciStr (cbody->Size(), 4));
 
@@ -546,13 +547,13 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
             } else strcpy (cbuf, "N/A");
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Gravitational Moments");
+                ImGui::TextUnformatted(orbiter::Tr("Gravitational Moments"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextUnformatted(cbuf);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Siderial day");
+                ImGui::TextUnformatted(orbiter::Tr("Siderial day"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s s", SciStr (cbody->RotT(), 4));
 
@@ -561,7 +562,7 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Orbit Period");
+                ImGui::TextUnformatted(orbiter::Tr("Orbit Period"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextUnformatted(cbuf);
 
@@ -570,18 +571,18 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Obliquity of Ecliptic");
+                ImGui::TextUnformatted(orbiter::Tr("Obliquity of Ecliptic"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextUnformatted(cbuf);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Atmosphere");
+                ImGui::TextUnformatted(orbiter::Tr("Atmosphere"));
                 ImGui::TableSetColumnIndex(1);
                 if(planet && planet->AtmParams()) {
-                    ImGui::TextUnformatted("Yes");
+                    ImGui::TextUnformatted(orbiter::Tr("Yes"));
                 } else {
-                    ImGui::TextUnformatted("No");
+                    ImGui::TextUnformatted(orbiter::Tr("No"));
                 }
 
 
@@ -589,7 +590,7 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(planet && planet->AtmParams() && ImGui::BeginAnimatedCollapsingHeader("Atmosphere", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(planet && planet->AtmParams() && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Atmosphere"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody Atmosphere", 2, flags))
         {
             char cbuf[128];
@@ -603,31 +604,31 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Atmosphere Model");
+                ImGui::TextUnformatted(orbiter::Tr("Atmosphere Model"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextUnformatted(cbuf);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Surface Pressure");
+                ImGui::TextUnformatted(orbiter::Tr("Surface Pressure"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%sPa", FloatStr (ap->p0)+1);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Surface density");
+                ImGui::TextUnformatted(orbiter::Tr("Surface density"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%skg/m^3", SciStr (ap->rho0));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Specific Gas Constant");
+                ImGui::TextUnformatted(orbiter::Tr("Specific Gas Constant"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2fJ/(K kg)", ap->R);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Specific Heat Ratio");
+                ImGui::TextUnformatted(orbiter::Tr("Specific Heat Ratio"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f", ap->gamma);
 
@@ -636,42 +637,42 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         ImGui::EndAnimatedCollapsingHeader();
     }
 
-    if(el && ImGui::BeginAnimatedCollapsingHeader("Osculating Elements (Ecliptic Frame)", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(el && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Osculating Elements (Ecliptic Frame)"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody Osculating elements (ecliptic frame)", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Semi-major Axis (a)");
+                ImGui::TextUnformatted(orbiter::Tr("Semi-major Axis (a)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s m", SciStr (el->a, 5));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Eccentricity (e)");
+                ImGui::TextUnformatted(orbiter::Tr("Eccentricity (e)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.5g", el->e);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Inclination (i)");
+                ImGui::TextUnformatted(orbiter::Tr("Inclination (i)"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->i*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Longitude of Ascending Node");
+                ImGui::TextUnformatted(orbiter::Tr("Longitude of Ascending Node"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->theta*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Longitude of Periapsis");
+                ImGui::TextUnformatted(orbiter::Tr("Longitude of Periapsis"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->omegab*DEG);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Mean Longitude");
+                ImGui::TextUnformatted(orbiter::Tr("Mean Longitude"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.2f°", el->MeanLng()*DEG);
 
@@ -679,7 +680,7 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(strcmp(cbody->Name(), "Earth") && ImGui::BeginAnimatedCollapsingHeader("Geocentric Celestial Position", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(strcmp(cbody->Name(), "Earth") && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Geocentric Celestial Position"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody Geocentric Celestial Position", 2, flags))
         {
             char cbuf[128];
@@ -699,14 +700,14 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Right Ascension (RA)");
+                ImGui::TextUnformatted(orbiter::Tr("Right Ascension (RA)"));
                 ImGui::TableSetColumnIndex(1);
     			sprintf (cbuf, "%02.0fh %02.0fm %02.2fs", rah, ram, ras);
                 ImGui::TextUnformatted(cbuf);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Declination (Dec)");
+                ImGui::TextUnformatted(orbiter::Tr("Declination (Dec)"));
                 ImGui::TableSetColumnIndex(1);
     			sprintf (cbuf, "%+02.0f° %02.0f' %02.2f''", dcd, dcm, dcs);
                 ImGui::TextUnformatted(cbuf);
@@ -716,7 +717,7 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         ImGui::EndAnimatedCollapsingHeader();
     }
 
-    if(el && ImGui::BeginAnimatedCollapsingHeader("Ecliptic position from primary", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(el && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Ecliptic position from primary"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody Ecliptic position from primary", 2, flags))
         {
 			Vector p (cbody->GPos() - cbody->ElRef()->GPos());
@@ -726,19 +727,19 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Longitude");
+                ImGui::TextUnformatted(orbiter::Tr("Longitude"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.3f°", DEG*posangle(lng));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Latitude");
+                ImGui::TextUnformatted(orbiter::Tr("Latitude"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%0.3f°", DEG*lat);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Radial Distance");
+                ImGui::TextUnformatted(orbiter::Tr("Radial Distance"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%s m", SciStr (r));
 
@@ -746,27 +747,27 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(ImGui::BeginAnimatedCollapsingHeader("State Propagation", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("State Propagation"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody State propagation", 2, flags))
         {
             if (cbody->canDynamicPosVel()) {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Mode");
+                    ImGui::TextUnformatted(orbiter::Tr("Mode"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted("Numerical");
+                    ImGui::TextUnformatted(orbiter::Tr("Numerical"));
 
                 const GFieldData &gfd = cbody->GetGFieldData();
                 if (gfd.ngrav) {
                     char cbuf[128];
                     cbuf[0] = '\0';
                     for (int i = 0; i < gfd.ngrav; i++) {
-                        strcat (cbuf, g_psys->GetGravObj(gfd.gravidx[i])->Name());
+                        strcat (cbuf, orbiter::Tr(g_psys->GetGravObj(gfd.gravidx[i])->Name()));
                         if (i < gfd.ngrav-1) strcat (cbuf, ", ");
                     }
                     ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::TextUnformatted("Gravity Sources");
+                        ImGui::TextUnformatted(orbiter::Tr("Gravity Sources"));
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(cbuf);
 
@@ -774,9 +775,9 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
             } else {
                 ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Mode");
+                    ImGui::TextUnformatted(orbiter::Tr("Mode"));
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("Analytic (%s)", cb ? "from module" : "2-body");
+                    ImGui::Text(orbiter::Tr("Analytic (%s)"), cb ? orbiter::Tr("from module") : orbiter::Tr("2-body"));
             }
 
             ImGui::EndTable();
@@ -786,27 +787,27 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
 }
 void DlgInfo::DrawInfoBase(Base *base) {
     ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-    if(ImGui::BeginAnimatedCollapsingHeader("Designation", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Designation"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table base designation", 2, flags))
         {
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Name");
+                ImGui::TextUnformatted(orbiter::Tr("Name"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(base->Name());
+                ImGui::TextUnformatted(orbiter::Tr(base->Name()));
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Located on");
+                ImGui::TextUnformatted(orbiter::Tr("Located on"));
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextUnformatted(base->RefPlanet()->Name());
+                ImGui::TextUnformatted(orbiter::Tr(base->RefPlanet()->Name()));
 
            	double lng, lat;
         	base->EquPos (lng, lat);
 
             ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted("Position");
+                ImGui::TextUnformatted(orbiter::Tr("Position"));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%07.3f°%c  %06.3f°%c",fabs(lng)*DEG, lng >= 0.0 ? 'E':'W',fabs(lat)*DEG, lat >= 0.0 ? 'N':'S');
 
@@ -819,7 +820,7 @@ void DlgInfo::DrawInfoBase(Base *base) {
     //     pad 1
     //     pad xxx
     if(base->nPad()) {
-        if(ImGui::BeginAnimatedCollapsingHeader("Landing Pads", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Landing Pads"), ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::BeginTable("table Landing Pads", 2, flags))
             {
                 const char *c, *statusstr[3] = {"free", "", "reserved"};
@@ -831,11 +832,11 @@ void DlgInfo::DrawInfoBase(Base *base) {
                     else c = statusstr[status];
                     if (base->PadStatus(i)->nav)
                         sprintf (cbuf, "ILS %06.2f ", base->PadStatus(i)->nav->GetFreq());
-    				sprintf (cbuf+strlen (cbuf), "[%s]", c);
+    				sprintf (cbuf+strlen (cbuf), "[%s]", orbiter::Tr(c));
 
                     ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Pad %d", i+1);
+                        ImGui::Text(orbiter::Tr("Pad %d"), i+1);
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(cbuf);
                 }
@@ -847,7 +848,7 @@ void DlgInfo::DrawInfoBase(Base *base) {
 
     // Runways
     if(base->nRwy()) {
-        if(ImGui::BeginAnimatedCollapsingHeader("Runways", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Runways"), ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::BeginTable("table Runways", 2, flags))
             {
                 for(int i=0;i<base->nRwy();i++) {
@@ -863,7 +864,7 @@ void DlgInfo::DrawInfoBase(Base *base) {
 
                     ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Runway %02d/%02d", dir, (dir+18)%36);
+                        ImGui::Text(orbiter::Tr("Runway %02d/%02d"), dir, (dir+18)%36);
                         ImGui::TableSetColumnIndex(1);
                         ImGui::TextUnformatted(cbuf);
                 }
@@ -875,7 +876,7 @@ void DlgInfo::DrawInfoBase(Base *base) {
 
     // VOR
     if(base->nVOR()) {
-        if(ImGui::BeginAnimatedCollapsingHeader("VOR Transmitters", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("VOR Transmitters"), ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::BeginTable("table VOR", 2, flags))
             {
                 for(int i=0;i<base->nVOR();i++) {
@@ -901,16 +902,16 @@ void DlgInfo::OnDraw() {
         {
             ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x/2, 20));
 
-            ImGui::Button("Focus Vessel");
+            ImGui::Button(orbiter::Tr("Focus Vessel"));
             ImGui::SameLine();
-            ImGui::Button("Camera Target");
+            ImGui::Button(orbiter::Tr("Camera Target"));
             DrawTree();
         }
         ImGui::EndChild();
         ImGui::SameLine();
         ImGui::BeginChild("ChildR", ImVec2(0, 0), 0);
             ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-            ImGui::Text("Object: %s", m_SelectedTarget.c_str());
+            ImGui::Text(orbiter::Tr("Object: %s"), orbiter::Tr(m_SelectedTarget.c_str()));
 
             DrawInfo();
 

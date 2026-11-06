@@ -21,6 +21,7 @@
 #include "Config.h"
 #include "Log.h"
 #include "Util.h"
+#include "Localization.h"
 #include "about.hpp"
 #include "Help.h"
 #include "Memstat.h"
@@ -33,6 +34,12 @@ using namespace std;
 //=============================================================================
 
 static orbiter::LaunchpadDialog *g_pDlg = 0;
+// Returns the active Launchpad dialog instance (used by option pages to
+// re-apply the UI language including dynamically created contents).
+orbiter::LaunchpadDialog* orbiter::GetLaunchpadDialog()
+{
+	return g_pDlg;
+}
 static time_t time0 = 0;
 static UINT timerid = 0;
 
@@ -112,6 +119,7 @@ bool orbiter::LaunchpadDialog::Create (bool startvideotab)
 		}
 		SetWindowText (GetDlgItem (hDlg, IDC_BLACKBOX), SIG4 "  \n" SIG2 "  \n" SIG1AA "  \n" SIG1AB "  ");
 		SetWindowText (GetDlgItem (hDlg, IDC_VERSION), SIG7);
+		Relocalize();
 		Show();
 		if (startvideotab) {
 			SwitchTabPage (hDlg, PG_VID);
@@ -130,6 +138,11 @@ void orbiter::LaunchpadDialog::Show()
 	m_bVisible = true;
 	for (auto tab : TabList)
 		tab->LaunchpadShowing(true);
+
+	// Controls added by plugin modules (e.g. the graphics client's video tab
+	// extensions) only exist after the modules have been loaded, so the window
+	// tree is localized again here.
+	orbiter::LocalizeWindowTree(hDlg);
 }
 
 //-----------------------------------------------------------------------------
@@ -305,6 +318,21 @@ void orbiter::LaunchpadDialog::UpdateConfig ()
 	// get launchpad window geometry (if not minimised)
 	if (!IsIconic(hDlg))
 		GetWindowRect (hDlg, &pCfg->rLaunchpad);
+}
+
+//-----------------------------------------------------------------------------
+// Name: Relocalize()
+// Desc: Re-applies the active UI language to the Launchpad and all tabs
+//-----------------------------------------------------------------------------
+void orbiter::LaunchpadDialog::Relocalize()
+{
+	// Regular window texts, including combobox item lists.
+	orbiter::LocalizeWindowTree(hDlg);
+
+	// Dynamically created contents (tree view items) are not regular window
+	// texts, so each tab re-applies the active language itself.
+	for (auto tab : TabList)
+		tab->RefreshLocalization();
 }
 
 //-----------------------------------------------------------------------------

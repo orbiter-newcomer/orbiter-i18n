@@ -6,9 +6,10 @@
 //				 2012-2016 Jarmo Nikkanen
 // ==============================================================
 
-
 #define STRICT 1
 #define ORBITER_MODULE
+
+#include <string>
 
 #include <set> // ...for Brush-, Pen- and Font-accounting
 #include "Orbitersdk.h"
@@ -20,6 +21,18 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Frame.h"
 #include "D3D9Pad.h"
+
+// Convert a UTF-8 string to UTF-16 (loading screen text may contain CJK glyphs).
+static std::wstring Utf8ToWideStr(const char *s)
+{
+	if (!s || !*s) return std::wstring();
+	int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
+	if (n <= 0) return std::wstring();
+	std::wstring w(size_t(n - 1), L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, s, -1, &w[0], n);
+	return w;
+}
+
 #include "CSphereMgr.h"
 #include "Scene.h"
 #include "Mesh.h"
@@ -243,12 +256,10 @@ DLLCLBK gcGUIBase * gcGetGUICore()
 	return dynamic_cast<gcGUIBase *>(g_pWM);
 }
 
-
 DLLCLBK gcConst * gcGetCoreAPI()
 {
 	return dynamic_cast<gcConst *>(g_pConst);
 }
-
 
 
 // ==============================================================
@@ -310,7 +321,6 @@ D3D9Client::~D3D9Client()
 	SAFE_RELEASE(g_pD3DObject);
 }
 
-
 // ==============================================================
 // 
 bool D3D9Client::ChkDev(const char *fnc) const
@@ -319,7 +329,6 @@ bool D3D9Client::ChkDev(const char *fnc) const
 	LogErr("Call [%s] Failed. D3D9 Graphics services off-line", fnc);
 	return true;
 }
-
 
 // ==============================================================
 // Overridden
@@ -332,7 +341,6 @@ const void *D3D9Client::GetConfigParam (DWORD paramtype) const
 		 : OapiExtension::GetConfigParam(paramtype)
 		 : GraphicsClient::GetConfigParam(paramtype);
 }
-
 
 // ==============================================================
 // This is called only once when the launchpad will appear
@@ -377,7 +385,6 @@ bool D3D9Client::clbkInitialise()
 	vtab = new VideoTab(this, ModuleInstance(), OrbiterInstance(), LaunchpadVideoTab());
 	return vtab->Initialise();
 }
-
 
 // ==============================================================
 // This is called when a simulation session will begin
@@ -496,14 +503,25 @@ HWND D3D9Client::clbkCreateRenderWindow()
 	int x=0;
 	if (viewW>1282) x=4;
 
-	hLblFont1 = CreateFont(24+x, 0, 0, 0, 700, false, false, 0, 0, 3, 2, 1, 49, "Courier New");
-	hLblFont2 = CreateFont(18+x, 0, 0, 0, 700, false, false, 0, 0, 3, 2, 1, 49, "Courier New");
+	// Loading screen text may be translated (CJK). An open-source CJK font
+	// (Noto Sans CJK SC Bold, SIL Open Font License) is registered privately from the
+	// Fonts directory; Chinese glyphs are slightly larger so that they match the
+	// visual height of the Latin strings.
+	const bool cjkText = (strcmp(oapiTr("Build"), "Build") != 0);
+	if (cjkText) {
+		AddFontResourceExA("Fonts/NotoSansCJKsc-Bold.ttf", FR_PRIVATE, 0);
+	}
+	const char *lblFace = cjkText ? "Noto Sans CJK SC" : "Courier New";
+	const BYTE lblCharset = cjkText ? DEFAULT_CHARSET : 0;
+	const int  cjkBoost = cjkText ? 4 : 0;
+	hLblFont1 = CreateFont(24+x+cjkBoost, 0, 0, 0, 700, false, false, 0, lblCharset, 3, 2, 1, 49, lblFace);
+	hLblFont2 = CreateFont(18+x+cjkBoost, 0, 0, 0, 700, false, false, 0, lblCharset, 3, 2, 1, 49, lblFace);
 
 	SplashScreen();  // Warning SurfNative is not yet fully initialized here
 
 	ShowWindow(hRenderWnd, SW_SHOW);
 
-	OutputLoadStatus("Building Shader Programs...",0);
+	OutputLoadStatus(oapiTr("Building Shader Programs..."),0);
 
 	D3D9Effect::D3D9TechInit(this, pDevice, fld);
 
@@ -579,7 +597,6 @@ HWND D3D9Client::clbkCreateRenderWindow()
 
 	return hRenderWnd;
 }
-
 
 // ==============================================================
 // This is called when the simulation is ready to go but the clock
@@ -732,7 +749,6 @@ void D3D9Client::SketchPadTest()
 
 	HPOLY hStrip = pCore->CreateTriangles(NULL, Vtx, 6, PF_STRIP);
 
-
 	Vtx[0].color = 0xFF00FF00;    // Green
 	Vtx[1].color = 0xFF00FF00;	  // Green	
 	Vtx[2].color = 0xFFFF00FF;    // Mangenta
@@ -748,7 +764,6 @@ void D3D9Client::SketchPadTest()
 	Vtx[5].pos = FVECTOR2(1, 0);
 
 	HPOLY hStrip2 = pCore->CreateTriangles(NULL, Vtx, 6, PF_STRIP);
-
 
 	IVECTOR2 pos0 = { 128, 128 };
 	IVECTOR2 pos1 = { 128, 384 };
@@ -795,10 +810,8 @@ void D3D9Client::SketchPadTest()
 	pSkp->CopyTetragon(hSrc, NULL, pt);
 	pSkp->PopWorldTransform();
 
-
 	oapiReleaseTexture(hSrc);
 	oapiReleaseSketchpad(pSkp);
-
 
 	pCore->DeletePoly(hColors); // Must release Sketchpad before releasing any sketchpad resources
 	pCore->DeletePoly(hOutline);
@@ -810,7 +823,6 @@ void D3D9Client::SketchPadTest()
 
 	oapiReleaseTexture(hTgt);
 }
-
 
 
 
@@ -830,7 +842,6 @@ void D3D9Client::clbkCloseSession(bool fastclose)
 	//
 	if (IsGenericProcEnabled(GENERICPROC_SHUTDOWN)) MakeGenericProcCall(GENERICPROC_SHUTDOWN, 0, NULL);
 
-
 	// Check the status of RenderTarget Stack ------------------------------------------------
 	//
 	if (RenderStack.empty() == false) {
@@ -844,7 +855,6 @@ void D3D9Client::clbkCloseSession(bool fastclose)
 	// Disable rendering and some other systems
 	//
 	bRunning = false;
-
 
 	// At first, shutdown tile loaders -------------------------------------------------------
 	//
@@ -933,7 +943,6 @@ void D3D9Client::clbkDestroyRenderWindow (bool fastclose)
 	//
 	for (auto& it : MicroTextures) SAFE_RELEASE(it.second);
 	MicroTextures.clear();
-
 
 	// Check surface catalog --------------------------------------------------------------------------------------
 	//
@@ -1039,7 +1048,6 @@ void D3D9Client::clbkDebugString(const char* str)
 	D3D9DebugLog("%s", str);
 }
 
-
 // ==============================================================
 
 void D3D9Client::PushSketchpad(SURFHANDLE surf, D3D9Pad *pSkp) const
@@ -1051,7 +1059,6 @@ void D3D9Client::PushSketchpad(SURFHANDLE surf, D3D9Pad *pSkp) const
 		RenderStack.front().pSkp = pSkp;
 	}
 }
-
 
 // ==============================================================
 
@@ -1161,7 +1168,6 @@ D3D9Pad *D3D9Client::GetTopInterface() const
 	return RenderStack.front().pSkp;
 }
 
-
 // ==============================================================
 
 void D3D9Client::clbkUpdate(bool running)
@@ -1226,7 +1232,6 @@ void D3D9Client::clbkRenderScene()
 	}
 
 	D3D9SetTime(D3D9Stats.Timer.Scene, scene_time);
-
 
 	if (bControlPanel) RenderControlPanel();
 
@@ -1568,7 +1573,6 @@ int D3D9Client::clbkEditMeshGroup(DEVMESHHANDLE hMesh, DWORD grpidx, GROUPEDITSP
 
 // =======================================================================
 
-
 int D3D9Client::clbkGetMeshGroup (DEVMESHHANDLE hMesh, DWORD grpidx, GROUPREQUESTSPEC *grs)
 {
 	_TRACE;
@@ -1591,7 +1595,6 @@ void D3D9Client::clbkDeleteVessel(OBJHANDLE hVessel)
 {
 	if (scene) scene->DeleteVessel(hVessel);
 }
-
 
 // ==============================================================
 // copy video options from the video tab
@@ -1685,7 +1688,6 @@ int D3D9Client::clbkVisEvent(OBJHANDLE hObj, VISHANDLE vis, DWORD msg, DWORD_PTR
 	return 1;
 }
 
-
 // ==============================================================
 //
 void D3D9Client::PickTerrain(DWORD uMsg, int xpos, int ypos)
@@ -1701,7 +1703,6 @@ void D3D9Client::PickTerrain(DWORD uMsg, int xpos, int ypos)
 		if (bHov) MakeGenericProcCall(GENERICPROC_HOVER_TERRAIN, sizeof(gcCore::PickGround), &pg);
 	}
 }
-
 
 // ==============================================================
 // Message handler for render window
@@ -1727,7 +1728,6 @@ LRESULT D3D9Client::RenderWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 	if (pWM) if (pWM->MainWindowProc(hWnd, uMsg, wParam, lParam)) return 0;
 
-
 	switch (uMsg)
 	{
 		case WM_MOUSELEAVE:
@@ -1749,7 +1749,6 @@ LRESULT D3D9Client::RenderWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			PickTerrain(uMsg, xp, yp);
 			break;
 		}
-
 
 		case WM_LBUTTONDOWN:
 		{
@@ -1923,7 +1922,6 @@ LRESULT D3D9Client::RenderWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	return GraphicsClient::RenderWndProc (hWnd, uMsg, wParam, lParam);
 }
 
-
 // ==============================================================
 // Message handler for Launchpad "video" tab
 
@@ -1996,9 +1994,7 @@ DWORD D3D9Client::clbkGetDeviceColour (BYTE r, BYTE g, BYTE b)
 }
 
 
-
 #pragma region Surface, Blitting and Filling Functions
-
 
 
 // =======================================================================
@@ -2239,7 +2235,6 @@ SURFHANDLE D3D9Client::clbkCreateSurfaceEx(DWORD w, DWORD h, DWORD attrib)
 	return hNew;
 }
 
-
 // =======================================================================
 
 SURFHANDLE D3D9Client::clbkCreateSurface(DWORD w, DWORD h, SURFHANDLE hTemplate)
@@ -2341,7 +2336,6 @@ bool D3D9Client::clbkSetSurfaceColourKey(SURFHANDLE surf, DWORD ckey)
 }
 
 
-
 // =======================================================================
 // Blitting functions
 // =======================================================================
@@ -2408,10 +2402,8 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 
 	if (tgt==NULL) tgt = pFramework->GetBackBufferHandle();
 
-
 	RECT rs = _RECT(srcx, srcy, srcx + srcw, srcy + srch);
 	RECT rt = _RECT(tgtx, tgty, tgtx + tgtw, tgty + tgth);
-
 
 	// Can't blit in a clone, declone..
 	//
@@ -2429,7 +2421,6 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 	const D3DSURFACE_DESC* td = SURFACE(tgt)->GetDesc();
 	const D3DSURFACE_DESC* sd = SURFACE(src)->GetDesc();
 
-
 	// Check failure and abort conditions, Match with know DX7 behavior ---------------------
 	//
 	if (rt.right > (long)td->Width || rt.bottom > (long)td->Height) return true;
@@ -2445,7 +2436,6 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 
 	if (srcw == 0 || srch == 0 || tgtw == 0 || tgth == 0) return true;
 
-
 	// Check Blt conditions
 	//
 	bool bCK = (SURFACE(src)->GetColorKey() != SURF_NO_CK) && (SURFACE(src)->GetColorKey() != 0);	// ColorKey In Use
@@ -2454,7 +2444,6 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 
 	LPDIRECT3DSURFACE9 pss = SURFACE(src)->GetSurface();
 	LPDIRECT3DSURFACE9 pts = SURFACE(tgt)->GetSurface();
-
 
 
 	if ((sd->Format == td->Format) && !bCK && !bSC)
@@ -2504,7 +2493,6 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 			return false;
 		}
 
-
 		// Screen Capture: Target is in system memory and source is a render taeget
 		// 
 		if ((td->Pool == D3DPOOL_SYSTEMMEM) && (sd->Usage & D3DUSAGE_RENDERTARGET))
@@ -2519,7 +2507,6 @@ bool D3D9Client::clbkScaleBlt (SURFHANDLE tgt, DWORD tgtx, DWORD tgty, DWORD tgt
 			return false;
 		}
 	}
-
 
 	// Scaling.. Format mismatch.. ColorKey.. Compressed Source..
 	// Go for SketchPad
@@ -2574,7 +2561,6 @@ bool D3D9Client::clbkCopyBitmap(SURFHANDLE pdds, HBITMAP hbm, int x, int y, int 
 	GetObject(hbm, sizeof(bm), &bm);
 	dx = dx == 0 ? bm.bmWidth : dx;     // Use the passed size, unless zero
 	dy = dy == 0 ? bm.bmHeight : dy;
-
 
 	// Get size of surface.
 	//
@@ -2665,7 +2651,6 @@ void D3D9Client::BltError(SURFHANDLE src, SURFHANDLE tgt, const LPRECT s, const 
 	SURFACE(tgt)->LogSpecs();
 	if (bHalt) HALT();
 }
-
 
 
 #pragma endregion
@@ -2926,10 +2911,13 @@ bool D3D9Client::OutputLoadStatus(const char *txt, int line)
 		SetBkMode(hDC,TRANSPARENT);
 		SetTextAlign(hDC, TA_LEFT|TA_TOP);
 
-		TextOut(hDC, 2, 2, pLoadLabel, lstrlen(pLoadLabel));
+		// UTF-8 -> UTF-16 so that translated (CJK) status text renders correctly
+		std::wstring wlabel = Utf8ToWideStr(pLoadLabel);
+		std::wstring witem  = Utf8ToWideStr(pLoadItem);
+		TextOutW(hDC, 2, 2, wlabel.c_str(), (int)wlabel.length());
 
 		SelectObject(hDC, hLblFont2);
-		TextOut(hDC, 2, 36, pLoadItem, lstrlen(pLoadItem));
+		TextOutW(hDC, 2, 36, witem.c_str(), (int)witem.length());
 
 		HPEN pen = CreatePen(PS_SOLID,1,pSplashTextColor);
 		HPEN po = (HPEN)SelectObject(hDC, pen);
@@ -2987,6 +2975,8 @@ void D3D9Client::SplashScreen()
 	HR(pDevice->CreateOffscreenPlainSurface(loadd_w, loadd_h, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &pTextScreen, NULL));
 	HR(pDevice->CreateOffscreenPlainSurface(viewW, viewH, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &pSplashScreen, NULL));
 
+	// Placement of the splash bitmap (used to position the loading prompt below)
+	double imgScale = 1.0, imgOfsX = 0.0, imgOfsY = 0.0, imgW = 1920.0, imgH = 1200.0;
 
 	if(pCustomSplashScreen != NULL) {
 		D3DXIMAGE_INFO info;
@@ -3008,6 +2998,7 @@ void D3D9Client::SplashScreen()
 		};
 		HR(pDevice->ColorFill(pSplashScreen, NULL, D3DCOLOR_XRGB(0, 0, 0)));
 		HR(D3DXLoadSurfaceFromFile(pSplashScreen, NULL, &imgRect, pCustomSplashScreen, NULL, D3DX_FILTER_LINEAR, 0, NULL));
+		imgScale = scale; imgOfsX = _l; imgOfsY = _t; imgW = imageW; imgH = imageH;
 	} else {
 		D3DXIMAGE_INFO Info;
 		HMODULE hOrbiter =  GetModuleHandleA("orbiter.exe");
@@ -3030,21 +3021,27 @@ void D3D9Client::SplashScreen()
 		};
 		HR(pDevice->ColorFill(pSplashScreen, NULL, D3DCOLOR_XRGB(0, 0, 0)));
 		HR(D3DXLoadSurfaceFromFileInMemory(pSplashScreen, NULL, &imgRect, pData, size, NULL, D3DX_FILTER_LINEAR, 0, &Info));
+		imgScale = scale; imgOfsX = _l; imgOfsY = _t;
 	}
 
 	HDC hDC;
 	HR(pSplashScreen->GetDC(&hDC));
 
+	// Loading screen version block. In Chinese mode the strings are translated;
+	// CJK text needs a Unicode font and TextOutW. Debug builds are marked in
+	// the version bracket, the graphics engine line shows its plain name.
+	const bool chinese = (strcmp(oapiTr("Build"), "Build") != 0);
+
 	LOGFONTA fnt; memset((void *)&fnt, 0, sizeof(LOGFONT));
 
-	fnt.lfHeight		 = 18;
+	fnt.lfHeight		 = chinese ? 22 : 18;
 	fnt.lfWeight		 = 700;
-	fnt.lfCharSet		 = ANSI_CHARSET;
+	fnt.lfCharSet		 = chinese ? DEFAULT_CHARSET : ANSI_CHARSET;
 	fnt.lfOutPrecision	 = OUT_DEFAULT_PRECIS;
 	fnt.lfClipPrecision	 = CLIP_DEFAULT_PRECIS;
 	fnt.lfQuality		 = ANTIALIASED_QUALITY;
 	fnt.lfPitchAndFamily = DEFAULT_PITCH;
-	strcpy_s(fnt.lfFaceName, "Courier New");
+	strcpy_s(fnt.lfFaceName, chinese ? "Noto Sans CJK SC" : "Courier New");
 
 	HFONT hF = CreateFontIndirect(&fnt);
 
@@ -3059,26 +3056,72 @@ void D3D9Client::SplashScreen()
 	DWORD m = d/100; d-=m*100;
 	if (m>12) m=0;
 
-	char dataA[256];
-	strcpy(dataA, "D3D9Client");
-	if (Config->Enable9On12) strcat_s(dataA, 256, " via D3D9on12 emulator");
-
+	char dataA[256], dataB[128];
+	if (chinese) {
+		// Graphics engine line: plain engine name, no version/build suffix.
+		strcpy_s(dataA, "图形引擎：D3D9Client");
 #ifdef _DEBUG
-	strcat_s(dataA, 256, " (Debug Build)");
+		sprintf_s(dataB, 128, "构建时间20%lu年%lu月%lu日[%u（debug）版]", y, m, d, oapiGetOrbiterVersion());
 #else
-	strcat_s(dataA, 256, " (Release Build)");
+		sprintf_s(dataB, 128, "构建时间20%lu年%lu月%lu日[%u版]", y, m, d, oapiGetOrbiterVersion());
 #endif
-
-	char dataB[128]; sprintf_s(dataB,128,"Build %s %lu 20%lu [%u]", months[m], d, y, oapiGetOrbiterVersion());
-	//char dataE[] = { "Note: Cubic Interpolation is use... Consider using linear for better elevation matching" };
-	//char dataF[] = { "Note: Terrain flattening offline due to cubic interpolation" };
+	} else {
+		strcpy_s(dataA, "D3D9Client");
+		if (Config->Enable9On12) strcat_s(dataA, 256, " via D3D9on12 emulator");
+#ifdef _DEBUG
+		strcat_s(dataA, 256, " (Debug Build)");
+#else
+		strcat_s(dataA, 256, " (Release Build)");
+#endif
+		sprintf_s(dataB,128,"Build %s %lu 20%lu [%u]", months[m], d, y, oapiGetOrbiterVersion());
+	}
 
 	int xc = viewW*750/1280;
 	int yc = viewH*545/800;
 
-	TextOut(hDC, xc, yc + 0*20, "ORBITER Space Flight Simulator",30);
-	TextOut(hDC, xc, yc + 1*20, dataB, lstrlen(dataB));
-	TextOut(hDC, xc, yc + 2*20, dataA, lstrlen(dataA));
+	if (chinese) {
+		std::wstring wtitle = Utf8ToWideStr("ORBITER太空飞行模拟器");
+		std::wstring wdataB = Utf8ToWideStr(dataB);
+		std::wstring wdataA = Utf8ToWideStr(dataA);
+		TextOutW(hDC, xc, yc + 0*20, wtitle.c_str(), (int)wtitle.length());
+		TextOutW(hDC, xc, yc + 1*20, wdataB.c_str(), (int)wdataB.length());
+		TextOutW(hDC, xc, yc + 2*20, wdataA.c_str(), (int)wdataA.length());
+	} else {
+		TextOut(hDC, xc, yc + 0*20, "ORBITER Space Flight Simulator",30);
+		TextOut(hDC, xc, yc + 1*20, dataB, lstrlen(dataB));
+		TextOut(hDC, xc, yc + 2*20, dataA, lstrlen(dataA));
+	}
+
+	// Loading prompt: drawn by code so its colour always matches the version
+	// block above (the splash bitmap itself no longer contains the text). The
+	// font height matches the ~25 px cap height of the original bitmap text.
+	{
+		LOGFONTA lf; memset((void *)&lf, 0, sizeof(LOGFONT));
+		lf.lfHeight		 = 34;
+		lf.lfWeight		 = 700;
+		lf.lfCharSet	 = chinese ? DEFAULT_CHARSET : ANSI_CHARSET;
+		lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+		lf.lfQuality	 = ANTIALIASED_QUALITY;
+		strcpy_s(lf.lfFaceName, chinese ? "Noto Sans CJK SC" : "Courier New");
+		HFONT hLoadFont = CreateFontIndirect(&lf);
+		HFONT hLoadOld = (HFONT)SelectObject(hDC, hLoadFont);
+
+		SIZE sz = { 0, 0 };
+		const int lx = (int)round(imgOfsX + imgW * imgScale * 0.5);
+		const int ly = (int)round(imgOfsY + imgH * imgScale * (1082.0 / 1200.0));
+		if (chinese) {
+			const wchar_t* wload = L"载入中…";
+			GetTextExtentPoint32W(hDC, wload, (int)wcslen(wload), &sz);
+			TextOutW(hDC, lx - sz.cx / 2, ly - sz.cy / 2, wload, (int)wcslen(wload));
+		} else {
+			const char* aload = "Loading...";
+			GetTextExtentPoint32A(hDC, aload, (int)strlen(aload), &sz);
+			TextOutA(hDC, lx - sz.cx / 2, ly - sz.cy / 2, aload, (int)strlen(aload));
+		}
+
+		SelectObject(hDC, hLoadOld);
+		DeleteObject(hLoadFont);
+	}
 
 	DWORD VPOS = viewH - 50;
 	DWORD LSPACE = 20;
@@ -3087,7 +3130,6 @@ void D3D9Client::SplashScreen()
 	DeleteObject(hF);
 
 	HR(pSplashScreen->ReleaseDC(hDC));
-
 
 	RECT src = _RECT( loadd_x, loadd_y, loadd_x+loadd_w, loadd_y+loadd_h );
 	pDevice->StretchRect(pSplashScreen, &src, pTextScreen, NULL, D3DTEXF_POINT);
@@ -3116,7 +3158,6 @@ void D3D9Client::EndScene()
 // =======================================================================
 
 #pragma region Drawing_(Sketchpad)_Interface
-
 
 double sketching_time;
 
@@ -3237,7 +3278,6 @@ Font* D3D9Client::clbkCreateFontEx(int height, char* face, int width, int weight
 	return *g_fonts.insert(new D3D9PadFont(height, face, width, weight, style, spacing)).first;
 }
 
-
 // =======================================================================
 
 void D3D9Client::clbkReleaseFont(Font *font) const
@@ -3285,7 +3325,6 @@ void D3D9Client::clbkReleaseBrush(Brush *brush) const
 }
 
 #pragma endregion
-
 
 // ======================================================================
 // class VisObject

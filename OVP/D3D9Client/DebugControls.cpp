@@ -223,17 +223,17 @@ void Create()
 	cpr = cpg = cpb = cpa = 0.0f;
 
 	if (Config->EnableMeshDbg) {
-		dwCmd = oapiRegisterCustomCmd((char*)"D3D9 Debug Controls", (char*)"This dialog allows to control various debug and development features", OpenDlgClbk, NULL);
+		dwCmd = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Debug Controls"), (char*)oapiTr("This dialog allows to control various debug and development features"), OpenDlgClbk, NULL);
 	}
 	else {
 		dwCmd = 0;
 	}
 
 	gfxDlg = new GFXDialog();
-	dwGFX = oapiRegisterCustomCmd((char*)"D3D9 Graphics Controls", (char*)"This dialog allows to control various graphics options", OpenGFXDlgClbk, gfxDlg);
+	dwGFX = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Graphics Controls"), (char*)oapiTr("This dialog allows to control various graphics options"), OpenGFXDlgClbk, gfxDlg);
 
 	colDlg = new ColDialog();
-	dwCol = oapiRegisterCustomCmd((char*)"D3D9 Collider Visuals", (char*)"This dialog allows toggling physics collider visualizations", OpenColDlgClbk, colDlg);
+	dwCol = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Collider Visuals"), (char*)oapiTr("This dialog allows toggling physics collider visualizations"), OpenColDlgClbk, colDlg);
 
 	resbias = 4.0 + Config->LODBias;
   

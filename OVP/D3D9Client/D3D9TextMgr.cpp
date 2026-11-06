@@ -281,6 +281,9 @@ restart:
 	pSrcTex->Release();
 
 	// Init WCHAR font
+	// Use DEFAULT_CHARSET so GDI font linking can select the correct glyphs for
+	// non-Latin scripts (e.g. Chinese) while the pre-rendered ANSI texture above
+	// keeps using the original charset.
 	HR(D3DXCreateFont(
 		pDev,                 // D3D Device
 		lf.lfHeight,          // Font height
@@ -288,7 +291,7 @@ restart:
 		lf.lfWeight,          // Font Weight
 		1,                    // MipLevels
 		lf.lfItalic,          // Italic
-		lf.lfCharSet,         // CharSet
+		DEFAULT_CHARSET,      // CharSet (font linking for Unicode text)
 		lf.lfOutPrecision,    // OutputPrecision
 		lf.lfQuality,         // Quality
 		lf.lfPitchAndFamily,  // PitchAndFamily
@@ -401,6 +404,22 @@ float D3D9Text::Length2(const char *_str, int l)
 	len -= spacing;
 	if (len<0) len=0;
 	return len * scaling;
+}
+
+// ----------------------------------------------------------------------------------------
+// Measures a Unicode string using the D3DXFont interface (supports CJK etc.)
+//
+float D3D9Text::Length2(const wchar_t *_str, int l)
+{
+	if (!_str || !wfont) return 0;
+	if (l < 0) l = int(wcslen(_str));
+	if (!l) return 0;
+
+	LONG x = 0, y = 0;
+	RECT rect = { x, y, 0, 0 };
+	wfont->DrawTextW(NULL, _str, l, &rect, DT_CALCRECT | DT_NOCLIP, 0xFFFFFFFF);
+
+	return float(rect.right - rect.left) * scaling;
 }
 
 

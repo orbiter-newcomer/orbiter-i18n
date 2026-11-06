@@ -7,6 +7,7 @@
 
 #include "DlgRecorder.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "OrbiterAPI.h"
 #include "imgui.h"
 #include "imgui_extras.h"
@@ -34,11 +35,11 @@ void DlgRecorder::OnDraw() {
 
 void DlgRecorder::DrawNormalRecording(bool recording) {
     if(recording) {
-        if(ImGui::Button("STOP")) {
+        if(ImGui::Button(orbiter::Tr("STOP"))) {
             g_pOrbiter->ToggleRecorder ();
         }
     } else {
-        if(ImGui::Button("REC")) {
+        if(ImGui::Button(orbiter::Tr("REC"))) {
             if(!g_pOrbiter->ToggleRecorder ())
                 ImGui::OpenPopup("Warning");
         }
@@ -47,67 +48,67 @@ void DlgRecorder::DrawNormalRecording(bool recording) {
     bool unused_open = true;
     if (ImGui::BeginPopupModal("Warning", &unused_open))
     {
-        ImGui::TextUnformatted("A flight record under this name already exists!");
-        if(ImGui::Button("Overwrite")) {
+        ImGui::TextUnformatted(orbiter::Tr("A flight record under this name already exists!"));
+        if(ImGui::Button(orbiter::Tr("Overwrite"))) {
             g_pOrbiter->ToggleRecorder (true);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if(ImGui::Button("Cancel")) {
+        if(ImGui::Button(orbiter::Tr("Cancel"))) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 
     ImGui::Separator();
-    ImGui::InputText("Scenario", m_ScenarioFile, sizeof(m_ScenarioFile));
-    if(ImGui::BeginAnimatedCollapsingHeader("Advanced")) {
-        ImGui::Checkbox("Record Time Acceleration", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bRecordWarp);
-        ImGui::Checkbox("Record Focus Events", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bRecordFocus);
+    ImGui::InputText(orbiter::Tr("Scenario"), m_ScenarioFile, sizeof(m_ScenarioFile));
+    if(ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Advanced"))) {
+        ImGui::Checkbox(orbiter::Tr("Record Time Acceleration"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bRecordWarp);
+        ImGui::Checkbox(orbiter::Tr("Record Focus Events"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bRecordFocus);
         ImGui::BeginDisabled(recording);
-        ImGui::Checkbox("Sampling in System Time Steps", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bSysInterval);
+        ImGui::Checkbox(orbiter::Tr("Sampling in System Time Steps"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bSysInterval);
         //char buf[20]="";
-        //ImGui::InputText("sec. sampling", buf, 20);
+        //ImGui::InputText(orbiter::Tr("sec. sampling"), buf, 20);
         ImGui::Separator();
-        ImGui::TextUnformatted("Attitude Data");
+        ImGui::TextUnformatted(orbiter::Tr("Attitude Data"));
         ImGui::RadioButton("Ecliptic Frame###ef1", &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordAttFrame, 0);
-        ImGui::RadioButton("Local Horizon Frame", &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordAttFrame, 1);
+        ImGui::RadioButton(orbiter::Tr("Local Horizon Frame"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordAttFrame, 1);
 
         ImGui::Separator();
-        ImGui::TextUnformatted("Position / Velocity Data");
+        ImGui::TextUnformatted(orbiter::Tr("Position / Velocity Data"));
         ImGui::RadioButton("Ecliptic Frame###ef2", &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordPosFrame, 0);
-        ImGui::RadioButton("Equatorial Frame", &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordPosFrame, 1);
+        ImGui::RadioButton(orbiter::Tr("Equatorial Frame"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.RecordPosFrame, 1);
         ImGui::EndDisabled();
         ImGui::EndAnimatedCollapsingHeader();
     }
 }
 
 void DlgRecorder::DrawPlaying() {
-    if(ImGui::Button("STOP")) {
+    if(ImGui::Button(orbiter::Tr("STOP"))) {
         g_pOrbiter->EndPlayback ();
     }
     ImGui::Separator();
-    ImGui::TextUnformatted("Replay Options");
-    ImGui::Checkbox("Show Inflight Notes", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bShowNotes);
-    if(ImGui::Checkbox("Play at Recording Speed", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayWarp)) {
+    ImGui::TextUnformatted(orbiter::Tr("Replay Options"));
+    ImGui::Checkbox(orbiter::Tr("Show Inflight Notes"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bShowNotes);
+    if(ImGui::Checkbox(orbiter::Tr("Play at Recording Speed"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayWarp)) {
 		if (g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayWarp) {
 			extern double RecordingSpeed;
 			g_pOrbiter->SetWarpFactor (RecordingSpeed, true);
 		}
     }
-    if(ImGui::Checkbox("Use Recorded Camera Settings", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayCam)) {
+    if(ImGui::Checkbox(orbiter::Tr("Use Recorded Camera Settings"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayCam)) {
 		if (g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayCam) {
 			// should set camera according to current playback status here!
 		}
     }
-    if(ImGui::Checkbox("Use Recorded Focus Events", &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayFocus)) {
+    if(ImGui::Checkbox(orbiter::Tr("Use Recorded Focus Events"), &g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayFocus)) {
 		if (g_pOrbiter->Cfg()->CfgRecPlayPrm.bReplayFocus) {
 			extern Vessel *vfocus;
 			if (vfocus && vfocus != g_focusobj) g_pOrbiter->SetFocusObject (vfocus);
 			// do we need to check if vfocus is valid?
 		}
     }
-    if(ImGui::Button("Editor")) {
+    if(ImGui::Button(orbiter::Tr("Editor"))) {
         g_pOrbiter->FRecorder_ToggleEditor();        
     }
 }

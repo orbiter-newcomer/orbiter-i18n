@@ -20,6 +20,7 @@ namespace orbiter {
 		~ModuleTab();
 
 		void Create();
+		void RefreshLocalization();
 		BOOL OnInitDialog(HWND hWnd, WPARAM wParam, LPARAM lParam);
 
 		void GetConfig(const Config* cfg);

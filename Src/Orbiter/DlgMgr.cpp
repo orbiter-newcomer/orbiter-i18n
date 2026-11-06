@@ -6,6 +6,9 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <stdio.h>
 #include "OrbiterAPI.h"
+#include "Localization.h"
+#include <fstream>
+#include <vector>
 #include "DlgMgr.h"
 #include "Resource.h"
 #include "Orbiter.h"
@@ -540,11 +543,40 @@ void DialogManager::InitImGui()
 	
 	const CFG_FONTPRM &prm = g_pOrbiter->Cfg()->CfgFontPrm;
 
+	// The bundled fonts only contain Latin glyphs. In Chinese mode an
+	// open-source CJK font (Noto Sans CJK SC Bold, SIL Open Font License) is merged
+	// into each font, otherwise Chinese UI text renders as '?'.
+	const char* cjkFontFile = "Fonts/NotoSansCJKsc-Bold.ttf";
+	bool cjkAvailable = orbiter::IsChinese()
+		&& GetFileAttributesA(cjkFontFile) != INVALID_FILE_ATTRIBUTES;
+	const ImWchar* cjkRanges = cjkAvailable ? io.Fonts->GetGlyphRangesChineseSimplifiedCommon() : nullptr;
+	ImFontConfig cjk_config;
+	cjk_config.MergeMode = true;
+	cjk_config.PixelSnapH = true;
+	cjk_config.FontDataOwnedByAtlas = false;
+
+	// The font file is large, so it is read once and shared by all merged fonts.
+	// The buffer must outlive the ImGui context, hence static storage.
+	static std::vector<unsigned char> cjkFontData;
+	if (cjkAvailable) {
+		std::ifstream f(cjkFontFile, std::ios::binary);
+		cjkFontData.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+		cjkAvailable = !cjkFontData.empty();
+	}
+
 	defaultFont = io.Fonts->AddFontFromFileTTF(prm.ImGui_DefaultFontFile, prm.ImGui_FontSize);
+	if (cjkAvailable)
+		io.Fonts->AddFontFromMemoryTTF(cjkFontData.data(), (int)cjkFontData.size(), prm.ImGui_FontSize, &cjk_config, cjkRanges);
 	io.Fonts->AddFontFromFileTTF("Fonts/fa-solid-900.ttf", prm.ImGui_FontSize, &icons_config);
 	consoleFont = io.Fonts->AddFontFromFileTTF(prm.ImGui_ConsoleFontFile, prm.ImGui_FontSize);
+	if (cjkAvailable)
+		io.Fonts->AddFontFromMemoryTTF(cjkFontData.data(), (int)cjkFontData.size(), prm.ImGui_FontSize, &cjk_config, cjkRanges);
 	monoFont = io.Fonts->AddFontFromFileTTF(prm.ImGui_MonospacedFontFile, prm.ImGui_FontSize);
+	if (cjkAvailable)
+		io.Fonts->AddFontFromMemoryTTF(cjkFontData.data(), (int)cjkFontData.size(), prm.ImGui_FontSize, &cjk_config, cjkRanges);
 	manuscriptFont = io.Fonts->AddFontFromFileTTF(prm.ImGui_ManuscriptFontFile, prm.ImGui_FontSize);
+	if (cjkAvailable)
+		io.Fonts->AddFontFromMemoryTTF(cjkFontData.data(), (int)cjkFontData.size(), prm.ImGui_FontSize, &cjk_config, cjkRanges);
 
 	ImGui_ImplWin32_Init(hWnd);
 	gc->clbkImGuiInit();
@@ -632,10 +664,23 @@ bool ImGuiDialog::HandleHelpButton() {
 	return false;
 }
 
+// Localizes an ImGui dialog title. The name may start with a FontAwesome icon
+// (private-use glyphs); only the "Orbiter: <title>" part is translated.
+static std::string LocalizedDialogTitle(const std::string& name)
+{
+	const char* marker = strstr(name.c_str(), "Orbiter: ");
+	if (!marker)
+		return orbiter::Tr(name.c_str());
+	std::string s(name.c_str(), size_t(marker - name.c_str()));
+	s += orbiter::Tr(marker);
+	return s;
+}
+
 void ImGuiDialog::Display() {
 	ImGui::SetNextWindowSize(ImVec2(defaultSize.width, defaultSize.height), ImGuiCond_FirstUseEver);
 
-	if(ImGui::Begin(name.c_str(), &active)) {
+	std::string dispName = LocalizedDialogTitle(name);
+	if(ImGui::Begin(dispName.c_str(), &active)) {
 		HandleHelpButton();
 		OnDraw();
 	}
@@ -645,7 +690,7 @@ void ImGuiDialog::Display() {
 
 void ImGuiDialog::Activate() {
 	active = true;
-	ImGui::SetWindowFocus(name.c_str());
+	ImGui::SetWindowFocus(LocalizedDialogTitle(name).c_str());
 }
 
 /* 

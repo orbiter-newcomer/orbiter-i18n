@@ -14,7 +14,7 @@ TrackIRconfig *TrackIRconfig::tirc = 0;
 
 char *TrackIRconfig::Description()
 {
-	return (char*)"Configure and test the NaturalPoint® TrackIR(tm) Optical Headtracker.";
+	return (char*)"Configure and test the NaturalPointÂ® TrackIR(tm) Optical Headtracker.";
 }
 
 bool TrackIRconfig::clbkOpen (HWND hLaunchpad)

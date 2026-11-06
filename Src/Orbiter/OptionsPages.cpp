@@ -8,12 +8,14 @@
 #include <windows.h>
 #include <array>
 #include "OptionsPages.h"
+#include "Launchpad.h"
 #include "DlgCtrl.h"
 #include "Orbiter.h"
 #include "Psys.h"
 #include "Camera.h"
 #include "resource.h"
 #include "Uxtheme.h"
+#include "Localization.h"
 
 using std::min;
 using std::max;
@@ -346,15 +348,17 @@ HTREEITEM OptionsPage::CreatePage(HWND hDlg, HTREEITEM parent)
 		int i = 1;
 	}
 
-	char cbuf[256];
-	strcpy(cbuf, Name());
-	TV_INSERTSTRUCT tvis;
+	const char* pageName = Name();
+	std::wstring wname = orbiter::Utf8ToWideString(pageName);
+	TVINSERTSTRUCTW tvis;
 	tvis.item.mask = TVIF_TEXT | TVIF_PARAM;
-	tvis.item.pszText = cbuf;
+	tvis.item.pszText = const_cast<LPWSTR>(wname.c_str());
 	tvis.item.lParam = (LPARAM)this;
 	tvis.hInsertAfter = TVI_LAST;
 	tvis.hParent = parent;
-	HTREEITEM hti = TreeView_InsertItem(GetDlgItem(hDlg, IDC_OPT_PAGELIST), &tvis);
+	// Unicode insert: the translated page names are UTF-8 and would be garbled
+	// by the ANSI tree view message.
+	HTREEITEM hti = (HTREEITEM)SendDlgItemMessageW(hDlg, IDC_OPT_PAGELIST, TVM_INSERTITEMW, 0, (LPARAM)&tvis);
 	m_hItem = hti;
 	return hti;
 }
@@ -421,8 +425,7 @@ int OptionsPage_Visual::ResourceId() const
 
 const char* OptionsPage_Visual::Name() const
 {
-	const char* name = "Visual settings";
-	return name;
+	return orbiter::Tr("Visual settings");
 }
 
 // ----------------------------------------------------------------------
@@ -518,8 +521,8 @@ BOOL OptionsPage_Visual::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 {
 	OptionsPage::OnInitDialog(hPage, wParam, lParam);
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_ELEVMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_ELEVMODE, CB_ADDSTRING, 0, (LPARAM)"linear interpolation");
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_ELEVMODE, CB_ADDSTRING, 0, (LPARAM)"cubic interpolation");
+	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("linear interpolation"));
+	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("cubic interpolation"));
 	return TRUE;
 }
 
@@ -724,8 +727,7 @@ int OptionsPage_Physics::ResourceId() const
 
 const char* OptionsPage_Physics::Name() const
 {
-	const char* name = "Physics settings";
-	return name;
+	return orbiter::Tr("Physics settings");
 }
 
 // ----------------------------------------------------------------------
@@ -850,8 +852,7 @@ int OptionsPage_Instrument::ResourceId() const
 
 const char* OptionsPage_Instrument::Name() const
 {
-	const char* name = "Instruments & panels";
-	return name;
+	return orbiter::Tr("Instruments & panels");
 }
 
 // ----------------------------------------------------------------------
@@ -1020,8 +1021,7 @@ int OptionsPage_Vessel::ResourceId() const
 
 const char* OptionsPage_Vessel::Name() const
 {
-	const char* name = "Vessel settings";
-	return name;
+	return orbiter::Tr("Vessel settings");
 }
 
 // ----------------------------------------------------------------------
@@ -1116,8 +1116,7 @@ int OptionsPage_UI::ResourceId() const
 
 const char* OptionsPage_UI::Name() const
 {
-	const char* name = "User interface";
-	return name;
+	return orbiter::Tr("User interface");
 }
 
 // ----------------------------------------------------------------------
@@ -1143,9 +1142,13 @@ BOOL OptionsPage_UI::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 	OptionsPage::OnInitDialog(hPage, wParam, lParam);
 
 	SendDlgItemMessage(hPage, IDC_OPT_UI_MOUSEFOCUSMODE, CB_RESETCONTENT, 0, 0);
-	const char* strMouseMode[3] = { "Focus requires click", "Hybrid: Click required only for child windows", "Focus follows mouse" };
+	const char* strMouseMode[3] = { orbiter::Tr("Focus requires click"), orbiter::Tr("Hybrid: Click required only for child windows"), orbiter::Tr("Focus follows mouse") };
 	for (int i = 0; i < 3; i++)
-		SendDlgItemMessage(hPage, IDC_OPT_UI_MOUSEFOCUSMODE, CB_ADDSTRING, 0, (LPARAM)strMouseMode[i]);
+		orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_UI_MOUSEFOCUSMODE), strMouseMode[i]);
+
+	// Language selector. Switching the language is only available here in the
+	// Launchpad; the in-simulation UI uses the saved setting on next start.
+	orbiter::InitLanguageCombo(GetDlgItem(hPage, IDC_OPT_UI_LANGUAGE));
 
 	return TRUE;
 }
@@ -1159,6 +1162,21 @@ BOOL OptionsPage_UI::OnCommand(HWND hPage, WORD ctrlId, WORD notification, HWND 
 		if (notification == CBN_SELCHANGE) {
 			DWORD mode = (DWORD)SendDlgItemMessage(hPage, IDC_OPT_UI_MOUSEFOCUSMODE, CB_GETCURSEL, 0, 0);
 			Cfg()->CfgUIPrm.MouseFocusMode = mode;
+			return FALSE;
+		}
+		break;
+	case IDC_OPT_UI_LANGUAGE:
+		if (notification == CBN_SELCHANGE) {
+			int idx = (int)SendDlgItemMessage(hPage, IDC_OPT_UI_LANGUAGE, CB_GETCURSEL, 0, 0);
+			orbiter::SetLanguage(idx == 1 ? orbiter::Language::Chinese : orbiter::Language::English, true);
+			// Re-apply the new language to the whole Launchpad. This also
+			// refreshes dynamically created contents (tab tree items) which are
+			// not covered by LocalizeWindowTree alone.
+			if (orbiter::LaunchpadDialog* lp = orbiter::GetLaunchpadDialog())
+				lp->Relocalize();
+			else
+				orbiter::LocalizeWindowTree(GetAncestor(hPage, GA_ROOT));
+			orbiter::SyncLanguageCombo(GetDlgItem(hPage, IDC_OPT_UI_LANGUAGE));
 			return FALSE;
 		}
 		break;
@@ -1184,8 +1202,7 @@ int OptionsPage_Joystick::ResourceId() const
 
 const char* OptionsPage_Joystick::Name() const
 {
-	const char* name = "Joystick";
-	return name;
+	return orbiter::Tr("Joystick");
 }
 
 // ----------------------------------------------------------------------
@@ -1237,14 +1254,14 @@ BOOL OptionsPage_Joystick::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam
 	g_pOrbiter->GetDInput()->GetJoysticks(&joylist, &ndev);
 
 	SendDlgItemMessage(hPage, IDC_OPT_JOY_DEVICE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage(hPage, IDC_OPT_JOY_DEVICE, CB_ADDSTRING, 0, (LPARAM)"<Disabled>");
+	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_JOY_DEVICE), orbiter::Tr("<Disabled>"));
 	for (int i = 0; i < ndev; i++)
 		SendDlgItemMessage(hPage, IDC_OPT_JOY_DEVICE, CB_ADDSTRING, 0, (LPARAM)(joylist[i].tszProductName));
 
-	const char* thmode[4] = { "<Keyboard only>", "Z-axis", "Slider 0", "Slider 1" };
+	const char* thmode[4] = { orbiter::Tr("<Keyboard only>"), orbiter::Tr("Z-axis"), orbiter::Tr("Slider 0"), orbiter::Tr("Slider 1") };
 	SendDlgItemMessage(hPage, IDC_OPT_JOY_THROTTLE, CB_RESETCONTENT, 0, 0);
 	for (int i = 0; i < ARRAYSIZE(thmode); i++)
-		SendDlgItemMessage(hPage, IDC_OPT_JOY_THROTTLE, CB_ADDSTRING, 0, (LPARAM)thmode[i]);
+		orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_JOY_THROTTLE), thmode[i]);
 
 	GAUGEPARAM gp = { 0, 1000, GAUGEPARAM::LEFT, GAUGEPARAM::BLACK };
 	oapiSetGaugeParams(GetDlgItem(hPage, IDC_OPT_JOY_SAT), &gp);
@@ -1338,8 +1355,7 @@ int OptionsPage_CelSphere::ResourceId() const
 
 const char* OptionsPage_CelSphere::Name() const
 {
-	const char* name = "Celestial sphere";
-	return name;
+	return orbiter::Tr("Celestial sphere");
 }
 
 // ----------------------------------------------------------------------
@@ -1664,8 +1680,7 @@ int OptionsPage_VisHelper::ResourceId() const
 
 const char* OptionsPage_VisHelper::Name() const
 {
-	const char* name = "Visual helpers";
-	return name;
+	return orbiter::Tr("Visual helpers");
 }
 
 // ----------------------------------------------------------------------
@@ -1783,8 +1798,7 @@ int OptionsPage_Planetarium::ResourceId() const
 
 const char* OptionsPage_Planetarium::Name() const
 {
-	const char* name = "Planetarium";
-	return name;
+	return orbiter::Tr("Planetarium");
 }
 
 // ----------------------------------------------------------------------
@@ -1953,8 +1967,7 @@ int OptionsPage_Labels::ResourceId() const
 
 const char* OptionsPage_Labels::Name() const
 {
-	const char* name = "Labels";
-	return name;
+	return orbiter::Tr("Labels");
 }
 
 // ----------------------------------------------------------------------
@@ -2172,8 +2185,7 @@ int OptionsPage_Forces::ResourceId() const
 
 const char* OptionsPage_Forces::Name() const
 {
-	const char* name = "Body forces";
-	return name;
+	return orbiter::Tr("Body forces");
 }
 
 // ----------------------------------------------------------------------
@@ -2324,8 +2336,7 @@ int OptionsPage_Axes::ResourceId() const
 
 const char* OptionsPage_Axes::Name() const
 {
-	const char* name = "Object axes";
-	return name;
+	return orbiter::Tr("Object axes");
 }
 
 // ----------------------------------------------------------------------
@@ -2441,4 +2452,24 @@ BOOL OptionsPage_Axes::OnHScroll(HWND hTab, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return FALSE;
+}
+
+// ----------------------------------------------------------------------
+// Re-apply the active UI language to the options page tree entries.
+
+void OptionsPageContainer::RefreshLocalization()
+{
+	if (!m_hPageList) return;
+	for (OptionsPage* pPage : m_pPage) {
+		if (!pPage) continue;
+		HTREEITEM hItem = pPage->TreeItem();
+		if (!hItem) continue;
+		std::wstring wtext = orbiter::Utf8ToWideString(pPage->Name());
+		TVITEMW item;
+		memset(&item, 0, sizeof(item));
+		item.mask = TVIF_TEXT;
+		item.hItem = hItem;
+		item.pszText = const_cast<LPWSTR>(wtext.c_str());
+		SendMessageW(m_hPageList, TVM_SETITEMW, 0, (LPARAM)&item);
+	}
 }

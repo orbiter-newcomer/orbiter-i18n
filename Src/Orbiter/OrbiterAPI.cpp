@@ -18,6 +18,7 @@
 #include "cmdline.h"
 #include "Script.h"
 #include "Util.h"
+#include "Localization.h"
 #include "Log.h"
 #include "Dialogs.h"
 #include "resource.h"
@@ -58,6 +59,11 @@ DLLEXPORT HINSTANCE oapiGetOrbiterInstance ()
 DLLEXPORT int oapiGetOrbiterVersion ()
 {
 	return g_pOrbiter->GetVersion();
+}
+
+DLLEXPORT const char *oapiTr (const char *english)
+{
+	return orbiter::Tr(english);
 }
 
 DLLEXPORT const char *oapiGetCmdLine ()

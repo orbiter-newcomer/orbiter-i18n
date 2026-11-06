@@ -11,6 +11,7 @@
 #include "Orbiter.h"
 #include "TabVideo.h"
 #include "resource.h"
+#include "Localization.h"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ orbiter::DefVideoTab::DefVideoTab (const LaunchpadDialog *lp): LaunchpadTab (lp)
 {
 	idxClient = 0;
 	strInfo = 0;
-	SetInfoString(strInfo_Default);
+	SetInfoString(orbiter::Tr(strInfo_Default));
 }
 
 //-----------------------------------------------------------------------------
@@ -147,7 +148,7 @@ void orbiter::DefVideoTab::EnumerateClients(HWND hTab)
 {
 	SendDlgItemMessage(hTab, IDC_VID_COMBO_MODULE, CB_RESETCONTENT, 0, 0);
 	PCSTR strConsole = "Console mode (no engine loaded)";
-	SendDlgItemMessage(hTab, IDC_VID_COMBO_MODULE, CB_ADDSTRING, 0, (LPARAM)strConsole);
+	orbiter::ComboAddStringUtf8(GetDlgItem(hTab, IDC_VID_COMBO_MODULE), orbiter::Tr(strConsole));
 	ScanDir(hTab, "Modules\\Plugin");
 	SendDlgItemMessage(hTab, IDC_VID_COMBO_MODULE, CB_SETCURSEL, 0, 0);
 }
@@ -202,7 +203,7 @@ void orbiter::DefVideoTab::SelectClientIndex(UINT idx)
 		pLp->App()->LoadModule(path, name);
 	}
 	else
-		SetInfoString(strInfo_Default);
+		SetInfoString(orbiter::Tr(strInfo_Default));
 }
 
 void orbiter::DefVideoTab::SetInfoString(PCSTR str)

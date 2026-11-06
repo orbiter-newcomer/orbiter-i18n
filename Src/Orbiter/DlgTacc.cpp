@@ -8,6 +8,7 @@
 
 #include "DlgTacc.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome6.h"
@@ -136,7 +137,7 @@ void DlgTacc::OnDraw() {
     ImGui::NewLine(); 
 
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - button_sz.x) * 0.5f);
-    if(ImGui::Button(g_pOrbiter->IsRunning()?"Pause":"Resume", button_sz))
+    if(ImGui::Button(orbiter::Tr(g_pOrbiter->IsRunning()?"Pause":"Resume"), button_sz))
         g_pOrbiter->TogglePause();
 
 }

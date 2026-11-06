@@ -77,3 +77,11 @@ BOOL orbiter::OptionsTab::OnNotify(HWND hDlg, int idCtrl, LPNMHDR pnmh)
 	}
 	return FALSE;
 }
+
+// ----------------------------------------------------------------------
+// Re-apply the active language to the options page tree.
+
+void orbiter::OptionsTab::RefreshLocalization()
+{
+	OptionsPageContainer::RefreshLocalization();
+}

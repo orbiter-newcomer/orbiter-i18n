@@ -85,6 +85,38 @@ static std::string UTF8ToCP1252(const char *utf8, int ulen)
 }
 
 
+// Convert a UTF-8 string to UTF-16. Falls back to the system ANSI code page
+// for legacy strings that are not valid UTF-8.
+static std::wstring UTF8ToUTF16(const char *utf8, int ulen)
+{
+	if (!utf8) return std::wstring();
+	if (ulen < 0) ulen = int(strlen(utf8));
+
+	int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8, ulen, nullptr, 0);
+	UINT cp = CP_UTF8;
+	if (wlen <= 0) {
+		cp = CP_ACP;
+		wlen = MultiByteToWideChar(CP_ACP, 0, utf8, ulen, nullptr, 0);
+	}
+	if (wlen <= 0) return std::wstring();
+
+	std::wstring w(size_t(wlen), L'\0');
+	MultiByteToWideChar(cp, 0, utf8, ulen, &w[0], wlen);
+	return w;
+}
+
+
+// Returns true if the text contains characters that the single-byte ANSI/CP1252
+// font path cannot represent (e.g. CJK characters).
+static bool NeedsUnicodeText(const std::wstring &w)
+{
+	for (size_t i = 0; i < w.size(); i++) {
+		if ((unsigned int)w[i] > 0xFF) return true;
+	}
+	return false;
+}
+
+
 // ===============================================================================================
 //
 void D3D9Pad::SinCos(int n, int k)
@@ -971,6 +1003,12 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 	if (utf8) if (utf8[0] == '_') if (strcmp(utf8, "_SkpVerInfo") == 0) return 2;
 	if (cfont==NULL) return 0;
 
+	// Unicode (CJK etc.) text is measured with the D3DXFont interface
+	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
+	if (NeedsUnicodeText(wstr)) {
+		return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(wstr.c_str(), int(wstr.length())));
+	}
+
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
 	return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(str.c_str(), str.length()));
@@ -1130,6 +1168,14 @@ bool D3D9Pad::TextBox (int x1, int y1, int x2, int y2, const char *utf8, int ule
 //
 bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 {
+	if (!utf8) return false;
+
+	// Route non-Latin text (e.g. CJK) through the Unicode (D3DXFont) renderer
+	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
+	if (NeedsUnicodeText(wstr)) {
+		return TextW(x, y, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
+	}
+
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
 #ifdef SKPDBG 
@@ -1927,11 +1973,11 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 
 	// Create Rotated windows GDI Font for a use with GDIPad ---------------------------
 	//
-	hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+	hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
 
 	if (hFont==NULL) {
 		face  = (prop ? def_sansface : def_fixedface);
-		hFont = CreateFont(height, 0, orientation, orientation, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+		hFont = CreateFont(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
 	}
 }
 
@@ -1994,7 +2040,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	else {
 		// Create windows GDI Font for a use with GDIPad ---------------------------
 		//
-		hFont = CreateFont(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+		hFont = CreateFont(height, width, 0, 0, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
 	}
 }
 

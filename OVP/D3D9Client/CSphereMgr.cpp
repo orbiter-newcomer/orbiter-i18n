@@ -58,7 +58,7 @@ CSphereManager::CSphereManager(D3D9Client *gc, const Scene *scene) : gc(gc), tex
 {
 	scn = scene;
 
-	gc->OutputLoadStatus("Loading Celestial Sphere...",0);
+	gc->OutputLoadStatus(oapiTr("Loading Celestial Sphere..."),0);
 	
 	patchidx  = TileManager::patchidx;
 	NLNG = TileManager::NLNG;

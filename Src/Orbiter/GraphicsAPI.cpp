@@ -30,6 +30,26 @@ using namespace oapi;
 
 const char *strWndClass = "Orbiter Render Window";
 
+// Convert a file path from UTF-8 (fallback: system ANSI code page) to UTF-16
+// for the WIC API. This must not depend on the process locale, so that file
+// handling is identical on all system region settings.
+static std::wstring PathToWide (const char *path)
+{
+	if (!path) return std::wstring();
+	int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, nullptr, 0);
+	UINT cp = CP_UTF8;
+	if (wlen <= 0) {
+		cp = CP_ACP;
+		wlen = MultiByteToWideChar(CP_ACP, 0, path, -1, nullptr, 0);
+	}
+	if (wlen <= 0) return std::wstring();
+
+	std::wstring w(size_t(wlen), L'\0');
+	MultiByteToWideChar(cp, 0, path, -1, &w[0], wlen);
+	if (!w.empty() && w.back() == L'\0') w.pop_back();
+	return w;
+}
+
 OAPIFUNC LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
 // Render window callback (calls RenderWndProc)
 
@@ -457,11 +477,14 @@ HBITMAP GraphicsClient::ReadImageFromMemory (BYTE *pBuf, DWORD nBuf, UINT w, UIN
 
 HBITMAP GraphicsClient::ReadImageFromFile (const char *fname, UINT w, UINT h)
 {
-	wchar_t wcbuf[256];
-	mbstowcs (wcbuf, fname, 256);
+	std::wstring wpath = PathToWide(fname);
+	if (wpath.empty()) {
+		LOGOUT_WARN("Couldn't convert image file path: %s", fname);
+		return 0;
+	}
 
 	IWICBitmapDecoder *piDecoder = NULL;
-	m_pIWICFactory->CreateDecoderFromFilename (wcbuf, NULL, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &piDecoder);
+	m_pIWICFactory->CreateDecoderFromFilename (wpath.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &piDecoder);
 
 	if (piDecoder) {
 		HBITMAP hDIBBitmap = ReadImageFromDecoder (m_pIWICFactory, piDecoder, w, h);
@@ -504,11 +527,14 @@ bool GraphicsClient::WriteImageDataToFile (const ImageData &data,
 		return false;
 	UINT bufsize = data.stride * data.height;
 
-	wchar_t wcbuf[256];
 	char cbuf[256];
 	strcpy (cbuf, fname);
 	strcat (cbuf, extension[fmt]);
-	mbstowcs (wcbuf, cbuf, 256);
+	std::wstring wcbuf = PathToWide(cbuf);
+	if (wcbuf.empty()) {
+		LOGOUT_WARN("Couldn't convert image file path: %s", cbuf);
+		return false;
+	}
 
 	IWICStream *piStream = NULL;
 	IWICBitmapEncoder *piEncoder = NULL;
@@ -516,9 +542,9 @@ bool GraphicsClient::WriteImageDataToFile (const ImageData &data,
 	IPropertyBag2 *pPropertybag = NULL;
 
 	hr = m_pIWICFactory->CreateStream (&piStream);
-	hr = piStream->InitializeFromFilename(wcbuf, GENERIC_WRITE);
+	hr = piStream->InitializeFromFilename(wcbuf.c_str(), GENERIC_WRITE);
 	if ((hr & 0xFF) == ERROR_PATH_NOT_FOUND && MakePath(fname)) {
-		hr = piStream->InitializeFromFilename(wcbuf, GENERIC_WRITE);
+		hr = piStream->InitializeFromFilename(wcbuf.c_str(), GENERIC_WRITE);
 	}
 
 	hr = m_pIWICFactory->CreateEncoder (FormatGUID[fmt], NULL, &piEncoder);

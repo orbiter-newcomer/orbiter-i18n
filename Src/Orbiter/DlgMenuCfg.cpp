@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "imgui_extras.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "IconsFontAwesome6.h"
 
 extern Orbiter *g_pOrbiter;
@@ -29,43 +30,43 @@ void DlgMenuCfg::OnDraw()
 	MenuInfoBar *mib = g_pane->MIBar();
 
 	if(ImGui::BeginTabBar("##MenuCfgTab")) {
-		if(ImGui::BeginTabItem("Appearance")) {
+		if(ImGui::BeginTabItem(orbiter::Tr("Appearance"))) {
 			ImGui::BeginChild("##Child");
-			ImGui::SeparatorText("Menu bar");
+			ImGui::SeparatorText(orbiter::Tr("Menu bar"));
 			ImGui::PushID(1);
-			ImGui::RadioButton("Show", &prm.MenuMode, 0);
+			ImGui::RadioButton(orbiter::Tr("Show"), &prm.MenuMode, 0);
 			ImGui::SameLine();
-			ImGui::RadioButton("Hide", &prm.MenuMode, 1);
+			ImGui::RadioButton(orbiter::Tr("Hide"), &prm.MenuMode, 1);
 			ImGui::SameLine();
-			ImGui::RadioButton("Auto-hide", &prm.MenuMode, 2);
+			ImGui::RadioButton(orbiter::Tr("Auto-hide"), &prm.MenuMode, 2);
 
-			ImGui::Checkbox("Always show labels", &prm.bMenuLabelAlways);
-			ImGui::SliderInt("Opacity", &prm.MenuOpacity, 0, 10);
-			ImGui::SliderInt("Animation speed", &prm.MenuScrollspeed, 1, 20);
-			ImGui::SliderInt("Button size", &prm.MenuButtonSize, 10, 64);
-			ImGui::SliderInt("Hovered size", &prm.MenuButtonHoverSize, 10, 64);
-			ImGui::SliderInt("Spacing", &prm.MenuButtonSpacing, 1, 32);
+			ImGui::Checkbox(orbiter::Tr("Always show labels"), &prm.bMenuLabelAlways);
+			ImGui::SliderInt(orbiter::Tr("Opacity"), &prm.MenuOpacity, 0, 10);
+			ImGui::SliderInt(orbiter::Tr("Animation speed"), &prm.MenuScrollspeed, 1, 20);
+			ImGui::SliderInt(orbiter::Tr("Button size"), &prm.MenuButtonSize, 10, 64);
+			ImGui::SliderInt(orbiter::Tr("Hovered size"), &prm.MenuButtonHoverSize, 10, 64);
+			ImGui::SliderInt(orbiter::Tr("Spacing"), &prm.MenuButtonSpacing, 1, 32);
 			ImGui::PopID();
 
-			ImGui::SeparatorText("Info bars");
+			ImGui::SeparatorText(orbiter::Tr("Info bars"));
 			ImGui::PushID(2);
-			ImGui::RadioButton("Show", &prm.InfoMode, 0);
+			ImGui::RadioButton(orbiter::Tr("Show"), &prm.InfoMode, 0);
 			ImGui::SameLine();
-			ImGui::RadioButton("Hide", &prm.InfoMode, 1);
+			ImGui::RadioButton(orbiter::Tr("Hide"), &prm.InfoMode, 1);
 			ImGui::SameLine();
-			ImGui::RadioButton("Auto-hide", &prm.InfoMode, 2);
-			ImGui::Checkbox("Always show warp factor", &prm.bWarpAlways);
-			ImGui::SliderInt("Opacity", &prm.InfoOpacity, 0, 10);
+			ImGui::RadioButton(orbiter::Tr("Auto-hide"), &prm.InfoMode, 2);
+			ImGui::Checkbox(orbiter::Tr("Always show warp factor"), &prm.bWarpAlways);
+			ImGui::SliderInt(orbiter::Tr("Opacity"), &prm.InfoOpacity, 0, 10);
 			ImGui::PopID();
 
-			ImGui::SeparatorText("FPS info bar");
+			ImGui::SeparatorText(orbiter::Tr("FPS info bar"));
 			const char *fpsmode[]={"None", "On the left", "On the right"};
 			ImGui::Combo("##FPSMode", &prm.FPS, fpsmode, IM_ARRAYSIZE(fpsmode));
 
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
-		if(ImGui::BeginTabItem("Menu items")) {
+		if(ImGui::BeginTabItem(orbiter::Tr("Menu items"))) {
 			ImGui::BeginChild("##Child");
 			bool changed = false;
 			for(auto &pref: g_pane->MIBar()->GetPreferences()) {

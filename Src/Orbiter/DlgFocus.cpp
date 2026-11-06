@@ -9,6 +9,7 @@
 #include "Psys.h"
 #include "OrbiterAPI.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "Camera.h"
 #include "imgui.h"
 #include <map>
@@ -36,7 +37,7 @@ void DlgFocus::OnDraw() {
     if (ImGui::BeginTabBar("FocusTabBar", tab_bar_flags))
     {
         for(size_t i = 0; i<sizeof(tabs)/sizeof(tabs[0]);i++) {
-            if(ImGui::BeginTabItem(tabs[i])) {
+            if(ImGui::BeginTabItem(orbiter::Tr(tabs[i]))) {
                 (this->*func[i])();
                 ImGui::EndTabItem();
             }
@@ -48,7 +49,7 @@ void DlgFocus::OnDraw() {
 void DlgFocus::DrawAll() {
     ImGuiWindowFlags window_flags =  ImGuiChildFlags_ResizeX;
     ImGui::BeginChild("ChildL", ImVec2(150, 0), 0, window_flags);
-    ImGui::SeparatorText("Available targets");
+    ImGui::SeparatorText(orbiter::Tr("Available targets"));
 	ImGui::BeginChild("ChildL_inner");
     for (int i = 0; i < g_psys->nVessel(); i++) {
         Vessel *vessel = g_psys->GetVessel(i);
@@ -57,7 +58,7 @@ void DlgFocus::DrawAll() {
             const bool is_selected = m_SelectedShip == name;
             ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
             if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
-            ImGui::TreeNodeEx(vessel->Name(), node_flags);
+            ImGui::TreeNodeEx(orbiter::Tr(vessel->Name()), node_flags);
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
                 m_SelectedShip = vessel->Name();
             }
@@ -68,16 +69,16 @@ void DlgFocus::DrawAll() {
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("ChildR");
-    ImGui::SeparatorText("Selected target");
-    ImGui::TextUnformatted(m_SelectedShip.c_str());
+    ImGui::SeparatorText(orbiter::Tr("Selected target"));
+    ImGui::TextUnformatted(orbiter::Tr(m_SelectedShip.c_str()));
     ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-    if(ImGui::Button("Select", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Select"), button_sz)) {
         Vessel *vessel = g_psys->GetVessel (m_SelectedShip.c_str(), true);
         if (vessel) {
             g_pOrbiter->SetFocusObject (vessel);
         }
     }
-    if(ImGui::Button("Previous", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Previous"), button_sz)) {
         if (g_pfocusobj) {
             g_pOrbiter->SetFocusObject (g_pfocusobj);
 			m_SelectedShip = g_pfocusobj->Name();
@@ -88,7 +89,7 @@ void DlgFocus::DrawAll() {
 void DlgFocus::DrawNearby() {
     ImGuiWindowFlags window_flags = ImGuiChildFlags_ResizeX;
     ImGui::BeginChild("ChildL", ImVec2(150, 0), 0, window_flags);
-    ImGui::SeparatorText("Available targets");
+    ImGui::SeparatorText(orbiter::Tr("Available targets"));
 	ImGui::BeginChild("ChildL_inner");
 
     const Vector &campos = g_camera->GPos();
@@ -102,7 +103,7 @@ void DlgFocus::DrawNearby() {
                 ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
                 if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
                 char cbuf[128];
-                sprintf(cbuf,"%s (%.1fkm)", vessel->Name(), dst/1000.0f);
+                sprintf(cbuf,"%s (%.1fkm)", orbiter::Tr(vessel->Name()), dst/1000.0f);
                 ImGui::TreeNodeEx(cbuf, node_flags);
                 if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
                     m_SelectedShip = vessel->Name();
@@ -115,16 +116,16 @@ void DlgFocus::DrawNearby() {
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("ChildR");
-    ImGui::SeparatorText("Selected target");
-    ImGui::TextUnformatted(m_SelectedShip.c_str());
+    ImGui::SeparatorText(orbiter::Tr("Selected target"));
+    ImGui::TextUnformatted(orbiter::Tr(m_SelectedShip.c_str()));
     ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-    if(ImGui::Button("Select", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Select"), button_sz)) {
         Vessel *vessel = g_psys->GetVessel (m_SelectedShip.c_str(), true);
         if (vessel) {
             g_pOrbiter->SetFocusObject (vessel);
         }
     }
-    if(ImGui::Button("Previous", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Previous"), button_sz)) {
         if (g_pfocusobj) {
             g_pOrbiter->SetFocusObject (g_pfocusobj);
 			m_SelectedShip = g_pfocusobj->Name();
@@ -149,16 +150,16 @@ void DlgFocus::DrawLocation() {
 
     ImGuiWindowFlags window_flags =  ImGuiChildFlags_ResizeX;
     ImGui::BeginChild("ChildL", ImVec2(150,0), 0, window_flags);
-    ImGui::SeparatorText("Available targets");
+    ImGui::SeparatorText(orbiter::Tr("Available targets"));
 	ImGui::BeginChild("ChildL_inner");
 
     for(auto &kw : vesselMap) {
-        if(ImGui::TreeNodeEx(kw.first)) {
+        if(ImGui::TreeNodeEx(orbiter::Tr(kw.first))) {
             for(auto &vessel: kw.second) {
                 const bool is_selected = m_SelectedShip == vessel->Name();
                 ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
                 if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
-                ImGui::TreeNodeEx(vessel->Name(), node_flags);
+                ImGui::TreeNodeEx(orbiter::Tr(vessel->Name()), node_flags);
                 if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
                     m_SelectedShip = vessel->Name();
                 }
@@ -171,16 +172,16 @@ void DlgFocus::DrawLocation() {
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("ChildR");
-    ImGui::SeparatorText("Selected target");
-    ImGui::TextUnformatted(m_SelectedShip.c_str());
+    ImGui::SeparatorText(orbiter::Tr("Selected target"));
+    ImGui::TextUnformatted(orbiter::Tr(m_SelectedShip.c_str()));
     ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-    if(ImGui::Button("Select", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Select"), button_sz)) {
         Vessel *vessel = g_psys->GetVessel (m_SelectedShip.c_str(), true);
         if (vessel) {
             g_pOrbiter->SetFocusObject (vessel);
         }
     }
-    if(ImGui::Button("Previous", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Previous"), button_sz)) {
         if (g_pfocusobj) {
             g_pOrbiter->SetFocusObject (g_pfocusobj);
 			m_SelectedShip = g_pfocusobj->Name();
@@ -200,16 +201,16 @@ void DlgFocus::DrawClass() {
 
     ImGuiWindowFlags window_flags = ImGuiChildFlags_ResizeX;
     ImGui::BeginChild("ChildL", ImVec2(150,0), 0, window_flags);
-    ImGui::SeparatorText("Available targets");
+    ImGui::SeparatorText(orbiter::Tr("Available targets"));
 	ImGui::BeginChild("ChildL_inner");
 
     for(auto &kw : vesselMap) {
-        if(ImGui::TreeNodeEx(kw.first.c_str())) {
+        if(ImGui::TreeNodeEx(orbiter::Tr(kw.first.c_str()))) {
             for(auto &vessel: kw.second) {
                 const bool is_selected = m_SelectedShip == vessel->Name();
                 ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
                 if(is_selected) node_flags |= ImGuiTreeNodeFlags_Selected;
-                ImGui::TreeNodeEx(vessel->Name(), node_flags);
+                ImGui::TreeNodeEx(orbiter::Tr(vessel->Name()), node_flags);
                 if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
                     m_SelectedShip = vessel->Name();
                 }
@@ -222,16 +223,16 @@ void DlgFocus::DrawClass() {
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("ChildR");
-    ImGui::SeparatorText("Selected target");
-    ImGui::TextUnformatted(m_SelectedShip.c_str());
+    ImGui::SeparatorText(orbiter::Tr("Selected target"));
+    ImGui::TextUnformatted(orbiter::Tr(m_SelectedShip.c_str()));
     ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-    if(ImGui::Button("Select", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Select"), button_sz)) {
         Vessel *vessel = g_psys->GetVessel (m_SelectedShip.c_str(), true);
         if (vessel) {
             g_pOrbiter->SetFocusObject (vessel);
         }
     }
-    if(ImGui::Button("Previous", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Previous"), button_sz)) {
         if (g_pfocusobj) {
             g_pOrbiter->SetFocusObject (g_pfocusobj);
 			m_SelectedShip = g_pfocusobj->Name();

@@ -23,6 +23,7 @@ namespace orbiter {
 		~ExtraTab();
 
 		void Create();
+		void RefreshLocalization();
 
 		void GetConfig(const Config* cfg);
 		void SetConfig(Config* cfg);

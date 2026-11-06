@@ -91,6 +91,9 @@ namespace orbiter {
 		void UpdateConfig();
 		// save current dialog settings in application configuration
 
+		void Relocalize();
+		// re-apply the active UI language to the Launchpad and all of its tabs
+
 		void ShowWaitPage(bool show, long mem_committed = 0);
 		void UpdateWaitProgress();
 		long mem_wait; // amount of memory to be deallocated during wait
@@ -150,6 +153,10 @@ namespace orbiter {
 
 		orbiter::ExtraTab* pExtra;      // tab object
 	};
+
+
+	// Returns the Launchpad dialog instance (nullptr before creation).
+	LaunchpadDialog* GetLaunchpadDialog();
 
 }
 

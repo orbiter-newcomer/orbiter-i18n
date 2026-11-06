@@ -30,6 +30,7 @@
 #include "resource.h"
 #include "Orbiter.h"
 #include "Launchpad.h"
+#include "Localization.h"
 #include "MenuInfoBar.h"
 #include "Dialogs.h"
 #include "DialogWin.h"
@@ -186,6 +187,10 @@ INT WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR strCmdLine, INT nCmdSh
         ConsoleManager::ShowConsole(false);
     
     SetEnvironmentVars();
+
+    // Load the localization setting (Localization.cfg) before any UI is created.
+    // The language can only be switched from the Launchpad.
+    orbiter::InitLocalization();
 	g_pOrbiter = new Orbiter; // application instance
 
 	// Parse command line
@@ -214,7 +219,11 @@ INT WINAPI WinMain (HINSTANCE hInstance, HINSTANCE, LPSTR strCmdLine, INT nCmdSh
 		return 0;
 	}
 
-	setlocale (LC_CTYPE, "");
+	// Keep the C locale independent of the Windows region settings: all
+	// text conversions use explicit UTF-8/UTF-16 code page conversions, so the
+	// process behaviour must not change with the user's region format.
+	// (Previously setlocale(LC_CTYPE, "") made e.g. mbstowcs decode UTF-8
+	// paths with the system ANSI code page, breaking on Chinese systems.)
 
 	g_pOrbiter->Run ();
 	delete g_pOrbiter;
@@ -435,6 +444,11 @@ HRESULT Orbiter::Create (HINSTANCE hInstance)
 
 	// preload startup plugin modules
 	LoadStartupModules();
+
+	// Plugin modules may add controls to the Launchpad (e.g. the graphics
+	// client's video tab extensions), so re-apply the UI language once the
+	// modules have been loaded.
+	if (m_pLaunchpad) m_pLaunchpad->Relocalize();
 
 	{
 		BOOL cleartype, ok;

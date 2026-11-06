@@ -1,6 +1,7 @@
 #include "DlgCamera.h"
 #include "OrbiterAPI.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "Celbody.h"
 #include "Psys.h"
 #include "Pane.h"
@@ -36,7 +37,7 @@ void DlgCamera::OnDraw() {
     if (ImGui::BeginTabBar("CameraTabBar", tab_bar_flags))
     {
         for(size_t i = 0; i < sizeof(tabs)/sizeof(tabs[0]); i++) {
-            if(ImGui::BeginTabItem(tabs[i].name)) {
+            if(ImGui::BeginTabItem(orbiter::Tr(tabs[i].name))) {
 				SetHelp("html/orbiter.chm", tabs[i].helptopic);
                 (this->*tabs[i].func)();
                 ImGui::EndTabItem();
@@ -50,18 +51,19 @@ void DlgCamera::DrawMode()
 {
 	const char* mode_label[] = { "Cockpit", "Track", "Ground" };
 	const char *curr_mode = (extcam ? extmode == CAMERA_GROUNDOBSERVER ? mode_label[2] : mode_label[1] : mode_label[0]);
+	const char *curr_mode_disp = orbiter::Tr(curr_mode);
 
 	ImGui::PushID("mode");
-	ImGui::SeparatorText("Camera mode");
-	if (BeginWideCombo("##mode", curr_mode, ImGuiComboFlags_HeightSmall)) {
+	ImGui::SeparatorText(orbiter::Tr("Camera mode"));
+	if (BeginWideCombo("##mode", curr_mode_disp, ImGuiComboFlags_HeightSmall)) {
 		bool is_selected = false;
-		if (ImGui::Selectable("Cockpit", is_selected))
+		if (ImGui::Selectable(orbiter::Tr("Cockpit"), is_selected))
 			g_pOrbiter->SetView(g_focusobj, 0);
-		if (ImGui::Selectable("Track", is_selected)) {
+		if (ImGui::Selectable(orbiter::Tr("Track"), is_selected)) {
 			g_pOrbiter->SetView(g_focusobj, 1);
 			g_camera->SetTrackMode(CAMERA_TARGETRELATIVE);
 		}
-		if (ImGui::Selectable("Ground", is_selected))
+		if (ImGui::Selectable(orbiter::Tr("Ground"), is_selected))
 			SetGroundObserverView();
 		ImGui::EndCombo(); 
 	}
@@ -84,13 +86,13 @@ void DlgCamera::DrawCockpitMode()
 	Spacer();
 
 	ImGui::PushID("mode");
-	ImGui::SeparatorText("Cockpit view");
+	ImGui::SeparatorText(orbiter::Tr("Cockpit view"));
 	const char* cockpit_mode_label[] = { "Glass cockpit", "Panel view", "Virtual cockpit" };
 	IntCamMode mode = g_camera->GetIntMode();
-	if (BeginWideCombo("##cockpit_mode", cockpit_mode_label[mode - CAMERA_GENERICCOCKPIT], ImGuiComboFlags_HeightSmall)) {
+	if (BeginWideCombo("##cockpit_mode", orbiter::Tr(cockpit_mode_label[mode - CAMERA_GENERICCOCKPIT]), ImGuiComboFlags_HeightSmall)) {
 		bool is_selected = false;
 		for (int i = CAMERA_GENERICCOCKPIT; i <= CAMERA_VIRTUALCOCKPIT; i++) {
-			if (ImGui::Selectable(cockpit_mode_label[i - CAMERA_GENERICCOCKPIT], is_selected)) {
+			if (ImGui::Selectable(orbiter::Tr(cockpit_mode_label[i - CAMERA_GENERICCOCKPIT]), is_selected)) {
 				g_pane->SetPanelMode(i - CAMERA_GENERICCOCKPIT + 1);
 				mode = (IntCamMode)i;
 			}
@@ -104,7 +106,7 @@ void DlgCamera::DrawCockpitMode()
 		float ctrlw = std::max(ImGui::GetContentRegionAvail().x * 0.5f - 5.0f, 75.0f);
 		if (ImGui::BeginChild("ChildL", ImVec2(ctrlw, 0))) {
 			ImGui::PushID("switch_panel");
-			ImGui::SeparatorText("Switch panel");
+			ImGui::SeparatorText(orbiter::Tr("Switch panel"));
 
 			bool has_neighbour[4] = { false, false, false, false };
 			Panel2D* panel = g_pane->GetPanel2D();
@@ -150,7 +152,7 @@ void DlgCamera::DrawCockpitMode()
 
 		if (ImGui::BeginChild("ChildR", ImVec2(ctrlw, 0))) {
 			ImGui::PushID("scroll_panel");
-			ImGui::SeparatorText("Scroll panel");
+			ImGui::SeparatorText(orbiter::Tr("Scroll panel"));
 			ImVec2 cnt(ImGui::GetContentRegionAvail().x / 2 - 10, 50);
 			ImGui::SetCursorPos(ImVec2(cnt.x, cnt.y - 25));
 			ImGui::ArrowButton("##up", ImGuiDir_Up);
@@ -179,7 +181,7 @@ void DlgCamera::DrawCockpitMode()
 void DlgCamera::DrawTrackMode()
 {
 	ImGui::PushID("track_target");
-	ImGui::SeparatorText("Tracking target");
+	ImGui::SeparatorText(orbiter::Tr("Tracking target"));
 
 	const Body* target = g_camera->Target();
 
@@ -194,14 +196,14 @@ void DlgCamera::DrawTrackMode()
 
 
 	ImGui::PushID("track_frame");
-	ImGui::SeparatorText("Camera reference frame");
+	ImGui::SeparatorText(orbiter::Tr("Camera reference frame"));
 
 	int mode = g_camera->GetExtMode();
 	int new_mode = mode;
 	if (mode >= CAMERA_TARGETRELATIVE || mode <= CAMERA_TARGETFROMOBJECT) {
 		const char* frame_label[] = { "target-relative", "absolute direction", "global frame",
 			"target to ...", "target from ..." };
-		if (BeginWideCombo("##trackframe", frame_label[mode - CAMERA_TARGETRELATIVE], ImGuiComboFlags_HeightRegular)) {
+		if (BeginWideCombo("##trackframe", orbiter::Tr(frame_label[mode - CAMERA_TARGETRELATIVE]), ImGuiComboFlags_HeightRegular)) {
 			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
 			bool is_selected = false;
 			ImGuiContext &g = *GImGui;
@@ -265,7 +267,7 @@ void DlgCamera::DrawGroundMode()
 		return; // something went wrong
 
 	ImGui::PushID("ground_view");
-	ImGui::SeparatorText("Reference body");
+	ImGui::SeparatorText(orbiter::Tr("Reference body"));
 
 	if (ObjectSelector("##ground_ref", ref, OBJ_CELBODY, SEL_NOCAT | SEL_ALLOPEN, ImGuiComboFlags_HeightRegular)) {
 		if (m_SelectedTarget && m_SelectedTarget != ref) {
@@ -278,7 +280,7 @@ void DlgCamera::DrawGroundMode()
 	Spacer();
 
 	ImGui::PushID("location");
-	ImGui::SeparatorText("Location");
+	ImGui::SeparatorText(orbiter::Tr("Location"));
 
 	double lng, lat, alt;
 	g_camera->GroundObserverLocation(lng, lat, alt);
@@ -299,18 +301,18 @@ void DlgCamera::DrawGroundMode()
 	}
 
 	ImGui::PushItemWidth(std::min(std::max(ImGui::GetContentRegionAvail().x - 90.0f, 50.0f), 200.0f));
-	if (ImGui::InputText("Longitude [°]", longitude, 64, ImGuiInputTextFlags_CharsDecimal))
+	if (ImGui::InputText(orbiter::Tr("Longitude [°]"), longitude, 64, ImGuiInputTextFlags_CharsDecimal))
 		m_PosEdited = true;
-	if (ImGui::InputText("Latitude [°]", latitude, 64, ImGuiInputTextFlags_CharsDecimal))
+	if (ImGui::InputText(orbiter::Tr("Latitude [°]"), latitude, 64, ImGuiInputTextFlags_CharsDecimal))
 		m_PosEdited = true;
-	if (ImGui::InputText("Altitude [m]", altitude, 64, ImGuiInputTextFlags_CharsDecimal))
+	if (ImGui::InputText(orbiter::Tr("Altitude [m]"), altitude, 64, ImGuiInputTextFlags_CharsDecimal))
 		m_PosEdited = true;
 	ImGui::PopItemWidth();
 
 	float button_w = std::min(100.0f, ImGui::GetContentRegionAvail().x);
 	ImVec2 button_sz(ImVec2(button_w, 20));
 	ImGui::BeginDisabled(!m_PosEdited);
-	if (ImGui::Button("Apply", button_sz)) {
+	if (ImGui::Button(orbiter::Tr("Apply"), button_sz)) {
 		double deg_lng, deg_lat, _alt;
 		if (sscanf(longitude, "%lf", &deg_lng) == 1 &&
 			sscanf(latitude, "%lf", &deg_lat) == 1 &&
@@ -325,10 +327,10 @@ void DlgCamera::DrawGroundMode()
 
 
 	ImGui::PushID("tgt_lock");
-	ImGui::SeparatorText("View target");
+	ImGui::SeparatorText(orbiter::Tr("View target"));
 
 	bool tgtlock = g_camera->GroundObserver_TargetLock();
-	if (ImGui::Checkbox("Lock view on target", &tgtlock))
+	if (ImGui::Checkbox(orbiter::Tr("Lock view on target"), &tgtlock))
 		g_camera->SetGroundObserver_TargetLock(tgtlock);
 
 
@@ -364,7 +366,7 @@ void DlgCamera::DrawControl()
 	ImGui::PushID("ctrl_rot");
 	ImGuiWindowFlags window_flags = 0;  // ImGuiChildFlags_ResizeX;
 	ImGui::BeginChild("ChildL", ImVec2(ctrlw, 0), window_flags);
-	ImGui::SeparatorText(rot_is_tilt ? "Tilt" : "Rotate");
+	ImGui::SeparatorText(orbiter::Tr(rot_is_tilt ? "Tilt" : "Rotate"));
 
 	ImGui::BeginDisabled(disable_rot);
 	ImVec2 cnt(ImGui::GetContentRegionAvail().x/2 - 10, 50);
@@ -396,7 +398,7 @@ void DlgCamera::DrawControl()
 	if (have_fwdbt) {
 		ImGui::BeginDisabled(g_camera->IsCockpitDefaultDir());
 		ImGui::SetCursorPos(ImVec2(cnt.x, cnt.y));
-		ImGui::Button("X", ImVec2(20, 20));
+		ImGui::Button(orbiter::Tr("X"), ImVec2(20, 20));
 		if (ImGui::IsItemActive())
 			g_camera->ResetCockpitDir();
 		ImGui::EndDisabled();
@@ -406,7 +408,7 @@ void DlgCamera::DrawControl()
 	if (have_move) {
 		ImGui::SameLine();
 		ImGui::BeginChild("ChildR", ImVec2(ctrlw, 0), window_flags);
-		ImGui::SeparatorText("Move");
+		ImGui::SeparatorText(orbiter::Tr("Move"));
 		ImVec2 cnt(std::max(ImGui::GetContentRegionAvail().x * 0.5f - 35.0f, 25.0f), 50);
 		ImGui::SetCursorPos(ImVec2(cnt.x, cnt.y - 25));
 		ImGui::ArrowButton("##up", ImGuiDir_Up);
@@ -425,11 +427,11 @@ void DlgCamera::DrawControl()
 		if (ImGui::IsItemActive())
 			g_camera->AddPhi(dt);
 		ImGui::SetCursorPos(ImVec2(cnt.x + 50, cnt.y - 25));
-		ImGui::Button("Up", ImVec2(40, 20));
+		ImGui::Button(orbiter::Tr("Up"), ImVec2(40, 20));
 		if (ImGui::IsItemActive())
 			g_camera->ChangeDist(1.0 + dt);
 		ImGui::SetCursorPos(ImVec2(cnt.x + 50, cnt.y + 25));
-		ImGui::Button("Down", ImVec2(40, 20));
+		ImGui::Button(orbiter::Tr("Down"), ImVec2(40, 20));
 		if (ImGui::IsItemActive())
 			g_camera->ChangeDist(1.0 / (1.0 + dt));
 		ImGui::EndChild();
@@ -438,12 +440,12 @@ void DlgCamera::DrawControl()
 
 		ImGui::SameLine();
 		ImGui::BeginChild("ChildR", ImVec2(ctrlw, 0), window_flags);
-		ImGui::SeparatorText("Move");
+		ImGui::SeparatorText(orbiter::Tr("Move"));
 		ImVec2 cnt(ImGui::GetContentRegionAvail().x / 2 - 10, 50);
 
 		strcpy(distance, DistStr(g_camera->Distance()) + 1);
 		ImGui::SetCursorPos(ImVec2(0, cnt.y - 20));
-		ImGui::Text("Target distance [m]:");
+		ImGui::Text(orbiter::Tr("Target distance [m]:"));
 		ImGui::SetCursorPos(ImVec2(0, cnt.y));
 		ImGui::SetNextItemWidth(std::max(ImGui::GetContentRegionAvail().x - 56.0f, 10.0f));
 		if (ImGui::InputText("##dst", distance, 64, ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -478,20 +480,20 @@ void DlgCamera::DrawControl()
 
 		ImGui::SameLine();
 		ImGui::BeginChild("ChildR", ImVec2(ctrlw, 0), window_flags);
-		ImGui::SeparatorText("Posture");
+		ImGui::SeparatorText(orbiter::Tr("Posture"));
 		ImVec2 cnt(ImGui::GetContentRegionAvail().x / 2, 50);
 		ImVec2 size1(60, 20), size2(50, 20);
 		ImGui::SetCursorPos(ImVec2(cnt.x - 30, cnt.y - 25));
-		if (ImGui::Button("Forward", size1))
+		if (ImGui::Button(orbiter::Tr("Forward"), size1))
 			g_focusobj->LeanCamera(1);
 		ImGui::SetCursorPos(ImVec2(cnt.x - 52.5, cnt.y));
-		if (ImGui::Button("Left", size2))
+		if (ImGui::Button(orbiter::Tr("Left"), size2))
 			g_focusobj->LeanCamera(2);
 		ImGui::SetCursorPos(ImVec2(cnt.x + 2.5, cnt.y));
-		if (ImGui::Button("Right", size2))
+		if (ImGui::Button(orbiter::Tr("Right"), size2))
 			g_focusobj->LeanCamera(3);
 		ImGui::SetCursorPos(ImVec2(cnt.x - 30, cnt.y + 25));
-		if (ImGui::Button("Default", size1))
+		if (ImGui::Button(orbiter::Tr("Default"), size1))
 			g_focusobj->LeanCamera(0);
 
 		ImGui::EndChild();
@@ -515,7 +517,7 @@ void DlgCamera::DrawControl()
 		double speed = g_camera->GroundObserver_PanSpeed();
 		double pspeed = speed;
 		ImGui::PushID("##speed");
-		ImGui::SeparatorText("Speed");
+		ImGui::SeparatorText(orbiter::Tr("Speed"));
 
 		ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
 		if (ImGui::ArrowButton("##left", ImGuiDir_Left)) {
@@ -541,7 +543,7 @@ void DlgCamera::DrawControl()
 		}
 
 		ImGui::SameLine();
-		ImGui::Text("[m/s]");
+		ImGui::Text(orbiter::Tr("[m/s]"));
 
 		if (speed != pspeed)
 			g_camera->SetGroundObserver_PanSpeed(speed);
@@ -555,7 +557,7 @@ void DlgCamera::DrawControl()
 	ImGui::PushID("fov");
 
 	bool isCockpit = g_camera->GetMode() == CAM_COCKPIT;
-	sprintf(label, "Field of view [%s]", isCockpit ? "Cockpit" : "External");
+	sprintf(label, orbiter::Tr("Field of view [%s]"), isCockpit ? orbiter::Tr("Cockpit") : orbiter::Tr("External"));
 	ImGui::SeparatorText(label);
 
 	float fov = oapiCameraAperture() * DEG * 2.0;
@@ -690,13 +692,13 @@ void DlgCamera::DrawPreset() {
 
 	ImGui::BeginChild("ChildR");
     ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
-    if(ImGui::Button("Add", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Add"), button_sz)) {
         g_camera->AddPreset();
     }
-    if(ImGui::Button("Delete", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Delete"), button_sz)) {
         g_camera->DelPreset(m_SelectedPreset);
     }
-    if(ImGui::Button("Clear", button_sz)) {
+    if(ImGui::Button(orbiter::Tr("Clear"), button_sz)) {
         g_camera->ClearPresets();
     }
 
