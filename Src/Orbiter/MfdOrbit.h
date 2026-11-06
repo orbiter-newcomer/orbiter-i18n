@@ -35,7 +35,7 @@ protected:
 
 private:
 	void DisplayOrbit (oapi::Sketchpad *skp, int which, oapi::IVECTOR2 *p);
-	void DisplayElements (oapi::Sketchpad *skp, const Elements *el, int x, int y);
+	void DisplayElements (oapi::Sketchpad *skp, const Elements *el, int x, int y, int measure = 0, int *pMaxW = 0);
 	void SetRef (const CelestialBody *ref);
 	bool SelectRef (char *str);
 	void SelectAutoRef ();
@@ -46,7 +46,7 @@ private:
 	static bool ClbkEnter_Ref (Select *menu, int item, char *str, void *data);
 
 	int ICNTX, ICNTY; // instrument centre
-	char title_str[40], proj_str[20];
+	char title_str[80], proj_str[32];
 	oapi::IVECTOR2 o_pt1[ELN+5], o_pt2[ELN+5]; // sampling points for orbit ellipses
 
 	Elements *shpel;              // ship elements (private to allow customisation)

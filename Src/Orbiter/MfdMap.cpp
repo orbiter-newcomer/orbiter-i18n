@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdMap.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Psys.h"
 #include "Celbody.h"
@@ -27,7 +28,7 @@ DWORD dispflag_default = DISP_GRIDLINE | DISP_COASTLINE | DISP_CONTOURS | DISP_H
 Instrument_Map::Instrument_Map (Pane *_pane, INT_PTR _id, const Spec &spec, Vessel *_vessel)
 : Instrument (_pane, _id, spec, _vessel)
 {
-	strcpy (title, "Map: ");
+	strcpy (title, orbiter::Tr("Map: "));
 	zoom = 1;
 	track = false;
 	refplanet = NULL;
@@ -46,7 +47,7 @@ Instrument_Map::Instrument_Map (Pane *_pane, INT_PTR _id, const Spec &spec, Vess
 	map = new VectorMap();
 	map->SetLabelSize(max(9, IH / 40));
 	map->SetCBody (refplanet);
-	if (refplanet) strcpy (title+5, refplanet->Name());
+	if (refplanet) sprintf (title, "%s%s", orbiter::Tr("Map: "), orbiter::Tr(refplanet->Name()));
 	else           title[5] = '\0';
 	SetSize (spec);
 	map->SetCenterMode (track ? 1:0);
@@ -265,25 +266,25 @@ int Instrument_Map::BtnMenu (const MFDBUTTONMENU **menu) const
 	switch (disp_mode) {
 	case 0: {
 		static const MFDBUTTONMENU mnu[10] = {
-			{"Map reference", 0, 'R'},
-			{"Select target", 0, 'T'},
-			{"Zoom out", 0, 'X'},
-			{"Zoom in", 0, 'Z'},
-			{"Track mode on/off", 0, 'K'},
-			{"Display parameters", 0, 'D'},
-			{"Scroll up", 0, '-'},
-			{"Scroll down", 0, '='},
-			{"Scroll left", 0, '['},
-			{"Scroll right", 0, ']'}
+			{orbiter::Tr("Map reference"), 0, 'R'},
+			{orbiter::Tr("Select target"), 0, 'T'},
+			{orbiter::Tr("Zoom out"), 0, 'X'},
+			{orbiter::Tr("Zoom in"), 0, 'Z'},
+			{orbiter::Tr("Track mode on/off"), 0, 'K'},
+			{orbiter::Tr("Display parameters"), 0, 'D'},
+			{orbiter::Tr("Scroll up"), 0, '-'},
+			{orbiter::Tr("Scroll down"), 0, '='},
+			{orbiter::Tr("Scroll left"), 0, '['},
+			{orbiter::Tr("Scroll right"), 0, ']'}
 		};
 		if (menu) *menu = mnu;
 		} return (track ? 6 : 10);
 	case 1: {
 		static const MFDBUTTONMENU mnu[4] = {
-			{"Move selection up", 0, '-'},
-			{"Move selection down", 0, '='},
-			{"Modify selected", "parameter", 'M'},
-			{"Return to map", 0, 'O'}
+			{orbiter::Tr("Move selection up"), 0, '-'},
+			{orbiter::Tr("Move selection down"), 0, '='},
+			{orbiter::Tr("Modify selected"), 0, 'M'},
+			{orbiter::Tr("Return to map"), 0, 'O'}
 		};
 		if (menu) *menu = mnu;
 		} return 4;
@@ -335,10 +336,10 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 		int y = IH-ch;
 		if (track) {
 			skp->SetTextColor (draw[2][0].col);
-			skp->Text (IW-(cw*22)/2, 0, "TRK", 3);
+			skp->Text (IW-(cw*22)/2, 0, orbiter::Tr("TRK"), (int)strlen(orbiter::Tr("TRK")));
 		}
 		if (zoom > 1) {
-			sprintf (cbuf, "ZM %d", zoom);
+			sprintf (cbuf, orbiter::Tr("ZM %d"), zoom);
 			skp->SetTextColor (draw[2][0].col);
 			skp->Text (IW-(cw*13)/2, 0, cbuf, strlen(cbuf));
 		}
@@ -349,12 +350,12 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			const Body *b = (const Body*)sel.obj;
 			double lng, lat, rad;
 			refplanet->GlobalToEquatorial (b->GPos(), lng, lat, rad);
-			sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c, Alt %s]",
-				b->Name(), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
-				lat>=0.0 ? 'N':'S', DistStr(rad-refplanet->Size()));
+			sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c, %s %s]",
+				orbiter::Tr(b->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
+				lat>=0.0 ? 'N':'S', orbiter::Tr("Alt"), DistStr(rad-refplanet->Size()));
 			skp->SetTextColor (draw[1][0].col);
 			if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
-			skp->Text (cw/2, y, "TGT:", 4);
+			skp->Text (cw/2, y, orbiter::Tr("TGT:"), (int)strlen(orbiter::Tr("TGT:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
 			} break;
@@ -363,16 +364,16 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			double lng, lat, lng0, lat0, rad, adist, hdg;
 			base->EquPos (lng, lat);
 			sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c]",
-				base->Name(), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
+				orbiter::Tr(base->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
 				lat>=0.0 ? 'N':'S');
 			if (sp) lng0 = sp->lng, lat0 = sp->lat;
 			else    refplanet->GlobalToEquatorial (g_focusobj->GPos(), lng0, lat0, rad);
 			rad = refplanet->Size();
 			Orthodome (lng0, lat0, lng, lat, adist, hdg);
-			sprintf (cbuf+strlen(cbuf)-1, ", Dst%s, Brg %05.1fº]", DistStr(adist*rad), Deg(posangle(hdg)));
+			sprintf (cbuf+strlen(cbuf)-1, ", %s%s, %s %05.1fº]", orbiter::Tr("Dst"), DistStr(adist*rad), orbiter::Tr("Brg"), Deg(posangle(hdg)));
 			skp->SetTextColor (draw[2][0].col);
 			if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
-			skp->Text (cw/2, y, "BSE:", 4);
+			skp->Text (cw/2, y, orbiter::Tr("BSE:"), (int)strlen(orbiter::Tr("BSE:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
 			} break;
@@ -380,17 +381,17 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 		double lng, lat, rad;
 		refplanet->GlobalToEquatorial (g_focusobj->GPos(), lng, lat, rad);
 		sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c, Alt %s]",
-			g_focusobj->Name(), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
+			orbiter::Tr(g_focusobj->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
 			lat>=0.0 ? 'N':'S', DistStr(rad-refplanet->Size()));
 		if (sp) {
 			Vector hvel (tmul (sp->ref->GRot(), sp->groundvel_glob));
 			hvel.Set (mul (sp->L2H, hvel));
 			double crs = atan2 (hvel.x, hvel.z);
-			sprintf (cbuf+strlen(cbuf)-1, ", Crs %05.1fº]", Deg(posangle(crs)));
+			sprintf (cbuf+strlen(cbuf)-1, ", %s %05.1fº]", orbiter::Tr("Crs"), Deg(posangle(crs)));
 		}
 		skp->SetTextColor (draw[0][0].col);
 		if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
-		skp->Text (cw/2, y, "SHP:", 4);
+		skp->Text (cw/2, y, orbiter::Tr("SHP:"), (int)strlen(orbiter::Tr("SHP:")));
 		skp->Text (cw*4, y, cbuf, strlen(cbuf));
 		y -= ch;
 		if (pfont) skp->SetFont (pfont);	
@@ -432,66 +433,66 @@ void Instrument_Map::UpdateDraw_Dispprm (oapi::Sketchpad *skp)
 	if      (disp_sel < dispprm_top)        dispprm_top = disp_sel;
 	else if (disp_sel >= dispprm_top+nlist) dispprm_top = disp_sel-nlist+1;
 
-	DisplayTitle (skp, "Map: Display parameters");
+	DisplayTitle (skp, orbiter::Tr("Map: Display parameters"));
 	oapi::Font *pfont = skp->SetFont (GetDefaultFont (1));
 	skp->SetTextColor (draw[2][0].col);
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Orbit lines", 11);
-		skp->Text (x1, y, dispflag & DISP_GROUNDTRACK ? "Groundtrack" : dispflag & DISP_ORBITPLANE ? "Orbit plane" : "OFF        ", 11);
+		skp->Text (x0, y, orbiter::Tr("Orbit lines"), (int)strlen(orbiter::Tr("Orbit lines")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_GROUNDTRACK ? "Groundtrack" : dispflag & DISP_ORBITPLANE ? "Orbit plane" : "OFF        "), (int)strlen(orbiter::Tr(dispflag & DISP_GROUNDTRACK ? "Groundtrack" : dispflag & DISP_ORBITPLANE ? "Orbit plane" : "OFF        ")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Horizon lines", 13);
-		skp->Text (x1, y, dispflag & DISP_HORIZONLINE ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Horizon lines"), (int)strlen(orbiter::Tr("Horizon lines")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_HORIZONLINE ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_HORIZONLINE ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Terminator", 10);
+		skp->Text (x0, y, orbiter::Tr("Terminator"), (int)strlen(orbiter::Tr("Terminator")));
 		switch (dispflag & DISP_TERMINATOR) {
-			case DISP_TERMINATOR_NONE: skp->Text (x1, y, "OFF", 3); break;
-			case DISP_TERMINATOR_LINE: skp->Text (x1, y, "Line", 4); break;
-			case DISP_TERMINATOR_SHADE: skp->Text (x1, y, "Shading", 7); break;
-			case DISP_TERMINATOR_BOTH: skp->Text (x1, y, "Line+shading", 12); break;
+			case DISP_TERMINATOR_NONE: skp->Text (x1, y, orbiter::Tr("OFF"), (int)strlen(orbiter::Tr("OFF"))); break;
+			case DISP_TERMINATOR_LINE: skp->Text (x1, y, orbiter::Tr("Line"), (int)strlen(orbiter::Tr("Line"))); break;
+			case DISP_TERMINATOR_SHADE: skp->Text (x1, y, orbiter::Tr("Shading"), (int)strlen(orbiter::Tr("Shading"))); break;
+			case DISP_TERMINATOR_BOTH: skp->Text (x1, y, orbiter::Tr("Line+shading"), (int)strlen(orbiter::Tr("Line+shading"))); break;
 		}
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Grid lines", 10);
-		skp->Text (x1, y, dispflag & DISP_GRIDLINE ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Grid lines"), (int)strlen(orbiter::Tr("Grid lines")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_GRIDLINE ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_GRIDLINE ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Coastlines", 10);
-		skp->Text (x1, y, dispflag & DISP_COASTLINE ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Coastlines"), (int)strlen(orbiter::Tr("Coastlines")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_COASTLINE ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_COASTLINE ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Contour lines", 13);
-		skp->Text (x1, y, dispflag & DISP_CONTOURS ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Contour lines"), (int)strlen(orbiter::Tr("Contour lines")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_CONTOURS ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_CONTOURS ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Base markers", 12);
-		skp->Text (x1, y, dispflag & DISP_BASE ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Base markers"), (int)strlen(orbiter::Tr("Base markers")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_BASE ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_BASE ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Navaid markers", 14);
-		skp->Text (x1, y, dispflag & DISP_NAVAID ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Navaid markers"), (int)strlen(orbiter::Tr("Navaid markers")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_NAVAID ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_NAVAID ? "ON ":"OFF")));
 		y += dy;
 	}
 
 	if (dispprm_top <= idx++) {
-		skp->Text (x0, y, "Natural satellites", 18);
-		skp->Text (x1, y, dispflag & DISP_MOON ? "ON ":"OFF", 3);
+		skp->Text (x0, y, orbiter::Tr("Natural satellites"), (int)strlen(orbiter::Tr("Natural satellites")));
+		skp->Text (x1, y, orbiter::Tr(dispflag & DISP_MOON ? "ON ":"OFF"), (int)strlen(orbiter::Tr(dispflag & DISP_MOON ? "ON ":"OFF")));
 		y += dy;
 	}
 
@@ -499,8 +500,9 @@ void Instrument_Map::UpdateDraw_Dispprm (oapi::Sketchpad *skp)
 	for (i = max(0,dispprm_top-ndefault); i < min((int)set.nset,nlist-ndefault+dispprm_top); i++) {
 		std::string& name = set.set[i].list->name;
 		bool active = set.set[i].active;
-		skp->Text (x0, y, name.c_str(), name.size());
-		skp->Text (x1, y, active ? "ON ":"OFF", 3);
+		const char *dispName = orbiter::Tr(name.c_str());
+		skp->Text (x0, y, dispName, (int)strlen(dispName));
+		skp->Text (x1, y, orbiter::Tr(active ? "ON ":"OFF"), (int)strlen(orbiter::Tr(active ? "ON ":"OFF")));
 		y += dy;
 	}
 	ndispprm = ndefault+set.nset;
@@ -531,7 +533,7 @@ bool Instrument_Map::SelectMap (char *str)
 		if (planet == refplanet) return true; // no change
 		refplanet = planet;
 		map->SetCBody (refplanet);
-		if (refplanet) strcpy (title+5, refplanet->Name());
+		if (refplanet) sprintf (title, "%s%s", orbiter::Tr("Map: "), orbiter::Tr(refplanet->Name()));
 		else           title[5] = '\0';
 		Refresh();
 		return true;

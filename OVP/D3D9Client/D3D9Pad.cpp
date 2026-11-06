@@ -1915,6 +1915,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	}
 	else face++;
 
+
 	hFont = NULL;
 
 	if (orientation!=0) rotation = float(orientation) * 0.1f;

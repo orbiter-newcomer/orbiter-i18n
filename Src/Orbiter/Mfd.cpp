@@ -7,6 +7,7 @@
 #include "Orbiter.h"
 #include "Config.h"
 #include "Mfd.h"
+#include "Localization.h"
 #include "MfdOrbit.h"
 #include "MfdSurface.h"
 #include "MfdMap.h"
@@ -891,7 +892,7 @@ void Instrument::DisplayModes (int page)
 	char *name;
 	int n, x, y, pg;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = bt_dy;
+	int dy = max (bt_dy, ch*2 + ch/4);
 	int slot;
 
 	ClearSurface();
@@ -899,10 +900,10 @@ void Instrument::DisplayModes (int page)
 	if (!skp) return;
 
 	if (nGlobalModes-nDisabledModes <= nbt) {
-		DisplayTitle (skp, "MODE SELECT");
+		DisplayTitle (skp, orbiter::Tr("MODE SELECT"));
 	} else {
 		char cbuf[256];
-		sprintf (cbuf, "MODE SELECT [Page %d]", page+1);
+		sprintf (cbuf, orbiter::Tr("MODE SELECT [Page %d]"), page+1);
 		DisplayTitle (skp, cbuf);
 	}
 
@@ -927,12 +928,12 @@ void Instrument::DisplayModes (int page)
 		}
 		skp->SetTextColor (col_green1);
 		name = m->Spec()->name;
-		skp->Text (x, y, name, strlen(name));
+		skp->Text (x, y, orbiter::Tr(name), (int)strlen(orbiter::Tr(name)));
 		if (id <= MFD_RIGHT || IsRuningInExternMFD()) {
 			KeyStr[1] = (id == MFD_RIGHT ? 'R' : 'L');
 			KeyStr[8] = Key2Char[m->Spec()->key];
 			skp->SetTextColor (col_grey2);
-			skp->Text (x, y+ch, KeyStr, 10);
+			skp->Text (x, y + ch + ch/4, KeyStr, 10);
 		}
 		y += dy;
 		slot++;
@@ -967,36 +968,52 @@ void Instrument::DrawMenu ()
 	const MFDBUTTONMENU *mnu;
 	int side, i, n, x, y, item, itemofs, nmnu;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = bt_dy;
+	int dy = max (bt_dy, ch*2 + ch/4);
 
 	ClearSurface();
 	oapi::Sketchpad *skp = BeginDraw ();
 	if (!skp) return;
 
-	DisplayTitle (skp, "MFD MENU");
+	DisplayTitle (skp, orbiter::Tr("MFD MENU"));
 	nmnu = BtnMenu (&mnu);
 	for (side = 0; side < 2; side++) {
-		skp->SetTextAlign (side ? oapi::Sketchpad::RIGHT : oapi::Sketchpad::LEFT);
+		// The two-line menu entries (label + current value) are laid out on a
+		// single line to leave room for the shortcut hint below, so entries do
+		// not overlap the shortcut even with the wider translated labels.
 		itemofs = btnpage*nbt + (side ? nbtl:0);
 		n = (side ? nbtr : nbtl);
 		x = (side ? IW-cw/2 : cw/2);
 		for (i = 0; i < n; i++) {
 			if ((item = itemofs+i) >= nmnu) break;
-			y = y0+i*dy - (mnu[item].line2 ? ch/2:0);
+			y = y0+i*dy;
 			skp->SetTextColor (col_green1);
+
+			int w1 = mnu[item].line1 ? (int)skp->GetTextWidth(mnu[item].line1, (int)strlen(mnu[item].line1)) : 0;
+			int w2 = mnu[item].line2 ? (int)skp->GetTextWidth(mnu[item].line2, (int)strlen(mnu[item].line2)) : 0;
+			int gap = (mnu[item].line1 && mnu[item].line2) ? cw/2 : 0;
+			int total = w1 + gap + w2;
+			int lx = side ? (IW - cw/2 - total) : x;
+
+			skp->SetTextAlign (oapi::Sketchpad::LEFT);
 			if (mnu[item].line1) {
-				skp->Text (x, y, mnu[item].line1, strlen(mnu[item].line1));
-				y += ch;
+				skp->Text (lx, y, mnu[item].line1, strlen(mnu[item].line1));
+				lx += w1 + gap;
 			}
 			if (mnu[item].line2) {
-				skp->Text (x, y, mnu[item].line2, strlen(mnu[item].line2));
-				y += ch;
+				skp->Text (lx, y, mnu[item].line2, strlen(mnu[item].line2));
 			}
+
 			if ((id <= MFD_RIGHT || IsRuningInExternMFD()) && mnu[item].selchar != '\0') {
 				KeyStr[1] = (id == MFD_RIGHT ? 'R' : 'L');
 				KeyStr[8] = mnu[item].selchar;
 				skp->SetTextColor (col_grey2);
-				skp->Text (x, y, KeyStr, 10);
+				if (side) {
+					skp->SetTextAlign (oapi::Sketchpad::RIGHT);
+					skp->Text (IW-cw/2, y+ch, KeyStr, 10);
+				} else {
+					skp->SetTextAlign (oapi::Sketchpad::LEFT);
+					skp->Text (x, y+ch, KeyStr, 10);
+				}
 			}
 		}
 	}

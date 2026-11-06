@@ -19,6 +19,12 @@
 
 namespace orbiter {
 
+	// Guard set while the Launchpad re-applies the UI language. Control
+	// notifications (combobox selection changes etc.) triggered during that
+	// process must be ignored to avoid recursive relocalization.
+	bool IsRelocalizing();
+	void SetRelocalizing(bool active);
+
 	enum class Language {
 		English = 0,
 		Chinese = 1
@@ -38,6 +44,7 @@ namespace orbiter {
 	// Translate an English UI string to the current language.
 	// Returns the passed pointer if no translation is available.
 	const char* Tr(const char* english);
+	const char* Tr2(const char* aliasKey);
 
 	// Convert a UTF-8 string to UTF-16. The returned value must stay alive while
 	// it is used (e.g. for Unicode control messages such as TVM_INSERTITEMW).

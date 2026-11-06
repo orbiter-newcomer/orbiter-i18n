@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdSurface.h"
+#include "Localization.h"
 #include "Orbiter.h"
 #include "Pane.h"
 #include "Celbody.h"
@@ -31,7 +32,7 @@ Instrument_Surface::Instrument_Surface (Pane *_pane, INT_PTR _id, const Spec &sp
 	as_plimit = 1e-3; // pressure limit for pitot airspeed measurement
 	spdmode = saveprm.spdmode;
 	psimt = 0.0;
-	strcpy (title, "Surface: ");
+	strcpy (title, orbiter::Tr2("SURF_Title"));
 	SetSize (spec);
 	if (instrDT > 0.25) instrDT = 0.25; // force at least 4 Hz refresh rate
 
@@ -223,11 +224,11 @@ const char *Instrument_Surface::BtnLabel (int bt) const
 int Instrument_Surface::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[5] = {
-		{"Indicated airspeed", 0, 'I'},
-		{"True airspeed", 0, 'T'},
-		{"Ground-relative", "speed", 'G'},
-		{"Orbital speed", 0, 'O'},
-		{"Copy data to HUD", 0, 'H'}
+		{orbiter::Tr("Indicated airspeed"), 0, 'I'},
+		{orbiter::Tr("True airspeed"), 0, 'T'},
+		{orbiter::Tr("Ground-relative"), 0, 'G'},
+		{orbiter::Tr("Orbital speed"), 0, 'O'},
+		{orbiter::Tr("Copy data to HUD"), 0, 'H'}
 	};
 	if (menu) *menu = mnu;
 	return 5;
@@ -670,7 +671,7 @@ void Instrument_Surface::CopyToHUD () const
 
 void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 {
-	static char spdstr[4][4] = {"GS","TAS","IAS","OS"};
+	static const char *spdstr[4] = {"SURF_GS","SURF_TAS","SURF_IAS","SURF_OS"};
 
 	//double dt = SimT - updT + instrDT; // last step interval
 	double v, dt = td.SimT1 - psimt;
@@ -678,11 +679,11 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	bool spd_valid = false;
 	psimt = td.SimT1;
 
-	char cbuf[32];
+	char cbuf[128];
 
 	if (sp) {
 
-		strcpy (title+9, sp->ref->Name());
+		sprintf (title, "%s%s", orbiter::Tr2("SURF_Title"), orbiter::Tr(sp->ref->Name()));
 
 		vacc = (sp->vspd-vspd)/dt;
 		vspd = sp->vspd;
@@ -699,7 +700,7 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 		vlat = (sp->lat-lat)/dt; lat = sp->lat;
 
 	} else {
-		strcpy (title+9, "N/A");
+		sprintf (title, "%s%s", orbiter::Tr2("SURF_Title"), orbiter::Tr("N/A"));
 	}
 
 	switch (spdmode) {
@@ -745,14 +746,14 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Line (x0-cw/2, y-1, x0-cw/2, IW-ch/2);
 	skp->Line (x2, y-1, x2, IW-ch/2);
 	skp->Line (x0-cw/2, y+(7*ch)/2, x2, y+(7*ch)/2);
-	skp->Text (x0, y, "ATM DATA", 8);
-	skp->Text (x0, y+ch, "OAT", 3);
-	skp->Text (x0, y+2*ch, "M", 1);
-	skp->Text (x1, y, "DNS", 3);
-	skp->Text (x1, y+ch, "STP", 3);
-	skp->Text (x1, y+2*ch, "DNP", 3);
-	skp->Text (x0, y+4*ch, "EQU POS", 7);
-	skp->Text (x1, y+4*ch, "RATE", 4);
+	skp->Text (x0, y, orbiter::Tr2("SURF_ATM"), (int)strlen(orbiter::Tr2("SURF_ATM")));
+	skp->Text (x0, y+ch, orbiter::Tr2("SURF_OAT"), (int)strlen(orbiter::Tr2("SURF_OAT")));
+	skp->Text (x0, y+2*ch, orbiter::Tr2("SURF_M"), (int)strlen(orbiter::Tr2("SURF_M")));
+	skp->Text (x1, y, orbiter::Tr2("SURF_DNS"), (int)strlen(orbiter::Tr2("SURF_DNS")));
+	skp->Text (x1, y+ch, orbiter::Tr2("SURF_STP"), (int)strlen(orbiter::Tr2("SURF_STP")));
+	skp->Text (x1, y+2*ch, orbiter::Tr2("SURF_DNP"), (int)strlen(orbiter::Tr2("SURF_DNP")));
+	skp->Text (x0, y+4*ch, orbiter::Tr2("SURF_EQP"), (int)strlen(orbiter::Tr2("SURF_EQP")));
+	skp->Text (x1, y+4*ch, orbiter::Tr2("SURF_RATE"), (int)strlen(orbiter::Tr2("SURF_RATE")));
 
 	skp->SetTextColor (draw[0][0].col);
 	x0 += (7*cw)/2;
@@ -831,11 +832,11 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	// labels
 	skp->SetFont (GetDefaultFont (1));
 	x = spdx0+(6*cw)/2;
-	skp->Text (x, hrzy0-(7*ch)/4, spdstr[spdmode-1], strlen(spdstr[spdmode-1]));
+	skp->Text (x, hrzy0-(7*ch)/4, orbiter::Tr2(spdstr[spdmode-1]), (int)strlen(orbiter::Tr2(spdstr[spdmode-1])));
 	skp->Text (x, hrzy0-ch, "m/s", 3);
 
 	x = altx0+3*cw;
-	skp->Text (x, hrzy0-(7*ch)/4, radaralt ? "ALT-R" : "ALT", radaralt ? 5 : 3);
+	skp->Text (x, hrzy0-(7*ch)/4, orbiter::Tr2(radaralt ? "SURF_ALTR" : "SURF_ALT"), (int)strlen(orbiter::Tr2(radaralt ? "SURF_ALTR" : "SURF_ALT")));
 	skp->Text (x, hrzy0-ch, "km", 2);
 	if (altkm >= 1e5) {
 		sprintf (cbuf, "+%0.1fMkm", (altkm-altkm0+1)*1e-6);
@@ -849,7 +850,7 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	x = vspx0+(25*cw)/8;
 	skp->Text (x, hrzy-(3*ch)/8-1, cbuf, strlen(cbuf));
 	x = vspx0+(5*cw)/2;
-	skp->Text (x, hrzy0-(7*ch)/4, "VS", 2);
+	skp->Text (x, hrzy0-(7*ch)/4, orbiter::Tr2("SURF_VS"), (int)strlen(orbiter::Tr2("SURF_VS")));
 	skp->Text (x, hrzy0-ch, "m/s", 3);
 
 	// vacc indicator
@@ -858,7 +859,7 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Polygon (vacpt, 7);
 	sprintf (cbuf, "%0.*f", avacc < 10 ? 2 : avacc < 100 ? 1 : 0, vacc);
 	skp->Text (vacx0+(25*cw)/8, accy-(3*ch)/8-1, cbuf, strlen(cbuf));
-	skp->Text (x, accy0-(7*ch)/4, "VACC", 4);
+	skp->Text (x, accy0-(7*ch)/4, orbiter::Tr2("SURF_VACC"), (int)strlen(orbiter::Tr2("SURF_VACC")));
 	skp->Text (x, accy0-ch, "m/s²", 5);
 
 	// aoa indicator
@@ -866,7 +867,7 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Polygon (aoapt, 7);
 	sprintf (cbuf, "%0.*f", aoa < 10 ? 1 : 0, aoa);
 	skp->Text (aoax0+(21*cw)/8, accy-(3*ch)/8-1, cbuf, strlen(cbuf));
-	skp->Text (x, accy0-(7*ch)/4, "AOA", 3);
+	skp->Text (x, accy0-(7*ch)/4, orbiter::Tr2("SURF_AOA"), (int)strlen(orbiter::Tr2("SURF_AOA")));
 	skp->Text (x, accy0-ch, "deg", 3);
 
 	// acceleration indicator
@@ -875,16 +876,16 @@ void Instrument_Surface::UpdateDraw (oapi::Sketchpad *skp)
 	if (spd_valid) sprintf (cbuf, "%0.*f", acc < 10 ? 2 : acc < 100 ? 1 : 0, acc);
 	else strcpy (cbuf, "----");
 	skp->Text (accx0+(15*cw)/8, accy-(3*ch)/8-1, cbuf, strlen(cbuf));
-	skp->Text (x, accy0-(7*ch)/4, "ACC", 3);
+	skp->Text (x, accy0-(7*ch)/4, orbiter::Tr2("SURF_ACC"), (int)strlen(orbiter::Tr2("SURF_ACC")));
 	skp->Text (x, accy0-ch, "m/s²", 5);
 
 	// pitch and bank values
 	skp->SetTextAlign (oapi::Sketchpad::RIGHT);
-	sprintf (cbuf, "BNK %03.0fº%c", DEG*fabs(bank), bank >= 0 ? 'L':'R');
-	skp->Text (hrzx1, hrzy1, cbuf, 10);
+	sprintf (cbuf, "%s %03.0fº%s", orbiter::Tr2("SURF_BNK"), DEG*fabs(bank), (bank >= 0 ? "L" : "R"));
+	skp->Text (hrzx1, hrzy1, cbuf, (int)strlen(cbuf));
 	skp->SetTextAlign (oapi::Sketchpad::LEFT);
-	sprintf (cbuf, "PTCH %+03.0fº", DEG*pitch);
-	skp->Text (hrzx0, hrzy1, cbuf, 10);
+	sprintf (cbuf, "%s %+03.0fº", orbiter::Tr2("SURF_PTCH"), DEG*pitch);
+	skp->Text (hrzx0, hrzy1, cbuf, (int)strlen(cbuf));
 
 }
 

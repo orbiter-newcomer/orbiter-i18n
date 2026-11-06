@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "Select.h"
+#include "Localization.h"
 #include "imgui.h"
 #include "imgui_extras.h"
 
@@ -53,7 +54,7 @@ void Select::DrawMenu(std::list<SelectEntry>& entries) {
                 currententry = &e.m_SubEntries;
                 cbSubmenu(this, i, const_cast<char*>(e.m_Text.c_str()), userdata);
             }
-            if (ImGui::BeginMenu(e.m_Text.c_str(), e.m_SubEntries.size() != 0)) {
+            if (ImGui::BeginMenu(orbiter::Tr(e.m_Text.c_str()), e.m_SubEntries.size() != 0)) {
                 DrawMenu(e.m_SubEntries);
                 ImGui::EndMenu();
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly) && !(e.m_Flags & ITEM_NOHILIGHT)) {
@@ -67,7 +68,7 @@ void Select::DrawMenu(std::list<SelectEntry>& entries) {
             i++;
         }
         else {
-            if (ImGui::MenuItem(e.m_Text.c_str())) {
+            if (ImGui::MenuItem(orbiter::Tr(e.m_Text.c_str()))) {
                 cbEnter(this, i, const_cast<char*>(e.m_Text.c_str()), userdata);
                 active = false;
             }
@@ -102,7 +103,7 @@ void Select::OnDraw() {
 
     if (ImGui::BeginAnimatedPopup(title.c_str()))
     {
-        ImGui::TextUnformatted(title.c_str());
+        ImGui::TextUnformatted(orbiter::Tr(title.c_str()));
         ImGui::Separator();
         DrawMenu(rootmenu);
         ImGui::EndAnimatedPopup();
@@ -158,7 +159,7 @@ void InputBox::OnDraw() {
 
     if (ImGui::BeginAnimatedPopup(buf))
     {
-        ImGui::TextUnformatted(title.c_str());
+        ImGui::TextUnformatted(orbiter::Tr(title.c_str()));
         ImGui::Separator();
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (firstTime)

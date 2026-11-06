@@ -43,7 +43,7 @@ private:
 	double atm_p, atm_rho, atm_T, atm_M, as_plimit;
 	double lng, lat, vlng, vlat;
 	int spdmode; // speed indicator mode: 1=GRS (ground-relative speed), 2=TAS (true airspeed), 3=IAS (indicated airspeed), 4=OS (orbital speed)
-	char title[40];
+	char title[80];
 	DWORD tapecol;
 	DWORD hrzx, hrzy, hrzr, hrzx0, hrzy0, hrzx1, hrzy1;
 	DWORD spdx0, accx0, vacx0, vspx0, altx0, aoax0, diry0, accy0, accy, accr;

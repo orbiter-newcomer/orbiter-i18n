@@ -4,6 +4,7 @@
 #include "DrawAPI.h"
 
 #include "VectorMap.h"
+#include "Localization.h"
 #include "Psys.h"
 #include "Mfd.h"
 #include "Util.h"
@@ -984,7 +985,7 @@ void VectorMap::DrawBases (oapi::Sketchpad *skp)
 			if (GetMapPos (lng, lat, x, y)) {
 				skp->Rectangle (x-3, y-3, x+4, y+4);
 				if (drawlabel)
-					skp->Text (x+3, y, base->Name(), strlen(base->Name()));
+					skp->Text (x+3, y, orbiter::Tr(base->Name()), (int)strlen(orbiter::Tr(base->Name())));
 			}
 		}
 	}
@@ -1041,7 +1042,8 @@ void VectorMap::DrawMarker (oapi::Sketchpad *skp, double lng, double lat, const 
 	skp->LineTo (x, y+11);
 	if (ppen) skp->SetPen (ppen);
 	skp->SetTextColor (Instrument::draw[which][0].col);
-	skp->Text (x+3, which==2 ? y:y-labelsize-3, name, min(64,(int)strlen(name)));
+	const char *dispName = orbiter::Tr(name);
+	skp->Text (x+3, which==2 ? y:y-labelsize-3, dispName, min(64,(int)strlen(dispName)));
 }
 
 // =======================================================================

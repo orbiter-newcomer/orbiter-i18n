@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdOrbit.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"
@@ -148,15 +149,15 @@ const char *Instrument_Orbit::BtnLabel (int bt) const
 int Instrument_Orbit::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[9] = {
-		{"Orbit reference", 0, 'R'},
-		{"Auto reference", 0, 'A'},
-		{"Select target", 0, 'T'},
-		{"Unselect target", 0, 'N'},
-		{"Display mode", 0, 'M'},
-		{"Reference frame", "ECL/EQU", 'F'},
-		{"Projection plane", 0, 'P'},
-		{"Distance display", "Radius/Altitude", 'D'},
-		{"Copy data to HUD", 0, 'H'}
+		{orbiter::Tr("Orbit reference"), 0, 'R'},
+		{orbiter::Tr("Auto reference"), 0, 'A'},
+		{orbiter::Tr("Select target"), 0, 'T'},
+		{orbiter::Tr("Unselect target"), 0, 'N'},
+		{orbiter::Tr("Display mode"), 0, 'M'},
+		{orbiter::Tr("Reference frame"), 0, 'F'},
+		{orbiter::Tr("Projection plane"), 0, 'P'},
+		{orbiter::Tr("Distance display"), 0, 'D'},
+		{orbiter::Tr("Copy data to HUD"), 0, 'H'}
 	};
 	if (menu) *menu = mnu;
 	return 9;
@@ -260,7 +261,7 @@ void Instrument_Orbit::DisplayOrbit (oapi::Sketchpad *skp, int which, oapi::IVEC
 
 void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 {
-	static const char *projstr[3] = {"Ecliptic", "Ship", "Target"};
+	static const char *projstr[3] = {"Ecliptic", "Ship plane", "Target plane"};
 	Matrix rot1, rot2, irot;
 
 	bool bValidShpEl = (elref != 0);
@@ -274,8 +275,8 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			vel = tmul (elref->RotObliq(), vel);
 		}
 		shpel->Calculate (pos, vel, td.SimT1);
-		strcpy (title_str+7, elref->Name());
-		strcpy (proj_str+6, projstr[projmode]);
+		sprintf (title_str, "%s%s", orbiter::Tr("Orbit: "), orbiter::Tr(elref->Name()));
+		sprintf (proj_str, "%s%s", orbiter::Tr("Proj: "), orbiter::Tr(projstr[projmode]));
 		instable = (shpel->PeDist() < elref->Size());
 		scale = pixrad / (shpel->e < 1.0 ? shpel->ApDist() :
 						  max (2.0*shpel->PeDist(), shpel->Radius()));
@@ -299,11 +300,29 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 
 	if (dispmode != DISP_LIST) { // draw orbit graphs
 		bool eclproj;
-		skp->SetTextColor (draw[2][0].col);
-		skp->Text (IW-(cw*23)/2, 1, frmmode == FRM_ECL ? "ECL":"EQU", 3);
-		skp->Text (IW-(cw*7)/2,  1, projmode == PRJ_SHIP ? "SHP" : projmode == PRJ_TGT ? "TGT" : frmmode == FRM_ECL ? "ECL":"EQU", 3);
-		skp->SetTextColor (draw[2][1].col);
-		skp->Text (IW - cw*15, 1, "Frm     Prj", 11);
+		{	// Frame/projection header, right-aligned as a whole so that it never
+			// overlaps the left-aligned title. Widths are measured at runtime, so
+			// Chinese and English layouts both fit.
+			LOGOUT("MFDORBIT: frame header begin");
+			const char *frmStr = orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU");
+			const char *prjStr = orbiter::Tr(projmode == PRJ_SHIP ? "SHP" : projmode == PRJ_TGT ? "TGT" : (frmmode == FRM_ECL ? "ECL" : "EQU"));
+			LOGOUT("MFDORBIT: frame strs frm=%s prj=%s", frmStr, prjStr);
+			const char *lbl = orbiter::Tr("Frm");
+			const char *plbl = orbiter::Tr("Prj");
+			int lw = (int)skp->GetTextWidth(lbl, (int)strlen(lbl));
+			int fw = (int)skp->GetTextWidth(frmStr, (int)strlen(frmStr));
+			int plw = (int)skp->GetTextWidth(plbl, (int)strlen(plbl));
+			int pw = (int)skp->GetTextWidth(prjStr, (int)strlen(prjStr));
+			int total = lw + cw + fw + cw*3 + plw + cw + pw;
+			int hx = IW - total - cw;
+			LOGOUT("MFDORBIT: framewidths lw=%d fw=%d plw=%d pw=%d", lw, fw, plw, pw);
+			skp->SetTextColor (draw[2][0].col);
+			skp->Text (hx, 1, lbl, (int)strlen(lbl)); hx += lw + cw;
+			skp->Text (hx, 1, frmStr, (int)strlen(frmStr)); hx += fw + cw*3;
+			skp->SetTextColor (draw[2][1].col);
+			skp->Text (hx, 1, plbl, (int)strlen(plbl)); hx += plw + cw;
+			skp->Text (hx, 1, prjStr, (int)strlen(prjStr));
+		}
 		if (bValidShpEl && projmode == PRJ_SHIP) {
 			irot = IRotMatrix (shpel->cost, shpel->sint, shpel->cosi, shpel->sini);
 			eclproj = false;
@@ -329,151 +348,181 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			DisplayOrbit (skp, 1, o_pt2);
 		}
 	} else {
-		skp->SetTextColor (draw[2][0].col);
-		skp->Text (IW-(cw*23)/2, 1, frmmode == FRM_ECL ? "ECL":"EQU", 3);
-		skp->SetTextColor (draw[2][1].col);
-		skp->Text (IW - cw*15, 1, "Frm", 3);
+		{	// Frame header (list mode), right-aligned.
+			const char *frmStr = orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU");
+			const char *lbl = orbiter::Tr("Frm");
+			int lw = (int)skp->GetTextWidth(lbl, (int)strlen(lbl));
+			int fw = (int)skp->GetTextWidth(frmStr, (int)strlen(frmStr));
+			int hx = IW - (lw + cw + fw) - cw;
+			skp->SetTextColor (draw[2][0].col);
+			skp->Text (hx, 1, lbl, (int)strlen(lbl)); hx += lw + cw;
+			skp->Text (hx, 1, frmStr, (int)strlen(frmStr));
+		}
 	}
 
+	LOGOUT("MFDORBIT: before DisplayTitle title=[%s]", title_str);
 	DisplayTitle (skp, title_str);
+	LOGOUT("MFDORBIT: after DisplayTitle");
 	// output elref's contribution to gravity field
 	bool dominant;
 	double gfrac = g_psys->GetGravityContribution (elref, vessel->GPos(), &dominant);
-	char cbuf[20];
-	sprintf (cbuf, "G %0.2f", gfrac);
+	char cbuf[128];
+	sprintf (cbuf, "%s %0.2f", orbiter::Tr("G"), gfrac);
 	skp->SetTextColor (draw[!dominant ? 3 : gfrac < 0.0 ? 1 : 0][0].col);
-	skp->Text ((IW-cw*6)/2, IH-(3*ch)/2, cbuf, 6);
+	LOGOUT("MFDORBIT: G line before width cbuf=[%s]", cbuf);
+	int gw = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+	LOGOUT("MFDORBIT: G line width=%d", gw);
+	skp->Text ((IW-gw)/2, IH-(3*ch)/2, cbuf, (int)strlen(cbuf));
 
 	if (dispmode != DISP_GRAPH) { // list ship and target orbit parameters
 		if (bValidShpEl) {
 			skp->SetTextColor (draw[0][0].col);
-			skp->Text (cw/2, (ch*3)/2, "--OSC.EL.--", 11);
-			DisplayElements (skp, shpel, cw/2, (ch*5)/2);
+			skp->Text (cw/2, (ch*3)/2, orbiter::Tr("--OSC.EL.--"), (int)strlen(orbiter::Tr("--OSC.EL.--")));
+			DisplayElements (skp, shpel, cw/2, (ch*5)/2, 0, 0);
 		}
 		if (bValidTgtEl) {
 			skp->SetTextColor (draw[1][0].col);
 			int len = strlen (tgt->Name());
-			if (len >= 11)
+			if (len >= 11) {
 				strncpy (cbuf, tgt->Name(), 11);
-			else {
+				cbuf[11] = '\0';
+			} else {
 				memset (cbuf, '-', 11);
+				cbuf[11] = '\0';
 				strncpy (cbuf+(11-len)/2, tgt->Name(), len);
 			}
-			skp->Text (IW-(cw*23)/2, (ch*3)/2, cbuf, 11);
-			DisplayElements (skp, tgtel, IW-(cw*23)/2, (ch*5)/2);
+			// fixed-width box anchored at the right edge, left-aligned text
+			// Measure the widest target row, then anchor the box so that its
+			// widest row ends at the right edge of the MFD (text left-aligned).
+			int tgtMaxW = 0;
+			DisplayElements (skp, tgtel, 0, 0, 1, &tgtMaxW);
+			int tgtX = IW - cw/2 - tgtMaxW;
+			if (tgtX < IW/2) tgtX = IW/2;
+			skp->Text (tgtX, (ch*3)/2, cbuf, (int)strlen(cbuf));
+			DisplayElements (skp, tgtel, tgtX, (ch*5)/2, 0, 0);
 		}
 	}
 }
 
-void Instrument_Orbit::DisplayElements (oapi::Sketchpad *skp, const Elements *el, int x, int y)
+// Helper for DisplayElements: either measures the rendered width of one row
+// (used to size the target column box dynamically) or draws it.
+static void DrawElemRow (oapi::Sketchpad *skp, int x, int y, const char *text,
+	int measure, int *pMaxW)
 {
-	char cbuf[16];
+	if (measure) {
+		int w = (int)skp->GetTextWidth(text, (int)strlen(text));
+		if (pMaxW && w > *pMaxW) *pMaxW = w;
+	} else {
+		skp->Text(x, y, text, (int)strlen(text));
+	}
+}
+void Instrument_Orbit::DisplayElements (oapi::Sketchpad *skp, const Elements *el, int x, int y, int measure, int *pMaxW)
+{
+	char cbuf[128];
 	int dy = ch;
 	if (el) {
 		if (el->e < 1.0) { // closed orbit
-			sprintf (cbuf, "SMa%s", el->a < 1e5*AU ? DistStr (el->a) : " N/A");
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "SMi%s", el->SMi() < 1e5*AU ? DistStr (el->SMi()) : " N/A");
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("SMa"), el->a < 1e5*AU ? DistStr (el->a)+1 : orbiter::Tr("N/A"));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("SMi"), el->SMi() < 1e5*AU ? DistStr (el->SMi())+1 : orbiter::Tr("N/A"));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			if (dstmode == DIST_RAD) {
-				sprintf (cbuf, "PeR%s", DistStr (el->PeDist()));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				sprintf (cbuf, "ApR%s", el->ApDist() < 1e5*AU ? DistStr (el->ApDist()) : " N/A");
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				sprintf (cbuf, "Rad%s", DistStr (el->Radius()));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("PeR"), DistStr (el->PeDist())+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("ApR"), el->ApDist() < 1e5*AU ? DistStr (el->ApDist())+1 : orbiter::Tr("N/A"));
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("Rad"), DistStr (el->Radius())+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			} else {
 				double r = elref->Size();
-				sprintf (cbuf, "PeA%s", DistStr (el->PeDist()-r));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				sprintf (cbuf, "ApA%s", el->ApDist()-r < 1e5*AU ? DistStr (el->ApDist()-r) : " N/A");
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				sprintf (cbuf, "Alt%s", DistStr (el->Radius()-r));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("PeA"), DistStr (el->PeDist()-r)+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("ApA"), el->ApDist()-r < 1e5*AU ? DistStr (el->ApDist()-r)+1 : orbiter::Tr("N/A"));
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("Alt"), DistStr (el->Radius()-r)+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			}
-			sprintf (cbuf, "Ecc% 0.4f", el->e);
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "T  %s", FloatStr (el->OrbitT()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "PeT%s", FloatStr (el->PeT()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "ApT%s", FloatStr (el->ApT()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "Vel%s", FloatStr (el->Vel()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "Inc% 7.2fº", Deg(el->i));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "LAN% 7.2fº", Deg(el->theta));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "LPe% 7.2fº", Deg(el->omegab));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "AgP% 7.2fº", Deg(el->ArgPer()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "TrA% 7.2fº", Deg(el->TrueAnm()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "TrL% 7.2fº", Deg(el->TrueLng()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "MnA% 7.2fº", Deg(posangle(el->MeanAnm())));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "MnL% 7.2fº", Deg(el->MeanLng()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+			sprintf (cbuf, "%s% 0.4f", orbiter::Tr("Ecc"), el->e);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("T"), FloatStr (el->OrbitT())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("PeT"), FloatStr (el->PeT())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("ApT"), FloatStr (el->ApT())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("Vel"), FloatStr (el->Vel())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("Inc"), Deg(el->i));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("LAN"), Deg(el->theta));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("LPe"), Deg(el->omegab));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("AgP"), Deg(el->ArgPer()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("TrA"), Deg(el->TrueAnm()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("TrL"), Deg(el->TrueLng()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("MnA"), Deg(posangle(el->MeanAnm())));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("MnL"), Deg(el->MeanLng()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 		} else { // open orbit
-			sprintf (cbuf, "SMa%s", -el->a < 1e5*AU ? DistStr (el->a) : " N/A");
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "SMi%s", -el->SMi() < 1e5*AU ? DistStr (-el->SMi()) : " N/A");
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+			sprintf (cbuf, "%s%s", orbiter::Tr("SMa"), -el->a < 1e5*AU ? DistStr (el->a) : orbiter::Tr(" N/A"));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s%s", orbiter::Tr("SMi"), -el->SMi() < 1e5*AU ? DistStr (-el->SMi()) : orbiter::Tr(" N/A"));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			if (dstmode == DIST_RAD) {
-				sprintf (cbuf, "PeR%s", DistStr (el->PeDist()));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				skp->Text (x, y, "ApR N/A", 7); y += dy;
-				sprintf (cbuf, "Rad%s", DistStr (el->Radius()));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("PeR"), DistStr (el->PeDist())+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("ApR"), orbiter::Tr("N/A")); DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("Rad"), DistStr (el->Radius())+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			} else {
 				double r = elref->Size();
-				sprintf (cbuf, "PeA%s", DistStr (el->PeDist()-r));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-				skp->Text (x, y, "ApA N/A", 7); y += dy;
-				sprintf (cbuf, "Alt%s", DistStr (el->Radius()-r));
-				skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("PeA"), DistStr (el->PeDist()-r)+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("ApA"), orbiter::Tr("N/A")); DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+				sprintf (cbuf, "%s %s", orbiter::Tr("Alt"), DistStr (el->Radius()-r)+1);
+				DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 			}
-			if      (el->e < 1e2) sprintf (cbuf, "Ecc% 0.4f", el->e);
-			else if (el->e < 1e3) sprintf (cbuf, "Ecc% 0.3f", el->e);
-			else if (el->e < 1e4) sprintf (cbuf, "Ecc% 0.2f", el->e);
-			else if (el->e < 1e5) sprintf (cbuf, "Ecc% 0.1f", el->e);
+			if      (el->e < 1e2) sprintf (cbuf, "%s %0.4f", orbiter::Tr("Ecc"), el->e);
+			else if (el->e < 1e3) sprintf (cbuf, "%s %0.3f", orbiter::Tr("Ecc"), el->e);
+			else if (el->e < 1e4) sprintf (cbuf, "%s %0.2f", orbiter::Tr("Ecc"), el->e);
+			else if (el->e < 1e5) sprintf (cbuf, "%s %0.1f", orbiter::Tr("Ecc"), el->e);
 			else {
 				double e = el->e;
 				int eexp = 0;
 				while (e >= 10.0) e *= 0.1, eexp += 1;
-				sprintf (cbuf, "Ecc% 0.3fe%d", e, eexp);
+				sprintf (cbuf, "%s %0.3fe%d", orbiter::Tr("Ecc"), e, eexp);
 			}
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			skp->Text (x, y, "T   N/A", 7); y += dy;
-			sprintf (cbuf, "PeT%s", DistStr (el->PeT()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			skp->Text (x, y, "ApT N/A", 7); y += dy;
-			sprintf (cbuf, "Vel%s", DistStr (el->Vel()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "Inc% 7.2fº", Deg(el->i));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "LAN% 7.2fº", Deg(el->theta));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "LPe% 7.2fº", Deg(el->omegab));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "AgP% 7.2fº", Deg(el->ArgPer()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "TrA% 7.2fº", Deg(el->TrueAnm()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "TrL% 7.2fº", Deg(el->TrueLng()));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			sprintf (cbuf, "MnA%sº", FloatStr (DEG*el->MeanAnm(),4));
-			skp->Text (x, y, cbuf, strlen(cbuf)); y += dy;
-			skp->Text (x, y, "MnL N/A", 7); y += dy;
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("T"), orbiter::Tr("N/A")); DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("PeT"), DistStr (el->PeT())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("ApT"), orbiter::Tr("N/A")); DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("Vel"), DistStr (el->Vel())+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("Inc"), Deg(el->i));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("LAN"), Deg(el->theta));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("LPe"), Deg(el->omegab));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("AgP"), Deg(el->ArgPer()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("TrA"), Deg(el->TrueAnm()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %.2fº", orbiter::Tr("TrL"), Deg(el->TrueLng()));
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %sº", orbiter::Tr("MnA"), FloatStr (DEG*el->MeanAnm(),4)+1);
+			DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
+			sprintf (cbuf, "%s %s", orbiter::Tr("MnL"), orbiter::Tr("N/A")); DrawElemRow (skp, x, y, cbuf, measure, pMaxW); y += dy;
 		}
 	} else {
-		skp->Text (x, y, "Orbital", 7); y += dy;
-		skp->Text (x, y, "Elements", 8); y += dy;
-		skp->Text (x, y, "not", 3); y += dy;
-		skp->Text (x, y, "available", 9);
+		DrawElemRow (skp, x, y, orbiter::Tr("Orbital elements"), measure, pMaxW); y += dy;
+		DrawElemRow (skp, x, y, orbiter::Tr("not available"), measure, pMaxW);
 	}
 }
 

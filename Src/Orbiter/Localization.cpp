@@ -471,6 +471,179 @@ namespace orbiter {
 		{ "Open info dialog for object", "打开物体信息对话框" },
 		{ "Bases", "基地" },
 
+		// ---- Surface MFD: speed mode labels --------------------------------
+
+		// ---- Surface MFD: tape labels --------------------------------------
+
+		// ---- HSI MFD --------------------------------------------------------
+		{ "ILS Rwy", "ILS 跑道" },
+		{ "[no signal]", "[无信号]" },
+		{ "TO", "向台" },
+		{ "FROM", "背台" },
+		{ "NAV", "导航接收机" },
+		{ "DEV", "偏差" },
+		{ "Switch HSI focus", "切换 HSI 焦点" },
+		{ "NAV receiver", "选择 NAV 接收机" },
+		{ "OBS indicator left", "OBS 指示器 左" },
+		{ "OBS indicator right", "OBS 指示器 右" },
+
+		// ---- Map marker list names ------------------------------------------
+		{ "Airport", "机场" },
+		{ "City", "城市" },
+		{ "Mountain", "山" },
+		{ "Forest", "森林" },
+		{ "Water body", "水体" },
+		{ "City.mkr", "城市" },
+		{ "Airport.mkr", "机场" },
+		{ "Mountain.mkr", "山" },
+		{ "Forest.mkr", "森林" },
+		{ "Water body.mkr", "水体" },
+
+		// ---- Selection menus ------------------------------------------------
+		{ "By name ...", "按名称…" },
+		{ "Spacecraft", "航天器" },
+		{ "[none]", "[无]" },
+
+		// ---- Map MFD --------------------------------------------------------
+		{ "Map: ", "地图：" },
+		{ "Map: Display parameters", "地图：显示参数" },
+		{ "TRK", "轨迹" },
+		{ "ZM %d", "缩放 %d" },
+		{ "TGT:", "目标：" },
+		{ "BSE:", "基地：" },
+		{ "SHP:", "飞船：" },
+		{ "Brg", "方位" },
+		{ "Crs", "航向" },
+		{ "Orbit lines", "轨道线" },
+		{ "Groundtrack", "地面轨迹" },
+		{ "Horizon lines", "地平线" },
+		{ "Shading", "阴影" },
+		{ "Line+shading", "线+阴影" },
+		{ "Grid lines", "网格线" },
+		{ "Base markers", "基地标记" },
+		{ "Navaid markers", "导航台标记" },
+		{ "ON ", "开" },
+		{ "OFF", "关" },
+		{ "Map reference", "地图参考天体" },
+		{ "Zoom out", "缩小" },
+		{ "Zoom in", "放大" },
+		{ "Track mode on/off", "跟踪模式开关" },
+		{ "Display parameters", "显示参数" },
+		{ "Scroll up", "向上滚动" },
+		{ "Scroll down", "向下滚动" },
+		{ "Scroll left", "向左滚动" },
+		{ "Scroll right", "向右滚动" },
+		{ "Move selection up", "选择上移" },
+		{ "Move selection down", "选择下移" },
+		{ "Modify selected", "修改选中" },
+		{ "Return to map", "返回地图" },
+
+		// ---- MFD menu value hints --------------------------------------------
+		{ "ECL/EQU", "黄道/赤道" },
+		{ "Radius/Altitude", "半径/高度" },
+
+		// ---- MFD mode selection page ---------------------------------------
+		{ "MODE SELECT", "模式选择" },
+		{ "MODE SELECT [Page %d]", "模式选择[第 %d 页]" },
+		{ "MFD MENU", "菜单" },
+		{ "Orbit", "轨道" },
+		{ "Surface", "地表飞行" },
+		{ "HSI", "导航方位仪" },
+		{ "VOR/VTOL", "垂直起降" },
+		{ "Docking", "对接" },
+		{ "Align Planes", "轨道面对齐" },
+		{ "Sync Orbit", "轨道同步" },
+		{ "Transfer", "轨道转移" },
+		{ "COM/NAV", "通讯/导航" },
+
+		// ---- Surface MFD (dedicated keys) ----------------------------------
+		{ "SURF_Title", "地表：" },
+		{ "SURF_ATM", "大气数据" },
+		{ "SURF_OAT", "外温" },
+		{ "SURF_M", "马赫" },
+		{ "SURF_DNS", "密度" },
+		{ "SURF_STP", "静压" },
+		{ "SURF_DNP", "动压" },
+		{ "SURF_EQP", "位置" },
+		{ "SURF_RATE", "变化率" },
+		{ "SURF_BNK", "滚转" },
+		{ "SURF_PTCH", "俯仰" },
+		{ "SURF_L", "左" },
+		{ "SURF_R", "右" },
+		{ "SURF_ALTR", "对地高" },
+		{ "SURF_ALT", "海拔高" },
+		{ "SURF_VS", "垂速" },
+		{ "SURF_VACC", "垂直加速" },
+		{ "SURF_AOA", "攻角" },
+		{ "SURF_ACC", "加速度" },
+		{ "SURF_GS", "地面速度" },
+		{ "SURF_TAS", "真速" },
+		{ "SURF_IAS", "表速" },
+		{ "SURF_OS", "轨速" },
+
+		// ---- Surface MFD ---------------------------------------------------
+		{ "Surface: ", "地表：" },
+		{ "ATM DATA", "大气数据" },
+		{ "Indicated airspeed", "表显空速" },
+		{ "Ground-relative", "地面速度" },
+		{ "Orbital speed", "轨道速度" },
+
+		// ---- Orbit MFD (final scheme) -------------------------------------
+		{ "Ship plane", "自身" },
+		{ "Target plane", "目标" },
+
+		// ---- Orbit MFD -----------------------------------------------------
+		{ "Orbit: ", "轨道：" },
+		{ "Proj: ", "投影：" },
+		{ "Frm     Prj", "参考  投影" },
+		{ "Frm", "参考" },
+		{ "Prj", "投影" },
+		{ "ECL", "黄道" },
+		{ "TGT", "目标" },
+		{ "EQU", "赤道" },
+		{ "SHP", "自身" },
+		{ "SMa", "半长轴" },
+		{ "SMi", "半短轴" },
+		{ "PeR", "近点径" },
+		{ "ApR", "远点径" },
+		{ "Rad", "半径　" },
+		{ "PeA", "近点高" },
+		{ "ApA", "远点高" },
+		{ "Alt", "高度　" },
+		{ "Ecc", "偏心率" },
+		{ "T", "周期　" },
+		{ "PeT", "近点时" },
+		{ "ApT", "远点时" },
+		{ "Vel", "速度　" },
+		{ "Inc", "倾角　" },
+		{ "LAN", "升交经" },
+		{ "LPe", "近点经" },
+		{ "AgP", "近点幅" },
+		{ "TrA", "真近角" },
+		{ "TrL", "真经度" },
+		{ "MnA", "平近角" },
+		{ "MnL", "平经度" },
+		{ "--OSC.EL.--", "--密切根数--" },
+		{ "Orbital elements", "轨道根数" },
+		{ "not available", "不可用" },
+		{ "not", "不" },
+		{ "available", "可用" },
+		{ "Orbit reference", "参考天体" },
+		{ "Auto reference", "自动参考" },
+		{ "Select target", "选择目标" },
+		{ "Unselect target", "取消目标" },
+		{ "Display mode", "显示模式" },
+		{ "Reference frame", "选择坐标系" },
+		{ "Projection plane", "投影面" },
+		{ "Distance display", "半径/高度切换" },
+		{ "Copy data to HUD", "复制数据到 HUD" },
+		{ "REF", "参考" },
+		{ "AR", "自动" },
+		{ "NT", "删目标" },
+		{ "MOD", "模式" },
+		{ "PRJ", "投影面" },
+		{ "Ecliptic", "黄道面" },
+
 		// ---- State propagators / pad status / directions ---------------------
 		{ "free", "空闲" },
 		{ "Docked to", "已对接至" },
@@ -743,6 +916,7 @@ namespace orbiter {
 		{ "Movable:", "可移动：" },
 		{ "Move", "移动" },
 		{ "N/A", "不适用" },
+		{ "G", "相对引力" },
 		{ "Name", "名称" },
 		{ "Numerical", "数值" },
 		{ "Object frame axis", "物体坐标系轴" },
@@ -998,6 +1172,50 @@ static void BuildTables()
 		}
 	}
 
+
+	// ------------------------------------------------------------------------
+	// Alias keys: allow dedicated keys (e.g. "SURF_GS") to be translated
+	// without clashing with other UI texts. The alias maps to the original
+	// English text, which is returned in English mode.
+	// ------------------------------------------------------------------------
+	struct AliasEntry { const char* alias; const char* english; };
+	static const AliasEntry g_aliases[] = {
+		{ "SURF_Title", "Surface: " },
+		{ "SURF_ATM",  "ATM DATA" },
+		{ "SURF_OAT",  "OAT" },
+		{ "SURF_M",    "M" },
+		{ "SURF_DNS",  "DNS" },
+		{ "SURF_STP",  "STP" },
+		{ "SURF_DNP",  "DNP" },
+		{ "SURF_EQP",  "EQU POS" },
+		{ "SURF_RATE", "RATE" },
+		{ "SURF_BNK",  "BNK" },
+		{ "SURF_PTCH", "PTCH" },
+		{ "SURF_L",    "L" },
+		{ "SURF_R",    "R" },
+		{ "SURF_ALTR", "ALT-R" },
+		{ "SURF_ALT",  "ALT" },
+		{ "SURF_VS",   "VS" },
+		{ "SURF_VACC", "VACC" },
+		{ "SURF_AOA",  "AOA" },
+		{ "SURF_ACC",  "ACC" },
+		{ "SURF_GS",   "GS" },
+		{ "SURF_TAS",  "TAS" },
+		{ "SURF_IAS",  "IAS" },
+		{ "SURF_OS",   "OS" },
+	};
+	static const size_t kNumAliases = sizeof(g_aliases) / sizeof(g_aliases[0]);
+
+	const char* Tr2(const char* aliasKey)
+	{
+		if (!aliasKey || !*aliasKey) return aliasKey;
+		if (g_language == Language::English) {
+			for (size_t i = 0; i < kNumAliases; i++)
+				if (strcmp(g_aliases[i].alias, aliasKey) == 0) return g_aliases[i].english;
+			return aliasKey;
+		}
+		return Tr(aliasKey);
+	}
 	const char* Tr(const char* english)
 	{
 		if (!english || !*english) return english;
@@ -1095,6 +1313,7 @@ static void BuildTables()
 	static void LocalizeComboBox(HWND hCombo)
 	{
 		const int count = int(SendMessageW(hCombo, CB_GETCOUNT, 0, 0));
+		LOGOUT("LANG: combo %p count=%d", (void*)hCombo, count);
 		if (count <= 0) return;
 
 		struct Item {
@@ -1120,6 +1339,9 @@ static void BuildTables()
 		if (!changed) return;   // leave dynamic lists (devices, modes, ...) alone
 
 		LRESULT sel = SendMessageW(hCombo, CB_GETCURSEL, 0, 0);
+		// Clear the selection first to avoid CBN_SELCHANGE notifications while
+		// the list is rebuilt (they could re-enter the language switch).
+		SendMessageW(hCombo, CB_SETCURSEL, (WPARAM)-1, 0);
 		SendMessageW(hCombo, CB_RESETCONTENT, 0, 0);
 		for (size_t i = 0; i < items.size(); i++) {
 			ComboAddItemText(hCombo, items[i].text);
@@ -1164,6 +1386,10 @@ static void BuildTables()
 			LocalizeWindow(hWnd);
 		return TRUE;
 	}
+
+	static bool g_relocalizing = false;
+	bool IsRelocalizing() { return g_relocalizing; }
+	void SetRelocalizing(bool active) { g_relocalizing = active; }
 
 	void LocalizeWindowTree(HWND root)
 	{

@@ -1,3 +1,4 @@
+#include "Orbitersdk.h"
 // =================================================================================================================================
 // The MIT Lisence:
 //
@@ -281,6 +282,11 @@ restart:
 	pSrcTex->Release();
 
 	// Init WCHAR font
+	// In Chinese mode render Unicode (CJK) glyphs with the UI CJK sans font.
+	// The ASCII bitmap font above keeps the original face so that character
+	// metrics (cw/ch) - and therefore MFD layouts - remain unchanged.
+	if (strcmp(oapiTr("Build"), "Build") != 0)
+		strcpy_s(lf.lfFaceName, "Noto Sans CJK SC");
 	// Use DEFAULT_CHARSET so GDI font linking can select the correct glyphs for
 	// non-Latin scripts (e.g. Chinese) while the pre-rendered ANSI texture above
 	// keeps using the original charset.
