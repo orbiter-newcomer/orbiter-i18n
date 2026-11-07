@@ -325,23 +325,16 @@ void orbiter::LaunchpadDialog::UpdateConfig ()
 // Desc: Re-applies the active UI language to the Launchpad and all tabs
 //-----------------------------------------------------------------------------
 void orbiter::LaunchpadDialog::Relocalize()
-{
-	// Regular window texts, including combobox item lists.
-	LOGOUT("LANG: Relocalize start");
-	orbiter::SetRelocalizing(true);
-	orbiter::LocalizeWindowTree(hDlg);
-	LOGOUT("LANG: LocalizeWindowTree done");
+
 
 	// Dynamically created contents (tree view items) are not regular window
 	// texts, so each tab re-applies the active language itself. Iterate over a
 	// snapshot because refreshing a tab may recreate tabs.
 	auto tabs = TabList;  // snapshot: refreshing a tab may recreate tabs
 	for (auto tab : tabs) {
-		LOGOUT("LANG: tab RefreshLocalization %p", (void*)tab);
 		tab->RefreshLocalization();
 	}
 	orbiter::SetRelocalizing(false);
-	LOGOUT("LANG: Relocalize done");
 }
 
 //-----------------------------------------------------------------------------

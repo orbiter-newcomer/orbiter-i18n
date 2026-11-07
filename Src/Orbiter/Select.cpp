@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "Select.h"
+#include "Log.h"
 #include "Localization.h"
 #include "imgui.h"
 #include "imgui_extras.h"

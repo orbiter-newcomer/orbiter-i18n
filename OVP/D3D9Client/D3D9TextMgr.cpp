@@ -290,9 +290,15 @@ restart:
 	// Use DEFAULT_CHARSET so GDI font linking can select the correct glyphs for
 	// non-Latin scripts (e.g. Chinese) while the pre-rendered ANSI texture above
 	// keeps using the original charset.
+	// CJK glyphs are taller than the ASCII bitmap cell for the same logical
+	// font height, which makes translated text overlap neighbouring rows in
+	// dense MFD layouts. Scale the Unicode font so that its glyph height
+	// matches the bitmap path.
+	int wfheight = lf.lfHeight;
+	if (wfheight < 0) wfheight = (int)(wfheight * 0.85f);
 	HR(D3DXCreateFont(
 		pDev,                 // D3D Device
-		lf.lfHeight,          // Font height
+		wfheight,             // Font height (CJK glyphs are taller than the bitmap cell)
 		lf.lfWidth,           // Font width
 		lf.lfWeight,          // Font Weight
 		1,                    // MipLevels
@@ -621,7 +627,7 @@ float D3D9Text::PrintSkp (D3D9Pad *pSkp, float xpos, float ypos, LPCWSTR str, in
 		str,                               // pString
 		len,                               // Count
 		&rect,                             // pRect
-		DT_VCENTER | DT_LEFT | DT_NOCLIP,  // Format
+		DT_TOP | DT_LEFT | DT_NOCLIP,  // Format
 		col                                // Color
 	);
 

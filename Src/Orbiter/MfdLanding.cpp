@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdLanding.h"
+#include "Localization.h"
 #include "Nav.h"
 #include "Astro.h"
 #include "Config.h"
@@ -86,7 +87,7 @@ const char *Instrument_Landing::BtnLabel (int bt) const
 int Instrument_Landing::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[1] = {
-		{"NAV receiver", "select", 'N'}
+		{orbiter::Tr("NAV receiver"), 0, 'N'}
 	};
 	if (menu) *menu = mnu;
 	return 1;
@@ -100,21 +101,21 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	double tlng, tlat; // target location
 	bool draw_cone = false; // draw VTOL cone?
 
-	DisplayTitle (skp, "VOR/VTOL");
+	DisplayTitle (skp, orbiter::Tr("VOR/VTOL"));
 
 	if (nv >= vessel->nnav) return; // sanity check
 	NavRadioSpec *nav = vessel->nav+nv;
 
 	skp->SetTextColor (draw[0][0].col);
-	sprintf (cbuf, "NAV%d %06.2fMHz", nv+1, nav->freq);
+	sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), nv+1, nav->freq);
 	skp->Text (IW-cw*15, 0, cbuf, strlen (cbuf));
 
 	if (nav->sender) {
 		switch (nav->sender->Type()) {
 		case TRANSMITTER_VOR: {
-			len = nav->sender->IdString (cbuf, 256);
-			skp->Text (x, y, cbuf, min (len, 35));
 			Nav_VOR *vor = (Nav_VOR*)nav->sender;
+			sprintf (cbuf, "%s %s", orbiter::Tr("VOR"), vor->GetId());
+			skp->Text (x, y, cbuf, (int)strlen(cbuf));
 			vor->GetEquPos (tlng, tlat);
 			} break;
 		case TRANSMITTER_VTOL: {
@@ -125,11 +126,11 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 			draw_cone = true;
 			} break;
 		default:
-			skp->Text (x, y, "[no signal]", 11);
+			skp->Text (x, y, orbiter::Tr("[no signal]"), (int)strlen(orbiter::Tr("[no signal]")));
 			return;
 		}
 	} else {
-		skp->Text (x, y, "[no signal]", 11);
+		skp->Text (x, y, orbiter::Tr("[no signal]"), (int)strlen(orbiter::Tr("[no signal]")));
 		return;
 	}
 
@@ -158,7 +159,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	if      (bdir <  0.0) bdir += Pi2;
 	else if (bdir >= Pi2) bdir -= Pi2;
 	dist = adist * sp->ref->Size();
-	sprintf (cbuf, "DIST%s  DIR %03.0f°", DistStr(dist), DEG*bdir);
+	sprintf (cbuf, "%s%s  %s %03.0f°", orbiter::Tr("DIST"), DistStr(dist), orbiter::Tr("DIR"), DEG*bdir);
 	skp->Text (x, ch*2, cbuf, strlen(cbuf));
 
 	// horizontal airspeed
@@ -174,7 +175,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	vdir = atan2 (hvel.x, hvel.z) - sp->dir;
 	if      (vdir <= -Pi) vdir += Pi2;
 	else if (vdir >=  Pi) vdir -= Pi2;
-	sprintf (cbuf, "HSPD%s", FloatStr(hspd));
+	sprintf (cbuf, "%s%s", orbiter::Tr("HSPD"), FloatStr(hspd));
 	skp->Text (x, ch*3, cbuf, strlen(cbuf));
 
 	// altitude bar
@@ -191,7 +192,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetBrush (0);
 	skp->Rectangle (dx, bar0-barh, dx+barw, bar0+1);
 	skp->SetTextColor (draw[0][0].col);
-	skp->Text (xc-(cw*3)/2, yc-ch, "ALT", 3);
+	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, yc-ch, orbiter::Tr("ALT"), (int)strlen(orbiter::Tr("ALT"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	strcpy (cbuf, DistStr(sp->alt)+1); i = strlen(cbuf);
 	skp->Text (xc-(i*cw)/2, yc, cbuf, i);
 	for (i = 0; i <= 4; i++) {
@@ -214,7 +215,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Rectangle (dx, bar0-dy, dx+barw, bar0+1);
 	skp->SetBrush (0);
 	skp->Rectangle (dx, bar0-barh, dx+barw, bar0+1);
-	skp->Text (xc-cw*2, yc-ch, "VSPD", 4);
+	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, yc-ch, orbiter::Tr("VSPD"), (int)strlen(orbiter::Tr("VSPD"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	strcpy (cbuf, DistStr (fabs(hvel.y))+1); i = strlen(cbuf);
 	skp->Text (xc-(i*cw)/2, yc, cbuf, i);
 	for (i = 0; i <= 4; i++) {
@@ -309,4 +310,5 @@ void Instrument_Landing::WriteParams (ostream &ofs) const
 	ofs << "  TYPE Launch" << endl;
 	ofs << "  NAV " << nv << endl;
 }
+
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdDocking.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Psys.h"
 #include "Nav.h"
@@ -42,7 +43,7 @@ Instrument_Docking::Instrument_Docking (Pane *_pane, INT_PTR _id, const Spec &sp
 		for (i = 0; i < 4; i++) brush[i] = 0;
 	}
 
-	strcpy (title, "Docking: ");
+	strcpy (title, orbiter::Tr("Docking: "));
 	dst = -1.0;
 	SetupVessel ();
 	if (restore && vessel == saveprm.usr) { // restore
@@ -122,10 +123,10 @@ int Instrument_Docking::ProcessMessage (int msg, void *data)
 void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 {
 	int i, len, rd, x0, x1, y0, y1, xc, yc, x = cw/2, y = ch;
-	char cbuf[256], modestr[10] = "";
+	char cbuf[256], modestr[64] = "";
 
-	strcpy (cbuf, "APPR/DOCK");
-	if (ndock > 1) sprintf (cbuf+9, " %d", refdock+1);
+	strcpy (cbuf, orbiter::Tr("APPR/DOCK"));
+	if (ndock > 1) sprintf (cbuf+strlen(cbuf), " %d", refdock+1);
 	DisplayTitle (skp, cbuf);
 
 	// approach indicator circle
@@ -193,7 +194,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 
 	if (scale) {
 		skp->SetTextColor(draw[2][0].col);
-		skp->Text(cw / 2, IH - ch * 4, "FINE", 4);
+		skp->Text(cw / 2, IH - ch * 4, orbiter::Tr("FINE"), (int)strlen(orbiter::Tr("FINE")));
 	}
 
 	skp->SetFont(GetDefaultFont(0));
@@ -201,7 +202,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->SetBackgroundMode (oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor (col_yellow1);
 		skp->SetTextColor (0);
-		skp->Text (x, 2*ch, "NO DATA", 7);
+		skp->Text (x, 2*ch, orbiter::Tr("NO DATA"), (int)strlen(orbiter::Tr("NO DATA")));
 		return;
 	}
 
@@ -209,7 +210,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->SetBackgroundMode (oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor (col_yellow1);
 		skp->SetTextColor (0);
-		skp->Text (x, 2*ch, "Device not available", 20);
+		skp->Text (x, 2*ch, orbiter::Tr("Device not available"), (int)strlen(orbiter::Tr("Device not available")));
 		return;
 	}
 	skp->SetTextColor (draw[0][0].col);
@@ -228,7 +229,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		if (nv >= vessel->nnav) return; // sanity check
 		NavRadioSpec *nav = vessel->nav+nv;
 
-		sprintf (cbuf, "NAV%d %06.2fMHz", nv+1, nav->freq);
+		sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), nv+1, nav->freq);
 		skp->Text (IW-cw*15, 0, cbuf, strlen (cbuf));
 
 		if (nav->sender) {
@@ -239,14 +240,14 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 				Nav_IDS *ids = (Nav_IDS*)nav->sender;
 				tgt = ids->GetVessel();
 				ps  = ids->GetPortSpec();
-				strcpy (modestr, " IDS ");
+				strcpy (modestr, orbiter::Tr(" IDS "));
 				} break;
 			case TRANSMITTER_XPDR: {
 				len = nav->sender->IdString (cbuf, 256);
 				skp->Text (x, y, cbuf, min (len, 35));
 				Nav_XPDR *xpdr = (Nav_XPDR*)nav->sender;
 				tgt = xpdr->GetVessel();
-				strcpy (modestr, " XPDR ");
+				strcpy (modestr, orbiter::Tr(" XPDR "));
 				} break;
 			}
 		}
@@ -262,7 +263,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 			ps = vtgt->GetDockParams (vessel->closedock.dock);
 		}
 		tgt = vtgt;
-		strcpy (modestr, " VIS ");
+		strcpy (modestr, orbiter::Tr(" VIS "));
 		} break;
 
 	case DIRECT: // direct specification (legacy)
@@ -272,11 +273,11 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 			if (tgt->Type() == OBJTP_VESSEL) {
 				ps = ((const Vessel*)tgt)->GetDockParams (Legacy_port);
 			}
-			strcpy (modestr, " IDS ");
-			strcpy (cbuf, "IDS ");
+			strcpy (modestr, orbiter::Tr(" IDS "));
+			strcpy (cbuf, orbiter::Tr("IDS "));
 		} else {
-			strcpy (modestr, " XPDR ");
-			strcpy (cbuf, "XPDR ");
+			strcpy (modestr, orbiter::Tr(" XPDR "));
+			strcpy (cbuf, orbiter::Tr("XPDR "));
 		}
 		strncat (cbuf, tgt->Name(), 20);
 		skp->Text (x, y, cbuf, strlen(cbuf));
@@ -289,7 +290,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->SetBackgroundMode (oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor (col_yellow1);
 		skp->SetTextColor (0);
-		skp->Text (IW - cw * 9, ch, " DOCKED ", 8);
+		skp->Text (IW - cw * 9, ch, orbiter::Tr(" DOCKED "), (int)strlen(orbiter::Tr(" DOCKED ")));
 		skp->SetTextColor (draw[0][0].col);
 		skp->SetBackgroundMode (oapi::Sketchpad::BK_TRANSPARENT);
 	}
@@ -298,7 +299,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->SetBackgroundMode (oapi::Sketchpad::BK_OPAQUE);
 		skp->SetBackgroundColor (col_yellow1);
 		skp->SetTextColor (0);
-		skp->Text (x, 2*ch, "NO SIGNAL", 9);
+		skp->Text (x, 2*ch, orbiter::Tr("NO SIGNAL"), (int)strlen(orbiter::Tr("NO SIGNAL")));
 		return;
 	}
 
@@ -382,34 +383,36 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line (circx+x, circy-y0, circx+x, circy-y1-1);
 
 		skp->SetPen(draw[0][0].solidpen);
-		sprintf (cbuf, "hD %s", DistStr(fabs(Z.x), 4));
+		sprintf (cbuf, "%s %s", orbiter::Tr("hD"), DistStr(fabs(Z.x), 3));
 		x0 = cw / 2;
 		y0 = (ch * 5) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal distance from approach path
+		int hdW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (fabs(Z.x) > 2e-3)
-			DrawArrow(x0 + (cw * 5) / 2, y0, Z.x < 0 ? 3 : 1, skp);
-		sprintf(cbuf, "vD %s", DistStr(fabs(Z.y), 4));
-		x0 += cw * 11;
+			DrawArrow(x0 + hdW + cw/2, y0, Z.x < 0 ? 3 : 1, skp);
+		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 3));
+		x0 = cw/2 + hdW + cw*2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // vertical distance from approach path
 		if (fabs(Z.y) > 2e-3)
-			DrawArrow(x0 + (cw * 5) / 2, y0, Z.y < 0 ? 2 : 0, skp);
+			DrawArrow(x0 + (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2, y0, Z.y < 0 ? 2 : 0, skp);
 
 		// Ship's relative velocity projected into ship's approach xy plane
 		double dvx = (adposold.x-adpos.x)/dt;
 		double dvy = (adposold.y-adpos.y)/dt;
 		r = std::hypot(dvx, dvy);
 
-		sprintf(cbuf, "hV %s", DistStr(fabs(dvx), 5));
+		sprintf(cbuf, "%s %s", orbiter::Tr("hV"), DistStr(fabs(dvx), 4));
 		x0 = cw / 2;
 		y0 = (ch * 7) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
+		int hvW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (fabs(dvx) > 2e-4)
-			DrawArrow(x0 + (cw * 5) / 2, y0, dvx < 0 ? 3 : 1, skp);
-		sprintf(cbuf, "vV %s", DistStr(fabs(dvy), 5));
-		x0 += cw * 11;
+			DrawArrow(x0 + hvW + cw/2, y0, dvx < 0 ? 3 : 1, skp);
+		sprintf(cbuf, "%s %s", orbiter::Tr("vV"), DistStr(fabs(dvy), 4));
+		x0 = cw/2 + hvW + cw*2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
 		if (fabs(dvy) > 2e-4)
-			DrawArrow(x0 + (cw * 5) / 2, y0, dvy < 0 ? 2 : 0, skp);
+			DrawArrow(x0 + (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2, y0, dvy < 0 ? 2 : 0, skp);
 
 		double r_scaled = (scale ? r*10.0 : r);
 		if (r_scaled > 1e-2) {
@@ -474,22 +477,25 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		y0 = IH - (ch*3) / 2;
 		x0 = cw / 2;
 		double absYdeg = fabs(yaw)*DEG;
-		sprintf(cbuf, "Y  %0.1lf", absYdeg);
+		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("Y"), absYdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int yW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absYdeg > 2e-2)
-			DrawArrow(x0 + (cw*3)/2, y0, yaw < 0 ? 1 : 3, skp);
-		x0 += cw * 11;
+			DrawArrow(x0 + yW + cw/2, y0, yaw < 0 ? 1 : 3, skp);
+		x0 += yW + cw*2;
 		double absPdeg = fabs(pitch)*DEG;
-		sprintf(cbuf, "P  %0.1lf", absPdeg);
+		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("P"), absPdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int pW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absPdeg > 2e-2)
-			DrawArrow(x0 + (cw * 3) / 2, y0, pitch < 0 ? 0 : 2, skp);
-		x0 += cw * 11;
+			DrawArrow(x0 + pW + cw/2, y0, pitch < 0 ? 0 : 2, skp);
+		x0 += pW + cw*2;
 		double absBdeg = fabs(bank)*DEG;
-		sprintf(cbuf, "B  %0.1lf", absBdeg);
+		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("B"), absBdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int bW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absBdeg > 2e-2)
-			DrawArrow(x0 + (cw * 3) / 2, y0, bank < 0 ? 1 : 3, skp);
+			DrawArrow(x0 + bW + cw/2, y0, bank < 0 ? 1 : 3, skp);
 	}
 
 	// distance bar
@@ -508,7 +514,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 	}
 	skp->Rectangle (bar0x, bar0-barh, bar0x+barw, bar0+1);
 	skp->SetTextColor (draw[0][0].col);
-	skp->Text (xc-(cw*3)/2, (5*ch)/2, "DST", 3);
+	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, (5*ch)/2, orbiter::Tr("DST"), (int)strlen(orbiter::Tr("DST"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	strcpy (cbuf, DistStr (dst)+1); i = strlen (cbuf);
 	skp->Text (xc-(cw*i)/2, (7*ch)/2, cbuf, i);
 	skp->SetFont(GetDefaultFont(1));
@@ -544,7 +550,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetTextColor (draw[0][0].col);
 	skp->SetFont(GetDefaultFont(0));
 	skp->SetTextAlign(oapi::Sketchpad::LEFT);
-	skp->Text (xc-cw*2, (5*ch)/2, "CVEL", 4);
+	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, (5*ch)/2, orbiter::Tr("CVEL"), (int)strlen(orbiter::Tr("CVEL"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	i = strlen (cbuf);
 	skp->Text (xc-(cw*i)/2, (7*ch)/2, cbuf, i);
 	yc = bar0+ch/2;
@@ -656,12 +662,12 @@ const char *Instrument_Docking::BtnLabel (int bt) const
 int Instrument_Docking::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[6] = {
-		{"Select docking port", 0, 'D'},
-		{"NAV receiver", "select", 'N'},
-		{"Visual acquisition", "mode", 'V'},
-		{"Select target", 0, 'T'},
-		{"Toggle coarse/fine", "scales", 'S'},
-		{"Copy data to HUD", 0, 'H'}
+		{orbiter::Tr("Select docking port"), 0, 'D'},
+		{orbiter::Tr("NAV receiver"), 0, 'N'},
+		{orbiter::Tr("Visual acquisition"), 0, 'V'},
+		{orbiter::Tr("Select target"), 0, 'T'},
+		{orbiter::Tr("Toggle coarse/fine"), 0, 'S'},
+		{orbiter::Tr("Copy data to HUD"), 0, 'H'}
 	};
 	if (menu) *menu = (ndock > 1 ? mnu : mnu+1);
 	switch(ndock) {
@@ -690,7 +696,7 @@ bool Instrument_Docking::ClbkSelection_Target (Select *menu, int item, char *str
 		char cbuf[256];
 		if (vessel = g_psys->GetVessel (str, true)) {
 			for (i = 0; i < vessel->nDock(); i++) {
-				sprintf (cbuf, "%s, dock %d", vessel->Name(), i+1);
+				sprintf (cbuf, "%s，%s %d", orbiter::Tr(vessel->Name()), orbiter::Tr("dock"), i+1);
 				menu->Append (cbuf);
 			}
 			return true;
@@ -702,8 +708,8 @@ bool Instrument_Docking::ClbkSelection_Target (Select *menu, int item, char *str
 bool Instrument_Docking::ClbkEnter_Target (Select *menu, int item, char *str, void *data)
 {
 	Instrument_Docking *mfd = (Instrument_Docking*)data;
-	if (!strcmp (str, "By name ...")) {
-		g_input->Open ("Docking MFD: Enter target (e.g. 'ISS' or 'ISS 1')", 0, 30, CallbackTarget, data);
+	if (!strcmp (str, "By name ...") || !strcmp (str, orbiter::Tr("By name ..."))) {
+		g_input->Open (orbiter::Tr("Docking MFD: Enter target (e.g. 'ISS' or 'ISS 1')"), 0, 30, CallbackTarget, data);
 		return true;
 	} else
 		return mfd->SetTarget (str);
@@ -718,14 +724,37 @@ bool Instrument_Docking::CallbackTarget (InputBox*, char *str, void *data)
 bool Instrument_Docking::SetTarget (char *str)
 {
 	char name[256];
-	int dock;
-	bool bdock = (sscanf (str, "%s%d", name, &dock) == 2);
-	int len = strlen(name);
-	if (name[len-1] == ',') {
-		name[len-1] = '\0';
-		bdock = (sscanf (str+len+5, "%d", &dock) == 1);
+	int dock = 0;
+	bool bdock = false;
+	// Chinese menu format: "<vessel>，接口 <n>"
+	const char *pc = strstr (str, "，");
+	if (pc) {
+		int nlen = (int)(pc - str);
+		if (nlen > 0 && nlen < 256) {
+			strncpy (name, str, nlen);
+			name[nlen] = '\0';
+			const char *pnum = strstr (pc, " ");
+			if (pnum) bdock = (sscanf (pnum+1, "%d", &dock) == 1);
+		}
+	} else {
+		bdock = (sscanf (str, "%s%d", name, &dock) == 2);
+		int len = (int)strlen(name);
+		if (len > 0 && name[len-1] == ',') {
+			name[len-1] = '\0';
+			bdock = (sscanf (str+len+5, "%d", &dock) == 1);
+		}
 	}
 	Vessel *obj = g_psys->GetVessel (name, true);
+	if (!obj) {
+		// The menu displays translated vessel names - match those as well.
+		for (DWORD k = 0; k < g_psys->nVessel(); k++) {
+			Vessel *v = g_psys->GetVessel (k);
+			if (!strcmp (v->Name(), name) || !strcmp (orbiter::Tr(v->Name()), name)) {
+				obj = v;
+				break;
+			}
+		}
+	}
 	if (!obj) return false;
 	if (bdock && (dock < 1 || (DWORD)dock > obj->nDock())) return false;
 	Legacy_ref = obj;

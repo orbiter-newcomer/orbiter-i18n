@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdHsi.h"
+#include "Localization.h"
 #include "Nav.h"
 #include "Base.h"
 #include "Astro.h"
@@ -121,21 +122,21 @@ void Instrument_HSI::UpdateDraw (oapi::Sketchpad *skp)
 		x0 = -R0-U1;
 		NavRadioSpec *nav = (hsi[i].nv < vessel->nnav ? vessel->nav+hsi[i].nv : 0);
 		bsignal = bglideslope = false;
-		skp->SetFont (GetDefaultFont (1));
+		skp->SetFont (GetDefaultFont (0));
 		skp->SetTextColor (draw[0][0].col);
 		skp->SetTextAlign (oapi::Sketchpad::LEFT);
 		if (nav && nav->sender) {
 			switch (nav->sender->Type()) {
 			case TRANSMITTER_VOR: {
 				Nav_VOR *vor = (Nav_VOR*)nav->sender;
-				strcpy (cbuf, "VOR "); strcat (cbuf, vor->GetId());
+				strcpy (cbuf, orbiter::Tr("VOR")); strcat (cbuf, " "); strcat (cbuf, vor->GetId());
 				skp->Text (x0, YLN2, cbuf, strlen(cbuf));
 				vor->GetEquPos (tlng, tlat);
 				bsignal = true;
 				} break;
 			case TRANSMITTER_ILS: {
 				Nav_ILS *ils = (Nav_ILS*)nav->sender;
-				sprintf (cbuf, "ILS Rwy %02d ", (int)((apprd = ils->ApprDir())*DEG*0.1+0.5));
+				sprintf (cbuf, "%s %02d ", orbiter::Tr("ILS Rwy"), (int)((apprd = ils->ApprDir())*DEG*0.1+0.5));
 				strncat (cbuf, ils->GetBase()->Name(), 16);
 				skp->Text (x0, YLN2, cbuf, strlen(cbuf));
 				ils->GetEquPos (tlng, tlat);
@@ -144,7 +145,7 @@ void Instrument_HSI::UpdateDraw (oapi::Sketchpad *skp)
 				} break;
 			}
 		} else {
-			skp->Text (x0, YLN2, "[no signal]", 11);
+			skp->Text (x0, YLN2, orbiter::Tr("[no signal]"), (int)strlen(orbiter::Tr("[no signal]")));
 		}
 		if (sp && bsignal) {
 			Orthodome (sp->lng, sp->lat, tlng, tlat, adist, bdir);
@@ -218,21 +219,21 @@ void Instrument_HSI::UpdateDraw (oapi::Sketchpad *skp)
 		// text output
 		skp->SetTextAlign (oapi::Sketchpad::LEFT);
 		cosa = cos(bdir);
-		if      (cosa >  0.1) skp->Text (x0, R0+U1-U3, "TO", 2);
-		else if (cosa < -0.1) skp->Text (x0, R0+U1-U3, "FROM", 4);
+		if      (cosa >  0.1) skp->Text (x0, R0+U1-U3, orbiter::Tr("TO"), (int)strlen(orbiter::Tr("TO")));
+		else if (cosa < -0.1) skp->Text (x0, R0+U1-U3, orbiter::Tr("FROM"), (int)strlen(orbiter::Tr("FROM")));
 		skp->SetTextColor (draw[0][0].col);
 		if (nav) {
-			sprintf (cbuf, "NAV%d %06.2fMHz", hsi[i].nv+1, nav->freq);
+			sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), hsi[i].nv+1, nav->freq);
 			skp->Text (x0, YLN1, cbuf, strlen(cbuf));
 		}
-		sprintf (cbuf, "CRS %03.0f°", hsi[i].obs*DEG);
-		skp->Text (x0, YLN3, cbuf, 9);
-		sprintf (cbuf, "DEV %02.0f°", fabs(crsdev)*DEG);
-		skp->Text (x0, YLN4, cbuf, 8);
+		sprintf (cbuf, "%s %03.0f°", orbiter::Tr("CRS"), hsi[i].obs*DEG);
+		skp->Text (x0, YLN3, cbuf, (int)strlen(cbuf));
+		sprintf (cbuf, "%s %02.0f°", orbiter::Tr("DEV"), fabs(crsdev)*DEG);
+		skp->Text (x0, YLN4, cbuf, (int)strlen(cbuf));
 		skp->SetTextAlign (oapi::Sketchpad::RIGHT);
-		sprintf (cbuf, "BRG %03.0f°", brg*DEG);
-		skp->Text (R0+U1, YLN3, cbuf, 9);
-		sprintf (cbuf, "DST%s", DistStr (adist));
+		sprintf (cbuf, "%s %03.0f°", orbiter::Tr("BRG"), brg*DEG);
+		skp->Text (R0+U1, YLN3, cbuf, (int)strlen(cbuf));
+		sprintf (cbuf, "%s%s", orbiter::Tr("DST"), DistStr (adist));
 		skp->Text (R0+U1, YLN4, cbuf, strlen(cbuf));
 	}
 	skp->SetOrigin (xorig, yorig);
@@ -344,10 +345,10 @@ const char *Instrument_HSI::BtnLabel (int bt) const
 int Instrument_HSI::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[4] = {
-		{"Switch HSI focus", 0, 'F'},
-		{"NAV receiver", "select", 'N'},
-		{"OBS indicator", "left", '['},
-		{"OBS indicator", "right", ']'}
+		{orbiter::Tr("Switch HSI focus"), 0, 'F'},
+		{orbiter::Tr("NAV receiver"), 0, 'N'},
+		{orbiter::Tr("OBS indicator left"), 0, '['},
+		{orbiter::Tr("OBS indicator right"), 0, ']'}
 	};
 	if (menu) *menu = mnu;
 	return 4;

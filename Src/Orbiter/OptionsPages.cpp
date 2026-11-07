@@ -1168,19 +1168,15 @@ BOOL OptionsPage_UI::OnCommand(HWND hPage, WORD ctrlId, WORD notification, HWND 
 	case IDC_OPT_UI_LANGUAGE:
 		if (notification == CBN_SELCHANGE) {
 			int idx = (int)SendDlgItemMessage(hPage, IDC_OPT_UI_LANGUAGE, CB_GETCURSEL, 0, 0);
-			LOGOUT("LANG: setup language idx=%d", idx);
 			orbiter::SetLanguage(idx == 1 ? orbiter::Language::Chinese : orbiter::Language::English, true);
 			// Re-apply the new language to the whole Launchpad. This also
 			// refreshes dynamically created contents (tab tree items) which are
 			// not covered by LocalizeWindowTree alone.
-			LOGOUT("LANG: before Relocalize");
 			if (orbiter::LaunchpadDialog* lp = orbiter::GetLaunchpadDialog())
 				lp->Relocalize();
 			else
 				orbiter::LocalizeWindowTree(GetAncestor(hPage, GA_ROOT));
-			LOGOUT("LANG: after Relocalize");
 			orbiter::SyncLanguageCombo(GetDlgItem(hPage, IDC_OPT_UI_LANGUAGE));
-			LOGOUT("LANG: after SyncLanguageCombo");
 			return FALSE;
 		}
 		break;

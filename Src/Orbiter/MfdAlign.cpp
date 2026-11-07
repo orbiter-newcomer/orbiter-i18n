@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdAlign.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Planet.h"
 #include "Psys.h"
@@ -150,29 +151,29 @@ void Instrument_OPlaneAlign::UpdateDraw (oapi::Sketchpad *skp)
 			mode = ORBIT;
 	}
 
-	DisplayTitle (skp, "Align plane");
-	const char *modestr[3] = { "Orbit  ", "Ballist", "Surface" };
+	DisplayTitle (skp, orbiter::Tr("Align plane"));
+	static const char *modestr[3] = { "Orbit  ", "Ballist", "Surface" };
 	if (elref) {
-		skp->Text (cw*17, 1, elref->Name(), min ((size_t)16, strlen(elref->Name())));
-		strcpy (cbuf, tgt ? tgt->Name() : customel ? "[Custom]" : "[None]");
+		skp->Text (cw*17, 1, orbiter::Tr(elref->Name()), min ((size_t)40, strlen(orbiter::Tr(elref->Name()))));
+		strcpy (cbuf, tgt ? orbiter::Tr(tgt->Name()) : customel ? orbiter::Tr("[Custom]") : orbiter::Tr("[None]"));
 		skp->Text (cw*17, 1+ch, cbuf, strlen (cbuf));
-		skp->Text(cw * 5, 1 + ch, modestr[mode], 7);
+		skp->Text(cw * 5, 1 + ch, orbiter::Tr(modestr[mode]), (int)strlen(orbiter::Tr(modestr[mode])));
 		skp->SetTextColor (draw[2][1].col);
-		skp->Text ((cw*27)/2, 1, "Ref", 3);
-		skp->Text ((cw*27)/2, 1+ch, "Tgt", 3);
-		skp->Text(x, 1 + ch, automode ? "Auto" : "Mode", 4);
+		skp->Text ((cw*27)/2, 1, orbiter::Tr("Ref"), (int)strlen(orbiter::Tr("Ref")));
+		skp->Text ((cw*27)/2, 1+ch, orbiter::Tr("Tgt"), (int)strlen(orbiter::Tr("Tgt")));
+		skp->Text(x, 1 + ch, orbiter::Tr(automode ? "Auto" : "Mode"), (int)strlen(orbiter::Tr(automode ? "Auto" : "Mode")));
 	} else {
 		skp->SetTextColor (draw[0][0].col);
-		skp->Text (x, y, "No reference body selected.", 27);
+		skp->Text (x, y, orbiter::Tr("No reference body selected."), (int)strlen(orbiter::Tr("No reference body selected.")));
 		return;
 	}
 	skp->SetTextColor (draw[0][0].col);
 
 	if (!(tgt || customel)) {
-		skp->Text (x, y, "No target orbit selected.", 25); y += ch;
-		skp->Text (x, y, "Use Shift-T to select a target", 30); y += ch;
-		skp->Text (x, y, "or Shift-E to define a custom", 29); y+= ch;
-		skp->Text (x, y, "orbit.", 6);
+		skp->Text (x, y, orbiter::Tr("No target orbit selected."), (int)strlen(orbiter::Tr("No target orbit selected."))); y += ch;
+		skp->Text (x, y, orbiter::Tr("Use Shift-T to select a target"), (int)strlen(orbiter::Tr("Use Shift-T to select a target"))); y += ch;
+		skp->Text (x, y, orbiter::Tr("or Shift-E to define a custom"), (int)strlen(orbiter::Tr("or Shift-E to define a custom"))); y+= ch;
+		skp->Text (x, y, orbiter::Tr("orbit."), (int)strlen(orbiter::Tr("orbit.")));
 		return;
 	}
 
@@ -278,89 +279,177 @@ void Instrument_OPlaneAlign::UpdateDraw (oapi::Sketchpad *skp)
 	}
 
 	// output relevant elements of current and target orbits, and relative inclination + rate
-	sprintf(cbuf, "Current     Target      Relative");
-	skp->SetPen(draw[0][1].solidpen);
-	skp->Text(x, y, cbuf, 32); y += ch+1;
-	skp->Line(x, y, x + cw * 11, y);
-	skp->Line(x + cw * 12, y, x + cw * 23, y);
-	skp->Line(x + cw * 24, y, x + cw * 36, y); y += 1;
-	sprintf (cbuf, "Inc% 7.2f° Inc% 7.2f° RInc%7.2f°", Deg(shpel->i), Deg(tgtel->i), Deg(reli));
-	skp->Text(x, y, cbuf, strlen(cbuf)); y += ch;
-	sprintf (cbuf, "LAN% 7.2f° LAN% 7.2f° R %+7.3f°/s", Deg(shpel->theta), Deg(tgtel->theta), Deg(didt));
-	skp->Text(x, y, cbuf, strlen(cbuf)); y += 2 * ch;
+	{
+		int i;
+		char hcol[3][32], r1[3][64], r2[3][64];
+		strcpy(hcol[0], orbiter::Tr("Current"));
+		strcpy(hcol[1], orbiter::Tr("Target"));
+		strcpy(hcol[2], orbiter::Tr("Relative"));
+		sprintf(r1[0], "%s% 7.2f°", orbiter::Tr("Inc"), Deg(shpel->i));
+		sprintf(r1[1], "%s% 7.2f°", orbiter::Tr("Inc"), Deg(tgtel->i));
+		sprintf(r1[2], "%s%7.2f°", orbiter::Tr("RInc"), Deg(reli));
+		sprintf(r2[0], "%s% 7.2f°", orbiter::Tr("LAN"), Deg(shpel->theta));
+		sprintf(r2[1], "%s% 7.2f°", orbiter::Tr("LAN"), Deg(tgtel->theta));
+		sprintf(r2[2], "%s %+7.3f°/s", orbiter::Tr("R"), Deg(didt));
+		int colx[3], colw[3];
+		for (i = 0; i < 3; i++) {
+			colw[i] = (int)skp->GetTextWidth(hcol[i], (int)strlen(hcol[i]));
+			int w = (int)skp->GetTextWidth(r1[i], (int)strlen(r1[i]));
+			if (w > colw[i]) colw[i] = w;
+			w = (int)skp->GetTextWidth(r2[i], (int)strlen(r2[i]));
+			if (w > colw[i]) colw[i] = w;
+			colw[i] += cw;
+		}
+		colx[0] = x; colx[1] = colx[0]+colw[0]; colx[2] = colx[1]+colw[1];
+		skp->SetPen(draw[0][1].solidpen);
+		for (i = 0; i < 3; i++) skp->Text(colx[i], y, hcol[i], (int)strlen(hcol[i]));
+		y += ch+1;
+		for (i = 0; i < 3; i++) skp->Line(colx[i], y, colx[i]+colw[i]-cw/2, y);
+		y += 1;
+		for (i = 0; i < 3; i++) skp->Text(colx[i], y, r1[i], (int)strlen(r1[i]));
+		y += ch;
+		for (i = 0; i < 3; i++) skp->Text(colx[i], y, r2[i], (int)strlen(r2[i]));
+		y += 2 * ch;
+	}
 
 	// node encounter data
-	skp->Text(x, y, "Node encounter", 14); y += ch;
-	skp->Text(x + cw * 3, y, "dA[°] TtN[s]", 13); y += ch + 1;
-	skp->Line(x + cw * 3, y, x + cw * 8, y);
-	skp->Line(x + cw * 9, y, x + cw * 15, y); y += 1;
-	// ascending node
-	if (have_intersection) {
-		sprintf(cbuf, "AN%6.1f%s", Aan*DEG, FloatStr(Tan, 3));
-		skp->Text(x, an_is_next ? y : y + ch, cbuf, strlen(cbuf)); y += ch;
-		// descending node
-		sprintf(cbuf, "DN%6.1f%s", Adn*DEG, FloatStr(Tdn, 3));
-		skp->Text(x, an_is_next ? y : y - ch, cbuf, strlen(cbuf)); y += 2 * ch;
-	}
-	else {
-		sprintf(cbuf, "CE%6.1f%s", Aan*DEG, FloatStr(Tan, 3));
-		skp->Text(x, y, cbuf, strlen(cbuf)); y += 3 * ch;
+	{
+		char h1[32], h2[32];
+		strcpy(h1, orbiter::Tr("dA[°]"));
+		strcpy(h2, orbiter::Tr("TtN[s]"));
+		int lw = (int)skp->GetTextWidth("CE ", 3);
+		int w1 = (int)skp->GetTextWidth(h1, (int)strlen(h1));
+		int w1b = (int)skp->GetTextWidth(" 999.9", 6);
+		if (w1b > w1) w1 = w1b;
+		int w2 = (int)skp->GetTextWidth(h2, (int)strlen(h2));
+		int w2b = (int)skp->GetTextWidth("999.9k", 6);
+		if (w2b > w2) w2 = w2b;
+		int c0 = x, c1 = x + lw + cw, c2 = c1 + w1 + cw;
+		skp->Text(x, y, orbiter::Tr("Node encounter"), (int)strlen(orbiter::Tr("Node encounter"))); y += ch;
+		skp->Text(c1, y, h1, (int)strlen(h1));
+		skp->Text(c2, y, h2, (int)strlen(h2));
+		y += ch + 1;
+		skp->Line(c1, y, c1 + w1, y);
+		skp->Line(c2, y, c2 + w2, y); y += 1;
+		if (have_intersection) {
+			{
+				char lab[8], vda[32], vttn[32];
+				strcpy(lab, "AN");
+				sprintf(vda, "%6.1f", Aan*DEG);
+				strcpy(vttn, FloatStr(Tan, 3));
+				int yy = (an_is_next ? y : y + ch);
+				skp->Text(c0, yy, lab, 2);
+				skp->Text(c1, yy, vda, (int)strlen(vda));
+				skp->Text(c2, yy, vttn, (int)strlen(vttn));
+			}
+			y += ch;
+			{
+				char lab[8], vda[32], vttn[32];
+				strcpy(lab, "DN");
+				sprintf(vda, "%6.1f", Adn*DEG);
+				strcpy(vttn, FloatStr(Tdn, 3));
+				int yy = (an_is_next ? y : y - ch);
+				skp->Text(c0, yy, lab, 2);
+				skp->Text(c1, yy, vda, (int)strlen(vda));
+				skp->Text(c2, yy, vttn, (int)strlen(vttn));
+			}
+			y += 2 * ch;
+		}
+		else {
+			char lab[8], vda[32], vttn[32];
+			strcpy(lab, "CE");
+			sprintf(vda, "%6.1f", Aan*DEG);
+			strcpy(vttn, FloatStr(Tan, 3));
+			skp->Text(c0, y, lab, 2);
+			skp->Text(c1, y, vda, (int)strlen(vda));
+			skp->Text(c2, y, vttn, (int)strlen(vttn));
+			y += 3 * ch;
+		}
 	}
 
 	// thrust estimates
-	y = IH - (9*ch)/2;
-	sprintf(cbuf, "Thrust [%sN]", FloatStr(Th_main, 4)+1);
-	skp->Text(x, y, cbuf, strlen(cbuf)); y += ch;
-	strcpy(cbuf, "Dir   dV[m/s]  BT[s]   TtB[s]");
-	if (mode == SURFACE) cbuf[25] = 'L';
-	skp->Text(x + cw * 4, y, cbuf, 30); y += ch + 1;
-	skp->Line(x + cw * 4, y, x + cw * 8, y);
-	skp->Line(x + cw * 10, y, x + cw * 17, y);
-	skp->Line(x + cw * 19, y, x + cw * 25, y);
-	skp->Line(x + cw * 27, y, x + cw * 33, y); y += 1;
-	sprintf(cbuf, have_intersection ? "AN  NML- %s" : "CE  90°  %s", FloatStr(dVan));
-	y1 = (an_is_next ? y : y + ch);
-	skp->Text(x, y1, cbuf, strlen(cbuf));
-	strcpy(cbuf, FloatStr(burnTan, 3));
-	skp->Text(x + cw * 18, y1, cbuf, strlen(cbuf));
-	if (!engage || !an_is_closest) {
-		strcpy(cbuf, FloatStr(Tan - burnTan*0.5, 3));
-		skp->Text(x + cw * 26, y1, cbuf, strlen(cbuf));
-	}
-	else {
-		skp->SetTextColor(draw[1][0].col);
-		skp->Text(x + cw * 26, y1, mode == SURFACE ? "[LAUNCH]" : " [BURN] ", 8);
-		skp->SetTextColor(draw[0][0].col);
-	}
-	y += ch;
-	if (have_intersection) {
-		y1 = (an_is_next ? y : y - ch);
-		sprintf(cbuf, "DN  NML+ %s", FloatStr(dVdn));
-		skp->Text(x, y1, cbuf, strlen(cbuf));
-		strcpy(cbuf, FloatStr(burnTdn, 3));
-		skp->Text(x + cw * 18, y1, cbuf, strlen(cbuf));
-		if (!engage || an_is_closest) {
-			strcpy(cbuf, FloatStr(Tdn - burnTdn*0.5, 3));
-			skp->Text(x + cw * 26, y1, cbuf, strlen(cbuf));
+	{
+		char hdir[16], hdv[32], hbt[32], httb[32];
+		strcpy(hdir, orbiter::Tr("Dir"));
+		strcpy(hdv, orbiter::Tr("dV[m/s]"));
+		strcpy(hbt, orbiter::Tr("BT[s]"));
+		strcpy(httb, orbiter::Tr(mode == SURFACE ? "TtL[s]" : "TtB[s]"));
+		int wdir = (int)skp->GetTextWidth(hdir, (int)strlen(hdir));
+		{ int w = (int)skp->GetTextWidth("AN ", 3); if (w > wdir) wdir = w; }
+		int wnml = (int)skp->GetTextWidth("NML+ ", 5);
+		{ int w = (int)skp->GetTextWidth(orbiter::Tr("NML+"), (int)strlen(orbiter::Tr("NML+"))); if (w > wnml) wnml = w; }
+		int wdv = (int)skp->GetTextWidth(hdv, (int)strlen(hdv));
+		int wbt = (int)skp->GetTextWidth(hbt, (int)strlen(hbt));
+		int wttb = (int)skp->GetTextWidth(httb, (int)strlen(httb));
+		int cx0 = x, cx1 = cx0 + wdir + cw, cx2 = cx1 + wnml + cw,
+			cx3 = cx2 + wdv + cw, cx4 = cx3 + wbt + cw;
+		y = IH - (9*ch)/2;
+		sprintf(cbuf, "%s [%sN]", orbiter::Tr("Thrust"), FloatStr(Th_main, 4)+1);
+		skp->Text(x, y, cbuf, (int)strlen(cbuf)); y += ch;
+		skp->Text(cx1, y, hdir, (int)strlen(hdir));
+		skp->Text(cx2, y, hdv, (int)strlen(hdv));
+		skp->Text(cx3, y, hbt, (int)strlen(hbt));
+		skp->Text(cx4, y, httb, (int)strlen(httb));
+		y += ch + 1;
+		skp->Line(cx1, y, cx1+wnml, y);
+		skp->Line(cx2, y, cx2+wdv, y);
+		skp->Line(cx3, y, cx3+wbt, y);
+		skp->Line(cx4, y, cx4+wttb, y);
+		y += 1;
+		{
+			char dir[8], nml[16], vdv[32], vbt[32], vttb[32];
+			if (have_intersection) { strcpy(dir, "AN"); strcpy(nml, orbiter::Tr("NML-")); }
+			else { strcpy(dir, "CE"); strcpy(nml, "90°"); }
+			strcpy(vdv, FloatStr(dVan));
+			strcpy(vbt, FloatStr(burnTan, 3));
+			int yy = (an_is_next ? y : y + ch);
+			skp->Text(cx0, yy, dir, (int)strlen(dir));
+			skp->Text(cx1, yy, nml, (int)strlen(nml));
+			skp->Text(cx2, yy, vdv, (int)strlen(vdv));
+			skp->Text(cx3, yy, vbt, (int)strlen(vbt));
+			if (!engage || !an_is_closest) {
+				strcpy(vttb, FloatStr(Tan - burnTan*0.5, 3));
+				skp->Text(cx4, yy, vttb, (int)strlen(vttb));
+			}
+			else {
+				skp->SetTextColor(draw[1][0].col);
+				skp->Text(cx4, yy, orbiter::Tr(mode == SURFACE ? "[LAUNCH]" : "[BURN]"), (int)strlen(orbiter::Tr(mode == SURFACE ? "[LAUNCH]" : "[BURN]")));
+				skp->SetTextColor(draw[0][0].col);
+			}
 		}
-		else {
-			skp->SetTextColor(draw[1][0].col);
-			skp->Text(x + cw * 26, y1, mode == SURFACE ? "[LAUNCH]" : " [BURN] ", 8);
-			skp->SetTextColor(draw[0][0].col);
+		y += ch;
+		if (have_intersection) {
+			char dir[8], nml[16], vdv[32], vbt[32], vttb[32];
+			strcpy(dir, "DN"); strcpy(nml, orbiter::Tr("NML+"));
+			strcpy(vdv, FloatStr(dVdn));
+			strcpy(vbt, FloatStr(burnTdn, 3));
+			int yy = (an_is_next ? y : y - ch);
+			skp->Text(cx0, yy, dir, (int)strlen(dir));
+			skp->Text(cx1, yy, nml, (int)strlen(nml));
+			skp->Text(cx2, yy, vdv, (int)strlen(vdv));
+			skp->Text(cx3, yy, vbt, (int)strlen(vbt));
+			if (!engage || an_is_closest) {
+				strcpy(vttb, FloatStr(Tdn - burnTdn*0.5, 3));
+				skp->Text(cx4, yy, vttb, (int)strlen(vttb));
+			}
+			else {
+				skp->SetTextColor(draw[1][0].col);
+				skp->Text(cx4, yy, orbiter::Tr(mode == SURFACE ? "[LAUNCH]" : "[BURN]"), (int)strlen(orbiter::Tr(mode == SURFACE ? "[LAUNCH]" : "[BURN]")));
+				skp->SetTextColor(draw[0][0].col);
+			}
 		}
 	}
-
 	// subsurface warning
 	if (mode == ORBIT && subsurf_node || !have_intersection) {
 		skp->SetTextColor(draw[1][1].col);
 		y = ch * 12;
 		skp->SetFont(GetDefaultFont(1));
 		if (!have_intersection) {
-			skp->Text(x, y, "No intersection with target", 27); y += ch;
-			skp->Text(x, y, "plane at launch latitude.", 25);
+			skp->Text(x, y, orbiter::Tr("No intersection with target"), (int)strlen(orbiter::Tr("No intersection with target"))); y += ch;
+			skp->Text(x, y, orbiter::Tr("plane at launch latitude."), (int)strlen(orbiter::Tr("plane at launch latitude.")));
 		} else {
-			skp->Text(x, y, "Trajectory intersects surface", 29); y += ch;
-			skp->Text(x, y, "Data may be inaccurate.", 23);
+			skp->Text(x, y, orbiter::Tr("Trajectory intersects surface"), (int)strlen(orbiter::Tr("Trajectory intersects surface"))); y += ch;
+			skp->Text(x, y, orbiter::Tr("Data may be inaccurate."), (int)strlen(orbiter::Tr("Data may be inaccurate.")));
 		}
 	}
 
@@ -398,8 +487,8 @@ void Instrument_OPlaneAlign::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line(CX + xa, CY + ya, CX + xd, CY + yd); // node line
 		xa = (xa * 10) / 9;  ya = (ya * 10) / 9;
 		xd = (xd * 10) / 9;  yd = (yd * 10) / 9;
-		skp->Text(CX + xa, CY + ya - ch / 2, "AN", 2);
-		skp->Text(CX + xd, CY + yd - ch / 2, "DN", 2);
+		skp->Text(CX + xa, CY + ya - ch / 2, orbiter::Tr("AN"), (int)strlen(orbiter::Tr("AN")));
+		skp->Text(CX + xd, CY + yd - ch / 2, orbiter::Tr("DN"), (int)strlen(orbiter::Tr("DN")));
 	}
 	else {
 		skp->Line(CX + xa - cw / 2, CY + ya, CX + xa + cw / 2, CY + ya);
@@ -523,11 +612,11 @@ const char *Instrument_OPlaneAlign::BtnLabel (int bt) const
 int Instrument_OPlaneAlign::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[5] = {
-		{"Orbit reference", 0, 'R'},
-		{"Auto reference", 0, 'A'},
-		{"Select target", 0, 'T'},
-		{"Select elements", 0, 'E'},
-		{"Cycle modes", "Auto/Orbit/Surf", 'M'}
+		{orbiter::Tr("Orbit reference"), 0, 'R'},
+		{orbiter::Tr("Auto reference"), 0, 'A'},
+		{orbiter::Tr("Select target"), 0, 'T'},
+		{orbiter::Tr("Select elements"), 0, 'E'},
+		{orbiter::Tr("Cycle modes"), 0, 'M'}
 	};
 	if (menu) *menu = mnu;
 	return 5;

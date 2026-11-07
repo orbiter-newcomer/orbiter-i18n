@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdComms.h"
+#include "Localization.h"
 #include "Nav.h"
 #include <stdio.h>
 #include "Orbiter.h"
@@ -70,12 +71,13 @@ void Instrument_Comms::UpdateDraw (oapi::Sketchpad *skp)
 	const Nav *nav;
 
 	for (n = 0; n < vessel->nnav; n++) {
-		sprintf (cbuf, "NAV%d: %6.2f MHz", n+1, vessel->nav[n].freq);
+		sprintf (cbuf, "%s%d：%6.2f MHz", orbiter::Tr("NAV"), n+1, vessel->nav[n].freq);
 		skp->SetTextColor (draw[n == sel ? 1:0][0].col);
+		int rowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		skp->Text (x, y, cbuf, strlen (cbuf)); y += dy;
 		if (nav = vessel->nav[n].sender) {
 			len = nav->IdString (cbuf, 256);
-			skp->Text (x+cw*3, y, cbuf, min (len, 30));
+			skp->Text (x+rowW+cw, y, cbuf, min (len, 30));
 			sig = min(5,1+(int)(0.5*log(nav->FieldStrength(vessel->GPos()))));
 			skp->SetBrush (brush[n == sel ? 1:0]);
 			skp->SetPen (GetDefaultPen (n == sel ? 1:0, 1));
@@ -90,7 +92,7 @@ void Instrument_Comms::UpdateDraw (oapi::Sketchpad *skp)
 				xx += cw;
 			}
 		} else {
-			skp->Text (x+cw*3, y, "-----------", 11);
+			skp->Text (x+rowW+cw, y, "-----------", 11);
 		}
 		y += (3*dy)/2;
 	}
@@ -98,13 +100,14 @@ void Instrument_Comms::UpdateDraw (oapi::Sketchpad *skp)
 		skp->SetPen (GetDefaultPen (0));
 		skp->Line (x, y, IW-x, y); y += dy/2;
 		skp->SetTextColor (draw[2][0].col);
-		skp->Text (x, y, "XPDR Transmitter", 16); y += (3*dy)/2;
+		skp->Text (x, y, orbiter::Tr("XPDR Transmitter"), (int)strlen(orbiter::Tr("XPDR Transmitter"))); y += (3*dy)/2;
 		skp->SetTextColor (draw[sel == vessel->nnav ? 1:0][0].col);
-		sprintf (cbuf, "XPDR: %6.2f MHz", freq);
+		sprintf (cbuf, "%s：%6.2f MHz", orbiter::Tr("XPDR"), freq);
+		int rowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		skp->Text (x, y, cbuf, strlen (cbuf)); y += dy;
 	}
 
-	DisplayTitle (skp, "NAV Receiver Stack");
+	DisplayTitle (skp, orbiter::Tr("NAV Receiver Stack"));
 }
 
 bool Instrument_Comms::KeyBuffered (DWORD key)
@@ -192,14 +195,14 @@ const char *Instrument_Comms::BtnLabel (int bt) const
 int Instrument_Comms::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[8] = {
-		{"Select receiver", "(up)", ','},
-		{"Select receiver", "(down)", '.'},
-		{"Dec frequency", "(step 0.05)", '['},
-		{"Dec frequency", "(step 1.0)", '-'},
-		{"Inc frequency", "(step 0.05)", ']'},
-		{"Inc frequency", "(step 1.0)", '='},
-		{"Scan down", 0, 'z'},
-		{"Scan up", 0, 'x'},
+		{orbiter::Tr("Select receiver"), 0, ','},
+		{orbiter::Tr("Select receiver"), 0, '.'},
+		{orbiter::Tr("Dec frequency"), orbiter::Tr("(step 0.05)"), '['},
+		{orbiter::Tr("Dec frequency"), orbiter::Tr("(step 1.0)"), '-'},
+		{orbiter::Tr("Inc frequency"), orbiter::Tr("(step 0.05)"), ']'},
+		{orbiter::Tr("Inc frequency"), orbiter::Tr("(step 1.0)"), '='},
+		{orbiter::Tr("Scan down"), 0, 'z'},
+		{orbiter::Tr("Scan up"), 0, 'x'},
 	};
 	if (menu) *menu = mnu;
 	return 8;

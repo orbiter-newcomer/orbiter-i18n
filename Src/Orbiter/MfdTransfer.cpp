@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdTransfer.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"
@@ -116,7 +117,7 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 	double myta, ea, rma, cma, escal, T0, dt0, dte, tanm, tlng;
 	bool bValid, bTarget;
 
-	DisplayTitle (skp, "Transfer");
+	DisplayTitle (skp, orbiter::Tr("Transfer"));
 	skp->SetTextColor (draw[0][0].col);
 	y = y0;
 
@@ -129,11 +130,11 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 	} else bValid = false;
 	if (bValid) {
 		skp->SetTextColor (draw[2][1].col);
-		sprintf (cbuf, "[Ref: %s]", elref->Name());
+		sprintf (cbuf, "[%s%s]", orbiter::Tr("Ref: "), orbiter::Tr(elref->Name()));
 		skp->Text (cw/2+cw*9, 1, cbuf, strlen(cbuf));
 		skp->SetTextColor (draw[0][0].col);
 	} else {
-		if (blink) skp->Text (x0, y, "Select reference (Shift-R)", 26);
+		if (blink) skp->Text (x0, y, orbiter::Tr("Select reference (Shift-R)"), (int)strlen(orbiter::Tr("Select reference (Shift-R)")));
 		return;
 	}
 	bTarget = (tgt && tgt->ElRef() == elref && (tgtel = tgt->Els()) != 0);
@@ -253,38 +254,38 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 			skp->SetPen (draw[1][1].dashpen);
 			skp->Line (ICNTX, ICNTY, ICNTX+(int)(v.x*pixrad), ICNTY-(int)(v.z*pixrad));
 		} else {
-			if (blink) skp->Text ((IW-cw*15)/2, IH/2, "No intersection", 15);
+			if (blink) skp->Text ((IW-cw*15)/2, IH/2, orbiter::Tr("No intersection"), (int)strlen(orbiter::Tr("No intersection")));
 		}
 	}
 
 	y = y0;
-	sprintf (cbuf, "Src %s", src == vessel ? "[self]" : src->Name());
+	sprintf (cbuf, "%s %s", orbiter::Tr("Src"), src == vessel ? orbiter::Tr("[self]") : orbiter::Tr(src->Name()));
 	skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-	sprintf (cbuf, "TrL% 7.2fº", DEG*shpel->TrueLng());
+	sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TrL"), DEG*shpel->TrueLng());
 	skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
 	if (!enable_hyp && dt0 >= 0.0) {
-		sprintf (cbuf, "TLi% 7.2fº", DEG*posangle(rlng+shpel->omegab));
+		sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TLi"), DEG*posangle(rlng+shpel->omegab));
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "DTi%s", DistStr (dt0));
+		sprintf (cbuf, "%s %s", orbiter::Tr("DTi"), DistStr (dt0));
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
 	}
 	
 	// simulated orbit parameters
 	if (enable_hyp) {
 		y += ch;
-		skp->Text (x0, y, "HTO", 3); y += ch;
-		sprintf (cbuf, "SMa%s", DistStr (shpel2->a));          // semi-major axis
+		skp->Text (x0, y, orbiter::Tr("HTO"), (int)strlen(orbiter::Tr("HTO"))); y += ch;
+		sprintf (cbuf, "%s %s", orbiter::Tr("SMa"), DistStr (shpel2->a));          // semi-major axis
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "TLe% 7.2fº", DEG*l_eject);             // longitude of ejection point
+		sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TLe"), DEG*l_eject);             // longitude of ejection point
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "DTe%s", DistStr(dte));                 // time to ejection point
+		sprintf (cbuf, "%s %s", orbiter::Tr("DTe"), DistStr(dte));                 // time to ejection point
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "Dv %s", DistStr (deltav));             // Dvel at ejection point
+		sprintf (cbuf, "%s %s", orbiter::Tr("Dv"), DistStr (deltav));             // Dvel at ejection point
 		skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
 		if (dt0 >= 0.0) {
-			sprintf (cbuf, "TLi% 7.2fº", DEG*posangle(rlng+shpel2->omegab));
+			sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TLi"), DEG*posangle(rlng+shpel2->omegab));
 			skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
-			sprintf (cbuf, "DTi%s", DistStr (dt0));
+			sprintf (cbuf, "%s %s", orbiter::Tr("DTi"), DistStr (dt0));
 			skp->Text (x0, y, cbuf, strlen(cbuf)); y += ch;
 		}
 	}
@@ -292,15 +293,15 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 
 	skp->SetTextColor (draw[1][0].col); y = y0;
 	if (bTarget) {
-		strcpy (cbuf, "Tgt "); strcat (cbuf, tgt->Name());
+		strcpy (cbuf, orbiter::Tr("Tgt ")); strcat (cbuf, orbiter::Tr(tgt->Name()));
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "TrL% 7.2fº", DEG*tgtel->TrueLng());
+		sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TrL"), DEG*tgtel->TrueLng());
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
-		if (dt0 >= 0.0) sprintf (cbuf, "TLi% 7.2fº", DEG*tlng);
-		else            sprintf (cbuf, "TLi  N/A");
+		if (dt0 >= 0.0) sprintf (cbuf, "%s% 7.2fº", orbiter::Tr("TLi"), DEG*tlng);
+		else            sprintf (cbuf, "%s  %s", orbiter::Tr("TLi"), orbiter::Tr("N/A"));
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
 	} else {
-		strcpy (cbuf, "Tgt N/A");
+		sprintf (cbuf, "%s %s", orbiter::Tr("Tgt"), orbiter::Tr("N/A"));
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
 	}
 	skp->SetTextColor (draw[0][0].col);
@@ -316,10 +317,10 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Polyline (pathp, i);
 		y = y0+ch*4;
 		skp->SetTextColor (draw[1][0].col);
-		skp->Text (x1, y, "Num orbit", 9); y += ch;
-		sprintf (cbuf, "Stp %d", step_curr);
+		skp->Text (x1, y, orbiter::Tr("Num orbit"), (int)strlen(orbiter::Tr("Num orbit"))); y += ch;
+		sprintf (cbuf, "%s %d", orbiter::Tr("Stp"), step_curr);
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
-		sprintf (cbuf, "T  %s", DistStr (step_t-step_0));
+		sprintf (cbuf, "%s  %s", orbiter::Tr("T"), DistStr (step_t-step_0));
 		skp->Text (x1, y, cbuf, strlen(cbuf)); y += ch;
 	}
 
@@ -334,7 +335,7 @@ void Instrument_Transfer::UpdateDraw (oapi::Sketchpad *skp)
 
 		// relative inclination ship orbit <-> target orbit
 		skp->SetTextColor (draw[reli < RAD*1.0 ? 0:1][1].col);
-		sprintf (cbuf, "RInc%7.2fº", Deg(reli));
+		sprintf (cbuf, "%s%7.2fº", orbiter::Tr("RInc"), Deg(reli));
 		skp->Text (x0, IH-(3*ch)/2, cbuf, strlen(cbuf));
 	}
 }
@@ -530,20 +531,20 @@ const char *Instrument_Transfer::BtnLabel (int bt) const
 int Instrument_Transfer::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[14] = {
-		{"Enter orbit", "reference", 'R'},
-		{"Enter source", "('x' for self)", 'S'},
-		{"Enter target", 0, 'T'},
-		{"Unselect target", 0, 'N'},
-		{"Toggle transfer", "orbit", 'X'},
-		{"Toggle numerical", "trajectory", 'M'},
-		{"Update numerical", "trajectory", 'U'},
-		{"Adjust time steps", 0, 'Z'},
-		{"Rotate", "eject point", ','},
-		{"Rotate", "eject point", '.'},
-		{"Decrease dV", 0, '-'},
-		{"Increase dV", 0, '+'},
-		{"Decrease step", "scale", 'F'},
-		{"Increase step", "scale", 'G'}
+		{orbiter::Tr("Enter orbit"), 0, 'R'},
+		{orbiter::Tr("Enter source"), 0, 'S'},
+		{orbiter::Tr("Enter target"), 0, 'T'},
+		{orbiter::Tr("Unselect target"), 0, 'N'},
+		{orbiter::Tr("Toggle transfer"), 0, 'X'},
+		{orbiter::Tr("Toggle numerical"), 0, 'M'},
+		{orbiter::Tr("Update numerical"), 0, 'U'},
+		{orbiter::Tr("Adjust time steps"), 0, 'Z'},
+		{orbiter::Tr("Rotate"), 0, ','},
+		{orbiter::Tr("Rotate"), 0, '.'},
+		{orbiter::Tr("Decrease dV"), 0, '-'},
+		{orbiter::Tr("Increase dV"), 0, '+'},
+		{orbiter::Tr("Decrease step"), 0, 'F'},
+		{orbiter::Tr("Increase step"), 0, 'G'}
 	};
 	if (menu) *menu = mnu;
 	return 14;

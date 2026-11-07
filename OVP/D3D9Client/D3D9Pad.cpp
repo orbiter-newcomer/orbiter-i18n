@@ -1173,7 +1173,12 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 	// Route non-Latin text (e.g. CJK) through the Unicode (D3DXFont) renderer
 	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
 	if (NeedsUnicodeText(wstr)) {
-		return TextW(x, y, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
+		// The bitmap (ASCII) path draws through the vertex pipeline, which applies
+		// the sketchpad origin/transform. The D3DXFont path draws directly, so the
+		// origin offset must be applied here explicitly.
+		int ox = 0, oy = 0;
+		GetOrigin(&ox, &oy);
+		return TextW(x + ox, y + oy, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
 	}
 
 	std::string str = UTF8ToCP1252(utf8, ulen);

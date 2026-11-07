@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "MfdSync.h"
+#include "Localization.h"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"
@@ -69,27 +70,27 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	double scale; // scaling factor for orbit display
 	oapi::IVECTOR2 pt[ELN+5];
 
-	sprintf (cbuf, "Sync Orbit: %s", tgt ? tgt->Name() : "no target");
+	sprintf (cbuf, "%s%s", orbiter::Tr("Sync Orbit: "), tgt ? orbiter::Tr(tgt->Name()) : orbiter::Tr("no target"));
 	DisplayTitle (skp, cbuf);
 	skp->SetTextColor (draw[0][0].col);
 
 	const Body *ref = vessel->ElRef();
 	const Elements *myel = vessel->Els();
 	if (!ref || !myel) {
-		skp->Text (x, y, "Cannot determine orbit", 22);
+		skp->Text (x, y, orbiter::Tr("Cannot determine orbit"), (int)strlen(orbiter::Tr("Cannot determine orbit")));
 		return;
 	}
 	if (!tgt) {
-		skp->Text (x, y, "Select target (Shift-T)", 23);
+		skp->Text (x, y, orbiter::Tr("Select target (Shift-T)"), (int)strlen(orbiter::Tr("Select target (Shift-T)")));
 		return;
 	}
 	if (tgt->ElRef() != ref) {
-		skp->Text (x, y, "Invalid target", 14);
+		skp->Text (x, y, orbiter::Tr("Invalid target"), (int)strlen(orbiter::Tr("Invalid target")));
 		return;
 	}
 	const Elements *tgtel = tgt->Els();
 	if (!tgtel) {
-		skp->Text (x, y, "Cannot determine target orbit", 29);
+		skp->Text (x, y, orbiter::Tr("Cannot determine target orbit"), (int)strlen(orbiter::Tr("Cannot determine target orbit")));
 		return;
 	}
 	// at this point we know that vessel and target, and their elements,
@@ -117,7 +118,7 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	double domega = tgtel->omegab - myel->omegab; // angle between periapses
 
 	// reference axis mode
-	strcpy (cbuf, "Ref: "); strcat (cbuf, modestr[mode]);
+	strcpy (cbuf, orbiter::Tr("Ref: ")); strcat (cbuf, orbiter::Tr(modestr[mode]));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += ch;
 
 	switch (mode) {
@@ -141,7 +142,7 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 			// resolve ambiguity in sine
 			if (fabs (A*cosr + B*sinr + C) > fabs (-A*cosr + B*sinr + C)) rlng = Pi-rlng, cosr = -cosr;
 		} else {
-			skp->Text (x, y, "No intersection", 15); y += ch;
+			skp->Text (x, y, orbiter::Tr("No intersection"), (int)strlen(orbiter::Tr("No intersection"))); y += ch;
 			return;
 		}
 		break;
@@ -166,7 +167,7 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Line (ICNTX, ICNTY, ICNTX+(int)(v.x*pixrad), ICNTY-(int)(v.z*pixrad));
 
 	// relative anomaly
-	sprintf (cbuf, "RAnm%7.2fº", Deg(rlng));
+	sprintf (cbuf, "%s%7.2fº", orbiter::Tr("RAnm"), Deg(rlng));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += (3*ch)/2;
 
 	// ship in planet coords
@@ -204,15 +205,15 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 
 	// longitude difference
 	double dlng = normangle(tgta+domega-myta);
-	sprintf (cbuf, "DLng%7.2fº", Deg(dlng));
+	sprintf (cbuf, "%s%7.2fº", orbiter::Tr("DLng"), Deg(dlng));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += ch;
 	// target distance
 	Vector rp = tgt->GPos()-vessel->GPos();
-	sprintf (cbuf, "Dist%s", DistStr (rp.length()));
+	sprintf (cbuf, "%s%s", orbiter::Tr("Dist"), DistStr (rp.length()));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += ch;
 	// target velocity
 	Vector rv = tgt->GVel()-vessel->GVel();
-	sprintf (cbuf, "RVel%s", DistStr (rv.length()));
+	sprintf (cbuf, "%s%s", orbiter::Tr("RVel"), DistStr (rv.length()));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += ch;
 
 	// find best match
@@ -226,16 +227,30 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 			if (dt < mindt) mini = i, minj = j, mindt = dt;
 		}
 	}
-	sprintf (cbuf, "DTmin%s", DistStr (mindt));
+	sprintf (cbuf, "%s%s", orbiter::Tr("DTmin"), DistStr (mindt));
 	skp->Text (x, y, cbuf, strlen(cbuf)); y += ch;
 
-	sprintf (cbuf, "RInc%7.2fº", Deg(reli));
+	sprintf (cbuf, "%s%7.2fº", orbiter::Tr("RInc"), Deg(reli));
 	if (reli > RAD*1.0) skp->SetTextColor (draw[3][0].col);
 	skp->Text (x, IH-(3*ch)/2, cbuf, strlen(cbuf));
 	skp->SetTextColor (draw[0][0].col);
 
-	y = 1 + (ch*3)/2; x = IW - (33*cw)/2; x0 = x + 2*cw, x1 = x + 9*cw;
-	skp->Text (x, y, "Ob Sh-ToR Tg-ToR", 16); y += ch;
+	y = 1 + (ch*3)/2; x = IW - (33*cw)/2;
+	{
+		char hl0[16], hl1[32], hl2[32];
+		strcpy(hl0, orbiter::Tr("Ob"));
+		strcpy(hl1, orbiter::Tr("Sh-ToR"));
+		strcpy(hl2, orbiter::Tr("Tg-ToR"));
+		int w0 = (int)skp->GetTextWidth(hl0, (int)strlen(hl0));
+		int w1 = (int)skp->GetTextWidth(hl1, (int)strlen(hl1));
+		if ((int)skp->GetTextWidth("99", 2) > w0) w0 = (int)skp->GetTextWidth("99", 2);
+		if ((int)skp->GetTextWidth("999.9k", 6) > w1) w1 = (int)skp->GetTextWidth("999.9k", 6);
+		x0 = x + w0 + cw;
+		x1 = x0 + w1 + cw;
+		skp->Text (x, y, hl0, (int)strlen(hl0));
+		skp->Text (x0, y, hl1, (int)strlen(hl1));
+		skp->Text (x1, y, hl2, (int)strlen(hl2));
+	} y += ch;
 	for (i = 0; i < norbit; i++) {
 		sprintf (cbuf, "%2d", i); skp->Text (x, y, cbuf, strlen(cbuf));
 		if (i == mini) skp->SetTextColor (draw[1][0].col);
@@ -306,11 +321,11 @@ const char *Instrument_OSync::BtnLabel (int bt) const
 int Instrument_OSync::BtnMenu (const MFDBUTTONMENU **menu) const
 {
 	static const MFDBUTTONMENU mnu[5] = {
-		{"Select target", 0, 'T'},
-		{"Toggle intersect", "mode", 'M'},
-		{"Select # transit", "times", 'N'},
-		{"Rot. manual axis", 0, ','},
-		{"Rot. manual axis", 0, '.'}
+		{orbiter::Tr("Select target"), 0, 'T'},
+		{orbiter::Tr("Toggle intersect"), 0, 'M'},
+		{orbiter::Tr("Select # transit"), 0, 'N'},
+		{orbiter::Tr("Rot. manual axis"), 0, ','},
+		{orbiter::Tr("Rot. manual axis"), 0, '.'}
 	};
 	if (menu) *menu = mnu;
 	return 5;
