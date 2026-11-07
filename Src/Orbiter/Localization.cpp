@@ -477,6 +477,7 @@ namespace orbiter {
 
 		{ "(step 0.05)", "0.05 步进" },
 		{ "(step 1.0)", "1.0 步进" },
+		{ "IDS", "信标" },
 		// ---- Comms MFD -------------------------------------------------------
 		{ "XPDR", "应答机" },
 		{ "XPDR Transmitter", "应答机发射机" },
@@ -711,7 +712,7 @@ namespace orbiter {
 		{ "SURF_VACC", "垂直加速" },
 		{ "SURF_AOA", "攻角" },
 		{ "SURF_ACC", "加速度" },
-		{ "SURF_GS", "地面速度" },
+		{ "SURF_GS", "地速" },
 		{ "SURF_TAS", "真速" },
 		{ "SURF_IAS", "表速" },
 		{ "SURF_OS", "轨速" },
