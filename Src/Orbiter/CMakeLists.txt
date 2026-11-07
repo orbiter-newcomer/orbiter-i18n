@@ -168,6 +168,7 @@ set_target_properties(Orbiter
 target_include_directories(Orbiter PUBLIC ${Orbiter_includes} ${TRACY_CLIENT_INCLUDE} ${imgui_SOURCE_DIR}/ ${imgui_SOURCE_DIR}/backends ${implot_SOURCE_DIR}/)
 
 target_link_libraries(Orbiter ${Orbiter_common_libs} ${Orbiter_libs} ${TRACY_CLIENT})
+target_link_options(Orbiter PRIVATE /MAP)
 
 add_dependencies(Orbiter ${Orbiter_depends})
 

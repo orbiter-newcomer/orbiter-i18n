@@ -1,10 +1,25 @@
-
+﻿
 // ===================================================
 // Copyright (C) 2012-2026 Jarmo Nikkanen
 // licensed under LGPL v2
 // ===================================================
 
 #include "D3D9Pad.h"
+// MFDFONTDBG: real-time debug log (flushed every line)
+#include <cstdarg>
+#include <cstdio>
+static void MfdDbgLog(const char *fmt, ...)
+{
+	static FILE *fp = nullptr;
+	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
+	if (!fp) return;
+	va_list ap; va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fputc('\n', fp);
+	fflush(fp);
+}
+
 #include "D3D9TextMgr.h"
 #include "D3D9Surface.h"
 #include "Scene.h"
@@ -440,6 +455,35 @@ bool D3D9Pad::TextW (int x, int y, const LPWSTR str, int len)
 	if (!len) return true;
 
 	D3D9TextPtr pText = static_cast<const D3D9PadFont *>(cfont)->pFont;
+	{
+		// MFDFONTDBG: record font changes and non-ascii (CJK) draws
+		static const void *lastP2 = nullptr;
+		const void *curP2 = (const void*)pText.get();
+		LOGFONTA lfD2; memset(&lfD2, 0, sizeof(lfD2));
+		HFONT hfD2 = cfont->GetGDIFont();
+		if (hfD2) GetObjectA(hfD2, sizeof(lfD2), &lfD2);
+		if (curP2 != lastP2) {
+			MfdDbgLog("TEXTW_FONT ptr=%p face=%s h=%d", curP2, lfD2.lfFaceName, lfD2.lfHeight);
+			lastP2 = curP2;
+		}
+		bool nonAscii2 = false;
+		for (int i2 = 0; i2 < len; i2++) if ((unsigned int)str[i2] > 0xFF) { nonAscii2 = true; break; }
+		if (nonAscii2) {
+			static int cntCJK = 0;
+			if (cntCJK < 500) { MfdDbgLog("TEXTW_CJK ptr=%p face=%s len=%d", curP2, lfD2.lfFaceName, len); cntCJK++; }
+		}
+	}
+	{
+		// TEXTFONTPATH: report which font object is used for CJK text rendering
+		static const void *lastPtr = nullptr;
+		if ((const void*)pText.get() != lastPtr) {
+			LOGFONTA lfDbg; memset(&lfDbg, 0, sizeof(lfDbg));
+			HFONT hfDbg = cfont->GetGDIFont();
+			if (hfDbg) GetObjectA(hfDbg, sizeof(lfDbg), &lfDbg);
+			LogAlw("TEXTFONTPATH ptr=%p face=%s h=%d len=%d", (const void*)pText.get(), lfDbg.lfFaceName, lfDbg.lfHeight, len);
+			lastPtr = (const void*)pText.get();
+		}
+	}
 	switch (tah) {
 		default:
 		case LEFT:   pText->SetTextHAlign(0); break;

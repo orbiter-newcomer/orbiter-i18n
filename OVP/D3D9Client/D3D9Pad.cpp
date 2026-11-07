@@ -1,9 +1,10 @@
-// ===================================================
+﻿// ===================================================
 // Copyright (C) 2012-2026 Jarmo Nikkanen
 // licensed under LGPL v2
 // ===================================================
 
 
+#include "Orbitersdk.h"
 #include "D3D9Pad.h"
 #include "D3D9Client.h"
 #include "D3D9Surface.h"
@@ -11,6 +12,21 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Config.h"
 #include "Log.h"
+// MFDFONTDBG: real-time debug log (flushed every line)
+#include <cstdarg>
+#include <cstdio>
+static void MfdDbgLog(const char *fmt, ...)
+{
+	static FILE *fp = nullptr;
+	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
+	if (!fp) return;
+	va_list ap; va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fputc('\n', fp);
+	fflush(fp);
+}
+
 #include "Mesh.h"
 
 using namespace oapi;
@@ -1009,6 +1025,18 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 		return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(wstr.c_str(), int(wstr.length())));
 	}
 
+	{
+		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
+		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
+		bool nonAscii = false;
+		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
+		if (nonAscii) {
+			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
+			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
+			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
+			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
+		}
+	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
 	return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(str.c_str(), str.length()));
@@ -1181,6 +1209,18 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 		return TextW(x + ox, y + oy, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
 	}
 
+	{
+		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
+		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
+		bool nonAscii = false;
+		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
+		if (nonAscii) {
+			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
+			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
+			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
+			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
+		}
+	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
 #ifdef SKPDBG 
@@ -1929,14 +1969,17 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	// Browse cache ---------------------------------------------------
 	//
 
+	bool cacheHit = false;
 	for (size_t i = 0; i < fcache.size(); ++i) {
 		if (fcache[i]->height!=height) continue;
 		if (fcache[i]->style!=style) continue;
 		if (fcache[i]->prop!=prop) continue;
 		if (_stricmp(fcache[i]->face,face)!=0) continue;
 		pFont = fcache[i]->pFont;
+		cacheHit = true;
 		break;
 	}
+	LogAlw("FONTCACHEDBG h=%d face=%s style=%d prop=%d hit=%d", height, face, (int)style, prop?1:0, cacheHit?1:0);
 
 	int weight = (style & FONT_BOLD) ? FW_BOLD : FW_NORMAL;
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
@@ -1962,6 +2005,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->Init(hNew);
+		LogAlw("FONTCACHEDBG new font created h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 
 		DeleteObject(hNew);
 
@@ -1983,7 +2027,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 
 	if (hFont==NULL) {
 		face  = (prop ? def_sansface : def_fixedface);
-		hFont = CreateFont(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
 	}
 }
 
@@ -1998,6 +2042,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 
 	// Browse cache ---------------------------------------------------
 	//
+	bool qcacheHit = false;
 	for (size_t i = 0; i < qcache.size(); ++i) {
 		if (qcache[i]->height != height) continue;
 		if (qcache[i]->style != style) continue;
@@ -2006,8 +2051,10 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		if (qcache[i]->spacing != spacing) continue;
 		if (_stricmp(qcache[i]->face, face) != 0) continue;
 		pFont = qcache[i]->pFont;
+		qcacheHit = true;
 		break;
 	}
+	LogAlw("FONTCACHEDBG q h=%d face=%s w=%d wt=%d hit=%d", height, face, width, weight, qcacheHit?1:0);
 
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
 	DWORD underline = (style & FONT_UNDERLINE) ? TRUE : FALSE;
@@ -2025,10 +2072,11 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	//
 	if (pFont == NULL) {
 
-		hFont = CreateFont(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
 
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->Init(hFont);
+		LogAlw("FONTCACHEDBG q new h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 		pFont->SetRotation(0.0f);
 		pFont->SetTextSpace(spacing);
 
@@ -2046,7 +2094,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	else {
 		// Create windows GDI Font for a use with GDIPad ---------------------------
 		//
-		hFont = CreateFont(height, width, 0, 0, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
 	}
 }
 

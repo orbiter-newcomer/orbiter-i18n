@@ -1,4 +1,4 @@
-#include "Orbitersdk.h"
+﻿#include "Orbitersdk.h"
 // =================================================================================================================================
 // The MIT Lisence:
 //
@@ -285,7 +285,8 @@ restart:
 	// In Chinese mode render Unicode (CJK) glyphs with the UI CJK sans font.
 	// The ASCII bitmap font above keeps the original face so that character
 	// metrics (cw/ch) - and therefore MFD layouts - remain unchanged.
-	if (strcmp(oapiTr("Build"), "Build") != 0)
+	bool zhMode = (strcmp(oapiTr("Build"), "Build") != 0);
+	if (zhMode)
 		strcpy_s(lf.lfFaceName, "Noto Sans CJK SC");
 	// Use DEFAULT_CHARSET so GDI font linking can select the correct glyphs for
 	// non-Latin scripts (e.g. Chinese) while the pre-rendered ANSI texture above
@@ -294,8 +295,7 @@ restart:
 	// font height, which makes translated text overlap neighbouring rows in
 	// dense MFD layouts. Scale the Unicode font so that its glyph height
 	// matches the bitmap path.
-	int wfheight = lf.lfHeight;
-	if (wfheight < 0) wfheight = (int)(wfheight * 0.85f);
+	int wfheight = lf.lfHeight;   // use the natural glyph height (CJK glyphs match the GDI path)
 	HR(D3DXCreateFont(
 		pDev,                 // D3D Device
 		wfheight,             // Font height (CJK glyphs are taller than the bitmap cell)
@@ -311,6 +311,7 @@ restart:
 		&wfont                // ppFont
 	));
 
+	LogAlw("FONTCACHEDBG wf face=%s h=%d zh=%d", lf.lfFaceName, lf.lfHeight, zhMode?1:0);
 	SetLineSpace(0);
 	SetTextShare(0);
 	SetTextSpace(0);
