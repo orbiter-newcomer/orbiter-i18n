@@ -1,4 +1,4 @@
-// ==============================================================
+﻿// ==============================================================
 // Class VideoTab (implementation)
 // Manages the user selections in the "Video" tab of the Orbiter
 // Launchpad dialog.
@@ -212,9 +212,9 @@ bool VideoTab::Initialise()
 		SendDlgItemMessageA(hTab, IDC_VID_MODE, CB_SETITEMDATA, k, (LPARAM)(mode.Height<<16 | mode.Width));
 	}
 
-	SendDlgItemMessageA(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)"True Full Screen (no alt-tab)");
-	SendDlgItemMessageA(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)"Full Screen Window");
-	SendDlgItemMessageA(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)"Window with Taskbar");
+	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"真全屏（不可 Alt-Tab）");
+	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"全屏窗口");
+	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"带任务栏窗口");
 	SendDlgItemMessageA(hTab, IDC_VID_BPP, CB_SETCURSEL, data->style, 0);
 
 	//SetWindowText(GetDlgItem(hTab, IDC_VID_STATIC5), "Resolution");
@@ -472,6 +472,8 @@ void VideoTab::UpdateConfigData()
 
 
 
+static bool IsChineseUI();
+
 // ***************************************************************************************************
 // Advanced setup Dialog
 // ***************************************************************************************************
@@ -484,6 +486,7 @@ INT_PTR CALLBACK VideoTab::SetupDlgProcWrp(HWND hWnd, UINT uMsg, WPARAM wParam, 
 		case WM_INITDIALOG: 
 			VTab = (class VideoTab *)lParam;
 			VTab->InitSetupDialog(hWnd);
+			if (!IsChineseUI()) VTab->LocalizeSetupDialogEnglish(hWnd);
 			return true;
 
 		case WM_COMMAND:
@@ -572,172 +575,178 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	// AA -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_AA, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)"None");
-	if (aamax>=2)  SendDlgItemMessageA(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)"2x");
-	if (aamax>=4)  SendDlgItemMessageA(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)"4x");
-	if (aamax>=8)  SendDlgItemMessageA(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)"8x");
+	SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"无");
+	if (aamax>=2)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"2x");
+	if (aamax>=4)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"4x");
+	if (aamax>=8)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"8x");
 	
 
 	// AF -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_AF, CB_RESETCONTENT, 0, 0);
-	if (caps.MaxAnisotropy>=2) SendDlgItemMessageA(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)"2x");
-	if (caps.MaxAnisotropy>=4) SendDlgItemMessageA(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)"4x");
-	if (caps.MaxAnisotropy>=8) SendDlgItemMessageA(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)"8x");
-	if (caps.MaxAnisotropy>=12) SendDlgItemMessageA(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)"12x");
-	if (caps.MaxAnisotropy>=16) SendDlgItemMessageA(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)"16x");
+	if (caps.MaxAnisotropy>=2) SendDlgItemMessageW(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)L"2x");
+	if (caps.MaxAnisotropy>=4) SendDlgItemMessageW(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)L"4x");
+	if (caps.MaxAnisotropy>=8) SendDlgItemMessageW(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)L"8x");
+	if (caps.MaxAnisotropy>=12) SendDlgItemMessageW(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)L"12x");
+	if (caps.MaxAnisotropy>=16) SendDlgItemMessageW(hWnd, IDC_AF, CB_ADDSTRING, 0, (LPARAM)L"16x");
 	
 
 	// DEBUG --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_DEBUG, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)"0");
-	SendDlgItemMessageA(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)"1");
-	SendDlgItemMessageA(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)"2");
-	SendDlgItemMessageA(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)"3");
-	SendDlgItemMessageA(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)"4");
+	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"0（关闭日志）");
+	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"1（基础日志）");
+	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"2（详细日志）");
+	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"3（调试日志）");
+	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"4（全部日志）");
 	
 	// SKETCHPAD --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_FONT, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)"Crisp");
-	SendDlgItemMessageA(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)"Antialiased");
-	SendDlgItemMessageA(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)"Cleartype");
+	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"锐利");
+	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"抗锯齿");
+	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"清晰字体");
 	
 	// ENVMAP MODE --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)"Disable (Debug)");
-	SendDlgItemMessageA(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)"Planet Only");
-	SendDlgItemMessageA(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)"Full Scene");
+	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用（调试）");
+	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"仅行星");
+	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"全场景");
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_SETCURSEL, 0, 0);
 
 	// CUSTOM CAMERA MODE --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_CAMMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)"Disable");
-	SendDlgItemMessageA(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)"Enabled");
+	SendDlgItemMessageW(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
+	SendDlgItemMessageW(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)L"启用");
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_SETCURSEL, 0, 0);
 
 	// ENVMAP FACES --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ENVFACES, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)"Light");
-	SendDlgItemMessageA(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)"Medimum");
-	SendDlgItemMessageA(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)"Heavy");
+	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"快");
+	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"中");
+	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"慢");
 	SendDlgItemMessage(hWnd, IDC_ENVFACES, CB_SETCURSEL, 0, 0);
 
 	// TEXTURE MIPMAP POLICY --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_TEXMIPS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)"Load as defined");
-	SendDlgItemMessageA(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)"Autogen missing");
-	SendDlgItemMessageA(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)"Autogen all");
+	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"按定义加载");
+	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"自动生成缺失");
+	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"全部自动生成");
 	SendDlgItemMessage(hWnd, IDC_TEXMIPS, CB_SETCURSEL, 0, 0);
 
 	// MICROTEX FILTER --------------------------------------------
 
 	SendDlgItemMessage(hWnd,  IDC_MICROFILTER, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Point (Fast/Good)");
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Linear (Fast/Bad)");
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Anisotropic 2x");
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Anisotropic 4x (Better)");
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Anisotropic 8x");
-	SendDlgItemMessageA(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)"Anisotropic 16x (Slow/Best)");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"点采样（快/好）");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"线性（快/差）");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 2x");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 4x（较好）");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 8x");
+	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 16x（慢/最佳）");
 	SendDlgItemMessage(hWnd,  IDC_MICROFILTER, CB_SETCURSEL, 0, 0);
 	
 	// MICROTEX FILTER --------------------------------------------
 
 	SendDlgItemMessage(hWnd,  IDC_MICROMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)"Disabled");
-	SendDlgItemMessageA(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)"Enabled");
+	SendDlgItemMessageW(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
+	SendDlgItemMessageW(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)L"启用");
 	SendDlgItemMessage(hWnd,  IDC_MICROMODE, CB_SETCURSEL, 0, 0);
 
 
 	// MICROTEX BLEND MODE -----------------------------------------
 	
 	SendDlgItemMessage(hWnd,  IDC_BLENDMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)"Soft light");
-	SendDlgItemMessageA(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)"Normal light");
-	SendDlgItemMessageA(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)"Hard light");
+	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"柔光");
+	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"普通光照");
+	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"硬光");
 	SendDlgItemMessage(hWnd,  IDC_BLENDMODE, CB_SETCURSEL, 0, 0);
 
 	// TILE MIPMAP POLICY -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_MIPMAPS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)"Disabled");
-	SendDlgItemMessageA(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)"Enabled (slow2load)");
+	SendDlgItemMessageW(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)L"禁用");
+	SendDlgItemMessageW(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)L"启用（慢速加载）");
 	SendDlgItemMessage(hWnd, IDC_MIPMAPS, CB_SETCURSEL, 0, 0);
 
 	// ARCHIVE METHOD ------------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ARCHIVE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)"Cache only");
-	SendDlgItemMessageA(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)"Archive only");
-	SendDlgItemMessageA(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)"Cache & Archive");
+	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"仅缓存");
+	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"仅存档");
+	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"缓存并存档");
 	SendDlgItemMessage(hWnd, IDC_ARCHIVE, CB_SETCURSEL, 0, 0);
 
 	// POSTPROCESSING METHOD ------------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_POSTPROCESS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)"Light glow");
+	SendDlgItemMessageW(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)L"无");
+	SendDlgItemMessageW(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)L"轻辉光");
 	SendDlgItemMessage(hWnd, IDC_POSTPROCESS, CB_SETCURSEL, 0, 0);
 
 	// Local Lights -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_LIGHTCONFIG, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"4x Partial");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"4x Full");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"8x Partial");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"8x Full");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"12x Partial");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"12x Full");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"16x Partial");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"16x Full");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"20x Partial");
-	SendDlgItemMessageA(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)"20x Full");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"无");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 部分");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 全");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x Partial");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x Full");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 部分");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 全");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"16x 部分");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"16x 全");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"20x 部分");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"20x 全");
 
 	// Shadows -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_SELFSHADOWS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)"Focus + payload");
-	SendDlgItemMessageA(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)"Near by objects");
-	SendDlgItemMessageA(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)"All visible objects");
+	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"无");
+	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"焦点 + 载荷");
+	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"附近物体");
+	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"所有可见物体");
 
 	SendDlgItemMessage(hWnd, IDC_SHADOWFILTER, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)"9 samples");
-	SendDlgItemMessageA(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)"27 samples");
-	SendDlgItemMessageA(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)"27s dither");
-	//SendDlgItemMessageA(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)"40 samples");
-	//SendDlgItemMessageA(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)"40s dither");
+	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"9 样本");
+	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"27 样本");
+	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"27s 抖动");
+	//SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"40 样本");
+	//SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"40s 抖动");
 
 	SendDlgItemMessage(hWnd, IDC_TERRAIN, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)"Stencil");
-	SendDlgItemMessageA(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)"Projected");
+	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"无");
+	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"模板");
+	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"投影");
 
 	SendDlgItemMessage(hWnd, IDC_MESHRES, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_MESHRES, CB_ADDSTRING, 0, (LPARAM)"16");
-	SendDlgItemMessageA(hWnd, IDC_MESHRES, CB_ADDSTRING, 0, (LPARAM)"32");
+	SendDlgItemMessageW(hWnd, IDC_MESHRES, CB_ADDSTRING, 0, (LPARAM)L"16");
+	SendDlgItemMessageW(hWnd, IDC_MESHRES, CB_ADDSTRING, 0, (LPARAM)L"32");
 
 	SendDlgItemMessage(hWnd, IDC_TILECOUNT, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)"600");
-	SendDlgItemMessageA(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)"1200");
-	SendDlgItemMessageA(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)"2400");
+	SendDlgItemMessageW(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)L"600");
+	SendDlgItemMessageW(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)L"1200");
+	SendDlgItemMessageW(hWnd, IDC_TILECOUNT, CB_ADDSTRING, 0, (LPARAM)L"2400");
 
 	// gcGUI -----------------------------------------
 	if (Config->gcGUIMode == 1) Config->gcGUIMode = 0;
 	SendDlgItemMessage(hWnd, IDC_GUIMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)"Disabled");
-	SendDlgItemMessageA(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)"(unused)");
-	SendDlgItemMessageA(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)"Windowed");
+	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
+	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"（未使用）");
+	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"窗口模式");
 
 	// Earth AtmoConfig -------------------------------
 	SendDlgItemMessage(hWnd, IDC_EARTHVISCFG, CB_RESETCONTENT, 0, 0);
-	for (auto x : AtmoCfgs["Earth"]) SendDlgItemMessageA(hWnd, IDC_EARTHVISCFG, CB_ADDSTRING, 0, (LPARAM)x.cfg.c_str());
+	for (auto x : AtmoCfgs["Earth"]) {
+		const char *disp = oapiTr(x.cfg.c_str());
+		int n = MultiByteToWideChar(CP_UTF8, 0, disp, -1, nullptr, 0);
+		std::wstring wdisp(n ? n-1 : 0, L'\0');
+		if (n) MultiByteToWideChar(CP_UTF8, 0, disp, -1, &wdisp[0], n);
+		SendDlgItemMessageW(hWnd, IDC_EARTHVISCFG, CB_ADDSTRING, 0, (LPARAM)wdisp.c_str());
+	}
 	for (int i = 0; i < AtmoCfgs["Earth"].size(); i++) {
 		if (Config->AtmoCfg["Earth"] == AtmoCfgs["Earth"][i].file) {
 			SendDlgItemMessage(hWnd, IDC_EARTHVISCFG, CB_SETCURSEL, i, 0);
@@ -957,28 +966,69 @@ void VideoTab::SaveSetupState(HWND hWnd)
 INT_PTR CALLBACK VideoTab::CreditsDlgProcWrp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static class VideoTab *VTab = NULL;
-	switch (uMsg) {
-		case WM_INITDIALOG: 
-			VTab = (class VideoTab *)lParam;
-			VTab->InitCreditsDialog(hWnd);
-			return true;
-		case WM_COMMAND:
-			if (VTab) VTab->CreditsDlgProc(hWnd, uMsg, wParam, lParam);
+	if (uMsg == WM_INITDIALOG) {
+		VTab = (class VideoTab *)lParam;
 	}
-	return false;
+	if (VTab) return VTab->CreditsDlgProc(hWnd, uMsg, wParam, lParam);
+	return FALSE;
 }
 
 
 
 INT_PTR CALLBACK VideoTab::CreditsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch (LOWORD(wParam)) {
-		case IDOK:
-		case IDCANCEL:
-			EndDialog (hWnd, 0);
-			break;
+	if (uMsg == WM_NOTIFY) {
+		LPNMHDR nh = (LPNMHDR)lParam;
+		if (nh->idFrom == IDC_CREDITSTEXT && (nh->code == NM_CLICK || nh->code == NM_RETURN)) {
+			PNMLINK pNMLink = (PNMLINK)lParam;
+			ShellExecuteW(NULL, L"open", pNMLink->item.szUrl, NULL, NULL, SW_SHOWNORMAL);
+			return TRUE;
+		}
+		return FALSE;
 	}
-	return false;
+	if (uMsg == WM_INITDIALOG) {
+		if (IsChineseUI()) {
+			SetDlgItemTextW(hWnd, IDC_CREDITSTEXT,
+				L"D3D9Client 基于 Martin Schweiger 为 DirectX 7 参考客户端创建的源代码。D3D9Client 由以下人员制作：\n\n"
+				L"主程序员：Jarmo Nikkanen (jarmonik)\n"
+				L"联合程序员：Peter Schneider (Kuddel)\n\n"
+				L"其他贡献者：\n"
+				L"Émile Grégoire (Bibi Uncle)：跑道灯光与配置文件解析器编程。\n\n"
+				L"其他致谢\n\n"
+				L"土星环\n"
+				L"NASA/JPL/空间科学研究所（卡西尼号，2008 年 11 月 26 日）\n\n"
+				L"月面美术资源\n"
+				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a15/a15-090713M102128467R.tif\">a15-090713M102128467R.tif</A> 来源：LROC NASA/JSC/亚利桑那州立大学，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html\">《阿波罗月面日志》</A>\n"
+				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a14/M114064206LE_traverses_cropped1_all_2X_deconvolved_gamma_final_0dot25meters.tif\">M114064206LE 月面轨迹图</A> 来源：LROC NASA/JSC/亚利桑那州立大学，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a14/images14.html\">《阿波罗月面日志》</A>\n"
+				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a15/AS15-84-11282HR.jpg\">AS15-84-11282HR.jpg</A> 来源：Kipp Teague NASA/Johnson，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html#Maps\">《阿波罗月面日志》</A>\n\n"
+				L"特别感谢\n"
+				L"感谢所有在 Orbiter 论坛解答 D3D9Client 支持问题的朋友，以及 Orbiter 论坛管理团队。");
+			return TRUE;
+		}
+		if (!IsChineseUI()) {
+			SetDlgItemTextW(hWnd, IDC_CREDITSTEXT,
+				L"D3D9Client is based on the source codes created by Martin Schweiger for DirectX 7 reference client. D3D9Client is created to you by:\n\n"
+				L"Main Programmer: Jarmo Nikkanen (jarmonik)\n"
+				L"Co Programmer: Peter Schneider (Kuddel)\n\n"
+				L"Additional contributors:\n"
+				L"Émile Grégoire (Bibi Uncle)  Programming with runway lights and configuration file parsers.\n\n"
+				L"Additional credits\n\n"
+				L"Saturn rings\n"
+				L"NASA/JPL/Space Science Institute, (Cassini Nov. 26, 2008)\n\n"
+				L"Lunar surface art work resources\n"
+				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a15/a15-090713M102128467R.tif\">a15-090713M102128467R.tif</A> credit: LROC NASA/JSC/Arizona State University, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n"
+				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a14/M114064206LE_traverses_cropped1_all_2X_deconvolved_gamma_final_0dot25meters.tif\">M114064206LE traverses</A> credit: LROC NASA/JSC/Arizona State University, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a14/images14.html\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n"
+				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a15/AS15-84-11282HR.jpg\">AS15-84-11282HR.jpg</A> Credit: Kipp Teague NASA/Johnson, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html#Maps\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n\n"
+				L"Special thanks\n"
+				L"For everybody for answering in D3D9Client support request in the Orbiter Forum and for the Orbiter Forum Staff.  ");
+		}
+		return TRUE;
+	}
+	if (uMsg == WM_CLOSE || (uMsg == WM_COMMAND && (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL))) {
+		EndDialog(hWnd, 0);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void VideoTab::InitCreditsDialog(HWND hWnd)
@@ -1052,5 +1102,4 @@ void VideoTab::ScanAtmoCfgs()
 	}
 }
 
-
-
+#include "VideoTabL10n.inc"

@@ -1,4 +1,4 @@
-// ==============================================================
+﻿// ==============================================================
 // Part of the ORBITER VISUALISATION PROJECT (OVP)
 // Dual licensed under GPL v3 and LGPL v3
 // Copyright (C) 2006-2026 Martin Schweiger
@@ -48,6 +48,7 @@ private:
 	void InitCreditsDialog(HWND hWnd);
 	void CreateSymbolicLinks();
 	void InitSetupDialog(HWND hWnd);
+	void LocalizeSetupDialogEnglish(HWND hWnd);
 	void SaveSetupState(HWND hWnd);
 	void ScanAtmoCfgs();
 	bool GetConfigName(const char* file, string& cfg, string& planet);
