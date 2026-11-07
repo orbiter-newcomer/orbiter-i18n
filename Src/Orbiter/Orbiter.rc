@@ -874,11 +874,11 @@ STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     GROUPBOX        "Field of view",IDC_STATIC,0,21,171,89
-    PUSHBUTTON      "30°",IDC_CAM_FOV_30,12,36,25,14
-    PUSHBUTTON      "40°",IDC_CAM_FOV_40,42,36,25,14
-    PUSHBUTTON      "50°",IDC_CAM_FOV_50,72,36,25,14
-    PUSHBUTTON      "60°",IDC_CAM_FOV_60,102,36,25,14
-    PUSHBUTTON      "70°",IDC_CAM_FOV_70,132,36,25,14
+    PUSHBUTTON      "30ï¿½",IDC_CAM_FOV_30,12,36,25,14
+    PUSHBUTTON      "40ï¿½",IDC_CAM_FOV_40,42,36,25,14
+    PUSHBUTTON      "50ï¿½",IDC_CAM_FOV_50,72,36,25,14
+    PUSHBUTTON      "60ï¿½",IDC_CAM_FOV_60,102,36,25,14
+    PUSHBUTTON      "70ï¿½",IDC_CAM_FOV_70,132,36,25,14
     CONTROL         "Slider1",IDC_CAM_FOV_SLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,8,55,152,24
     EDITTEXT        IDC_CAM_FOV_INPUT,33,86,40,14,ES_AUTOHSCROLL
     LTEXT           "degrees (vertical)",IDC_STATIC,79,88,55,8
@@ -1088,13 +1088,13 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     GROUPBOX        "Integration stages",IDC_STATIC,7,7,362,127
     LTEXT           "Active:",IDC_STATIC,14,18,23,8
-    LTEXT           "Propagator:",IDC_STATIC,87,18,38,8
-    LTEXT           "Step targets:",IDC_STATIC,205,18,41,8
-    LTEXT           "time [s]",IDC_STATIC,192,27,23,8
-    LTEXT           "rotation [°]",IDC_STATIC,229,27,33,8
-    LTEXT           "Step limits:",IDC_STATIC,311,18,34,8
-    LTEXT           "time [s]",IDC_STATIC,286,27,23,8
-    LTEXT           "rotation [°]",IDC_STATIC,323,27,33,8
+    LTEXT           "Propagator:",IDC_STATIC,87,18,52,8
+    LTEXT           "Step targets:",IDC_STATIC,205,18,50,8
+    LTEXT           "time [s]",IDC_STATIC,192,27,40,8
+    LTEXT           "rotation [\xb0]",IDC_STATIC,229,27,42,8
+    LTEXT           "Step limits:",IDC_STATIC,311,18,50,8
+    LTEXT           "time [s]",IDC_STATIC,286,27,40,8
+    LTEXT           "rotation [\xb0]",IDC_STATIC,323,27,42,8
     CONTROL         "",IDC_PROP_ACTIVE0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,37,8,14
     COMBOBOX        IDC_PROP_PROP0,41,38,132,116,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_PROP_TTGT0,183,38,40,14,ES_AUTOHSCROLL
@@ -1133,7 +1133,7 @@ BEGIN
     EDITTEXT        IDC_PROP_MAXSAMPLE,79,150,40,14,ES_AUTOHSCROLL
 END
 
-IDD_EXTRA_STABILISATION DIALOGEX 0, 0, 265, 239
+IDD_EXTRA_STABILISATION DIALOGEX 0, 0, 330, 239
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Orbiter: Orbit stabilisation parameters"
@@ -1141,28 +1141,28 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,7,218,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,60,218,50,14
-    PUSHBUTTON      "Reset",IDC_BUTTON1,156,218,50,14
-    PUSHBUTTON      "Help",IDC_BUTTON2,208,218,50,14
-    CONTROL         "Enable orbit stabilisation",IDC_STAB_ENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,91,10
-    GROUPBOX        "Orbit step limit",IDC_STATIC2,7,22,251,37
-    RTEXT           "Enable stabilisation for orbit steps larger than",IDC_STATIC6,32,35,114,18
-    LTEXT           "% of full orbit",IDC_STATIC7,208,40,40,8
-    EDITTEXT        IDC_EDIT2,154,37,48,14,ES_RIGHT | ES_AUTOHSCROLL
-    GROUPBOX        "Gravitational field perturbation limit",IDC_STATIC1,7,67,251,37
-    RTEXT           "Suppress stabilisation if gravity perturbations are greater than",IDC_STATIC4,39,80,107,18
-    LTEXT           "% of total field",IDC_STATIC5,208,85,44,8
-    EDITTEXT        IDC_EDIT1,154,82,48,14,ES_RIGHT | ES_AUTOHSCROLL
-    GROUPBOX        "Subsampling of perturbation integration",IDC_STATIC3,7,112,251,49
-    RTEXT           "Target orbit step",IDC_STATIC8,14,126,132,8
-    RTEXT           "Max. steps",IDC_STATIC10,14,143,132,8
-    LTEXT           "% of full orbit",IDC_STATIC9,208,126,40,8
-    EDITTEXT        IDC_EDIT3,154,124,48,14,ES_RIGHT | ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT4,154,141,48,14,ES_RIGHT | ES_AUTOHSCROLL
-    GROUPBOX        "Perturbation model",IDC_STATIC11,7,167,251,37
-    RTEXT           "Suppress nonspherical gravity perturbations for orbit steps greater than",IDC_STATIC12,14,179,132,19
-    LTEXT           "% of full orbit",IDC_STATIC13,208,184,40,8
-    EDITTEXT        IDC_EDIT5,154,181,48,14,ES_RIGHT | ES_AUTOHSCROLL
-    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,7,213,251,1
+    PUSHBUTTON      "Reset",IDC_BUTTON1,221,218,50,14
+    PUSHBUTTON      "Help",IDC_BUTTON2,273,218,50,14
+    CONTROL         "Enable orbit stabilisation",IDC_STAB_ENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,180,10
+    GROUPBOX        "Orbit step limit",IDC_STATIC2,7,22,316,37
+    RTEXT           "Enable stabilisation for orbit steps larger than",IDC_STATIC6,12,35,150,18
+    EDITTEXT        IDC_EDIT2,166,37,48,14,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "% of full orbit",IDC_STATIC7,220,35,100,18
+    GROUPBOX        "Gravitational field perturbation limit",IDC_STATIC1,7,67,316,37
+    RTEXT           "Suppress stabilisation if gravity perturbations are greater than",IDC_STATIC4,12,80,150,18
+    EDITTEXT        IDC_EDIT1,166,82,48,14,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "% of total field",IDC_STATIC5,220,80,100,18
+    GROUPBOX        "Subsampling of perturbation integration",IDC_STATIC3,7,112,316,49
+    RTEXT           "Target orbit step",IDC_STATIC8,12,126,150,8
+    RTEXT           "Max. steps",IDC_STATIC10,12,143,150,8
+    EDITTEXT        IDC_EDIT3,166,124,48,14,ES_RIGHT | ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,166,141,48,14,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "% of full orbit",IDC_STATIC9,220,126,100,8
+    GROUPBOX        "Perturbation model",IDC_STATIC11,7,167,316,37
+    RTEXT           "Suppress nonspherical gravity perturbations for orbit steps greater than",IDC_STATIC12,12,179,150,19
+    EDITTEXT        IDC_EDIT5,166,181,48,14,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "% of full orbit",IDC_STATIC13,220,179,100,18
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,7,213,316,1
 END
 
 IDD_EXTRA_ADYNAMICS DIALOGEX 0, 0, 276, 236

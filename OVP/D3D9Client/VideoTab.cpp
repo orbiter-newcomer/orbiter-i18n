@@ -525,7 +525,8 @@ INT_PTR CALLBACK VideoTab::SetupDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			break;
 
 		case IDC_CREDITS:
-			LoadLibrary("riched20.dll");
+			LoadLibraryA("msftedit.dll");
+			LoadLibraryA("riched20.dll");
 			DialogBoxParamA(hInst, MAKEINTRESOURCEA(IDD_D3D9CREDITS), hWnd, CreditsDlgProcWrp, (LPARAM)this);
 			break;
 
@@ -693,8 +694,8 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"无");
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 部分");
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 全");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x Partial");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x Full");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x 部分");
+	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x 全");
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 部分");
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 全");
 	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"16x 部分");
@@ -966,99 +967,73 @@ void VideoTab::SaveSetupState(HWND hWnd)
 INT_PTR CALLBACK VideoTab::CreditsDlgProcWrp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static class VideoTab *VTab = NULL;
-	if (uMsg == WM_INITDIALOG) {
-		VTab = (class VideoTab *)lParam;
+	switch (uMsg) {
+		case WM_INITDIALOG: 
+			VTab = (class VideoTab *)lParam;
+			VTab->InitCreditsDialog(hWnd);
+			return true;
+		case WM_COMMAND:
+			if (VTab) VTab->CreditsDlgProc(hWnd, uMsg, wParam, lParam);
 	}
-	if (VTab) return VTab->CreditsDlgProc(hWnd, uMsg, wParam, lParam);
-	return FALSE;
+	return false;
 }
 
 
 
 INT_PTR CALLBACK VideoTab::CreditsDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == WM_NOTIFY) {
-		LPNMHDR nh = (LPNMHDR)lParam;
-		if (nh->idFrom == IDC_CREDITSTEXT && (nh->code == NM_CLICK || nh->code == NM_RETURN)) {
-			PNMLINK pNMLink = (PNMLINK)lParam;
-			ShellExecuteW(NULL, L"open", pNMLink->item.szUrl, NULL, NULL, SW_SHOWNORMAL);
-			return TRUE;
-		}
-		return FALSE;
+	switch (LOWORD(wParam)) {
+		case IDOK:
+		case IDCANCEL:
+			EndDialog (hWnd, 0);
+			break;
 	}
-	if (uMsg == WM_INITDIALOG) {
-		if (IsChineseUI()) {
-			SetDlgItemTextW(hWnd, IDC_CREDITSTEXT,
-				L"D3D9Client 基于 Martin Schweiger 为 DirectX 7 参考客户端创建的源代码。D3D9Client 由以下人员制作：\n\n"
-				L"主程序员：Jarmo Nikkanen (jarmonik)\n"
-				L"联合程序员：Peter Schneider (Kuddel)\n\n"
-				L"其他贡献者：\n"
-				L"Émile Grégoire (Bibi Uncle)：跑道灯光与配置文件解析器编程。\n\n"
-				L"其他致谢\n\n"
-				L"土星环\n"
-				L"NASA/JPL/空间科学研究所（卡西尼号，2008 年 11 月 26 日）\n\n"
-				L"月面美术资源\n"
-				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a15/a15-090713M102128467R.tif\">a15-090713M102128467R.tif</A> 来源：LROC NASA/JSC/亚利桑那州立大学，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html\">《阿波罗月面日志》</A>\n"
-				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a14/M114064206LE_traverses_cropped1_all_2X_deconvolved_gamma_final_0dot25meters.tif\">M114064206LE 月面轨迹图</A> 来源：LROC NASA/JSC/亚利桑那州立大学，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a14/images14.html\">《阿波罗月面日志》</A>\n"
-				L"原始图片：<A HREF=\"http://www.hq.nasa.gov/alsj/a15/AS15-84-11282HR.jpg\">AS15-84-11282HR.jpg</A> 来源：Kipp Teague NASA/Johnson，由 Eric M. Jones 发表于<A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html#Maps\">《阿波罗月面日志》</A>\n\n"
-				L"特别感谢\n"
-				L"感谢所有在 Orbiter 论坛解答 D3D9Client 支持问题的朋友，以及 Orbiter 论坛管理团队。");
-			return TRUE;
-		}
-		if (!IsChineseUI()) {
-			SetDlgItemTextW(hWnd, IDC_CREDITSTEXT,
-				L"D3D9Client is based on the source codes created by Martin Schweiger for DirectX 7 reference client. D3D9Client is created to you by:\n\n"
-				L"Main Programmer: Jarmo Nikkanen (jarmonik)\n"
-				L"Co Programmer: Peter Schneider (Kuddel)\n\n"
-				L"Additional contributors:\n"
-				L"Émile Grégoire (Bibi Uncle)  Programming with runway lights and configuration file parsers.\n\n"
-				L"Additional credits\n\n"
-				L"Saturn rings\n"
-				L"NASA/JPL/Space Science Institute, (Cassini Nov. 26, 2008)\n\n"
-				L"Lunar surface art work resources\n"
-				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a15/a15-090713M102128467R.tif\">a15-090713M102128467R.tif</A> credit: LROC NASA/JSC/Arizona State University, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n"
-				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a14/M114064206LE_traverses_cropped1_all_2X_deconvolved_gamma_final_0dot25meters.tif\">M114064206LE traverses</A> credit: LROC NASA/JSC/Arizona State University, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a14/images14.html\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n"
-				L"original: <A HREF=\"http://www.hq.nasa.gov/alsj/a15/AS15-84-11282HR.jpg\">AS15-84-11282HR.jpg</A> Credit: Kipp Teague NASA/Johnson, published at <A HREF=\"http://www.hq.nasa.gov/alsj/a15/images15.html#Maps\">Apollo Lunar Surface Journal</A> by Eric M. Jones\n\n"
-				L"Special thanks\n"
-				L"For everybody for answering in D3D9Client support request in the Orbiter Forum and for the Orbiter Forum Staff.  ");
-		}
-		return TRUE;
-	}
-	if (uMsg == WM_CLOSE || (uMsg == WM_COMMAND && (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL))) {
-		EndDialog(hWnd, 0);
-		return TRUE;
-	}
-	return FALSE;
+	return false;
+}
+
+struct RtfStreamData {
+	const char *data;
+	DWORD size;
+	DWORD pos;
+};
+
+static DWORD CALLBACK RtfStreamCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG cb, LONG *pcb)
+{
+	RtfStreamData *d = (RtfStreamData*)dwCookie;
+	DWORD n = (DWORD)cb;
+	if (n > d->size - d->pos) n = d->size - d->pos;
+	if (n) memcpy(pbBuff, d->data + d->pos, n);
+	d->pos += n;
+	*pcb = (LONG)n;
+	return 0;
 }
 
 void VideoTab::InitCreditsDialog(HWND hWnd)
 {
-	HANDLE hFile = CreateFile("Modules/D3D9Client/Credits.rtf", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL); 
-
-	if (hFile==INVALID_HANDLE_VALUE) {
-		LogErr("Failed to open a file /Modules/D3D9Client/Credits.rtf");
+	LoadLibraryA("msftedit.dll");
+	const char *file = IsChineseUI() ? "Modules/D3D9Client/Credits_zh.rtf" : "Modules/D3D9Client/Credits.rtf";
+	HANDLE hFile = CreateFileA(file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		LogErr("Failed to open a file %s", file);
 		return;
 	}
-
 	DWORD size = GetFileSize(hFile, NULL);
-	char *credits = new char[size+1];
-	memset(credits,0,size+1);
+	char *credits = new char[size + 1];
+	memset(credits, 0, size + 1);
 	DWORD bytes;
-
 	if (ReadFile(hFile, credits, size, &bytes, NULL)) {
-		SETTEXTEX text;
-		text.flags = ST_DEFAULT;
-		text.codepage = CP_ACP;
-		SendDlgItemMessageA(hWnd, IDC_CREDITSTEXT, EM_SETTEXTEX, (WPARAM)&text, (LPARAM)credits);
+		RtfStreamData data = { credits, size, 0 };
+		EDITSTREAM es;
+		es.dwCookie = (DWORD_PTR)&data;
+		es.dwError = 0;
+		es.pfnCallback = RtfStreamCallback;
+		SendDlgItemMessageW(hWnd, IDC_CREDITSTEXT, EM_STREAMIN, SF_RTF, (LPARAM)&es);
+		SendDlgItemMessageW(hWnd, IDC_CREDITSTEXT, EM_SETEVENTMASK, 0, ENM_LINK);
 	}
-	else LogErr("Failed to read a file \\Modules\\D3D9Client\\Credits.rtf Error=%u",GetLastError());
-
-	delete []credits;
-	credits = NULL;
-
+	else LogErr("Failed to read a file %s Error=%u", file, GetLastError());
+	delete[]credits;
 	CloseHandle(hFile);
 }
-
 bool VideoTab::GetConfigName(const char* file, string& cfg, string& planet)
 {
 	string filename = "GC\\" + string(file);

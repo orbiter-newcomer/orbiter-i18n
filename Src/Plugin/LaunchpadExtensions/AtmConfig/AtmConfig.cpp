@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #define STRICT 1
@@ -260,10 +260,44 @@ void AtmConfig::ScanModules (const char *celbody)
 	}
 }
 
+// ---- Chinese localization for this dialog (English resources remain the master copy) ----
+static const wchar_t *ZhUiText(const wchar_t *en)
+{
+	static const struct { const wchar_t *en; const wchar_t *zh; } map[] = {
+		{ L"Atmospheric parameter configuration", L"大气参数配置" },
+		{ L"OK", L"确定" },
+		{ L"Cancel", L"取消" },
+		{ L"Apply", L"应用" },
+		{ L"Close", L"关闭" },
+		{ L"Help", L"帮助" },
+		{ L"Atmosphere model", L"大气模型" },
+		{ L"Celestial body", L"天体" },
+
+	};
+	for (auto &e : map) if (!wcscmp(e.en, en)) return e.zh;
+	return nullptr;
+}
+
+static BOOL CALLBACK ZhLocalizeChild(HWND hCtrl, LPARAM lp)
+{
+	wchar_t buf[512];
+	if (!GetWindowTextW(hCtrl, buf, 512) || !buf[0]) return TRUE;
+	const wchar_t *zh = ZhUiText(buf);
+	if (zh) SetWindowTextW(hCtrl, zh);
+	return TRUE;
+}
+
+static void ZhLocalizeDialog(HWND hDlg)
+{
+	if (strcmp(oapiTr("Build"), "Build") == 0) return;   // english mode: keep resources as-is
+	SetWindowTextW(hDlg, ZhUiText(L"Atmospheric parameter configuration"));
+	EnumChildWindows(hDlg, ZhLocalizeChild, 0);
+}
 INT_PTR CALLBACK AtmConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {
 	case WM_INITDIALOG:
+	ZhLocalizeDialog(hWnd);
 		SetWindowLongPtr (hWnd, DWLP_USER, (LONG_PTR)lParam); // store class instance for later reference
 		((AtmConfig*)lParam)->InitDialog (hWnd);
 		break;

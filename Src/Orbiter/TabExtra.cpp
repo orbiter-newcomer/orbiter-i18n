@@ -151,6 +151,7 @@ HTREEITEM orbiter::ExtraTab::RegisterExtraParam (LaunchpadItem *item, HTREEITEM 
 
 	// if a name is provided, add item to tree list
 	char *name = item->Name();
+	LOGOUT("EXTRADBG name=[%s] tr=[%s]", name?name:"(null)", name?orbiter::Tr(name):"(null)");
 	if (name) {
 		// Unicode insert: translated names are UTF-8 and would be garbled by the
 		// ANSI tree view message.
@@ -235,7 +236,7 @@ BOOL orbiter::ExtraTab::OnNotify(HWND hDlg, int idCtrl, LPNMHDR pnmh)
 		switch (pnmtv->hdr.code) {
 		case TVN_SELCHANGED: {
 			LaunchpadItem* func = (LaunchpadItem*)pnmtv->itemNew.lParam;
-			char* desc = func->Description();
+			char* desc = func->Description(); if (desc) desc = (char*)orbiter::Tr(desc);
 			if (desc) orbiter::SetWindowTextUtf8(GetDlgItem(hDlg, IDC_EXT_TEXT), desc);
 			else orbiter::SetWindowTextUtf8(GetDlgItem(hDlg, IDC_EXT_TEXT), "");
 			} return TRUE;
@@ -305,6 +306,7 @@ INT_PTR CALLBACK BuiltinLaunchpadItem::DlgProc (HWND hWnd, UINT uMsg, WPARAM wPa
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		SetWindowLongPtr (hWnd, DWLP_USER, lParam);
+		orbiter::LocalizeWindowTree(hWnd);
 		return TRUE;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -521,6 +523,7 @@ INT_PTR CALLBACK ExtraDynamics::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraDynamics*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
@@ -735,6 +738,7 @@ INT_PTR CALLBACK ExtraAngDynamics::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam,
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraAngDynamics*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
@@ -783,9 +787,35 @@ bool ExtraStabilisation::clbkOpen (HWND hParent)
 	return true;
 }
 
+
+// ---- Chinese localisation for the orbit stabilisation page (english resources keep the master copy) ----
+static void ZhLocalizeStabilisation(HWND hWnd)
+{
+	if (strcmp(oapiTr("Build"), "Build") == 0) return;   // english mode: leave resources untouched
+	SetWindowTextW(hWnd, L"Orbiter：轨道稳定化参数");
+	SetDlgItemTextW(hWnd, IDC_STAB_ENABLE, L"启用轨道稳定化");
+	SetDlgItemTextW(hWnd, IDC_STATIC2, L"轨道步长限制");
+	SetDlgItemTextW(hWnd, IDC_STATIC1, L"引力场摄动限制");
+	SetDlgItemTextW(hWnd, IDC_STATIC3, L"摄动积分子采样");
+	SetDlgItemTextW(hWnd, IDC_STATIC11, L"摄动模型");
+	SetDlgItemTextW(hWnd, IDC_STATIC6, L"当轨道步长大于整条轨道的百分之");
+	SetDlgItemTextW(hWnd, IDC_STATIC7, L"时开启稳定化");
+	SetDlgItemTextW(hWnd, IDC_STATIC4, L"当引力摄动大于总场强的百分之");
+	SetDlgItemTextW(hWnd, IDC_STATIC5, L"时禁用稳定化");
+	SetDlgItemTextW(hWnd, IDC_STATIC8, L"目标轨道步长为整条轨道的百分之");
+	SetDlgItemTextW(hWnd, IDC_STATIC9, L"");
+	SetDlgItemTextW(hWnd, IDC_STATIC10, L"最大步数");
+	SetDlgItemTextW(hWnd, IDC_STATIC12, L"当轨道步长大于整条轨道的百分之");
+	SetDlgItemTextW(hWnd, IDC_STATIC13, L"时抑制摄动");
+	SetDlgItemTextW(hWnd, IDOK, L"确定");
+	SetDlgItemTextW(hWnd, IDCANCEL, L"取消");
+	SetDlgItemTextW(hWnd, IDC_BUTTON1, L"重置");
+	SetDlgItemTextW(hWnd, IDC_BUTTON2, L"帮助");
+}
 void ExtraStabilisation::InitDialog (HWND hWnd)
 {
 	SetDialog (hWnd, pTab->Cfg()->CfgPhysicsPrm);
+	ZhLocalizeStabilisation(hWnd);
 }
 
 void ExtraStabilisation::ResetDialog (HWND hWnd)
@@ -870,6 +900,7 @@ INT_PTR CALLBACK ExtraStabilisation::DlgProc (HWND hWnd, UINT uMsg, WPARAM wPara
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraStabilisation*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1003,6 +1034,7 @@ INT_PTR CALLBACK ExtraMfdConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, L
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraMfdConfig*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1123,6 +1155,7 @@ INT_PTR CALLBACK ExtraShutdown::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraShutdown*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1231,6 +1264,7 @@ INT_PTR CALLBACK ExtraFixedStep::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, L
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraFixedStep*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1306,6 +1340,7 @@ INT_PTR CALLBACK ExtraRenderingOptions::DlgProc (HWND hWnd, UINT uMsg, WPARAM wP
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraRenderingOptions*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1385,6 +1420,7 @@ INT_PTR CALLBACK ExtraPerformanceSettings::DlgProc (HWND hWnd, UINT uMsg, WPARAM
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraPerformanceSettings*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1466,6 +1502,7 @@ INT_PTR CALLBACK ExtraLaunchpadOptions::DlgProc (HWND hWnd, UINT uMsg, WPARAM wP
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraLaunchpadOptions*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1534,6 +1571,7 @@ INT_PTR CALLBACK ExtraLogfileOptions::DlgProc (HWND hWnd, UINT uMsg, WPARAM wPar
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		((ExtraLogfileOptions*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree(hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -1622,7 +1660,7 @@ void orbiter::ExtraTab::RefreshLocalization()
 		if (!pItem) continue;
 		const char* name = pItem->Name();
 		if (!name) continue;
-		std::wstring wtext = orbiter::Utf8ToWideString(name);
+		std::wstring wtext = orbiter::Utf8ToWideString(orbiter::Tr(name));
 		TVITEMW set;
 		memset(&set, 0, sizeof(set));
 		set.mask = TVIF_TEXT;

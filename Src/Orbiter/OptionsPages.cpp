@@ -157,38 +157,40 @@ const OptionsPage* OptionsPageContainer::FindPage(const char* name) const
 
 void OptionsPageContainer::SwitchPage(const char* name)
 {
-	char cbuf[256];
-	TVITEM tvi;
-	tvi.hItem = TreeView_GetRoot(m_hPageList);
+	// Unicode tree items: compare wide strings (translated page names are UTF-8)
+	std::wstring wname = orbiter::Utf8ToWideString(name);
+	wchar_t cbuf[256];
+	TVITEMW tvi;
+	tvi.hItem = (HTREEITEM)SendMessageW(m_hPageList, TVM_GETNEXTITEM, TVGN_ROOT, 0);
 	tvi.pszText = cbuf;
 	tvi.cchTextMax = 256;
 	tvi.cChildren = 0;
 	tvi.mask = TVIF_HANDLE | TVIF_TEXT | TVIF_CHILDREN;
 	while (tvi.hItem) {
-		TreeView_GetItem(m_hPageList, &tvi);
-		if (!stricmp(cbuf, name)) {
+		cbuf[0] = 0;
+		SendMessageW(m_hPageList, TVM_GETITEMW, 0, (LPARAM)&tvi);
+		if (!_wcsicmp(cbuf, wname.c_str())) {
 			TreeView_SelectItem(m_hPageList, tvi.hItem);
 			break;
 		}
-		TVITEM tvi_child;
-		tvi_child.hItem = TreeView_GetChild(m_hPageList, tvi.hItem);
+		TVITEMW tvi_child;
+		tvi_child.hItem = (HTREEITEM)SendMessageW(m_hPageList, TVM_GETNEXTITEM, TVGN_CHILD, (LPARAM)tvi.hItem);
 		tvi_child.pszText = cbuf;
 		tvi_child.cchTextMax = 256;
 		tvi_child.cChildren = 0;
 		tvi_child.mask = TVIF_HANDLE | TVIF_TEXT | TVIF_CHILDREN;
 		while (tvi_child.hItem) {
-			TreeView_GetItem(m_hPageList, &tvi_child);
-			if (!stricmp(cbuf, name)) {
+			cbuf[0] = 0;
+			SendMessageW(m_hPageList, TVM_GETITEMW, 0, (LPARAM)&tvi_child);
+			if (!_wcsicmp(cbuf, wname.c_str())) {
 				TreeView_SelectItem(m_hPageList, tvi_child.hItem);
 				break;
 			}
-			tvi_child.hItem = TreeView_GetNextSibling(m_hPageList, tvi_child.hItem);
+			tvi_child.hItem = (HTREEITEM)SendMessageW(m_hPageList, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)tvi_child.hItem);
 		}
-		tvi.hItem = TreeView_GetNextSibling(m_hPageList, tvi.hItem);
+		tvi.hItem = (HTREEITEM)SendMessageW(m_hPageList, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)tvi.hItem);
 	}
 }
-
-
 // ----------------------------------------------------------------------
 
 void OptionsPageContainer::SwitchPage(size_t page)
@@ -349,7 +351,8 @@ HTREEITEM OptionsPage::CreatePage(HWND hDlg, HTREEITEM parent)
 	}
 
 	const char* pageName = Name();
-	std::wstring wname = orbiter::Utf8ToWideString(pageName);
+	LOGOUT("OPTPAGE name=[%s] tr=[%s]", pageName, orbiter::Tr(pageName));
+	std::wstring wname = orbiter::Utf8ToWideString(orbiter::Tr(pageName));
 	TVINSERTSTRUCTW tvis;
 	tvis.item.mask = TVIF_TEXT | TVIF_PARAM;
 	tvis.item.pszText = const_cast<LPWSTR>(wname.c_str());
@@ -1552,7 +1555,7 @@ void OptionsPage_CelSphere::PopulateStarmapList(HWND hPage)
 				break;
 			c = strtok(cbuf, "|");
 			if (c) {
-				SendDlgItemMessage(hPage, IDC_OPT_CSP_STARMAPIMAGE, CB_ADDSTRING, 0, (LPARAM)c);
+				{ std::wstring wl = orbiter::Utf8ToWideString(orbiter::Tr(c)); SendDlgItemMessageW(hPage, IDC_OPT_CSP_STARMAPIMAGE, CB_ADDSTRING, 0, (LPARAM)wl.c_str()); }
 				std::string label(c);
 				c = strtok(NULL, "\n");
 				std::string path(c);
@@ -1584,7 +1587,7 @@ void OptionsPage_CelSphere::PopulateBgImageList(HWND hPage)
 				break;
 			c = strtok(cbuf, "|");
 			if (c) {
-				SendDlgItemMessage(hPage, IDC_OPT_CSP_BKGIMAGE, CB_ADDSTRING, 0, (LPARAM)c);
+				{ std::wstring wl = orbiter::Utf8ToWideString(orbiter::Tr(c)); SendDlgItemMessageW(hPage, IDC_OPT_CSP_BKGIMAGE, CB_ADDSTRING, 0, (LPARAM)wl.c_str()); }
 				std::string label(c);
 				c = strtok(NULL, "\n");
 				std::string path(c);
@@ -1766,19 +1769,19 @@ BOOL OptionsPage_VisHelper::OnCommand(HWND hPage, WORD ctrlId, WORD notification
 		break;
 	case IDC_OPT_VHELP_PLN:
 		if (notification == BN_CLICKED)
-			Container()->SwitchPage("Planetarium");
+			Container()->SwitchPage(orbiter::Tr("Planetarium"));
 		break;
 	case IDC_OPT_VHELP_MKR:
 		if (notification == BN_CLICKED)
-			Container()->SwitchPage("Labels");
+			Container()->SwitchPage(orbiter::Tr("Labels"));
 		break;
 	case IDC_OPT_VHELP_VEC:
 		if (notification == BN_CLICKED)
-			Container()->SwitchPage("Body forces");
+			Container()->SwitchPage(orbiter::Tr("Body forces"));
 		break;
 	case IDC_OPT_VHELP_CRD:
 		if (notification == BN_CLICKED)
-			Container()->SwitchPage("Object axes");
+			Container()->SwitchPage(orbiter::Tr("Object axes"));
 		break;
 	}
 	return FALSE;
