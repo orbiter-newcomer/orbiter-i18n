@@ -911,8 +911,11 @@ void Orbiter::CloseSession ()
 		m_pConsole = NULL;
 	}
 
+	LOGOUT("CLOSESESSION step0: enter normal cleanup");
 	if (pConfig->CfgDebugPrm.ShutdownMode == 0 && !bFastExit) { // normal cleanup
+		LOGOUT("CLOSESESSION step1: before Show");
 		m_pLaunchpad->Show(); // show launchpad dialog again
+		LOGOUT("CLOSESESSION step2: before ShowWaitPage");
 		m_pLaunchpad->ShowWaitPage (true, simheapsize);
 		if (gclient) {
 			gclient->clbkCloseSession (false);
@@ -928,8 +931,12 @@ void Orbiter::CloseSession ()
 
 		if (g_input)  { delete g_input; g_input = 0; }
 		if (g_select) { delete g_select; g_select = 0; }
+		LOGOUT("CLOSESESSION step5: before delete g_pane");
 		if (g_pane) { delete g_pane;   g_pane = 0; }
+		LOGOUT("CLOSESESSION step6: g_pane deleted");
+		LOGOUT("CLOSESESSION step7: before delete pDlgMgr");
 		if (pDlgMgr)  { delete pDlgMgr; pDlgMgr = 0; }
+		LOGOUT("CLOSESESSION step8: pDlgMgr deleted");
 		Instrument::GlobalExit (gclient);
 		meshmanager.Flush(); // destroy buffered meshes
 		DestroyWorld ();     // destroy logical objects
@@ -943,9 +950,13 @@ void Orbiter::CloseSession ()
 		pDI->DestroyDevices();
 		pDI->SetRenderWindow(NULL);
 
+		LOGOUT("CLOSESESSION step11: before ShowWaitPage(false)");
 		m_pLaunchpad->ShowWaitPage (false);
+		LOGOUT("CLOSESESSION step12: done");
 	} else {
+		LOGOUT("CLOSESESSION step7: before delete pDlgMgr");
 		if (pDlgMgr)  { delete pDlgMgr; pDlgMgr = 0; }
+		LOGOUT("CLOSESESSION step8: pDlgMgr deleted");
 		if (gclient) {
 			gclient->clbkCloseSession (true);
 			gclient->clbkDestroyRenderWindow (true);

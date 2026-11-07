@@ -1446,7 +1446,8 @@ static void BuildTables()
 	// the current selection are preserved. Comboboxes whose items have no
 	// translation are left untouched.
 	static void LocalizeComboBox(HWND hCombo)
-
+	{
+		int count = (int)SendMessageW(hCombo, CB_GETCOUNT, 0, 0);
 		if (count <= 0) return;
 
 		struct Item {
