@@ -50,11 +50,11 @@ static bool NeedsUnicodeText_GDI(const std::wstring &w)
 	return false;
 }
 // 中文模式下的 CJK 字形需要与 D3D9 路径（wfont 高度 x0.85）视觉一致
-static HFONT CreateCJKFontScaled(HFONT hRef)
+static HFONT CreateCJKFontScaled(HFONT hRef, bool noDownscale)
 {
 	LOGFONTA lf; memset(&lf, 0, sizeof(lf));
 	if (!hRef || !GetObjectA(hRef, sizeof(lf), &lf)) return NULL;
-	// keep the original glyph height (matches the appearance of the GDI path)
+	if (!noDownscale) lf.lfHeight = (int)(lf.lfHeight * 0.85f);
 	lf.lfCharSet = DEFAULT_CHARSET;
 	strcpy_s(lf.lfFaceName, "Noto Sans CJK SC");
 	lf.lfQuality = PROOF_QUALITY;
@@ -230,7 +230,8 @@ DWORD GDIPad::GetTextWidth (const char *utf8, int len)
 		std::wstring w = UTF8ToUTF16_GDI(utf8, len);
 		if (NeedsUnicodeText_GDI(w)) {
 			HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
-			HFONT hCJK = CreateCJKFontScaled(hRef);
+			bool noScale = cfont ? static_cast<D3D9PadFont*>(cfont)->m_bNoDownscale : false;
+			HFONT hCJK = CreateCJKFontScaled(hRef, noScale);
 			HGDIOBJ hOld = hCJK ? SelectObject(hDC, hCJK) : NULL;
 			BOOL ok = GetTextExtentPoint32W(hDC, w.c_str(), (int)w.length(), &size);
 			if (hCJK) { SelectObject(hDC, hOld); DeleteObject(hCJK); }
@@ -269,7 +270,8 @@ bool GDIPad::Text (int x, int y, const char *utf8, int len)
 	std::wstring w = UTF8ToUTF16_GDI(utf8, len);
 	if (NeedsUnicodeText_GDI(w)) {
 		HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
-		HFONT hCJK = CreateCJKFontScaled(hRef);
+		bool noScale = cfont ? static_cast<D3D9PadFont*>(cfont)->m_bNoDownscale : false;
+		HFONT hCJK = CreateCJKFontScaled(hRef, noScale);
 		HGDIOBJ hOld = hCJK ? SelectObject(hDC, hCJK) : NULL;
 		BOOL ok = TextOutW (hDC, x, y, w.c_str(), (int)w.length());
 		if (hCJK) { SelectObject(hDC, hOld); DeleteObject(hCJK); }
@@ -300,7 +302,8 @@ bool GDIPad::TextBox (int x1, int y1, int x2, int y2, const char *utf8, int len)
 	r.bottom = y2;
 	if (NeedsUnicodeText_GDI(w)) {
 		HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
-		HFONT hCJK = CreateCJKFontScaled(hRef);
+		bool noScale = cfont ? static_cast<D3D9PadFont*>(cfont)->m_bNoDownscale : false;
+		HFONT hCJK = CreateCJKFontScaled(hRef, noScale);
 		HGDIOBJ hOld = hCJK ? SelectObject(hDC, hCJK) : NULL;
 		int ok = DrawTextW (hDC, w.c_str(), (int)w.length(), &r, DT_LEFT|DT_NOPREFIX|DT_WORDBREAK);
 		if (hCJK) { SelectObject(hDC, hOld); DeleteObject(hCJK); }

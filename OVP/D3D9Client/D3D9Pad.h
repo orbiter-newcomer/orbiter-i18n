@@ -1,4 +1,4 @@
-// ===================================================
+﻿// ===================================================
 // Copyright (C) 2012-2026 Jarmo Nikkanen
 // licensed under LGPL v2
 // ===================================================
@@ -767,6 +767,7 @@ private:
 	HFONT hFont;
 	DWORD Quality;
 	float rotation;
+	bool m_bNoDownscale;
 	static LPDIRECT3DDEVICE9 pDev;
 };
 

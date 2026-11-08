@@ -235,18 +235,39 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Text (x, IH-(3*ch)/2, cbuf, strlen(cbuf));
 	skp->SetTextColor (draw[0][0].col);
 
-	y = 1 + (ch*3)/2; x = IW - (33*cw)/2;
+	y = 1 + (ch*3)/2;
 	{
 		char hl0[16], hl1[32], hl2[32];
 		strcpy(hl0, orbiter::Tr("Ob"));
 		strcpy(hl1, orbiter::Tr("Sh-ToR"));
 		strcpy(hl2, orbiter::Tr("Tg-ToR"));
+		// Dynamic column widths (headers + actual data), right-aligned block,
+		// following the target-column approach used by the Orbit MFD.
 		int w0 = (int)skp->GetTextWidth(hl0, (int)strlen(hl0));
 		int w1 = (int)skp->GetTextWidth(hl1, (int)strlen(hl1));
-		if ((int)skp->GetTextWidth("99", 2) > w0) w0 = (int)skp->GetTextWidth("99", 2);
-		if ((int)skp->GetTextWidth("999.9k", 6) > w1) w1 = (int)skp->GetTextWidth("999.9k", 6);
-		x0 = x + w0 + cw;
-		x1 = x0 + w1 + cw;
+		int w2 = (int)skp->GetTextWidth(hl2, (int)strlen(hl2));
+		{
+			double t0m = dt0, t1m = dt1;
+			for (i = 0; i < norbit; i++) {
+				int wi;
+				sprintf(cbuf, "%2d", i);
+				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+				if (wi > w0) w0 = wi;
+				strcpy(cbuf, DistStr(t0m));
+				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+				if (wi > w1) w1 = wi;
+				strcpy(cbuf, DistStr(t1m));
+				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+				if (wi > w2) w2 = wi;
+				t0m += T0, t1m += T1;
+			}
+		}
+		int gap = cw;
+		int total = w0 + gap + w1 + gap + w2;
+		x = IW - cw/2 - total;
+		if (x < cw/2) x = cw/2;
+		x0 = x + w0 + gap;
+		x1 = x0 + w1 + gap;
 		skp->Text (x, y, hl0, (int)strlen(hl0));
 		skp->Text (x0, y, hl1, (int)strlen(hl1));
 		skp->Text (x1, y, hl2, (int)strlen(hl2));

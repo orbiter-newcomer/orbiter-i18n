@@ -1,4 +1,4 @@
-
+﻿
 // =================================================================================================================================
 // The MIT Lisence:
 //
@@ -71,6 +71,10 @@ public:
 
 	LPDIRECT3DTEXTURE9	GetTexture() const { return pTex; }
 
+	// When set, the Unicode (CJK) font is created with its natural glyph height
+	// instead of the globally downscaled height (used by the MFD menu font).
+	void        SetNoDownscale(bool b) { m_bNoDownscale = b; }
+
 	void        SetLineSpace(int percent=10);
 	void		SetTextSpace(float space = 0.0f);
 	void		SetTextShare(int percent=0);	// Percent of average width (default=0)
@@ -117,6 +121,7 @@ private:
 
 	LPDIRECT3DDEVICE9	pDev;
 	LPDIRECT3DTEXTURE9	pTex;
+	bool				m_bNoDownscale = false;
 	D3D9FontData		*FontData;  ///< Array of font data information ( [c - first] )
 	TEXTMETRIC			tm;         ///< Font attributes
 	LOGFONT             lf;         ///< Font attributes

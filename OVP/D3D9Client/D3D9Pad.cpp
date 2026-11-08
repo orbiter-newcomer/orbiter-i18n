@@ -1952,6 +1952,10 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	const char *def_sansface = "Arial";
 	const char *def_serifface = "Times New Roman";
 
+	// '!' prefix: create the Unicode (CJK) font with its natural glyph height
+	m_bNoDownscale = false;
+	if (face[0] == '!') { m_bNoDownscale = true; face++; }
+
 	if (face[0]!='*') {
 		if (!_stricmp (face, "fixed")) face = def_fixedface;
 		else if (!_stricmp (face, "sans")) face = def_sansface;
@@ -1970,7 +1974,8 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	//
 
 	bool cacheHit = false;
-	for (size_t i = 0; i < fcache.size(); ++i) {
+	if (m_bNoDownscale) { /* no-downscale fonts are not cached */ }
+	else for (size_t i = 0; i < fcache.size(); ++i) {
 		if (fcache[i]->height!=height) continue;
 		if (fcache[i]->style!=style) continue;
 		if (fcache[i]->prop!=prop) continue;
@@ -2004,6 +2009,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		HFONT hNew = CreateFont(height, 0, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
 
 		pFont = std::make_shared<D3D9Text>(pDev);
+		pFont->SetNoDownscale(m_bNoDownscale);
 		pFont->Init(hNew);
 		LogAlw("FONTCACHEDBG new font created h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 
@@ -2012,6 +2018,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		pFont->SetRotation(rotation);
 
 		// Fill the cache --------------------------------
+		if (!m_bNoDownscale) {
 		FontCache *p = new FontCache();
 		p->pFont  = pFont;
 		p->height = height;
@@ -2019,6 +2026,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		p->prop   = prop;
 		strcpy_s(p->face, 64, face);
 		fcache.push_back(p);
+		}
 	}
 
 	// Create Rotated windows GDI Font for a use with GDIPad ---------------------------
@@ -2036,6 +2044,9 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyle style, float spacing)
 : Font(height, false, face, style, 0)
 {
+	// '!' prefix: create the Unicode (CJK) font with its natural glyph height
+	m_bNoDownscale = false;
+	if (face[0] == '!') { m_bNoDownscale = true; face++; }
 
 	hFont = NULL;
 	rotation = 0.0f;
@@ -2043,7 +2054,8 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	// Browse cache ---------------------------------------------------
 	//
 	bool qcacheHit = false;
-	for (size_t i = 0; i < qcache.size(); ++i) {
+	if (m_bNoDownscale) { /* no-downscale fonts are not cached */ }
+	else for (size_t i = 0; i < qcache.size(); ++i) {
 		if (qcache[i]->height != height) continue;
 		if (qcache[i]->style != style) continue;
 		if (qcache[i]->width != width) continue;
@@ -2075,12 +2087,14 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
 
 		pFont = std::make_shared<D3D9Text>(pDev);
+		pFont->SetNoDownscale(m_bNoDownscale);
 		pFont->Init(hFont);
 		LogAlw("FONTCACHEDBG q new h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 		pFont->SetRotation(0.0f);
 		pFont->SetTextSpace(spacing);
 
 		// Fill the cache --------------------------------
+		if (!m_bNoDownscale) {
 		QFontCache *p = new QFontCache();
 		p->pFont = pFont;
 		p->height = height;
@@ -2090,6 +2104,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		p->spacing = spacing;
 		strcpy_s(p->face, 64, face);
 		qcache.push_back(p);
+		}
 	}
 	else {
 		// Create windows GDI Font for a use with GDIPad ---------------------------

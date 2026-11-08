@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #define OAPI_IMPLEMENTATION
@@ -491,6 +491,7 @@ Instrument::Instrument (Pane *_pane, INT_PTR _id, const Spec &spec, Vessel *_ves
 	//npen = 0;
 	modepage = -1;
 	mfdfont[0] = 0;
+	mfdfontmenu = 0;
 	SetSize (spec, defer_alloc);
 
 	nVesselModes = vessel->GetMFDModes (&VesselMode);
@@ -502,6 +503,7 @@ Instrument::~Instrument ()
 	if (gc) {
 		for (i = 0; i < 4; i++)
 			gc->clbkReleaseFont (mfdfont[i]);
+		if (mfdfontmenu) gc->clbkReleaseFont (mfdfontmenu);
 		//for (i = 0; i < npen; i++)
 		//	gc->clbkReleasePen (mfdpen[i]);
 	}
@@ -679,6 +681,7 @@ void Instrument::SetSize (const Spec &spec, bool defer_alloc)
 		mfdfont[1] = gc->clbkCreateFont (-(h*3)/4, true, "Sans");
 		mfdfont[2] = gc->clbkCreateFont (-(h*3)/4, true, "Sans", FONT_NORMAL, 900);
 		mfdfont[3] = gc->clbkCreateFont (-h, true, "Sans");
+		mfdfontmenu = gc->clbkCreateFont (-h, false, "!Fixed");
 
 		oapi::Sketchpad *skp = gc->clbkGetSketchpad (surf);
 		if (skp) {
@@ -898,6 +901,7 @@ void Instrument::DisplayModes (int page)
 	ClearSurface();
 	oapi::Sketchpad *skp = BeginDraw();
 	if (!skp) return;
+	skp->SetFont (mfdfontmenu);
 
 	if (nGlobalModes-nDisabledModes <= nbt) {
 		DisplayTitle (skp, orbiter::Tr("MODE SELECT"));
@@ -973,6 +977,7 @@ void Instrument::DrawMenu ()
 	ClearSurface();
 	oapi::Sketchpad *skp = BeginDraw ();
 	if (!skp) return;
+	skp->SetFont (mfdfontmenu);
 
 	DisplayTitle (skp, orbiter::Tr("MFD MENU"));
 	nmnu = BtnMenu (&mnu);

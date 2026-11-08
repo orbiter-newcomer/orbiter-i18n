@@ -295,7 +295,13 @@ restart:
 	// font height, which makes translated text overlap neighbouring rows in
 	// dense MFD layouts. Scale the Unicode font so that its glyph height
 	// matches the bitmap path.
-	int wfheight = lf.lfHeight;   // use the natural glyph height (CJK glyphs match the GDI path)
+	int wfheight = lf.lfHeight;
+	// CJK glyphs are taller than the ASCII bitmap cell for the same logical font
+	// height. Scale them down unless the font is flagged as "no downscale"
+	// (e.g. the MFD menu font, which is meant to render larger).
+	if (!m_bNoDownscale) {
+		if (wfheight < 0) wfheight = (int)(wfheight * 0.85f);
+	}
 	HR(D3DXCreateFont(
 		pDev,                 // D3D Device
 		wfheight,             // Font height (CJK glyphs are taller than the bitmap cell)

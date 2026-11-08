@@ -383,14 +383,14 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line (circx+x, circy-y0, circx+x, circy-y1-1);
 
 		skp->SetPen(draw[0][0].solidpen);
-		sprintf (cbuf, "%s %s", orbiter::Tr("hD"), DistStr(fabs(Z.x), 3));
+		sprintf (cbuf, "%s %s", orbiter::Tr("hD"), DistStr(fabs(Z.x), 5));
 		x0 = cw / 2;
 		y0 = (ch * 5) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal distance from approach path
 		int hdW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (fabs(Z.x) > 2e-3)
 			DrawArrow(x0 + hdW + cw/2, y0, Z.x < 0 ? 3 : 1, skp);
-		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 3));
+		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 5));
 		x0 = cw/2 + hdW + cw*2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // vertical distance from approach path
 		if (fabs(Z.y) > 2e-3)

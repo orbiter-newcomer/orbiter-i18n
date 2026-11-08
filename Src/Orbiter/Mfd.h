@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -283,6 +283,7 @@ protected:
 
 	// Drawing resources
 	oapi::Font *mfdfont[4];     // MFD font resources
+	oapi::Font *mfdfontmenu;    // MFD menu font (CJK glyphs not downscaled)
 	bool use_skp_interface;     // true if drawing through Sketchpad, false for HDC
 
 public:
