@@ -1027,7 +1027,6 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 	}
 
 	{
-		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
 		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
 		bool nonAscii = false;
 		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
@@ -1212,7 +1211,6 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 	}
 
 	{
-		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
 		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
 		bool nonAscii = false;
 		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
@@ -1961,7 +1959,6 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
 
 	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
-	LogAlw("FONTDBG zhBitmap=%d face=%s trBuild=[%s]", zhBitmap?1:0, face, oapiTr("Build"));
 
 	if (face[0]!='*') {
 		if (!_stricmp (face, "fixed")) face = def_fixedface;
@@ -2060,7 +2057,6 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
 
 	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
-	LogAlw("FONTDBG zhBitmap=%d face=%s trBuild=[%s]", zhBitmap?1:0, face, oapiTr("Build"));
 
 	hFont = NULL;
 	rotation = 0.0f;
