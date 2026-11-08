@@ -492,6 +492,7 @@ Instrument::Instrument (Pane *_pane, INT_PTR _id, const Spec &spec, Vessel *_ves
 	modepage = -1;
 	mfdfont[0] = 0;
 	mfdfontmenu = 0;
+	mfdfontnoto[0] = mfdfontnoto[1] = mfdfontnoto[2] = mfdfontnoto[3] = 0;
 	SetSize (spec, defer_alloc);
 
 	nVesselModes = vessel->GetMFDModes (&VesselMode);
@@ -504,6 +505,8 @@ Instrument::~Instrument ()
 		for (i = 0; i < 4; i++)
 			gc->clbkReleaseFont (mfdfont[i]);
 		if (mfdfontmenu) gc->clbkReleaseFont (mfdfontmenu);
+		for (i = 0; i < 4; i++)
+			if (mfdfontnoto[i]) gc->clbkReleaseFont (mfdfontnoto[i]);
 		//for (i = 0; i < npen; i++)
 		//	gc->clbkReleasePen (mfdpen[i]);
 	}
@@ -682,6 +685,10 @@ void Instrument::SetSize (const Spec &spec, bool defer_alloc)
 		mfdfont[2] = gc->clbkCreateFont (-(h*3)/4, true, "Sans", FONT_NORMAL, 900);
 		mfdfont[3] = gc->clbkCreateFont (-h, true, "Sans");
 		mfdfontmenu = gc->clbkCreateFont (-h, false, "!Fixed");
+		mfdfontnoto[0] = gc->clbkCreateFont (-h, false, "@Fixed");
+		mfdfontnoto[1] = gc->clbkCreateFont (-(h*3)/4, true, "@Sans");
+		mfdfontnoto[2] = gc->clbkCreateFont (-(h*3)/4, true, "@Sans", FONT_NORMAL, 900);
+		mfdfontnoto[3] = gc->clbkCreateFont (-h, true, "@Sans");
 
 		oapi::Sketchpad *skp = gc->clbkGetSketchpad (surf);
 		if (skp) {
@@ -841,6 +848,11 @@ void Instrument::RepaintButtons ()
 oapi::Font *Instrument::GetDefaultFont (DWORD fontidx)
 {
 	return (fontidx < 4 ? mfdfont[fontidx] : 0);
+}
+
+oapi::Font *Instrument::GetDefaultFontNoto (DWORD fontidx)
+{
+	return (fontidx < 4 ? mfdfontnoto[fontidx] : 0);
 }
 
 HFONT Instrument::SelectDefaultFont (HDC hDC, DWORD i)

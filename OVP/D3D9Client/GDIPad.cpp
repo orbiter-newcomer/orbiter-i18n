@@ -5,6 +5,7 @@
 // Copyright (C) 2006-2026 Martin Schweiger
 // ==============================================================
 
+#include "Orbitersdk.h"
 #include "GDIPad.h"
 #include "D3D9Pad.h"
 #include "D3D9Client.h"
@@ -228,7 +229,8 @@ DWORD GDIPad::GetTextWidth (const char *utf8, int len)
 	if (!len) len = lstrlen(utf8);
 	if (utf8) {
 		std::wstring w = UTF8ToUTF16_GDI(utf8, len);
-		if (NeedsUnicodeText_GDI(w)) {
+		const D3D9PadFont *pfw = (cfont ? static_cast<const D3D9PadFont*>(cfont) : nullptr);
+		if ((pfw && pfw->WantUnicodeText(w)) || NeedsUnicodeText_GDI(w)) {
 			HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
 			bool noScale = cfont ? static_cast<D3D9PadFont*>(cfont)->m_bNoDownscale : false;
 			HFONT hCJK = CreateCJKFontScaled(hRef, noScale);
@@ -268,6 +270,17 @@ bool GDIPad::Text (int x, int y, const char *utf8, int len)
 	MfdDbgLog("GDIPAD_TEXT len=%d first=0x%02X", len, (unsigned char)utf8[0]);
 	if (!utf8) return false;
 	std::wstring w = UTF8ToUTF16_GDI(utf8, len);
+	{
+	const D3D9PadFont *pf = (cfont ? static_cast<const D3D9PadFont*>(cfont) : nullptr);
+	if (pf && pf->WantUnicodeText(w)) {
+		HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
+		HFONT hCJK = CreateCJKFontScaled(hRef, true);
+		HGDIOBJ hOld = hCJK ? SelectObject(hDC, hCJK) : NULL;
+		BOOL ok = TextOutW (hDC, x, y, w.c_str(), (int)w.length());
+		if (hCJK) { SelectObject(hDC, hOld); DeleteObject(hCJK); }
+		return (ok != FALSE);
+	}
+	}
 	if (NeedsUnicodeText_GDI(w)) {
 		HFONT hRef = (HFONT)GetCurrentObject(hDC, OBJ_FONT);
 		bool noScale = cfont ? static_cast<D3D9PadFont*>(cfont)->m_bNoDownscale : false;

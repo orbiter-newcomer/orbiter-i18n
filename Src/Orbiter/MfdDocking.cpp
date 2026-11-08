@@ -15,6 +15,8 @@ extern Pane *g_pane;
 extern InputBox *g_input;
 extern Select *g_select;
 
+
+
 // =======================================================================
 // class Instrument_Docking
 
@@ -149,7 +151,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line(circx + x0, circy - y0, circx + x1, circy - y1);
 	}
 
-	skp->SetFont (GetDefaultFont (2));
+	skp->SetFont (GetDefaultFont (2));   // rotated font: bitmap path handles the 90deg orientation
 	skp->SetTextAlign (oapi::Sketchpad::CENTER);
 	skp->SetTextColor (draw[0][0].col);
 	skp->Text (bar0x + barw, bar0-barh/2, "10 ^ x m", 8);

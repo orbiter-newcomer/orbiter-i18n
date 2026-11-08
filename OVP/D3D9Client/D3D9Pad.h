@@ -762,12 +762,20 @@ public:
 	int		GetTextLength(const char *pText, int len) const;
 	int		GetIndexByPosition(const char *pText, int pos, int len) const;
 
+	// ---- Unified text rendering policy (single decision point) ----
+	// English UI always uses the original bitmap pipeline.
+	// Chinese UI: '@' fonts render everything through the Unicode/CJK font,
+	// other fonts only route non-Latin (CJK) text through it.
+	bool	IsChineseMode() const;
+	bool	WantUnicodeText(const std::wstring &w) const;
+
 private:
 	D3D9TextPtr pFont;
 	HFONT hFont;
 	DWORD Quality;
 	float rotation;
 	bool m_bNoDownscale;
+	bool m_bUnicodeAll;   // render all (incl. ASCII) text through the Unicode/CJK font
 	static LPDIRECT3DDEVICE9 pDev;
 };
 

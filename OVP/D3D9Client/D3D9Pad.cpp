@@ -40,6 +40,7 @@ struct FontCache {
 	int         height;
 	int         orient;
 	bool        prop;
+	bool        noto;      // true: bitmap glyph atlas generated with the Noto font (Chinese UI)
 	char        face[64];
 	FontStyle	style;
 	D3D9TextPtr pFont;
@@ -49,6 +50,7 @@ struct QFontCache {
 	int         height;
 	int         width;
 	int			weight;
+	bool        noto;      // true: bitmap glyph atlas generated with the Noto font (Chinese UI)
 	char        face[64];
 	FontStyle	style;
 	float		spacing;
@@ -130,6 +132,20 @@ static bool NeedsUnicodeText(const std::wstring &w)
 		if ((unsigned int)w[i] > 0xFF) return true;
 	}
 	return false;
+}
+
+// ---- Unified text rendering policy (single decision point) ----
+
+bool D3D9PadFont::IsChineseMode() const
+{
+	return (strcmp(oapiTr("Build"), "Build") != 0);
+}
+
+bool D3D9PadFont::WantUnicodeText(const std::wstring &w) const
+{
+	if (!IsChineseMode()) return false;   // English UI: always the original bitmap pipeline
+	if (m_bUnicodeAll) return true;       // '@' fonts: everything through the Unicode font
+	return NeedsUnicodeText(w);           // other fonts: only non-Latin text
 }
 
 
@@ -1198,9 +1214,11 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 {
 	if (!utf8) return false;
 
-	// Route non-Latin text (e.g. CJK) through the Unicode (D3DXFont) renderer
+	// Unified policy: Chinese UI routes CJK text (and '@' fonts: all text) through
+	// the Unicode (D3DXFont) renderer; English UI keeps the bitmap pipeline.
+	const D3D9PadFont *pf = (cfont ? static_cast<const D3D9PadFont*>(cfont) : nullptr);
 	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
-	if (NeedsUnicodeText(wstr)) {
+	if (pf && pf->WantUnicodeText(wstr)) {
 		// The bitmap (ASCII) path draws through the vertex pipeline, which applies
 		// the sketchpad origin/transform. The D3DXFont path draws directly, so the
 		// origin offset must be applied here explicitly.
@@ -1953,8 +1971,13 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	const char *def_serifface = "Times New Roman";
 
 	// '!' prefix: create the Unicode (CJK) font with its natural glyph height
+	// '@' prefix: additionally render ALL text (incl. ASCII) through the Unicode font
 	m_bNoDownscale = false;
+	m_bUnicodeAll = false;
 	if (face[0] == '!') { m_bNoDownscale = true; face++; }
+	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
+
+	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
 
 	if (face[0]!='*') {
 		if (!_stricmp (face, "fixed")) face = def_fixedface;
@@ -1980,6 +2003,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		if (fcache[i]->style!=style) continue;
 		if (fcache[i]->prop!=prop) continue;
 		if (_stricmp(fcache[i]->face,face)!=0) continue;
+		if (fcache[i]->noto != zhBitmap) continue;
 		pFont = fcache[i]->pFont;
 		cacheHit = true;
 		break;
@@ -2005,8 +2029,9 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	// Create DirectX accelerated font for a use with D3D9Pad ------------------
 	//
 	if (pFont==NULL) {
+		const char *bitmapFace = zhBitmap ? "Noto Sans CJK SC" : face;
 
-		HFONT hNew = CreateFont(height, 0, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+		HFONT hNew = CreateFont(height, 0, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, bitmapFace);
 
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->SetNoDownscale(m_bNoDownscale);
@@ -2024,6 +2049,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		p->height = height;
 		p->style  = style;
 		p->prop   = prop;
+		p->noto   = zhBitmap;
 		strcpy_s(p->face, 64, face);
 		fcache.push_back(p);
 		}
@@ -2031,11 +2057,11 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 
 	// Create Rotated windows GDI Font for a use with GDIPad ---------------------------
 	//
-	hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, zhBitmap ? "Noto Sans CJK SC" : face);
 
 	if (hFont==NULL) {
 		face  = (prop ? def_sansface : def_fixedface);
-		hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, 0, orientation, orientation, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, zhBitmap ? "Noto Sans CJK SC" : face);
 	}
 }
 
@@ -2045,8 +2071,13 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 : Font(height, false, face, style, 0)
 {
 	// '!' prefix: create the Unicode (CJK) font with its natural glyph height
+	// '@' prefix: additionally render ALL text (incl. ASCII) through the Unicode font
 	m_bNoDownscale = false;
+	m_bUnicodeAll = false;
 	if (face[0] == '!') { m_bNoDownscale = true; face++; }
+	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
+
+	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
 
 	hFont = NULL;
 	rotation = 0.0f;
@@ -2062,6 +2093,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		if (qcache[i]->weight != weight) continue;
 		if (qcache[i]->spacing != spacing) continue;
 		if (_stricmp(qcache[i]->face, face) != 0) continue;
+		if (qcache[i]->noto != zhBitmap) continue;
 		pFont = qcache[i]->pFont;
 		qcacheHit = true;
 		break;
@@ -2084,7 +2116,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	//
 	if (pFont == NULL) {
 
-		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, 0, 0, 2, Quality, 49, zhBitmap ? "Noto Sans CJK SC" : face);
 
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->SetNoDownscale(m_bNoDownscale);
@@ -2102,6 +2134,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		p->weight = weight;
 		p->style = style;
 		p->spacing = spacing;
+		p->noto = zhBitmap;
 		strcpy_s(p->face, 64, face);
 		qcache.push_back(p);
 		}
@@ -2109,7 +2142,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	else {
 		// Create windows GDI Font for a use with GDIPad ---------------------------
 		//
-		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, face);
+		hFont = CreateFontA(height, width, 0, 0, weight, italic, underline, strikeout, DEFAULT_CHARSET, 0, 2, Quality, 49, zhBitmap ? "Noto Sans CJK SC" : face);
 	}
 }
 
@@ -2134,6 +2167,10 @@ HFONT D3D9PadFont::GetGDIFont () const
 //
 int D3D9PadFont::GetTextLength(const char *pText, int len) const
 {
+	std::wstring w = UTF8ToUTF16(pText, len);
+	if (WantUnicodeText(w)) {
+		return int(pFont->Length2(w.c_str(), (int)w.length()));
+	}
 	return int(pFont->Length2(pText, len));
 }
 
