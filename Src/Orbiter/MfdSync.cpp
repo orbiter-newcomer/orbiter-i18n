@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #include "MfdSync.h"
@@ -236,42 +236,30 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetTextColor (draw[0][0].col);
 
 	y = 1 + (ch*3)/2;
-	{
+	// English UI: original layout (unchanged). Chinese UI: original layout plus
+	// fixed offsets (the translated headers are wider than the English ones).
+	const bool zhLayout = (strcmp(oapiTr("Build"), "Build") != 0);
+	if (zhLayout) {
+		x  = IW - (33*cw)/2 - 2*cw;   // shift table left
+		x0 = x + 4*cw;                // first data column
+		x1 = x0 + 10*cw;              // second data column
+	} else {
+		x  = IW - (33*cw)/2;          // original layout
+		x0 = x + 2*cw;
+		x1 = x + 9*cw;
+	}
+	if (zhLayout) {
 		char hl0[16], hl1[32], hl2[32];
 		strcpy(hl0, orbiter::Tr("Ob"));
 		strcpy(hl1, orbiter::Tr("Sh-ToR"));
 		strcpy(hl2, orbiter::Tr("Tg-ToR"));
-		// Dynamic column widths (headers + actual data), right-aligned block,
-		// following the target-column approach used by the Orbit MFD.
-		int w0 = (int)skp->GetTextWidth(hl0, (int)strlen(hl0));
-		int w1 = (int)skp->GetTextWidth(hl1, (int)strlen(hl1));
-		int w2 = (int)skp->GetTextWidth(hl2, (int)strlen(hl2));
-		{
-			double t0m = dt0, t1m = dt1;
-			for (i = 0; i < norbit; i++) {
-				int wi;
-				sprintf(cbuf, "%2d", i);
-				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-				if (wi > w0) w0 = wi;
-				strcpy(cbuf, DistStr(t0m));
-				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-				if (wi > w1) w1 = wi;
-				strcpy(cbuf, DistStr(t1m));
-				wi = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-				if (wi > w2) w2 = wi;
-				t0m += T0, t1m += T1;
-			}
-		}
-		int gap = cw;
-		int total = w0 + gap + w1 + gap + w2;
-		x = IW - cw/2 - total;
-		if (x < cw/2) x = cw/2;
-		x0 = x + w0 + gap;
-		x1 = x0 + w1 + gap;
-		skp->Text (x, y, hl0, (int)strlen(hl0));
-		skp->Text (x0, y, hl1, (int)strlen(hl1));
-		skp->Text (x1, y, hl2, (int)strlen(hl2));
-	} y += ch;
+		skp->Text(x,  y, hl0, (int)strlen(hl0));
+		skp->Text(x0, y, hl1, (int)strlen(hl1));
+		skp->Text(x1, y, hl2, (int)strlen(hl2));
+	} else {
+		skp->Text(x, y, "Ob Sh-ToR Tg-ToR", 16);
+	}
+	y += ch;
 	for (i = 0; i < norbit; i++) {
 		sprintf (cbuf, "%2d", i); skp->Text (x, y, cbuf, strlen(cbuf));
 		if (i == mini) skp->SetTextColor (draw[1][0].col);

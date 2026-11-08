@@ -296,10 +296,10 @@ restart:
 	// dense MFD layouts. Scale the Unicode font so that its glyph height
 	// matches the bitmap path.
 	int wfheight = lf.lfHeight;
-	// CJK glyphs are taller than the ASCII bitmap cell for the same logical font
-	// height. Scale them down unless the font is flagged as "no downscale"
+	// CJK glyphs are taller than the ASCII bitmap cell for the same logical
+	// font height. Scale them down unless the font is flagged as "no downscale"
 	// (e.g. the MFD menu font, which is meant to render larger).
-	if (!m_bNoDownscale) {
+	if (!m_bNoDownscale && zhMode) {
 		if (wfheight < 0) wfheight = (int)(wfheight * 0.85f);
 	}
 	HR(D3DXCreateFont(
@@ -316,6 +316,8 @@ restart:
 		lf.lfFaceName,        // pFacename,
 		&wfont                // ppFont
 	));
+
+	LogAlw("FONTCACHEDBG wf face=%s h=%d zh=%d", lf.lfFaceName, lf.lfHeight, zhMode?1:0);
 	SetLineSpace(0);
 	SetTextShare(0);
 	SetTextSpace(0);
@@ -420,6 +422,7 @@ float D3D9Text::Length2(const char *_str, int l)
 
 	len -= spacing;
 	if (len<0) len=0;
+	if (strcmp(oapiTr("Build"), "Build") != 0) return len * scaling * 0.85f;   // match the ASCII glyph downscale in PrintSkp
 	return len * scaling;
 }
 
@@ -466,7 +469,15 @@ float D3D9Text::PrintSkp(D3D9Pad *pSkp, float xpos, float ypos, const char *_str
 	
 	float x_orig = xpos;
 
-	float h = FontData[0].h;
+	// Match the CJK font size: the Unicode (CJK) font is rendered at 85% of the
+	// logical font height, so the ASCII bitmap glyphs are scaled down by the same
+	// factor and centred vertically in their character cell.
+	// Chinese UI only: scale the ASCII glyphs down to match the CJK font size.
+	// English UI keeps the original glyph size and position (no adjustments).
+	const bool zhMode = (strcmp(oapiTr("Build"), "Build") != 0);
+	const float zscale = (zhMode ? 0.85f : 1.0f);
+	float h = FontData[0].h * zscale;
+	if (zhMode) ypos -= 2.0f;   // fine vertical alignment (scaled ASCII glyphs sit slightly low)
 
 	float bbox_l = xpos - 2;
 	float bbox_t = ypos + 1;
@@ -526,7 +537,7 @@ float D3D9Text::PrintSkp(D3D9Pad *pSkp, float xpos, float ypos, const char *_str
 			pIdx[iI++] = vI + 2;
 			pIdx[iI++] = vI + 3;
 
-			float w = pData->w;
+			float w = pData->w * zscale;
 			float xp = ceil(xpos);
 			SkpVtxFF(pVtx[vI++], xp, ypos, pData->tx0, pData->ty0);
 			SkpVtxFF(pVtx[vI++], xp, ypos + h, pData->tx0, pData->ty1);
@@ -542,7 +553,7 @@ float D3D9Text::PrintSkp(D3D9Pad *pSkp, float xpos, float ypos, const char *_str
 			pVtx[vI - 4].fnc = flags;
 			pVtx[vI - 4].clr = color;
 
-			xpos += (pData->sp + spacing);
+			xpos += (pData->sp + spacing) * zscale;
 
 			c = str[idx++];
 		}

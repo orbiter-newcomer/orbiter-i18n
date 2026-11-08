@@ -15,8 +15,6 @@ extern Pane *g_pane;
 extern InputBox *g_input;
 extern Select *g_select;
 
-
-
 // =======================================================================
 // class Instrument_Docking
 
@@ -151,7 +149,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line(circx + x0, circy - y0, circx + x1, circy - y1);
 	}
 
-	skp->SetFont (GetDefaultFont (2));   // rotated font: bitmap path handles the 90deg orientation
+	skp->SetFont (GetDefaultFont (2));
 	skp->SetTextAlign (oapi::Sketchpad::CENTER);
 	skp->SetTextColor (draw[0][0].col);
 	skp->Text (bar0x + barw, bar0-barh/2, "10 ^ x m", 8);
@@ -385,18 +383,21 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line (circx+x, circy-y0, circx+x, circy-y1-1);
 
 		skp->SetPen(draw[0][0].solidpen);
+		const bool zhLay = (strcmp(orbiter::Tr("Build"), "Build") != 0);
+		int hdLblW = (int)skp->GetTextWidth(orbiter::Tr("hD"), (int)strlen(orbiter::Tr("hD")));
 		sprintf (cbuf, "%s %s", orbiter::Tr("hD"), DistStr(fabs(Z.x), 5));
 		x0 = cw / 2;
 		y0 = (ch * 5) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal distance from approach path
 		int hdW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (fabs(Z.x) > 2e-3)
-			DrawArrow(x0 + hdW + cw/2, y0, Z.x < 0 ? 3 : 1, skp);
+			DrawArrow(x0 + (zhLay ? hdW : hdLblW) + cw/2, y0, Z.x < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 5));
-		x0 = cw/2 + hdW + cw*2;
+		x0 = (zhLay ? cw/2 + hdW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // vertical distance from approach path
+		int vdLblW = (int)skp->GetTextWidth(orbiter::Tr("vD"), (int)strlen(orbiter::Tr("vD")));
 		if (fabs(Z.y) > 2e-3)
-			DrawArrow(x0 + (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2, y0, Z.y < 0 ? 2 : 0, skp);
+			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : vdLblW) + cw/2, y0, Z.y < 0 ? 2 : 0, skp);
 
 		// Ship's relative velocity projected into ship's approach xy plane
 		double dvx = (adposold.x-adpos.x)/dt;
@@ -408,13 +409,15 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		y0 = (ch * 7) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
 		int hvW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int hvLblW = (int)skp->GetTextWidth(orbiter::Tr("hV"), (int)strlen(orbiter::Tr("hV")));
 		if (fabs(dvx) > 2e-4)
-			DrawArrow(x0 + hvW + cw/2, y0, dvx < 0 ? 3 : 1, skp);
+			DrawArrow(x0 + (zhLay ? hvW : hvLblW) + cw/2, y0, dvx < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vV"), DistStr(fabs(dvy), 4));
-		x0 = cw/2 + hvW + cw*2;
+		x0 = (zhLay ? cw/2 + hvW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
 		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
+		int vvLblW = (int)skp->GetTextWidth(orbiter::Tr("vV"), (int)strlen(orbiter::Tr("vV")));
 		if (fabs(dvy) > 2e-4)
-			DrawArrow(x0 + (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2, y0, dvy < 0 ? 2 : 0, skp);
+			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : vvLblW) + cw/2, y0, dvy < 0 ? 2 : 0, skp);
 
 		double r_scaled = (scale ? r*10.0 : r);
 		if (r_scaled > 1e-2) {
@@ -482,22 +485,24 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("Y"), absYdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
 		int yW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int yLblW = (int)skp->GetTextWidth(orbiter::Tr("Y"), (int)strlen(orbiter::Tr("Y")));
 		if (absYdeg > 2e-2)
-			DrawArrow(x0 + yW + cw/2, y0, yaw < 0 ? 1 : 3, skp);
-		x0 += yW + cw*2;
+			DrawArrow(x0 + (zhLay ? yW : yLblW) + cw/2, y0, yaw < 0 ? 1 : 3, skp);
+		x0 = (zhLay ? x0 + yW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
 		double absPdeg = fabs(pitch)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("P"), absPdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
 		int pW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int pLblW = (int)skp->GetTextWidth(orbiter::Tr("P"), (int)strlen(orbiter::Tr("P")));
 		if (absPdeg > 2e-2)
-			DrawArrow(x0 + pW + cw/2, y0, pitch < 0 ? 0 : 2, skp);
-		x0 += pW + cw*2;
+			DrawArrow(x0 + (zhLay ? pW : pLblW) + cw/2, y0, pitch < 0 ? 0 : 2, skp);
+		x0 = (zhLay ? x0 + pW + cw*2 : cw/2 + cw*22);
 		double absBdeg = fabs(bank)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("B"), absBdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int bW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int bLblW = (int)skp->GetTextWidth(orbiter::Tr("B"), (int)strlen(orbiter::Tr("B")));
 		if (absBdeg > 2e-2)
-			DrawArrow(x0 + bW + cw/2, y0, bank < 0 ? 1 : 3, skp);
+			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : bLblW) + cw/2, y0, bank < 0 ? 1 : 3, skp);
 	}
 
 	// distance bar
@@ -698,7 +703,12 @@ bool Instrument_Docking::ClbkSelection_Target (Select *menu, int item, char *str
 		char cbuf[256];
 		if (vessel = g_psys->GetVessel (str, true)) {
 			for (i = 0; i < vessel->nDock(); i++) {
-				sprintf (cbuf, "%s，%s %d", orbiter::Tr(vessel->Name()), orbiter::Tr("dock"), i+1);
+				// Chinese UI: full-width comma; English UI: original format
+				const bool zhDock = (strcmp(orbiter::Tr("Build"), "Build") != 0);
+				if (zhDock)
+					sprintf (cbuf, "%s，%s %d", orbiter::Tr(vessel->Name()), orbiter::Tr("dock"), i+1);
+				else
+					sprintf (cbuf, "%s, dock %d", vessel->Name(), i+1);
 				menu->Append (cbuf);
 			}
 			return true;

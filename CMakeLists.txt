@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 3.19)
 
 # Set the project name
 project (Orbiter VERSION 21.7.24)
+# --- Build speed: faster Debug linking (MSVC link step is single-threaded) ---
+if (MSVC)
+    add_link_options("$<$<CONFIG:Debug>:/DEBUG:FASTLINK>")
+    add_link_options("$<$<CONFIG:Debug>:/INCREMENTAL>")
+endif()
+
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)

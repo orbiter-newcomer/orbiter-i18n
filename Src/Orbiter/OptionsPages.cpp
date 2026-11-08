@@ -1,4 +1,4 @@
-﻿// Copyright (c) Martin Schweiger
+// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // ======================================================================
@@ -351,6 +351,7 @@ HTREEITEM OptionsPage::CreatePage(HWND hDlg, HTREEITEM parent)
 	}
 
 	const char* pageName = Name();
+	LOGOUT("OPTPAGE name=[%s] tr=[%s]", pageName, orbiter::Tr(pageName));
 	std::wstring wname = orbiter::Utf8ToWideString(orbiter::Tr(pageName));
 	TVINSERTSTRUCTW tvis;
 	tvis.item.mask = TVIF_TEXT | TVIF_PARAM;

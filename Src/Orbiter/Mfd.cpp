@@ -492,7 +492,6 @@ Instrument::Instrument (Pane *_pane, INT_PTR _id, const Spec &spec, Vessel *_ves
 	modepage = -1;
 	mfdfont[0] = 0;
 	mfdfontmenu = 0;
-	fontLang = (int)orbiter::GetLanguage();
 	SetSize (spec, defer_alloc);
 
 	nVesselModes = vessel->GetMFDModes (&VesselMode);
@@ -502,7 +501,9 @@ Instrument::~Instrument ()
 {
 	int i;
 	if (gc) {
-		ReleaseFonts();
+		for (i = 0; i < 4; i++)
+			gc->clbkReleaseFont (mfdfont[i]);
+		if (mfdfontmenu) gc->clbkReleaseFont (mfdfontmenu);
 		//for (i = 0; i < npen; i++)
 		//	gc->clbkReleasePen (mfdpen[i]);
 	}
@@ -674,39 +675,24 @@ void Instrument::SetSize (const Spec &spec, bool defer_alloc)
 	if (!defer_alloc) AllocSurface (IW, IH);
 
 	if (gc && !mfdfont[0]) {
+		int h = (IH*9)/200;
 		cw = 10, ch = 16; // temporary defaults
+		mfdfont[0] = gc->clbkCreateFont (-h, false, "Fixed");
+		mfdfont[1] = gc->clbkCreateFont (-(h*3)/4, true, "Sans");
+		mfdfont[2] = gc->clbkCreateFont (-(h*3)/4, true, "Sans", FONT_NORMAL, 900);
+		mfdfont[3] = gc->clbkCreateFont (-h, true, "Sans");
+		mfdfontmenu = gc->clbkCreateFont (-h, false, "!Fixed");
+
 		oapi::Sketchpad *skp = gc->clbkGetSketchpad (surf);
-		CreateFonts (skp);
-		if (skp) gc->clbkReleaseSketchpad (skp);
+		if (skp) {
+			skp->SetFont (mfdfont[0]);
+			DWORD charsize = skp->GetCharSize();
+			cw = HIWORD(charsize);
+			ch = LOWORD(charsize);
+			gc->clbkReleaseSketchpad (skp);
+		}
+		LOGOUT("LAYOUTDBG cw=%d ch=%d IW=%d IH=%d", (int)cw, (int)ch, (int)IW, (int)IH);
 	}
-}
-
-void Instrument::CreateFonts (oapi::Sketchpad *skp)
-{
-	if (!gc) return;
-	int h = (IH*9)/200;
-	mfdfont[0] = gc->clbkCreateFont (-h, false, "Fixed");
-	mfdfont[1] = gc->clbkCreateFont (-(h*3)/4, true, "Sans");
-	mfdfont[2] = gc->clbkCreateFont (-(h*3)/4, true, "Sans", FONT_NORMAL, 900);
-	mfdfont[3] = gc->clbkCreateFont (-h, true, "Sans");
-	mfdfontmenu = gc->clbkCreateFont (-h, false, "!Fixed");
-	fontLang = (int)orbiter::GetLanguage();
-
-	if (skp) {
-		skp->SetFont (mfdfont[0]);
-		DWORD charsize = skp->GetCharSize();
-		cw = HIWORD(charsize);
-		ch = LOWORD(charsize);
-	}
-}
-
-void Instrument::ReleaseFonts ()
-{
-	if (!gc) return;
-	for (int i = 0; i < 4; i++) {
-		if (mfdfont[i]) { gc->clbkReleaseFont (mfdfont[i]); mfdfont[i] = 0; }
-	}
-	if (mfdfontmenu) { gc->clbkReleaseFont (mfdfontmenu); mfdfontmenu = 0; }
 }
 
 void Instrument::AllocSurface (DWORD w, DWORD h)
@@ -759,11 +745,6 @@ oapi::Sketchpad *Instrument::BeginDraw ()
 	// get a device context and draw the border
 	oapi::Sketchpad *skp;
 	if (gc && (skp = gc->clbkGetSketchpad (surf))) {
-		// Rebuild the font resources if the UI language changed since creation
-		if (mfdfont[0] && fontLang != (int)orbiter::GetLanguage()) {
-			ReleaseFonts();
-			CreateFonts (skp);
-		}
 		skp->SetTextColor (draw[0][0].col);
 		skp->SetFont (mfdfont[0]);
 		if (pane->GetPanelMode() == 1) {

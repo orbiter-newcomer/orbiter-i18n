@@ -99,7 +99,10 @@ public:
 	float		PrintSkp (class D3D9Pad *pSkp, float x, float y, const char *str, int len = -1, bool bBox = false);
 	float		PrintSkp (class D3D9Pad *pSkp, float x, float y, LPCWSTR str, int len = -1, bool bBox = false);
 
-    void		GetD3D9TextMetrics(TEXTMETRIC *t) { memcpy(t, &tm, sizeof(TEXTMETRIC)); }
+    void		GetD3D9TextMetrics(TEXTMETRIC *t) { memcpy(t, (m_bTmOverride ? &m_tmOverride : &tm), sizeof(TEXTMETRIC)); }
+    // Override the metrics used for layout (cw/ch) with those of a reference font,
+    // so that changing the glyph face does not change the MFD layout.
+    void		SetTextMetricsOverride(const TEXTMETRIC *t) { if (t) { m_tmOverride = *t; m_bTmOverride = true; } }
 
 private:
 
@@ -114,6 +117,8 @@ private:
 	float   rotation;
 	float	scaling;
 	int		charset;
+	bool	m_bTmOverride = false;
+	TEXTMETRIC m_tmOverride = {};
 	int     first;            ///< ANSI code of the first charter (FontData[0])
 	int		halign,valign;
 

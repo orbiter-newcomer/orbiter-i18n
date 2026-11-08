@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #include "MfdSurface.h"
@@ -976,6 +976,8 @@ void Instrument_Surface::SetSize (const Spec &spec)
 	aoapt[4].x = x1;      aoapt[4].y = ym+cw/2;
 	aoapt[5].x = x1;      aoapt[5].y = y1;
 	aoapt[6].x = x0;      aoapt[6].y = y1;
+
+	LOGOUT("SURFLAY cw=%d ch=%d IW=%d IH=%d spdx0=%d hrzx0=%d hrzr=%d hrzx=%d hrzx1=%d hrzy0=%d hrzy=%d hrzy1=%d altx0=%d vspx0=%d aoax0=%d accy0=%d accr=%d accy=%d gap=%d hdgtick=%d hdgw=%d", (int)cw, (int)ch, (int)IW, (int)IH, (int)spdx0, (int)hrzx0, (int)hrzr, (int)hrzx, (int)hrzx1, (int)hrzy0, (int)hrzy, (int)hrzy1, (int)altx0, (int)vspx0, (int)aoax0, (int)accy0, (int)accr, (int)accy, (int)gap, (int)hdgtick, (int)hdgbmpw);
 }
 
 void Instrument_Surface::OptionChanged(DWORD cat, DWORD item)

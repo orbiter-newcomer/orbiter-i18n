@@ -284,9 +284,6 @@ protected:
 	// Drawing resources
 	oapi::Font *mfdfont[4];     // MFD font resources
 	oapi::Font *mfdfontmenu;    // MFD menu font (CJK glyphs not downscaled)
-	int fontLang;               // language the font resources were created for
-	void CreateFonts (oapi::Sketchpad *skp);   // (re)create the font resources
-	void ReleaseFonts ();
 	bool use_skp_interface;     // true if drawing through Sketchpad, false for HDC
 
 public:

@@ -56,6 +56,21 @@ static std::wstring Utf8ToWideStr(const char *s)
 #include "imgui.h"
 #include "imgui_impl_dx9.h"
 #include "imgui_impl_win32.h"
+// MFDFONTDBG: real-time debug log (flushed every line)
+#include <cstdarg>
+#include <cstdio>
+static void MfdDbgLog(const char *fmt, ...)
+{
+	static FILE *fp = nullptr;
+	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
+	if (!fp) return;
+	va_list ap; va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fputc('\n', fp);
+	fflush(fp);
+}
+
 #if defined(_MSC_VER) && (_MSC_VER <= 1700 ) // Microsoft Visual Studio Version 2012 and lower
 #define round(v) floor(v+0.5)
 #endif
@@ -3173,6 +3188,8 @@ oapi::Sketchpad *D3D9Client::clbkGetSketchpad_const(SURFHANDLE surf) const
 	}
 
 	if (surf == RENDERTGT_MAINWINDOW) surf = GetBackBufferHandle();
+
+	MfdDbgLog("GETSKP surf=%p rt=%d", (void*)surf, SURFACE(surf)->IsRenderTarget() ? 1 : 0);
 	if (SURFACE(surf)->IsRenderTarget())
 	{
 		// Get Pooled Sketchpad
