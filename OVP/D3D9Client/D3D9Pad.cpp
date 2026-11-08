@@ -12,21 +12,6 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Config.h"
 #include "Log.h"
-// MFDFONTDBG: real-time debug log (flushed every line)
-#include <cstdarg>
-#include <cstdio>
-static void MfdDbgLog(const char *fmt, ...)
-{
-	static FILE *fp = nullptr;
-	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
-	if (!fp) return;
-	va_list ap; va_start(ap, fmt);
-	vfprintf(fp, fmt, ap);
-	va_end(ap);
-	fputc('\n', fp);
-	fflush(fp);
-}
-
 #include "Mesh.h"
 
 using namespace oapi;
@@ -1050,7 +1035,6 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
 			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
 			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
-			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
 		}
 	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
@@ -1236,7 +1220,6 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
 			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
 			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
-			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
 		}
 	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
@@ -1978,6 +1961,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
 
 	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
+	LogAlw("FONTDBG zhBitmap=%d face=%s trBuild=[%s]", zhBitmap?1:0, face, oapiTr("Build"));
 
 	if (face[0]!='*') {
 		if (!_stricmp (face, "fixed")) face = def_fixedface;
@@ -2008,7 +1992,6 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		cacheHit = true;
 		break;
 	}
-	LogAlw("FONTCACHEDBG h=%d face=%s style=%d prop=%d hit=%d", height, face, (int)style, prop?1:0, cacheHit?1:0);
 
 	int weight = (style & FONT_BOLD) ? FW_BOLD : FW_NORMAL;
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
@@ -2036,7 +2019,6 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->SetNoDownscale(m_bNoDownscale);
 		pFont->Init(hNew);
-		LogAlw("FONTCACHEDBG new font created h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 
 		DeleteObject(hNew);
 
@@ -2078,6 +2060,7 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 	if (face[0] == '@') { m_bUnicodeAll = true; m_bNoDownscale = true; face++; }
 
 	bool zhBitmap = (strcmp(oapiTr("Build"), "Build") != 0);
+	LogAlw("FONTDBG zhBitmap=%d face=%s trBuild=[%s]", zhBitmap?1:0, face, oapiTr("Build"));
 
 	hFont = NULL;
 	rotation = 0.0f;
@@ -2098,7 +2081,6 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		qcacheHit = true;
 		break;
 	}
-	LogAlw("FONTCACHEDBG q h=%d face=%s w=%d wt=%d hit=%d", height, face, width, weight, qcacheHit?1:0);
 
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
 	DWORD underline = (style & FONT_UNDERLINE) ? TRUE : FALSE;
@@ -2121,7 +2103,6 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->SetNoDownscale(m_bNoDownscale);
 		pFont->Init(hFont);
-		LogAlw("FONTCACHEDBG q new h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 		pFont->SetRotation(0.0f);
 		pFont->SetTextSpace(spacing);
 

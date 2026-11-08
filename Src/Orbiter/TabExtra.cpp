@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 //=============================================================================
@@ -151,7 +151,6 @@ HTREEITEM orbiter::ExtraTab::RegisterExtraParam (LaunchpadItem *item, HTREEITEM 
 
 	// if a name is provided, add item to tree list
 	char *name = item->Name();
-	LOGOUT("EXTRADBG name=[%s] tr=[%s]", name?name:"(null)", name?orbiter::Tr(name):"(null)");
 	if (name) {
 		// Unicode insert: translated names are UTF-8 and would be garbled by the
 		// ANSI tree view message.

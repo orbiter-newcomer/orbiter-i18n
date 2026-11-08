@@ -316,8 +316,6 @@ restart:
 		lf.lfFaceName,        // pFacename,
 		&wfont                // ppFont
 	));
-
-	LogAlw("FONTCACHEDBG wf face=%s h=%d zh=%d", lf.lfFaceName, lf.lfHeight, zhMode?1:0);
 	SetLineSpace(0);
 	SetTextShare(0);
 	SetTextSpace(0);

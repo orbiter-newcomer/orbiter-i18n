@@ -249,7 +249,6 @@ protected:
 	static COLORREF col_red1;     // light red
 
 	oapi::Font *GetDefaultFont (DWORD fontidx);
-	oapi::Font *GetDefaultFontNoto (DWORD fontidx);     // Noto variant (all text via Unicode renderer)
 	// Returns a predefined font resource
 
 	HFONT SelectDefaultFont (HDC hDC, DWORD i);
@@ -285,7 +284,9 @@ protected:
 	// Drawing resources
 	oapi::Font *mfdfont[4];     // MFD font resources
 	oapi::Font *mfdfontmenu;    // MFD menu font (CJK glyphs not downscaled)
-	oapi::Font *mfdfontnoto[4]; // Noto variants of the MFD fonts (all text via Unicode renderer)
+	int fontLang;               // language the font resources were created for
+	void CreateFonts (oapi::Sketchpad *skp);   // (re)create the font resources
+	void ReleaseFonts ();
 	bool use_skp_interface;     // true if drawing through Sketchpad, false for HDC
 
 public:
