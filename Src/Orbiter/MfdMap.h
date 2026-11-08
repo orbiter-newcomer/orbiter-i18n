@@ -54,6 +54,7 @@ private:
 
 	VectorMap *map;
 	const Planet *refplanet;
+	oapi::Font *infoFont;   // dedicated 16pt font for the bottom info lines
 	int zoom;
 	bool track;
 	char title[50];

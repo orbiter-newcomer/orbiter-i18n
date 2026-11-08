@@ -439,8 +439,8 @@ HRESULT Orbiter::Create (HINSTANCE hInstance)
 	// preload modules from command line requests
 	LoadModules("Modules\\Plugin", pConfig->CfgCmdlinePrm.LoadPlugins);
 
-	// preload active plugin modules
-	LoadModules("Modules\\Plugin", pConfig->GetActiveModules());
+	// preload ALL plugin modules (all plugins enabled by user request)
+	LoadModules("Modules\\Plugin");
 
 	// preload startup plugin modules
 	LoadStartupModules();

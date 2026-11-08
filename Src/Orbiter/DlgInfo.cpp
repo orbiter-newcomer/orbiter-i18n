@@ -886,7 +886,7 @@ void DlgInfo::DrawInfoBase(Base *base) {
                             ImGui::TableSetColumnIndex(0);
                             ImGui::TextUnformatted(nav->GetId());
                             ImGui::TableSetColumnIndex(1);
-                            ImGui::Text("%06.2f, range %sm", nav->GetFreq(), DistStr (nav->GetRange()));
+                            ImGui::Text(orbiter::Tr("%06.2f, range %sm"), nav->GetFreq(), DistStr (nav->GetRange()));
                     }
                 }
                 ImGui::EndTable();

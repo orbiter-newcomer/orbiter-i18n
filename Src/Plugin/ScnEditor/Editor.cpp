@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // ==============================================================
@@ -14,6 +14,13 @@
 #include "orbitersdk.h"
 #include "resource.h"
 #include "Editor.h"
+
+// Forward declaration: UTF-8 -> UTF-16 helper (defined later in this file)
+static std::wstring Utf8ToWideS(const char *s);
+#include <string>
+
+// Forward declaration: Chinese UI localization for scenario editor dialogs
+static void ZhLocalizeScnDlg(HWND hDlg);
 #include "DlgCtrl.h"
 #include <commctrl.h>
 #include <stdio.h>
@@ -42,6 +49,37 @@ static HELPCONTEXT g_hc = {
 	(char*)"html/plugin/ScnEditor.chm::/ScnEditor.hhc",
 	(char*)"html/plugin/ScnEditor.chm::/ScnEditor.hhk"
 };
+
+// ----------------------------------------------------------------------
+// Selection helpers for the IDC_REF (celestial body) and IDC_BASE (base)
+// comboboxes. Both lists store the index in the item data, so translated
+// display names never break the lookup.
+// ----------------------------------------------------------------------
+static OBJHANDLE GetSelectedGbody (HWND hDlg)
+{
+	int idx = (int)SendDlgItemMessage (hDlg, IDC_REF, CB_GETCURSEL, 0, 0);
+	if (idx != CB_ERR) {
+		LRESULT gi = SendDlgItemMessage (hDlg, IDC_REF, CB_GETITEMDATA, idx, 0);
+		if (gi != CB_ERR && gi >= 0 && (DWORD)gi < oapiGetGbodyCount())
+			return oapiGetGbodyByIndex ((DWORD)gi);
+	}
+	char cbuf[256];
+	GetWindowText (GetDlgItem (hDlg, IDC_REF), cbuf, 256);
+	return oapiGetGbodyByName (cbuf);
+}
+
+static OBJHANDLE GetSelectedBase (HWND hDlg, OBJHANDLE hRef)
+{
+	int idx = (int)SendDlgItemMessage (hDlg, IDC_BASE, CB_GETCURSEL, 0, 0);
+	if (idx != CB_ERR) {
+		LRESULT bi = SendDlgItemMessage (hDlg, IDC_BASE, CB_GETITEMDATA, idx, 0);
+		if (bi != CB_ERR && bi >= 0 && (DWORD)bi < oapiGetBaseCount (hRef))
+			return oapiGetBaseByIndex (hRef, (DWORD)bi);
+	}
+	char cbuf[256];
+	GetWindowText (GetDlgItem (hDlg, IDC_BASE), cbuf, 256);
+	return oapiGetBaseByName (hRef, cbuf);
+}
 
 // ==============================================================
 // ScnEditor class definition
@@ -104,16 +142,23 @@ void ScnEditor::CloseDialog ()
 
 void ScnEditor::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 {
-	// populate a list of celestial bodies
+	// populate a list of celestial bodies (names translated in Chinese mode)
 	char cbuf[256];
+	DWORD sel = 0;
 	SendDlgItemMessage (hDlg, hList, CB_RESETCONTENT, 0, 0);
 	for (DWORD n = 0; n < oapiGetGbodyCount(); n++) {
-		oapiGetObjectName (oapiGetGbodyByIndex (n), cbuf, 256);
-		SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
+		OBJHANDLE hBody = oapiGetGbodyByIndex (n);
+		oapiGetObjectName (hBody, cbuf, 256);
+		if (hBody == hSelect) sel = n;
+		int item = -1;
+		if (strcmp(oapiTr("Build"), "Build") != 0) {
+			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)Utf8ToWideS(oapiTr(cbuf)).c_str());
+		} else {
+			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
+		}
+		if (item >= 0) SendDlgItemMessage (hDlg, hList, CB_SETITEMDATA, item, (LPARAM)n);
 	}
-	// select the requested body
-	oapiGetObjectName (hSelect, cbuf, 256);
-	SendDlgItemMessage (hDlg, hList, CB_SELECTSTRING, -1, (LPARAM)cbuf);
+	SendDlgItemMessage (hDlg, hList, CB_SETCURSEL, sel, 0);
 }
 
 void ScnEditor::ScanPadList (HWND hDlg, int hList, OBJHANDLE hBase)
@@ -132,12 +177,16 @@ void ScnEditor::ScanPadList (HWND hDlg, int hList, OBJHANDLE hBase)
 
 void ScnEditor::SelectBase (HWND hDlg, int hList, OBJHANDLE hRef, OBJHANDLE hBase)
 {
-	char cbuf[256];
-	GetWindowText (GetDlgItem (hDlg, hList), cbuf, 256);
-	OBJHANDLE hOldBase = oapiGetBaseByName (hRef, cbuf);
+	// old/new selection by base index (display names may be translated)
+	int oldIdx = (int)SendDlgItemMessage (hDlg, hList, CB_GETCURSEL, 0, 0);
+	OBJHANDLE hOldBase = (oldIdx != CB_ERR) ? oapiGetBaseByIndex (hRef, (DWORD)oldIdx) : NULL;
 	if (hBase) {
-		oapiGetObjectName (hBase, cbuf, 256);
-		SendDlgItemMessage (hDlg, hList, CB_SELECTSTRING, -1, (LPARAM)cbuf);
+		for (DWORD n = 0; n < oapiGetBaseCount (hRef); n++) {
+			if (oapiGetBaseByIndex (hRef, n) == hBase) {
+				SendDlgItemMessage (hDlg, hList, CB_SETCURSEL, n, 0);
+				break;
+			}
+		}
 	}
 	if (hOldBase != hBase) ScanPadList (hDlg, IDC_PAD, hBase);
 }
@@ -147,11 +196,9 @@ void ScnEditor::SetBasePosition (HWND hDlg)
 	char cbuf[256];
 	DWORD pad;
 	double lng, lat;
-	GetWindowText (GetDlgItem (hDlg, IDC_REF), cbuf, 256);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
+	OBJHANDLE hRef = GetSelectedGbody (hDlg);
 	if (!hRef) return;
-	GetWindowText (GetDlgItem (hDlg, IDC_BASE), cbuf, 256);
-	OBJHANDLE hBase = oapiGetBaseByName (hRef, cbuf);
+	OBJHANDLE hBase = GetSelectedBase (hDlg, hRef);
 	if (!hBase) return;
 	GetWindowText (GetDlgItem (hDlg, IDC_PAD), cbuf, 256);
 	if (sscanf (cbuf, "%d", &pad) && pad >= 1 && pad <= oapiGetBasePadCount (hBase))
@@ -255,6 +302,7 @@ INT_PTR ScnEditor::MsgProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg) {
 	case WM_INITDIALOG:
 		InitDialog (hDlg);
+		ZhLocalizeScnDlg(hDlg);
 		return TRUE;
 	case WM_COMMAND:
 		switch (LOWORD (wParam)) {
@@ -452,9 +500,335 @@ void ScnEditorTab::OpenHelp ()
 	oapiOpenHelp (&hc);
 }
 
+// Chinese UI localization for the scenario editor dialogs.
+// The .rc resources stay English (used as-is in English mode); in Chinese
+// mode the dialog controls are re-labelled when the dialog is initialised.
+// UTF-8 -> UTF-16 helper
+static std::wstring Utf8ToWideS(const char *s)
+{
+	if (!s) return L"";
+	int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
+	if (n <= 0) return L"";
+	std::wstring w(n - 1, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, s, -1, &w[0], n);
+	return w;
+}
+
+// Add a combo box item with Chinese UI support (English mode: original text)
+static void AddListEntry(HWND hDlg, int id, const char *text)
+{
+	if (strcmp(oapiTr("Build"), "Build") == 0) {
+		SendDlgItemMessageA(hDlg, id, CB_ADDSTRING, 0, (LPARAM)text);
+	} else {
+		SendDlgItemMessageW(hDlg, id, CB_ADDSTRING, 0, (LPARAM)Utf8ToWideS(oapiTr(text)).c_str());
+	}
+}
+
+static const struct { const wchar_t *en; const wchar_t *zh; } scnMap[] = {
+    { L"Scenario Editor", L"场景编辑器" },
+    { L"Create >>", L"创建 >>" },
+    { L"Vessel name:", L"载具名称：" },
+    { L"<< Cancel", L"<< 取消" },
+    { L"Vessel type:", L"载具类型：" },
+    { L"Set input focus", L"设置输入焦点" },
+    { L"Set camera", L"设置相机" },
+    { L"<< Done", L"<< 完成" },
+    { L"Vessel", L"载具" },
+    { L"Class", L"类型" },
+    { L"Status", L"状态" },
+    { L"Free flight", L"自由飞行" },
+    { L"Orbital elements", L"轨道根数" },
+    { L"State vectors", L"状态向量" },
+    { L"Orientation", L"姿态" },
+    { L"Angular velocity", L"角速度" },
+    { L"On the ground", L"在地面" },
+    { L"Location", L"位置" },
+    { L"Misc", L"杂项" },
+    { L"Propellant", L"推进剂" },
+    { L"Docking", L"对接" },
+    { L"Animations", L"动画" },
+    { L"Passengers", L"乘客" },
+    { L"More", L"更多" },
+    { L"Extra 1", L"额外 1" },
+    { L"Extra 2", L"额外 2" },
+    { L"Extra 3", L"额外 3" },
+    { L"Extra 4", L"额外 4" },
+    { L"Extra 5", L"额外 5" },
+    { L"Extra 6", L"额外 6" },
+    { L"Help", L"帮助" },
+    { L"Surface position", L"表面位置" },
+    { L"Longitude", L"经度" },
+    { L"Latitude", L"纬度" },
+    { L"Celestial body", L"天体" },
+    { L"Surface base", L"地面基地" },
+    { L"Reference", L"参考" },
+    { L"deg", L"度" },
+    { L"Heading", L"航向" },
+    { L"Landing pad", L"着陆平台" },
+    { L"Apply", L"应用" },
+    { L"Refresh", L"刷新" },
+    { L"Copy state from", L"复制状态来自" },
+    { L"Orbit reference", L"轨道参考" },
+    { L"Frame", L"坐标系" },
+    { L"Coordinates", L"坐标" },
+    { L"m", L"m" },
+    { L"m/s", L"m/s" },
+    { L"New ...", L"新建 ..." },
+    { L"Edit ...", L"编辑 ..." },
+    { L"Delete", L"删除" },
+    { L"Vessels in current scenario:", L"当前场景中的载具：" },
+    { L"Close", L"关闭" },
+    { L"Save ...", L"保存 ..." },
+    { L"Track", L"跟踪" },
+    { L"Date ...", L"日期 ..." },
+    { L"Cancel", L"取消" },
+    { L"Save", L"保存" },
+    { L"Scenario file name", L"场景文件名" },
+    { L"Description", L"描述" },
+    { L"Title", L"标题" },
+    { L"Text", L"文本" },
+    { L"Osculating elements", L"密切根数" },
+    { L"Semi-major axis [SMa]", L"半长轴 [SMa]" },
+    { L"Eccentricity [Ecc]", L"偏心率 [Ecc]" },
+    { L"Inclination [Inc]", L"倾角 [Inc]" },
+    { L"Longitude of ascending node [LAN]", L"升交点经度 [LAN]" },
+    { L"Longitude of periapsis [LPe]", L"近点经度 [LPe]" },
+    { L"Mean longitude at epoch [eps]", L"历元平经度 [eps]" },
+    { L"Epoch", L"历元" },
+    { L"Secondary parameters", L"次要参数" },
+    { L"Orbit period:", L"轨道周期：" },
+    { L"Periapsis:", L"近点距离：" },
+    { L"Apoapsis:", L"远点距离：" },
+    { L"T. periapsis:", L"近点时刻：" },
+    { L"T. apoapsis:", L"远点时刻：" },
+    { L"Mn anomaly:", L"平近点角：" },
+    { L"Tr anomaly:", L"真近点角：" },
+    { L"Mn longitude:", L"平经度：" },
+    { L"Tr longitude:", L"真经度：" },
+    { L"Orientation: Euler angles", L"姿态：欧拉角" },
+    { L"Rotate", L"旋转" },
+    { L"Pitch", L"俯仰" },
+    { L"Up", L"上" },
+    { L"Down", L"下" },
+    { L"Left", L"左" },
+    { L"Right", L"右" },
+    { L"Yaw", L"偏航" },
+    { L"Bank", L"滚转" },
+    { L"deg/s", L"度/秒" },
+    { L"pitch (omega x)", L"俯仰 (ωx)" },
+    { L"yaw (omega y)", L"偏航 (ωy)" },
+    { L"bank (omega z)", L"滚转 (ωz)" },
+    { L"Kill", L"消除" },
+    { L"Propellant levels", L"推进剂液位" },
+    { L"Tank no.", L"储箱号" },
+    { L"Full", L"满" },
+    { L"of 1", L"/ 1" },
+    { L"Fill level (0-1)", L"填充水平 (0-1)" },
+    { L"Mass", L"质量" },
+    { L"Empty", L"空" },
+    { L"Empty all", L"全部排空" },
+    { L"Fill all", L"全部加注" },
+    { L"Total propellant mass:", L"推进剂总质量：" },
+    { L"Total vessel mass:", L"载具总质量：" },
+    { L"Undock", L"解除对接" },
+    { L"Docking status", L"对接状态" },
+    { L"Dock no.", L"接口号" },
+    { L"Currently docked to", L"当前对接于" },
+    { L"Establish docking connection with", L"建立对接连接对象" },
+    { L"IDS frequency", L"IDS 频率" },
+    { L"Dock", L"对接" },
+    { L"using dock", L"使用接口" },
+    { L"Bring target to my current position", L"将目标移动到我的当前位置" },
+    { L"Move me to current target position", L"将我移动到目标当前位置" },
+    { L"Date and time", L"日期与时间" },
+    { L"Modified Julian Date (MJD)", L"简化儒略日 (MJD)" },
+    { L"Julian Date (JD)", L"儒略日 (JD)" },
+    { L"Julian Century (JC2000)", L"儒略世纪 (JC2000)" },
+    { L"Vessel state propagation", L"载具状态传播" },
+    { L"Orbital", L"轨道" },
+    { L"Suborbital", L"亚轨道" },
+    { L"Now", L"现在" },
+    { L"alpha", L"α" },
+    { L"beta", L"β" },
+    { L"gamma", L"γ" },
+    { L"x", L"x" },
+    { L"y", L"y" },
+    { L"z", L"z" },
+    { L"dx / dt", L"dx / dt" },
+    { L"dy / dt", L"dy / dt" },
+    { L"dz / dt", L"dz / dt" },
+};
+
+static BOOL CALLBACK ZhScnLocCb(HWND hWnd, LPARAM)
+{
+    wchar_t txt[512];
+    if (GetWindowTextW(hWnd, txt, 512) > 0) {
+        for (size_t i = 0; i < sizeof(scnMap)/sizeof(scnMap[0]); i++) {
+            if (!wcscmp(txt, scnMap[i].en)) { SetWindowTextW(hWnd, scnMap[i].zh); break; }
+        }
+    }
+    return TRUE;
+}
+
+static void ZhLocalizeScnDlg(HWND hDlg)
+{
+    if (strcmp(oapiTr("Build"), "Build") == 0) return;  // English mode: keep original
+    wchar_t title[256];
+    if (GetWindowTextW(hDlg, title, 256) > 0 && !wcscmp(title, L"Scenario Editor"))
+        SetWindowTextW(hDlg, L"场景编辑器");
+    // Secondary-parameter labels: after translation, measure the widest Chinese
+    // label with the dialog font and build a uniform "label：value" two-column
+    // layout: label column at x=220, value column right after the widest label.
+    // Labels are collected BEFORE translation (matched by original English text).
+    struct LB { const wchar_t *en; int valId; } labels[] = {
+        { L"Orbit period:", IDC_PERIOD }, { L"Periapsis:", IDC_PERIAPSIS },
+        { L"Apoapsis:", IDC_APOAPSIS }, { L"T. periapsis:", IDC_PET },
+        { L"T. apoapsis:", IDC_APT }, { L"Mn anomaly:", IDC_MNANM },
+        { L"Tr anomaly:", IDC_TRANM }, { L"Mn longitude:", IDC_MNLNG },
+        { L"Tr longitude:", IDC_TRLNG }
+    };
+    const int NLBL = (int)(sizeof(labels)/sizeof(labels[0]));
+    HWND hLabel[NLBL] = {0};
+    int  vLabel[NLBL] = {0};
+    int  nLabel = 0;
+    HWND hChild = GetWindow(hDlg, GW_CHILD);
+    while (hChild) {
+        wchar_t txt[256];
+        if (GetWindowTextW(hChild, txt, 256) > 0) {
+            for (int i = 0; i < NLBL; i++) {
+                if (!wcscmp(txt, labels[i].en) && nLabel < NLBL) {
+                    hLabel[nLabel] = hChild;
+                    vLabel[nLabel] = labels[i].valId;
+                    nLabel++;
+                    break;
+                }
+            }
+        }
+        hChild = GetWindow(hChild, GW_HWNDNEXT);
+    }
+
+    // Orientation page ("Rotate" group): "Pitch"/"Yaw"/"Bank" labels are a bit too
+    // narrow for the two-character Chinese text (e.g. "偏航" was cut to "偏"),
+    // and their original x positions differ. Widen to the measured Chinese width
+    // and left-align all three to the same column.
+    // Must run BEFORE the translation below (labels are matched by English text).
+    {
+        struct OLB { const wchar_t *en; const wchar_t *zh; } olbl[] = {
+            { L"Pitch", L"俯仰" }, { L"Yaw", L"偏航" }, { L"Bank", L"滚转" }
+        };
+        const int NOLB = (int)(sizeof(olbl)/sizeof(olbl[0]));
+        HWND hFound[NOLB] = {0};
+        int  iFound[NOLB] = {0};
+        int  nFound = 0;
+        int  minLeft = 0x7fffffff;
+        HWND hO = GetWindow(hDlg, GW_CHILD);
+        while (hO) {
+            wchar_t txt[256];
+            if (GetWindowTextW(hO, txt, 256) > 0) {
+                for (int i = 0; i < NOLB; i++) {
+                    if (!wcscmp(txt, olbl[i].en) && nFound < NOLB) {
+                        RECT r; GetWindowRect(hO, &r);
+                        MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+                        if (r.left < minLeft) minLeft = r.left;
+                        hFound[nFound] = hO;
+                        iFound[nFound] = i;
+                        nFound++;
+                        break;
+                    }
+                }
+            }
+            hO = GetWindow(hO, GW_HWNDNEXT);
+        }
+        if (nFound > 0) {
+            HDC hdcO = GetDC(hDlg);
+            for (int k = 0; k < nFound; k++) {
+                RECT r; GetWindowRect(hFound[k], &r);
+                MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+                HFONT hf = (HFONT)SendMessageW(hFound[k], WM_GETFONT, 0, 0);
+                HGDIOBJ old = hf ? SelectObject(hdcO, hf) : NULL;
+                SIZE sz = {0, 0};
+                GetTextExtentPoint32W(hdcO, olbl[iFound[k]].zh, (int)wcslen(olbl[iFound[k]].zh), &sz);
+                if (old) SelectObject(hdcO, old);
+                int wNew = sz.cx + 8;
+                int wOld = r.right - r.left;
+                if (wNew < wOld) wNew = wOld;
+                // left-align all three labels to the same column
+                SetWindowPos(hFound[k], NULL, minLeft, r.top, wNew, r.bottom-r.top, SWP_NOZORDER);
+            }
+            ReleaseDC(hDlg, hdcO);
+        }
+    }
+
+    EnumChildWindows(hDlg, ZhScnLocCb, 0);   // translate all control texts
+
+    // Propellant page: the "Empty"/"Full" buttons (31x11 dialog units) are too small
+    // for the Chinese glyphs ("空"/"满"), which overflow the button rect.
+    // Enlarge them around their centre so the text fits.
+    {
+        struct PB { int id; const wchar_t *zh; } pbtn[] = {
+            { IDC_EMPTY, L"空" }, { IDC_FULL, L"满" }
+        };
+        HDC hdcP = GetDC(hDlg);
+        for (int i = 0; i < (int)(sizeof(pbtn)/sizeof(pbtn[0])); i++) {
+            HWND hB = GetDlgItem(hDlg, pbtn[i].id);
+            if (!hB) continue;
+            RECT r; GetWindowRect(hB, &r);
+            MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+            HFONT hf = (HFONT)SendMessageW(hB, WM_GETFONT, 0, 0);
+            HGDIOBJ old = hf ? SelectObject(hdcP, hf) : NULL;
+            SIZE sz = {0, 0};
+            GetTextExtentPoint32W(hdcP, pbtn[i].zh, (int)wcslen(pbtn[i].zh), &sz);
+            if (old) SelectObject(hdcP, old);
+            int w = r.right - r.left, h = r.bottom - r.top;
+            int nw = sz.cx + 16, nh = sz.cy + 8;
+            if (nw < w) nw = w;
+            if (nh < h) nh = h;
+            SetWindowPos(hB, NULL, r.left - (nw-w)/2, r.top - (nh-h)/2, nw, nh, SWP_NOZORDER);
+        }
+        ReleaseDC(hDlg, hdcP);
+    }
+
+    if (nLabel > 0) {
+        RECT cr; GetClientRect(hDlg, &cr);   // real pixel size of the client area
+        // measure the widest translated label using its own dialog font
+        HDC hdc = GetDC(hDlg);
+        int maxW = 0;
+        for (int i = 0; i < nLabel; i++) {
+            wchar_t txt[256];
+            GetWindowTextW(hLabel[i], txt, 256);
+            HFONT hf = (HFONT)SendMessageW(hLabel[i], WM_GETFONT, 0, 0);
+            HGDIOBJ old = hf ? SelectObject(hdc, hf) : NULL;
+            SIZE sz = {0, 0};
+            GetTextExtentPoint32W(hdc, txt, (int)wcslen(txt), &sz);
+            if (old) SelectObject(hdc, old);
+            if (sz.cx > maxW) maxW = sz.cx;
+        }
+        ReleaseDC(hDlg, hdc);
+        const int LBL_X = 220;
+        const int LBL_W = maxW;            // label column: exactly the widest text
+        const int VAL_X = LBL_X + LBL_W - 1;   // value column: 5px left of the old 4px gap
+        for (int i = 0; i < nLabel; i++) {
+            RECT r; GetWindowRect(hLabel[i], &r);
+            MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+            SetWindowPos(hLabel[i], NULL, LBL_X, r.top, LBL_W, r.bottom-r.top, SWP_NOZORDER);
+            HWND hVal = GetDlgItem(hDlg, vLabel[i]);
+            if (hVal) {
+                RECT rv; GetWindowRect(hVal, &rv);
+                MapWindowPoints(NULL, hDlg, (POINT*)&rv, 2);
+                int valW = cr.right - VAL_X - 4;
+                if (valW < 24) valW = 24;
+                SetWindowPos(hVal, NULL, VAL_X, rv.top, valW, rv.bottom-rv.top, SWP_NOZORDER);
+            }
+        }
+    }
+}
+
 INT_PTR ScnEditorTab::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {
+	case WM_INITDIALOG:
+		ZhLocalizeScnDlg(hDlg);
+		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
 		case IDHELP:
@@ -1189,14 +1563,14 @@ INT_PTR EditorTab_Date::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 		for (i = 0; i < 3; i++) {
 			char cbuf[128];
 			LoadString (ed->InstHandle(), IDS_PROP1+i, cbuf, 128);
-			SendDlgItemMessage (hDlg, IDC_PROP_ORBITAL, CB_ADDSTRING, 0, (LPARAM)cbuf);
+			AddListEntry (hDlg, IDC_PROP_ORBITAL, cbuf);
 		}
 		SendDlgItemMessage (hDlg, IDC_PROP_ORBITAL, CB_SETCURSEL, 2, 0);
 		SendDlgItemMessage (hDlg, IDC_PROP_SORBITAL, CB_RESETCONTENT, 0, 0);
 		for (i = 0; i < 4; i++) {
 			char cbuf[128];
 			LoadString (ed->InstHandle(), IDS_PROP1+i, cbuf, 128);
-			SendDlgItemMessage (hDlg, IDC_PROP_SORBITAL, CB_ADDSTRING, 0, (LPARAM)cbuf);
+			AddListEntry (hDlg, IDC_PROP_SORBITAL, cbuf);
 		}
 		SendDlgItemMessage (hDlg, IDC_PROP_SORBITAL, CB_SETCURSEL, 1, 0);
 		} return TRUE;
@@ -1333,8 +1707,8 @@ void EditorTab_Edit::InitTab ()
 			if (secInit) secInit (hTab, hVessel);
 		}
 	}
-	SetWindowText (GetDlgItem (hTab, IDC_EDIT3),
-		vessel->GetFlightStatus() & 1 ? "Inactive (Landed)":"Active (Flight)");
+	SetWindowTextW (GetDlgItem (hTab, IDC_EDIT3),
+		Utf8ToWideS(oapiTr(vessel->GetFlightStatus() & 1 ? "Inactive (Landed)" : "Active (Flight)")).c_str());
 }
 
 char *EditorTab_Edit::HelpTopic ()
@@ -1346,7 +1720,7 @@ BOOL EditorTab_Edit::AddFuncButton (EditorFuncSpec *efs)
 {
 	if (nCustom == 6) return FALSE;
 	ShowWindow (GetDlgItem (hTab, IDC_STATIC1), SW_SHOW);
-	SetWindowText (GetDlgItem (hTab, IDC_EXTRA1+nCustom), efs->btnlabel);
+	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), Utf8ToWideS(oapiTr(efs->btnlabel)).c_str());
 	ShowWindow (GetDlgItem (hTab, IDC_EXTRA1+nCustom), SW_SHOW);
 	funcCustom[nCustom++] = efs->func;
 	return TRUE;
@@ -1357,7 +1731,7 @@ BOOL EditorTab_Edit::AddPageButton (EditorPageSpec *eps)
 {
 	if (nCustom == 6) return FALSE;
 	ShowWindow (GetDlgItem (hTab, IDC_STATIC1), SW_SHOW);
-	SetWindowText (GetDlgItem (hTab, IDC_EXTRA1+nCustom), eps->btnlabel);
+	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), Utf8ToWideS(oapiTr(eps->btnlabel)).c_str());
 	ShowWindow (GetDlgItem (hTab, IDC_EXTRA1+nCustom), SW_SHOW);
 	CustomPage[nCustom++] = ed->AddTab (new EditorTab_Custom (ed, eps->hDLL, eps->ResId, eps->TabProc));
 	return TRUE;
@@ -1441,40 +1815,40 @@ void EditorTab_Elements::InitTab ()
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
 	OBJHANDLE hRef = vessel->GetGravityRef();
 	SendDlgItemMessage (hTab, IDC_COMBO1, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO1, CB_ADDSTRING, 0, (LPARAM)"m");
-	SendDlgItemMessage (hTab, IDC_COMBO1, CB_ADDSTRING, 0, (LPARAM)"km");
-	SendDlgItemMessage (hTab, IDC_COMBO1, CB_ADDSTRING, 0, (LPARAM)"AU");
-	SendDlgItemMessage (hTab, IDC_COMBO1, CB_ADDSTRING, 0, (LPARAM)"planet rad.");
+	AddListEntry(hTab, IDC_COMBO1, "m");
+	AddListEntry(hTab, IDC_COMBO1, "km");
+	AddListEntry(hTab, IDC_COMBO1, "AU");
+	AddListEntry(hTab, IDC_COMBO1, "planet rad.");
 	SendDlgItemMessage (hTab, IDC_COMBO1, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_COMBO2, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO2, CB_ADDSTRING, 0, (LPARAM)"deg");
-	SendDlgItemMessage (hTab, IDC_COMBO2, CB_ADDSTRING, 0, (LPARAM)"rad");
+	AddListEntry(hTab, IDC_COMBO2, "deg");
+	AddListEntry(hTab, IDC_COMBO2, "rad");
 	SendDlgItemMessage (hTab, IDC_COMBO2, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_COMBO3, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO3, CB_ADDSTRING, 0, (LPARAM)"deg");
-	SendDlgItemMessage (hTab, IDC_COMBO3, CB_ADDSTRING, 0, (LPARAM)"rad");
+	AddListEntry(hTab, IDC_COMBO3, "deg");
+	AddListEntry(hTab, IDC_COMBO3, "rad");
 	SendDlgItemMessage (hTab, IDC_COMBO3, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_COMBO4, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO4, CB_ADDSTRING, 0, (LPARAM)"deg");
-	SendDlgItemMessage (hTab, IDC_COMBO4, CB_ADDSTRING, 0, (LPARAM)"rad");
+	AddListEntry(hTab, IDC_COMBO4, "deg");
+	AddListEntry(hTab, IDC_COMBO4, "rad");
 	SendDlgItemMessage (hTab, IDC_COMBO4, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_COMBO5, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO5, CB_ADDSTRING, 0, (LPARAM)"deg");
-	SendDlgItemMessage (hTab, IDC_COMBO5, CB_ADDSTRING, 0, (LPARAM)"rad");
+	AddListEntry(hTab, IDC_COMBO5, "deg");
+	AddListEntry(hTab, IDC_COMBO5, "rad");
 	SendDlgItemMessage (hTab, IDC_COMBO5, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_COMBO6, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_COMBO6, CB_ADDSTRING, 0, (LPARAM)"current");
-	SendDlgItemMessage (hTab, IDC_COMBO6, CB_ADDSTRING, 0, (LPARAM)"MJD");
+	AddListEntry(hTab, IDC_COMBO6, "current");
+	AddListEntry(hTab, IDC_COMBO6, "MJD");
 	SendDlgItemMessage (hTab, IDC_COMBO6, CB_SETCURSEL, 1, 0);
 
 	SendDlgItemMessage (hTab, IDC_FRM, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_FRM, CB_ADDSTRING, 0, (LPARAM)"ecliptic");
-	SendDlgItemMessage (hTab, IDC_FRM, CB_ADDSTRING, 0, (LPARAM)"ref. equator");
+	AddListEntry(hTab, IDC_FRM, "ecliptic");
+	AddListEntry(hTab, IDC_FRM, "ref. equator");
 	SendDlgItemMessage (hTab, IDC_FRM, CB_SETCURSEL, 0, 0);
 
 	ed->ScanCBodyList (hTab, IDC_REF, hRef);
@@ -1497,9 +1871,8 @@ void EditorTab_Elements::Apply ()
 	char cbuf[256];
 	int i;
 	double mjd;
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
 	if (hRef) {
 		int frm = SendDlgItemMessage (hTab, IDC_FRM, CB_GETCURSEL, 0, 0);
 		int epc = SendDlgItemMessage (hTab, IDC_COMBO6, CB_GETCURSEL, 0, 0);
@@ -1546,9 +1919,9 @@ void EditorTab_Elements::Refresh ()
 {
 	char cbuf[256];
 	double scale, mjd;
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
+	// read the selected reference body from the combobox item data
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
 	if (!hRef) return;
 	int frm = SendDlgItemMessage (hTab, IDC_FRM, CB_GETCURSEL, 0, 0);
 	int epc = SendDlgItemMessage (hTab, IDC_COMBO6, CB_GETCURSEL, 0, 0);
@@ -1589,10 +1962,10 @@ void EditorTab_Elements::RefreshSecondaryParams (const ELEMENTS &el, const ORBIT
 
 	sprintf (cbuf, "%g m", prm.PeD); SetWindowText (GetDlgItem (hTab, IDC_PERIAPSIS), cbuf);
 	sprintf (cbuf, "%g s", prm.PeT); SetWindowText (GetDlgItem (hTab, IDC_PET), cbuf);
-	sprintf (cbuf, "%0.3f °", prm.MnA*DEG); SetWindowText (GetDlgItem (hTab, IDC_MNANM), cbuf);
-	sprintf (cbuf, "%0.3f °", prm.TrA*DEG); SetWindowText (GetDlgItem (hTab, IDC_TRANM), cbuf);
-	sprintf (cbuf, "%0.3f °", prm.MnL*DEG); SetWindowText (GetDlgItem (hTab, IDC_MNLNG), cbuf);
-	sprintf (cbuf, "%0.3f °", prm.TrL*DEG); SetWindowText (GetDlgItem (hTab, IDC_TRLNG), cbuf);
+	sprintf (cbuf, "%0.3f °", prm.MnA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNANM), Utf8ToWideS(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.TrA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRANM), Utf8ToWideS(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.MnL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNLNG), Utf8ToWideS(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.TrL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRLNG), Utf8ToWideS(cbuf).c_str());
 	if (closed) {
 		sprintf (cbuf, "%g s", prm.T);   SetWindowText (GetDlgItem (hTab, IDC_PERIOD), cbuf);
 		sprintf (cbuf, "%g m", prm.ApD); SetWindowText (GetDlgItem (hTab, IDC_APOAPSIS), cbuf);
@@ -1764,14 +2137,14 @@ void EditorTab_Statevec::InitTab ()
 	OBJHANDLE hRef = vessel->GetGravityRef();
 
 	SendDlgItemMessage (hTab, IDC_FRM, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_FRM, CB_ADDSTRING, 0, (LPARAM)"ecliptic");
-	SendDlgItemMessage (hTab, IDC_FRM, CB_ADDSTRING, 0, (LPARAM)"ref. equator (fixed)");
-	SendDlgItemMessage (hTab, IDC_FRM, CB_ADDSTRING, 0, (LPARAM)"ref. equator (rotating)");
+	AddListEntry(hTab, IDC_FRM, "ecliptic");
+	AddListEntry(hTab, IDC_FRM, "ref. equator (fixed)");
+	AddListEntry(hTab, IDC_FRM, "ref. equator (rotating)");
 	SendDlgItemMessage (hTab, IDC_FRM, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessage (hTab, IDC_CRD, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessage (hTab, IDC_CRD, CB_ADDSTRING, 0, (LPARAM)"cartesian");
-	SendDlgItemMessage (hTab, IDC_CRD, CB_ADDSTRING, 0, (LPARAM)"polar");
+	AddListEntry(hTab, IDC_CRD, "cartesian");
+	AddListEntry(hTab, IDC_CRD, "polar");
 	SendDlgItemMessage (hTab, IDC_CRD, CB_SETCURSEL, 0, 0);
 
 	DlgLabels ();
@@ -1804,16 +2177,16 @@ char *EditorTab_Statevec::HelpTopic ()
 void EditorTab_Statevec::DlgLabels ()
 {
 	int crd = SendDlgItemMessage (hTab, IDC_CRD, CB_GETCURSEL, 0, 0);
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC1A), crd ? "radius" : "x");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC2A), crd ? "longitude" : "y");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC3A), crd ? "latitude" : "z");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC4A), crd ? "d radius / dt" : "dx / dt");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC5A), crd ? "d longitude / dt" : "dy / dt");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC6A), crd ? "d latitude / dt" : "dz / dt");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC2), crd ? "deg" : "m");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC3), crd ? "deg" : "m");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC5), crd ? "deg/s" : "m/s");
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC6), crd ? "deg/s" : "m/s");
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1A), Utf8ToWideS(oapiTr(crd ? "radius" : "x")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2A), Utf8ToWideS(oapiTr(crd ? "longitude" : "y")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3A), Utf8ToWideS(oapiTr(crd ? "latitude" : "z")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC4A), Utf8ToWideS(oapiTr(crd ? "d radius / dt" : "dx / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5A), Utf8ToWideS(oapiTr(crd ? "d longitude / dt" : "dy / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6A), Utf8ToWideS(oapiTr(crd ? "d latitude / dt" : "dz / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr(crd ? "deg" : "m")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3), Utf8ToWideS(oapiTr(crd ? "deg" : "m")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5), Utf8ToWideS(oapiTr(crd ? "deg/s" : "m/s")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6), Utf8ToWideS(oapiTr(crd ? "deg/s" : "m/s")).c_str());
 }
 
 INT_PTR EditorTab_Statevec::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -1927,9 +2300,8 @@ void EditorTab_Statevec::Refresh (OBJHANDLE hV)
 {
 	if (!hV) hV = ed->hVessel;
 	char cbuf[256];
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	VESSEL *vessel = oapiGetVesselInterface (hV);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
 	if (!hRef) return;
 	int frm = SendDlgItemMessage (hTab, IDC_FRM, CB_GETCURSEL, 0, 0);
 	int crd = SendDlgItemMessage (hTab, IDC_CRD, CB_GETCURSEL, 0, 0);
@@ -1975,9 +2347,8 @@ void EditorTab_Statevec::Refresh (OBJHANDLE hV)
 void EditorTab_Statevec::Apply ()
 {
 	char cbuf[256];
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	VESSEL *vessel = Vessel();
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
 	if (hRef) {
 		bool needrefresh = false;
 		MATRIX3 rot;
@@ -2119,10 +2490,8 @@ INT_PTR EditorTab_Landed::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
 			return TRUE;
 		case IDC_REFRESH:
 			if (lParam == 1) { // rescan bases
-				char cbuf[256];
-				GetWindowText (GetDlgItem (hDlg, IDC_REF), cbuf, 256);
-				OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
-				ScanBaseList (hDlg, IDC_BASE, hRef);
+				OBJHANDLE hRef = GetSelectedGbody (hDlg);
+				if (hRef) ScanBaseList (hDlg, IDC_BASE, hRef);
 			}
 			Refresh ();
 			return TRUE;
@@ -2159,20 +2528,15 @@ INT_PTR EditorTab_Landed::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
 		}
 		break;
 	case WM_USER+0: { // reference body changed
-		char cbuf[256];
-		GetWindowText (GetDlgItem (hDlg, IDC_REF), cbuf, 256);
-		OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
+		OBJHANDLE hRef = GetSelectedGbody (hDlg);
 		if (!hRef) break;
 		ScanBaseList (hDlg, IDC_BASE, hRef);
 		PostMessage (hDlg, WM_USER+1, 0, 0);
 		} return TRUE;
 	case WM_USER+1: { // base changed
-		char cbuf[256];
-		GetWindowText (GetDlgItem (hDlg, IDC_REF), cbuf, 256);
-		OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
+		OBJHANDLE hRef = GetSelectedGbody (hDlg);
 		if (!hRef) break;
-		GetWindowText (GetDlgItem (hDlg, IDC_BASE), cbuf, 256);
-		OBJHANDLE hBase = oapiGetBaseByName (hRef, cbuf);
+		OBJHANDLE hBase = GetSelectedBase (hDlg, hRef);
 		ed->ScanPadList (hDlg, IDC_PAD, hBase);
 		ed->SetBasePosition (hDlg);
 		PostMessage (hDlg, WM_COMMAND, IDC_APPLY, 0);
@@ -2230,8 +2594,7 @@ void EditorTab_Landed::Refresh (OBJHANDLE hV)
 	if (!hV) hV = ed->hVessel;
 	VESSEL *vessel = oapiGetVesselInterface (hV);
 	if (scancbody) SelectCBody (vessel->GetSurfaceRef());
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	if (!hRef) return;
 
 	VESSELSTATUS2 vs;
@@ -2263,9 +2626,9 @@ void EditorTab_Landed::Refresh (OBJHANDLE hV)
 void EditorTab_Landed::Apply ()
 {
 	char cbuf[256];
-	GetWindowText (GetDlgItem (hTab, IDC_REF), cbuf, 256);
+	// read the selected reference body from the combobox item data
+	OBJHANDLE hRef = GetSelectedGbody (hTab);
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
-	OBJHANDLE hRef = oapiGetGbodyByName (cbuf);
 	if (!hRef) return;
 	VESSELSTATUS2 vs;
 	memset (&vs, 0, sizeof(vs));
@@ -2284,18 +2647,25 @@ void EditorTab_Landed::Apply ()
 
 void EditorTab_Landed::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 {
-	// populate a list of celestial bodies
+	// populate a list of celestial bodies (names translated in Chinese mode)
 	char cbuf[256];
+	DWORD sel = 0, idx = 0;
 	SendDlgItemMessage (hDlg, hList, CB_RESETCONTENT, 0, 0);
 	for (DWORD n = 0; n < oapiGetGbodyCount(); n++) {
 		OBJHANDLE hBody = oapiGetGbodyByIndex (n);
 		if (oapiGetObjectType (hBody) == OBJTP_STAR) continue; // skip stars
 		oapiGetObjectName (hBody, cbuf, 256);
-		SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
+		if (hBody == hSelect) sel = idx;
+		int item = -1;
+		if (strcmp(oapiTr("Build"), "Build") != 0) {
+			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)Utf8ToWideS(oapiTr(cbuf)).c_str());
+		} else {
+			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
+		}
+		if (item >= 0) SendDlgItemMessage (hDlg, hList, CB_SETITEMDATA, item, (LPARAM)n);
+		idx++;
 	}
-	// select the requested body
-	oapiGetObjectName (hSelect, cbuf, 256);
-	SendDlgItemMessage (hDlg, hList, CB_SELECTSTRING, -1, (LPARAM)cbuf);
+	SendDlgItemMessage (hDlg, hList, CB_SETCURSEL, sel, 0);
 }
 
 void EditorTab_Landed::ScanBaseList (HWND hDlg, int hList, OBJHANDLE hRef)
@@ -2306,18 +2676,27 @@ void EditorTab_Landed::ScanBaseList (HWND hDlg, int hList, OBJHANDLE hRef)
 	SendDlgItemMessage (hDlg, hList, CB_RESETCONTENT, 0, 0);
 	for (n = 0; n < oapiGetBaseCount (hRef); n++) {
 		oapiGetObjectName (oapiGetBaseByIndex (hRef, n), cbuf, 256);
-		SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
+		AddListEntry (hDlg, hList, cbuf);   // Chinese mode: translated display name
+		SendDlgItemMessage (hDlg, hList, CB_SETITEMDATA, n, (LPARAM)n);
 	}
 }
 
 void EditorTab_Landed::SelectCBody (OBJHANDLE hBody)
 {
-	char cbuf[256];
-	oapiGetObjectName (hBody, cbuf, 256);
-	int idx = SendDlgItemMessage (hTab, IDC_REF, CB_FINDSTRING, -1, (LPARAM)cbuf);
-	if (idx != LB_ERR) {
-		SendDlgItemMessage (hTab, IDC_REF, CB_SETCURSEL, idx, 0);
-		PostMessage (hTab, WM_USER+0, 0, 0);
+	// find the gbody index, then locate the combobox item carrying it as item data
+	DWORD gi = 0;
+	bool found = false;
+	for (DWORD n = 0; n < oapiGetGbodyCount(); n++) {
+		if (oapiGetGbodyByIndex (n) == hBody) { gi = n; found = true; break; }
+	}
+	if (!found) return;
+	int count = (int)SendDlgItemMessage (hTab, IDC_REF, CB_GETCOUNT, 0, 0);
+	for (int i = 0; i < count; i++) {
+		if ((DWORD)SendDlgItemMessage (hTab, IDC_REF, CB_GETITEMDATA, i, 0) == gi) {
+			SendDlgItemMessage (hTab, IDC_REF, CB_SETCURSEL, i, 0);
+			PostMessage (hTab, WM_USER+0, 0, 0);
+			break;
+		}
 	}
 }
 
@@ -2708,8 +3087,8 @@ void EditorTab_Propellant::Refresh ()
 	char cbuf[256];
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
 	ntank = vessel->GetPropellantCount();
-	sprintf (cbuf, "of %d", ntank);
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC1), cbuf);
+	sprintf (cbuf, oapiTr("of %d"), ntank);
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), Utf8ToWideS(cbuf).c_str());
 	GetWindowText (GetDlgItem (hTab, IDC_EDIT1), cbuf, 256);
 	i = sscanf (cbuf, "%d", &n);
 	if (i != 1 || n > ntank) {
@@ -2720,8 +3099,8 @@ void EditorTab_Propellant::Refresh ()
 	if (!hP) return;
 	m0 = vessel->GetPropellantMaxMass (hP);
 	m  = vessel->GetPropellantMass (hP);
-	sprintf (cbuf, "Mass (0-%0.2f kg)", m0);
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC2), cbuf);
+	sprintf (cbuf, oapiTr("Mass (0-%0.2f kg)"), m0);
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(cbuf).c_str());
 	sprintf (cbuf, "%0.4f", m/m0);
 	SetWindowText (GetDlgItem (hTab, IDC_EDIT2), cbuf);
 	sprintf (cbuf, "%0.2f", m);
@@ -2991,8 +3370,8 @@ void EditorTab_Docking::Refresh ()
 	DWORD n, ndock = vessel->DockCount();
 	SetWindowText (GetDlgItem (hTab, IDC_ERRMSG), "");
 
-	sprintf (cbuf, "of %d", vessel->DockCount());
-	SetWindowText (GetDlgItem (hTab, IDC_STATIC1), cbuf);
+	sprintf (cbuf, oapiTr("of %d"), vessel->DockCount());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), Utf8ToWideS(cbuf).c_str());
 
 	GetWindowText (GetDlgItem (hTab, IDC_EDIT1), cbuf, 256);
 	if (!sscanf (cbuf, "%d", &n)) n = 0;
@@ -3006,21 +3385,21 @@ void EditorTab_Docking::Refresh ()
 	DOCKHANDLE hDock = vessel->GetDockHandle (n);
 	NAVHANDLE hIDS = vessel->GetIDS (hDock);
 	if (hIDS) sprintf (cbuf, "%0.2f", oapiGetNavFreq (hIDS));
-	else      strcpy (cbuf, "<none>");
-	SetWindowText (GetDlgItem (hTab, IDC_EDIT2), cbuf);
+	else      strcpy (cbuf, oapiTr("<none>"));
+	SetWindowTextW (GetDlgItem (hTab, IDC_EDIT2), Utf8ToWideS(cbuf).c_str());
 	SendDlgItemMessage (hTab, IDC_IDS, BM_SETCHECK, hIDS ? BST_CHECKED : BST_UNCHECKED, 0);
 	EnableWindow (GetDlgItem (hTab, IDC_EDIT2), hIDS ? TRUE:FALSE);
 	EnableWindow (GetDlgItem (hTab, IDC_SPIN2), hIDS ? TRUE:FALSE);
 
 	OBJHANDLE hMate = vessel->GetDockStatus (hDock);
 	if (hMate) { // dock is engaged
-		SetWindowText (GetDlgItem (hTab, IDC_STATIC2), "Currently docked to");
+		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr("Currently docked to")).c_str());
 		for (i = 0; i < 7; i++) ShowWindow (GetDlgItem (hTab, dockitem[i]), SW_HIDE);
 		for (i = 0; i < 2; i++) ShowWindow (GetDlgItem (hTab, undockitem[i]), SW_SHOW);
 		oapiGetObjectName (hMate, cbuf, 256);
 		SetWindowText (GetDlgItem (hTab, IDC_EDIT3), cbuf);
 	} else { // dock is free
-		SetWindowText (GetDlgItem (hTab, IDC_STATIC2), "Establish docking connection with");
+		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr("Establish docking connection with")).c_str());
 		for (i = 0; i < 2; i++) ShowWindow (GetDlgItem (hTab, undockitem[i]), SW_HIDE);
 		for (i = 0; i < 7; i++) ShowWindow (GetDlgItem (hTab, dockitem[i]), SW_SHOW);
 	}

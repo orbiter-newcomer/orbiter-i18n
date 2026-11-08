@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // ==============================================================
@@ -80,7 +80,7 @@ DLLCLBK void ExitModule (HINSTANCE hDLL)
 // --------------------------------------------------------------
 
 oapi::Framerate::Framerate(HINSTANCE hDLL)
-	: Module(hDLL), ImGuiDialog("Orbiter Performance Meter", {500,350})
+	: Module(hDLL), ImGuiDialog(oapiTr("Orbiter Performance Meter"), {500,350})
 {
 	// Register the custom command for the plugin
 	static char* desc = (char*)"Simulation frame rate / time step monitor";

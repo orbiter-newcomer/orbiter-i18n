@@ -67,6 +67,7 @@ Instrument_Map::Instrument_Map (Pane *_pane, INT_PTR _id, const Spec &spec, Vess
 	disp_mode = 0;
 	ndispprm = 0;
 	dispprm_top = 0;
+	infoFont = 0;
 }
 
 // =======================================================================
@@ -87,6 +88,10 @@ Instrument_Map::~Instrument_Map ()
 	for (int i = set.nset-1; i >= 0; i--) {
 		saveprm.mkrflag <<= 1;
 		if (set.set[i].active) saveprm.mkrflag |= 1;
+	}
+	if (infoFont) {
+		gc->clbkReleaseFont (infoFont);
+		infoFont = 0;
 	}
 	delete map;
 }
@@ -298,6 +303,11 @@ void Instrument_Map::SetSize (const Spec &spec)
 {
 	if (!gc) return;
 
+	// dedicated font for the bottom info lines: 16pt (96 dpi -> 21 px high).
+	// Created once; released in the destructor.
+	if (!infoFont)
+		infoFont = gc->clbkCreateFont (-(16 * 4) / 3, false, "Fixed");   // 16pt ~ 21px
+
 	oapi::Sketchpad *skp = gc->clbkGetSketchpad (surf);
 	map->SetCanvas (skp, IW, IH);
 	gc->clbkReleaseSketchpad (skp);
@@ -329,11 +339,16 @@ void Instrument_Map::UpdateDraw (oapi::Sketchpad *skp)
 
 void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 {
+	// Lazy-create the dedicated info-line font here (drawing time), because
+	// SetSize() may run before the graphics client is available.
+	if (!infoFont && gc)
+		infoFont = gc->clbkCreateFont (-(16 * 4) / 3, false, "Fixed");   // 16pt ~ 21px
+
 	if (refplanet) {
 		const SurfParam *sp = (g_focusobj->ProxyPlanet() == refplanet ? vessel->GetSurfParam() : NULL);
 		char cbuf[128];
 		oapi::Font *pfont = 0;
-		int y = IH-ch;
+		int y = IH-ch-ch/2;   // shift the info lines up by half a character
 		if (track) {
 			skp->SetTextColor (draw[2][0].col);
 			skp->Text (IW-(cw*22)/2, 0, orbiter::Tr("TRK"), (int)strlen(orbiter::Tr("TRK")));
@@ -354,7 +369,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 				orbiter::Tr(b->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
 				lat>=0.0 ? 'N':'S', orbiter::Tr("Alt"), DistStr(rad-refplanet->Size()));
 			skp->SetTextColor (draw[1][0].col);
-			if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
+			if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
 			skp->Text (cw/2, y, orbiter::Tr("TGT:"), (int)strlen(orbiter::Tr("TGT:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
@@ -372,7 +387,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			Orthodome (lng0, lat0, lng, lat, adist, hdg);
 			sprintf (cbuf+strlen(cbuf)-1, ", %s%s, %s %05.1fº]", orbiter::Tr("Dst"), DistStr(adist*rad), orbiter::Tr("Brg"), Deg(posangle(hdg)));
 			skp->SetTextColor (draw[2][0].col);
-			if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
+			if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
 			skp->Text (cw/2, y, orbiter::Tr("BSE:"), (int)strlen(orbiter::Tr("BSE:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
@@ -380,9 +395,9 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 		}
 		double lng, lat, rad;
 		refplanet->GlobalToEquatorial (g_focusobj->GPos(), lng, lat, rad);
-		sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c, Alt %s]",
+		sprintf (cbuf, "%s [%6.2fº%c %6.2fº%c, %s %s]",
 			orbiter::Tr(g_focusobj->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
-			lat>=0.0 ? 'N':'S', DistStr(rad-refplanet->Size()));
+			lat>=0.0 ? 'N':'S', orbiter::Tr("Alt"), DistStr(rad-refplanet->Size()));
 		if (sp) {
 			Vector hvel (tmul (sp->ref->GRot(), sp->groundvel_glob));
 			hvel.Set (mul (sp->L2H, hvel));
@@ -390,7 +405,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			sprintf (cbuf+strlen(cbuf)-1, ", %s %05.1fº]", orbiter::Tr("Crs"), Deg(posangle(crs)));
 		}
 		skp->SetTextColor (draw[0][0].col);
-		if (!pfont) pfont = skp->SetFont (GetDefaultFont (1));
+		if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
 		skp->Text (cw/2, y, orbiter::Tr("SHP:"), (int)strlen(orbiter::Tr("SHP:")));
 		skp->Text (cw*4, y, cbuf, strlen(cbuf));
 		y -= ch;

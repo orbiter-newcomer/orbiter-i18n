@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #define ORBITER_MODULE
@@ -35,7 +35,7 @@ class LuaConsoleDlg: public ImGuiDialog {
 	ImGuiInputTextFlags flags;
 	char *cConsoleCmd;
 public:
-	LuaConsoleDlg(char *cmdbuf):ImGuiDialog(ICON_FA_TERMINAL " Lua Console"){
+	LuaConsoleDlg(char *cmdbuf):ImGuiDialog((std::string(ICON_FA_TERMINAL " ") + oapiTr("Lua Console")).c_str()){
 		cConsoleCmd = cmdbuf;
 		cmd[0] = '\0';
 		flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CtrlEnterForNewLine;
@@ -151,35 +151,35 @@ public:
 			
 			ImGui::SameLine();
 			ImGui::BeginChild("##LuaTermCommands");
-				ImGui::SeparatorText("Execution");
+				ImGui::SeparatorText(oapiTr("Execution"));
 				if(ImGui::Button(ICON_FA_PLAY)) {
 					ExecuteCommandBuffer();
 				}
-				ImGui::SetItemTooltip("Execute the command buffer");
+				ImGui::SetItemTooltip(oapiTr("Execute the command buffer"));
 				ImGui::SameLine();
-				ImGui::CheckboxFlags("Single line", &flags, ImGuiInputTextFlags_CtrlEnterForNewLine);
+				ImGui::CheckboxFlags(oapiTr("Single line"), &flags, ImGuiInputTextFlags_CtrlEnterForNewLine);
 				
 				ImGui::SetItemTooltip("When checked, the command buffer is sent when pressing Enter\n"
 									  "Otherwise, you can enter multiple lines at once and execute\n"
 									  "them with Ctrl-Enter or the " ICON_FA_PLAY " button");
 
-				ImGui::SeparatorText("History");
+				ImGui::SeparatorText(oapiTr("History"));
 				if(ImGui::Button(ICON_FA_ARROW_UP)) {
 					HistoryPrev();
 				}
-				ImGui::SetItemTooltip("Previous command");
+				ImGui::SetItemTooltip(oapiTr("Previous command"));
 
 				ImGui::SameLine();
 				if(ImGui::Button(ICON_FA_ARROW_DOWN)) {
 					HistoryNext();
 				}
-				ImGui::SetItemTooltip("Next command");
+				ImGui::SetItemTooltip(oapiTr("Next command"));
 
 				ImGui::SameLine();
 				if(ImGui::Button(ICON_FA_TRASH)) {
 					HistoryClear();
 				}
-				ImGui::SetItemTooltip("Clear history");
+				ImGui::SetItemTooltip(oapiTr("Clear history"));
 				
 			ImGui::EndChild();
 			

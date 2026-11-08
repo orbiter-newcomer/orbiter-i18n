@@ -1,4 +1,4 @@
-// ==============================================================
+﻿// ==============================================================
 // Atmospheric controls implementation
 // Part of the ORBITER VISUALISATION PROJECT (OVP)
 // Dual licensed under GPL v3 and LGPL v3
@@ -17,6 +17,17 @@
 #include <stdio.h>
 
 using namespace oapi;
+
+// UTF-8 -> UTF-16 for the W (Unicode) Win32 API calls (Chinese UI text)
+static std::wstring Utf8ToWide(const char *s)
+{
+	if (!s) return L"";
+	int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
+	if (n <= 0) return L"";
+	std::wstring w(n - 1, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, s, -1, &w[0], n);
+	return w;
+}
 
 extern HINSTANCE g_hInst;
 extern D3D9Client *g_client;
@@ -90,7 +101,7 @@ void SetToolTip(int vid, PTSTR pszText)
 {
 	if (!pszText) return;
 	for (auto& x : Values) if (x.sprm == vid) {
-		x.tooltip = string(pszText);
+		x.tooltip = string(pszText);   // store original English; translated at display time
 		break;
 	}
 }
@@ -129,7 +140,7 @@ void Create()
 	vObj = NULL;
 	hDlg = NULL;
 
-	dwCmd = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Atmospheric Controls"), (char*)oapiTr("This dialog allows to control various atmospheric parameters and effects"), OpenDlgClbk, NULL);
+	dwCmd = oapiRegisterCustomCmd((char*)"D3D9 Atmospheric Controls", (char*)"This dialog allows to control various atmospheric parameters and effects", OpenDlgClbk, NULL);
 
 	Slider.resize(ATM_SLIDER_COUNT);
 
@@ -253,17 +264,17 @@ void OpenDlgClbk(void *context)
 	if (vObj) param = vObj->GetAtmoParams(atmmode);
 	else      param = &defs;
 
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)"Auto");
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)"Surface");
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)"Low Orbit");
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)"High Orbit");
-	SendDlgItemMessageA(hDlg, IDC_ATM_MODE, CB_SETCURSEL, atmmode, 0);
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_RESETCONTENT, 0, 0);
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Auto")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Surface")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Low Orbit")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("High Orbit")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_SETCURSEL, atmmode, 0);
 
-	SendDlgItemMessageA(hDlg, IDC_ATM_PAGE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)"Atmospheric Controls");
-	SendDlgItemMessageA(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)"Water and Sun-glare");
-	SendDlgItemMessageA(hDlg, IDC_ATM_PAGE, CB_SETCURSEL, atmpage, 0);
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_RESETCONTENT, 0, 0);
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Atmospheric Controls")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Water and Sun-glare")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_SETCURSEL, atmpage, 0);
 
 	for (auto& s : Slider)
 	{
@@ -296,26 +307,26 @@ void InitPage(int p)
 	}
 
 	for (auto& s : Slider) {
-		if (s.val) SetWindowTextA(GetDlgItem(hDlg, s.lbl), s.val->lbl.c_str());
-		else SetWindowTextA(GetDlgItem(hDlg, s.lbl), " ");
+		if (s.val) SetWindowTextW(GetDlgItem(hDlg, s.lbl), Utf8ToWide(oapiTr(s.val->lbl.c_str())).c_str());
+		else SetWindowTextW(GetDlgItem(hDlg, s.lbl), L" ");
 	}
 
 	if (p == 0) {
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG1), "Twilight and Ambient settings");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG2), "Wavelenght and Scale height settings");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG3), "Terrain");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG4), "Rayleigh settings");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG5), "Mie settings");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG6), "Custom settings");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG1), Utf8ToWide(oapiTr("Twilight and Ambient settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG2), Utf8ToWide(oapiTr("Wavelenght and Scale height settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG3), Utf8ToWide(oapiTr("Terrain")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG4), Utf8ToWide(oapiTr("Rayleigh settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), Utf8ToWide(oapiTr("Mie settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG6), Utf8ToWide(oapiTr("Custom settings")).c_str());
 	}
 
 	if (p == 1) {
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG1), " ");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG2), " ");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG3), " ");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG4), " ");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG5), "Water Rendering");
-		SetWindowTextA(GetDlgItem(hDlg, IDC_ATG6), " ");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG1), L" ");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG2), L" ");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG3), L" ");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG4), L" ");
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), Utf8ToWide(oapiTr("Water Rendering")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG6), L" ");
 	}
 
 	InitToolTips();
@@ -346,7 +357,7 @@ void ConfigValue(int sid, int vid, int pid, string lbl, double min, double max, 
 	v.page = pid;
 	v.sprm = vid;
 	v.slider = sid - 1;
-	v.lbl = lbl;
+	v.lbl = lbl;   // store original English; translated at display time so runtime language switches apply
 	Values.push_back(v);
 }
 
@@ -469,6 +480,34 @@ void SetVisual(vObject *vo)
 // ==============================================================
 // Dialog message handler
 
+// Chinese UI localization for the atmospheric controls dialog (rc stays English)
+static const struct { const wchar_t *en; const wchar_t *zh; } atmMap[] = {
+    { L"Copy To Surface", L"复制到表面" },
+    { L"Copy to Low Orbit", L"复制到低轨道" },
+    { L"Copy to High Orbit", L"复制到高轨道" },
+    { L"Visualize Scatter Tables", L"可视化散射表" },
+    { L"Load Settings", L"加载设置" },
+    { L"Save Settings", L"保存设置" },
+    { L"Configuration", L"配置" },
+    { L"Close", L"关闭" }
+};
+
+static BOOL CALLBACK ZhAtmLocCb(HWND hWnd, LPARAM)
+{
+    wchar_t txt[256];
+    if (GetWindowTextW(hWnd, txt, 256) > 0) {
+        for (size_t i = 0; i < sizeof(atmMap)/sizeof(atmMap[0]); i++) {
+            if (!wcscmp(txt, atmMap[i].en)) { SetWindowTextW(hWnd, atmMap[i].zh); break; }
+        }
+    }
+    return TRUE;
+}
+
+static void ZhLocalizeAtmDialog(HWND hDlg)
+{
+    if (strcmp(oapiTr("Build"), "Build") == 0) return;  // English mode: keep original
+    EnumChildWindows(hDlg, ZhAtmLocCb, 0);
+}
 INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static bool bOrbOld = false;
@@ -476,6 +515,7 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg) {
 
 	case WM_INITDIALOG:
+		ZhLocalizeAtmDialog(hWnd);
 	{
 		vObject *vPl = g_client->GetScene()->GetCameraNearVisual();
 		SetVisual(vPl);
@@ -486,7 +526,7 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		if (vObj) {	
 			char title[256]; string file = "??";
-			sprintf_s(title, 256, "Atmospheric Controls [%s]", vObj->GetName());
+			sprintf_s(title, 256, "%s [%s]", oapiTr("Atmospheric Controls"), vObj->GetName());
 
 			auto cfg = Config->AtmoCfg.find(vObj->GetName());
 			if (cfg != Config->AtmoCfg.end()) file = cfg->second;
@@ -496,11 +536,11 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			double vd = 0.5f;
 			if (atmmode == 0) vd = param->cfg_alt < 0.9999f ? param->cfg_alt : 1.0 - param->cfg_halt;
 
-			if (vObj->GetAtmoMode() == 1) sprintf_s(title, 256, "Atmospheric Controls [%s][%s] [Surface] (%3.1f%%)", file.c_str(), vObj->GetName(), (1.0 - vd) * 100.0);
-			if (vObj->GetAtmoMode() == 2) sprintf_s(title, 256, "Atmospheric Controls [%s][%s] [LowOrbit] (%3.1f%%)", file.c_str(), vObj->GetName(), vd * 100.0);
-			if (vObj->GetAtmoMode() == 3) sprintf_s(title, 256, "Atmospheric Controls [%s][%s] [HighOrbit] (%3.1f%%)", file.c_str(), vObj->GetName(), (1.0 - vd) * 100.0);
+			if (vObj->GetAtmoMode() == 1) sprintf_s(title, 256, "%s [%s][%s] [%s] (%3.1f%%)", oapiTr("Atmospheric Controls"), file.c_str(), vObj->GetName(), oapiTr("Surface"), (1.0 - vd) * 100.0);
+			if (vObj->GetAtmoMode() == 2) sprintf_s(title, 256, "%s [%s][%s] [%s] (%3.1f%%)", oapiTr("Atmospheric Controls"), file.c_str(), vObj->GetName(), oapiTr("Low Orbit"), vd * 100.0);
+			if (vObj->GetAtmoMode() == 3) sprintf_s(title, 256, "%s [%s][%s] [%s] (%3.1f%%)", oapiTr("Atmospheric Controls"), file.c_str(), vObj->GetName(), oapiTr("High Orbit"), (1.0 - vd) * 100.0);
 		
-			SetWindowTextA(hDlg, title);
+			SetWindowTextW(hDlg, Utf8ToWide(title).c_str());
 			UpdateSliders();
 		}
 		break;	

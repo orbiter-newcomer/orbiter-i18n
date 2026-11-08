@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // ======================================================================
@@ -7,6 +7,7 @@
 
 #include "DlgFunction.h"
 #include "Orbiter.h"
+#include "Localization.h"
 #include "imgui.h"
 #include "IconsFontAwesome6.h"
 
@@ -19,14 +20,14 @@ DlgFunction::DlgFunction() : ImGuiDialog(ICON_FA_PUZZLE_PIECE " Orbiter: Custom 
 void DlgFunction::OnDraw() {
 	ImVec2 button_sz(ImVec2(ImGui::GetContentRegionAvail().x, 20));
     for (int i = 0; i < g_pOrbiter->ncustomcmd; i++) {
-	    if(ImGui::Button(g_pOrbiter->customcmd[i].label, button_sz)) {
+	    if(ImGui::Button(orbiter::Tr(g_pOrbiter->customcmd[i].label), button_sz)) {
             g_pOrbiter->customcmd[i].func (g_pOrbiter->customcmd[i].context);
         }
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-            ImGui::TextUnformatted(g_pOrbiter->customcmd[i].desc);
+            ImGui::TextUnformatted(orbiter::Tr(g_pOrbiter->customcmd[i].desc));
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }

@@ -1,4 +1,4 @@
-// ===========================================================================================
+﻿// ===========================================================================================
 // Part of the ORBITER VISUALISATION PROJECT (OVP)
 // Dual licensed under GPL v3 and LGPL v3
 // Copyright (C) 2012-2026 Jarmo Nikkanen
@@ -24,6 +24,7 @@
 enum scale { LIN, SQRT, SQR };
 
 using namespace oapi;
+
 using std::min;
 using std::max;
 
@@ -35,6 +36,10 @@ extern D3D9Client *g_client;
 #define CLAMP(x,a,b) min(max(a,x),b) 
 
 namespace DebugControls {
+
+// Forward declaration: combo box item adder with Chinese UI support
+static void AddComboItem(HWND hDlg, int id, const char *text);
+static void SetDlgTextU(HWND hDlg, int id, const char *utf8);
 
 DWORD dwGFX, dwCol, dwCmd, nMesh, nGroup, sMesh, sGroup, debugFlags, dspMode, camMode, SelColor, sEmitter;
 double camSpeed;
@@ -67,25 +72,25 @@ void OpenColDlgClbk(void *context);
 class GFXDialog: public ImGuiDialog
 {
 public:
-	GFXDialog():ImGuiDialog("Graphics Controls") {}
+	GFXDialog():ImGuiDialog(oapiTr("Graphics Controls")) {}
 	void OnDraw() override {
 		ImGui::PushItemWidth(150.0);
-		ImGui::SeparatorText("Post Processing Configuration");
+		ImGui::SeparatorText(oapiTr("Post Processing Configuration"));
 
 
-		ImGui::SliderFloatReset("Light glow intensity", &Config->GFXIntensity, 0.0f, 1.0f, 0.5f, "%1.2f");
-		ImGui::SliderFloatReset("Light glow distance", &Config->GFXDistance, 0.0f, 1.0f, 0.8f, "%1.2f");
-		ImGui::SliderFloatReset("Glow threshold", &Config->GFXThreshold, 0.5f, 2.0f, 1.1f, "%1.2f");
-		ImGui::SliderFloatReset("Gamma", &Config->GFXGamma, 0.3f, 2.5f, 1.0f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Light glow intensity"), &Config->GFXIntensity, 0.0f, 1.0f, 0.5f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Light glow distance"), &Config->GFXDistance, 0.0f, 1.0f, 0.8f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Glow threshold"), &Config->GFXThreshold, 0.5f, 2.0f, 1.1f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Gamma"), &Config->GFXGamma, 0.3f, 2.5f, 1.0f, "%1.2f");
 
-		ImGui::SeparatorText("Light Configuration");
+		ImGui::SeparatorText(oapiTr("Light Configuration"));
 
-		ImGui::SliderFloatReset("Sunlight Intensity", &Config->GFXSunIntensity, 0.5f, 2.5f, 1.2f, "%1.2f");
-		ImGui::SliderFloatReset("Indirect Lighting", &Config->PlanetGlow, 0.01f, 2.0f, 0.7f, "%1.2f");
-		ImGui::SliderFloatReset("Local Lights Max", &Config->GFXLocalMax, 0.001f, 1.0f, 0.5f, "%1.2f");
-		ImGui::SliderFloatReset("Sun Glare Intensity", &Config->GFXGlare, 0.001f, 1.0f, 0.5f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Sunlight Intensity"), &Config->GFXSunIntensity, 0.5f, 2.5f, 1.2f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Indirect Lighting"), &Config->PlanetGlow, 0.01f, 2.0f, 0.7f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Local Lights Max"), &Config->GFXLocalMax, 0.001f, 1.0f, 0.5f, "%1.2f");
+		ImGui::SliderFloatReset(oapiTr("Sun Glare Intensity"), &Config->GFXGlare, 0.001f, 1.0f, 0.5f, "%1.2f");
 
-		if(ImGui::Button("Recrete Sun/Glares")) {
+		if(ImGui::Button(oapiTr("Recrete Sun/Glares"))) {
 			g_client->GetScene()->CreateSunGlare();
 		}
 		ImGui::PopItemWidth();
@@ -95,17 +100,17 @@ public:
 class ColDialog: public ImGuiDialog
 {
 public:
-	ColDialog():ImGuiDialog("Collider Visualization") {}
+	ColDialog():ImGuiDialog(oapiTr("Collider Visualization")) {}
 	void OnDraw() override {
 		ImGui::PushItemWidth(150.0);
-		ImGui::SeparatorText("Physics Colliders");
+		ImGui::SeparatorText(oapiTr("Physics Colliders"));
 
 		bool base = Config->bShowBaseColliders == 1;
-		if (ImGui::Checkbox("Show Base Colliders", &base))
+		if (ImGui::Checkbox(oapiTr("Show Base Colliders"), &base))
 			Config->bShowBaseColliders = base ? 1 : 0;
 
 		bool vessel = Config->bShowVesselColliders == 1;
-		if (ImGui::Checkbox("Show Vessel Colliders", &vessel))
+		if (ImGui::Checkbox(oapiTr("Show Vessel Colliders"), &vessel))
 			Config->bShowVesselColliders = vessel ? 1 : 0;
 
 		ImGui::PopItemWidth();
@@ -223,17 +228,17 @@ void Create()
 	cpr = cpg = cpb = cpa = 0.0f;
 
 	if (Config->EnableMeshDbg) {
-		dwCmd = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Debug Controls"), (char*)oapiTr("This dialog allows to control various debug and development features"), OpenDlgClbk, NULL);
+		dwCmd = oapiRegisterCustomCmd((char*)"D3D9 Debug Controls", (char*)"This dialog allows to control various debug and development features", OpenDlgClbk, NULL);
 	}
 	else {
 		dwCmd = 0;
 	}
 
 	gfxDlg = new GFXDialog();
-	dwGFX = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Graphics Controls"), (char*)oapiTr("This dialog allows to control various graphics options"), OpenGFXDlgClbk, gfxDlg);
+	dwGFX = oapiRegisterCustomCmd((char*)"D3D9 Graphics Controls", (char*)"This dialog allows to control various graphics options", OpenGFXDlgClbk, gfxDlg);
 
 	colDlg = new ColDialog();
-	dwCol = oapiRegisterCustomCmd((char*)oapiTr("D3D9 Collider Visuals"), (char*)oapiTr("This dialog allows toggling physics collider visualizations"), OpenColDlgClbk, colDlg);
+	dwCol = oapiRegisterCustomCmd((char*)"D3D9 Collider Visuals", (char*)"This dialog allows toggling physics collider visualizations", OpenColDlgClbk, colDlg);
 
 	resbias = 4.0 + Config->LODBias;
   
@@ -409,13 +414,13 @@ void InitMatList(WORD shader)
 	if (shader == SHADER_NULL) {
 		std::list<char> list = { 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17 };
 		for (auto x : list) Dropdown.push_back(PrmList[x]);
-		for (auto x : Dropdown) SendDlgItemMessageA(hDlg, IDC_DBG_MATPRP, CB_ADDSTRING, 0, (LPARAM)x.name.c_str());	
+		for (auto x : Dropdown) AddComboItem(hDlg, IDC_DBG_MATPRP, x.name.c_str());	
 	}
 
 	if (shader == SHADER_METALNESS) {
 		std::list<char> list = { 0, 3, 5, 7, 8, 9 };
 		for (auto x : list) Dropdown.push_back(PrmList[x]);
-		for (auto x : Dropdown) SendDlgItemMessageA(hDlg, IDC_DBG_MATPRP, CB_ADDSTRING, 0, (LPARAM)x.name.c_str());
+		for (auto x : Dropdown) AddComboItem(hDlg, IDC_DBG_MATPRP, x.name.c_str());
 	}
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_MATPRP, CB_SETCURSEL, idx, 0);
@@ -452,60 +457,60 @@ void OpenDlgClbk(void *context)
 	SendDlgItemMessage(hDlg, IDC_DBG_FPSLIM, BM_SETCHECK, Config->EnableLimiter==1, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_ADDSTRING, 0, (LPARAM)"Everything");
-	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_ADDSTRING, 0, (LPARAM)"Selected Visual");
-	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_ADDSTRING, 0, (LPARAM)"Selected Mesh");
-	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_ADDSTRING, 0, (LPARAM)"Selected Group");
+	AddComboItem(hDlg, IDC_DBG_DISPLAY, "Everything");
+	AddComboItem(hDlg, IDC_DBG_DISPLAY, "Selected Visual");
+	AddComboItem(hDlg, IDC_DBG_DISPLAY, "Selected Mesh");
+	AddComboItem(hDlg, IDC_DBG_DISPLAY, "Selected Group");
 	SendDlgItemMessageA(hDlg, IDC_DBG_DISPLAY, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_CAMERA, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_CAMERA, CB_ADDSTRING, 0, (LPARAM)"Center on visual");
-	SendDlgItemMessageA(hDlg, IDC_DBG_CAMERA, CB_ADDSTRING, 0, (LPARAM)"Wheel Fly/Pan Cam");
+	AddComboItem(hDlg, IDC_DBG_CAMERA, "Center on visual");
+	AddComboItem(hDlg, IDC_DBG_CAMERA, "Wheel Fly/Pan Cam");
 	SendDlgItemMessageA(hDlg, IDC_DBG_CAMERA, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_DEFSHADER, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_DEFSHADER, CB_ADDSTRING, 0, (LPARAM)"PBR (Old)");
-	SendDlgItemMessageA(hDlg, IDC_DBG_DEFSHADER, CB_ADDSTRING, 0, (LPARAM)"Metalness PBR");
+	AddComboItem(hDlg, IDC_DBG_DEFSHADER, "PBR (Old)");
+	AddComboItem(hDlg, IDC_DBG_DEFSHADER, "Metalness PBR");
 	SendDlgItemMessageA(hDlg, IDC_DBG_DEFSHADER, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"Normals Global");
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"Normals Tangent");
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"Height");
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"Height Mk2");
-	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_ADDSTRING, 0, (LPARAM)"Tile Level");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "None");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "Normals Global");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "Normals Tangent");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "Height");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "Height Mk2");
+	AddComboItem(hDlg, IDC_DBG_SCENEDBG, "Tile Level");
 	SendDlgItemMessageA(hDlg, IDC_DBG_SCENEDBG, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_ACTION, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_ACTION, CB_ADDSTRING, 0, (LPARAM)"Convert to DXT5");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ACTION, CB_ADDSTRING, 0, (LPARAM)"Convert to RGB8");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ACTION, CB_ADDSTRING, 0, (LPARAM)"Convert to RGB4");
+	AddComboItem(hDlg, IDC_DBG_ACTION, "Convert to DXT5");
+	AddComboItem(hDlg, IDC_DBG_ACTION, "Convert to RGB8");
+	AddComboItem(hDlg, IDC_DBG_ACTION, "Convert to RGB4");
 	SendDlgItemMessageA(hDlg, IDC_DBG_ACTION, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_ADDSTRING, 0, (LPARAM)"Save");
-	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_ADDSTRING, 0, (LPARAM)"Assign to slot 0");
-	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_ADDSTRING, 0, (LPARAM)"Assign to slot 1");
-	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_ADDSTRING, 0, (LPARAM)"Assign to slot 2");
+	AddComboItem(hDlg, IDC_DBG_TARGET, "Save");
+	AddComboItem(hDlg, IDC_DBG_TARGET, "Assign to slot 0");
+	AddComboItem(hDlg, IDC_DBG_TARGET, "Assign to slot 1");
+	AddComboItem(hDlg, IDC_DBG_TARGET, "Assign to slot 2");
 	SendDlgItemMessageA(hDlg, IDC_DBG_TARGET, CB_SETCURSEL, 0, 0);
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"None");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Mirror");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Blur 1");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Blur 2");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Blur 3");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Blur 4");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Irrad.Probe");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"IrdPreItg");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"ShadowMap");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Irradiance");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"GlowMask");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"ScreenDepth");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"Normals");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"LightVisbil.");
-	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_ADDSTRING, 0, (LPARAM)"EclipseTbl");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "None");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Mirror");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Blur 1");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Blur 2");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Blur 3");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Blur 4");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Irrad.Probe");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "IrdPreItg");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "ShadowMap");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Irradiance");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "GlowMask");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "ScreenDepth");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "Normals");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "LightVisbil.");
+	AddComboItem(hDlg, IDC_DBG_ENVMAP, "EclipseTbl");
 	SendDlgItemMessageA(hDlg, IDC_DBG_ENVMAP, CB_SETCURSEL, 0, 0);
 
 
@@ -1126,19 +1131,19 @@ void DisplayMat(bool bRed, bool bGreen, bool bBlue, bool bAlpha)
 
 	if (bRed) sprintf_s(lbl,32,"%3.3f", r);
 	else	  sprintf_s(lbl,32,"");
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_RED),   lbl);
+	SetDlgTextU(hDlg, IDC_DBG_RED,   lbl);
 	
 	if (bGreen) sprintf_s(lbl,32,"%3.3f", g);
 	else		sprintf_s(lbl,32,"");
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_GREEN), lbl);
+	SetDlgTextU(hDlg, IDC_DBG_GREEN, lbl);
 
 	if (bBlue) sprintf_s(lbl,32,"%3.3f", b);
 	else	   sprintf_s(lbl,32,"");
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_BLUE),  lbl);
+	SetDlgTextU(hDlg, IDC_DBG_BLUE,  lbl);
 
 	if (bAlpha) sprintf_s(lbl,32,"%3.3f", a);
 	else	    sprintf_s(lbl,32,"");
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_ALPHA), lbl);
+	SetDlgTextU(hDlg, IDC_DBG_ALPHA, lbl);
 
 	if (bRed)   EnableWindow(GetDlgItem(hDlg, IDC_DBG_RED), true);
 	else	    EnableWindow(GetDlgItem(hDlg, IDC_DBG_RED), false);	
@@ -1175,11 +1180,11 @@ void UpdateMaterialDisplay(bool bSetup)
 
 	// Set material info
 	const char *skin = NULL;
-	if (skin)	sprintf_s(lbl, 256, "Material %u: [Skin %s]", matidx, skin);
-	else		sprintf_s(lbl, 256, "Material %u:", matidx);
+	if (skin)	sprintf_s(lbl, 256, oapiTr("Material %u: [Skin %s]"), matidx, skin);
+	else		sprintf_s(lbl, 256, oapiTr("Material %u:"), matidx);
 
 	GetWindowText(GetDlgItem(hDlg, IDC_DBG_MATGRP), lbl2, 64);
-	if (strcmp(lbl, lbl2)) SetWindowText(GetDlgItem(hDlg, IDC_DBG_MATGRP), lbl); // Avoid causing flashing
+	if (strcmp(lbl, lbl2)) SetDlgTextU(hDlg, IDC_DBG_MATGRP, lbl); // Avoid causing flashing
 
 	if (bSetup) SelColor = 0;
 
@@ -1194,20 +1199,20 @@ void UpdateMaterialDisplay(bool bSetup)
 
 	DWORD texidx = hMesh->GetMeshGroupTextureIdx(sGroup);
 
-	if (texidx==0) SetWindowText(GetDlgItem(hDlg, IDC_DBG_TEXTURE), "Texture: None");
+	if (texidx==0) SetDlgTextU(hDlg, IDC_DBG_TEXTURE, oapiTr("Texture: None"));
 	else {
 		SURFHANDLE hSrf = hMesh->GetTexture(texidx);
 		if (hSrf) {
-			sprintf_s(lbl, 256, "Texture: %s [%u]", RemovePath(SURFACE(hSrf)->GetName()), texidx);
-			SetWindowText(GetDlgItem(hDlg, IDC_DBG_TEXTURE), lbl);
+			sprintf_s(lbl, 256, oapiTr("Texture: %s [%u]"), RemovePath(SURFACE(hSrf)->GetName()), texidx);
+			SetDlgTextU(hDlg, IDC_DBG_TEXTURE, lbl);
 		}
 	}
 
-	sprintf_s(lbl, 256, "Mesh: %s", RemovePath(hMesh->GetName()));
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_MESHNAME), lbl);
+	sprintf_s(lbl, 256, oapiTr("Mesh: %s"), RemovePath(hMesh->GetName()));
+	SetDlgTextU(hDlg, IDC_DBG_MESHNAME, lbl);
 	
 	GetWindowText(GetDlgItem(hDlg, IDC_DBG_MESHGRP), lbl2, 64);
-	if (strcmp(lbl, lbl2)) SetWindowText(GetDlgItem(hDlg, IDC_DBG_MESHGRP), lbl); // Avoid causing flashing
+	if (strcmp(lbl, lbl2)) SetDlgTextU(hDlg, IDC_DBG_MESHGRP, lbl); // Avoid causing flashing
 }
 
 // =============================================================================================
@@ -1304,7 +1309,7 @@ void SetupMeshGroups()
 
 	if (!vObj) return; 
 
-	SetWindowText(GetDlgItem(hDlg, IDC_DBG_VISUAL), visual);
+	SetDlgTextU(hDlg, IDC_DBG_VISUAL, visual);
 
 	if (nMesh!=0) {
 		if (sMesh>0xFFFF) sMesh = nMesh-1;
@@ -1379,7 +1384,7 @@ void UpdateVisual()
 {
 	if (!vObj || !hDlg) return; 
 	nMesh = vObj->GetMeshCount();
-	sprintf_s(visual, 64, "Visual: %s", vObj->GetName());
+	sprintf_s(visual, 64, oapiTr("Visual: %s"), vObj->GetName());
 	SetupMeshGroups();
 
 	SendDlgItemMessageA(hDlg, IDC_DBG_CONES, CB_RESETCONTENT, 0, 0);
@@ -1387,7 +1392,7 @@ void UpdateVisual()
 
 	if (vObj->Type() == OBJTP_VESSEL) {
 
-		SendDlgItemMessageA(hDlg, IDC_DBG_CONES, CB_ADDSTRING, 0, (LPARAM)"NONE");
+		AddComboItem(hDlg, IDC_DBG_CONES, "NONE");
 		Emitters[0] = NULL;
 
 		char line[64];
@@ -1822,6 +1827,114 @@ INT_PTR CALLBACK ViewProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
+// Combo box item adder with Chinese UI support (no std::wstring dependency)
+static void AddComboItem(HWND hDlg, int id, const char *text)
+{
+	if (strcmp(oapiTr("Build"), "Build") == 0) {
+		SendDlgItemMessageA(hDlg, id, CB_ADDSTRING, 0, (LPARAM)text);   // English mode: original
+	} else {
+		wchar_t wbuf[512];
+		MultiByteToWideChar(CP_UTF8, 0, oapiTr(text), -1, wbuf, 512);
+		SendDlgItemMessageW(hDlg, id, CB_ADDSTRING, 0, (LPARAM)wbuf);
+	}
+}
+
+// Set dialog control text with Chinese UI support (UTF-8 -> UTF-16)
+static void SetDlgTextU(HWND hDlg, int id, const char *utf8)
+{
+	if (strcmp(oapiTr("Build"), "Build") == 0) {
+		SetWindowTextA(GetDlgItem(hDlg, id), utf8);
+	} else {
+		wchar_t wbuf[1024];
+		MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wbuf, 1024);
+		SetWindowTextW(GetDlgItem(hDlg, id), wbuf);
+	}
+}
+
+// ==============================================================
+// Chinese UI localization for the D3D9 Debug Controls dialog.
+// The .rc resources stay English (used as-is in English mode); in Chinese
+// mode the controls are re-labelled at dialog initialisation time.
+static const struct { const wchar_t *en; const wchar_t *zh; } dbgMap[] = {
+    { L"Mesh Options", L"网格选项" },
+    { L"Close", L"关闭" },
+    { L"Open", L"打开" },
+    { L"Execute", L"执行" },
+    { L"Display", L"显示" },
+    { L"Camera", L"相机" },
+    { L"Group Idx", L"组索引" },
+    { L"Mesh Idx", L"网格索引" },
+    { L"Highlight selected group", L"高亮所选组" },
+    { L"Highlight selected mesh", L"高亮所选网格" },
+    { L"Boxes", L"包围盒" },
+    { L"Normalize", L"归一化" },
+    { L"Mipmap fade", L"Mipmap 淡出" },
+    { L"Reduce seams", L"减少接缝" },
+    { L"Spheres", L"球体" },
+    { L"Surface Tiles", L"表面瓦片" },
+    { L"Selected group only", L"仅所选组" },
+    { L"Bounding geometry", L"包围几何" },
+    { L"Visualize local light cones", L"可视化局部光锥" },
+    { L"Mesh debugger", L"网格调试器" },
+    { L"Misc.", L"杂项" },
+    { L"Scene Debugger", L"场景调试器" },
+    { L"Texture Tools", L"纹理工具" },
+    { L"Selected mesh only", L"仅所选网格" },
+    { L"Dual sided", L"双面" },
+    { L"Selected visual only", L"仅所选视觉体" },
+    { L"Speed", L"速度" },
+    { L"Static", L"静态" },
+    { L"Add ambient light", L"添加环境光" },
+    { L"Wireframe", L"线框" },
+    { L"Material", L"材质" },
+    { L"Material property", L"材质属性" },
+    { L"Default Shader", L"默认着色器" },
+    { L"Debug Mode", L"调试模式" },
+    { L"Display special buffer", L"显示特殊缓冲区" },
+    { L"Resolution Bias", L"分辨率偏置" },
+    { L"Select Action", L"选择操作" },
+    { L"Target", L"目标" },
+    { L"Noise:", L"噪声:" },
+    { L"Save materials", L"保存材质" },
+    { L"Create kernel", L"创建内核" },
+    { L"Data window", L"数据窗口" },
+    { L"Save envmap", L"保存环境贴图" },
+    { L"Reload Shader", L"重载着色器" },
+    { L"Reload Textures", L"重载纹理" },
+    { L"Texture: None", L"纹理：无" },
+    { L"Pick", L"拾取" },
+    { L"Mesh: None", L"网格：无" },
+    { L"Group Status:", L"组状态：" },
+    { L"Paste", L"粘贴" },
+    { L"Copy", L"复制" },
+    { L"Link channels", L"链接通道" },
+    { L"Use and Save the property", L"使用并保存该属性" },
+    { L"Extend material range", L"扩展材质范围" },
+    { L"FPS Limiter", L"FPS 限制" },
+    { L"Export textures", L"导出纹理" },
+    { L"-- Select a mesh group --", L"-- 选择一个网格组 --" }
+};
+
+static BOOL CALLBACK ZhDebugLocCb(HWND hWnd, LPARAM)
+{
+    wchar_t txt[256];
+    if (GetWindowTextW(hWnd, txt, 256) > 0) {
+        for (size_t i = 0; i < sizeof(dbgMap)/sizeof(dbgMap[0]); i++) {
+            if (!wcscmp(txt, dbgMap[i].en)) { SetWindowTextW(hWnd, dbgMap[i].zh); break; }
+        }
+    }
+    return TRUE;
+}
+
+static void ZhLocalizeDebugDialog(HWND hDlg)
+{
+    if (strcmp(oapiTr("Build"), "Build") == 0) return;  // English mode: keep original
+    wchar_t title[128];
+    if (GetWindowTextW(hDlg, title, 128) > 0 && !wcscmp(title, L"D3D9 Debug Controls"))
+        SetWindowTextW(hDlg, L"D3D9 调试控制");
+    EnumChildWindows(hDlg, ZhDebugLocCb, 0);
+}
+
 // ==============================================================
 // Dialog message handler
 
@@ -1841,6 +1954,7 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 	{
 		isOpen = false; // We always start with reduced width
+		ZhLocalizeDebugDialog(hWnd);   // Chinese UI: translate control labels
 		return TRUE;	// All Init actions are done in OpenDlgClbk();
 	}
 

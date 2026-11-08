@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 // ==============================================================
@@ -97,19 +97,19 @@ namespace oapi {
 		void Draw() {
 			if(!m_enabled) return;
 
-            if (ImPlot::BeginPlot(m_title.c_str())) {
+            if (ImPlot::BeginPlot(oapiTr(m_title.c_str()))) {
 				ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_NoTickLabels);
 				ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, 0, NDATA);
 
-				ImPlot::SetupAxis(ImAxis_Y1, m_y1legend.c_str(), ImPlotAxisFlags_AutoFit);
+				ImPlot::SetupAxis(ImAxis_Y1, oapiTr(m_y1legend.c_str()), ImPlotAxisFlags_AutoFit);
 				if(!m_y2legend.empty())
-					ImPlot::SetupAxis(ImAxis_Y2, m_y2legend.c_str(), ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit);
+					ImPlot::SetupAxis(ImAxis_Y2, oapiTr(m_y2legend.c_str()), ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit);
 				if(!m_y3legend.empty())
-					ImPlot::SetupAxis(ImAxis_Y3, m_y3legend.c_str(), ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit);
+					ImPlot::SetupAxis(ImAxis_Y3, oapiTr(m_y3legend.c_str()), ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit);
 
 				for(auto &s: m_datastreams) {
 					ImPlot::SetAxes(ImAxis_X1, s.m_axis);
-					ImPlot::PlotLine(s.m_name.c_str(), s.GetData(), NDATA, 1.0, 0.0, ImPlotLineFlags_None, s.GetOffset());
+					ImPlot::PlotLine(oapiTr(s.m_name.c_str()), s.GetData(), NDATA, 1.0, 0.0, ImPlotLineFlags_None, s.GetOffset());
 				}
 				ImPlot::EndPlot();
 			}
@@ -163,31 +163,31 @@ namespace oapi {
 			auto laoa  = [](VESSEL *v) {return (float)v->GetAOA() * (float)DEG;};
 			auto lslip = [](VESSEL *v) {return (float)v->GetSlipAngle() * (float)DEG;};
 
-			StreamGraph &alt = CreateGraph("Altitude", "Altitude (km)", "Speed (km/s)");
-			alt.AddDataStream("Altitude",       ImAxis_Y1, lalt,  " _______ALT", " %10.4f");
-			alt.AddDataStream("Vertical speed", ImAxis_Y2, lvspd, " ___VSPEED",  " %9.2f");
+			StreamGraph &alt = CreateGraph(oapiTr("Altitude"), oapiTr("Altitude (km)"), oapiTr("Speed (km/s)"));
+			alt.AddDataStream(oapiTr("Altitude"),       ImAxis_Y1, lalt,  oapiTr(" _______ALT"), " %10.4f");
+			alt.AddDataStream(oapiTr("Vertical speed"), ImAxis_Y2, lvspd, oapiTr(" ___VSPEED"),  " %9.2f");
 
-			StreamGraph &speed = CreateGraph("Speed", "Speed (km/s)", "Mach number");
-			speed.AddDataStream("Airspeed", ImAxis_Y1, laspd, " _AIRSPEED", " %9.2f");
-			speed.AddDataStream("Mach",     ImAxis_Y2, lmach, " __MACH",    " %6.2f");
+			StreamGraph &speed = CreateGraph(oapiTr("Speed"), oapiTr("Speed (km/s)"), oapiTr("Mach number"));
+			speed.AddDataStream(oapiTr("Airspeed"), ImAxis_Y1, laspd, oapiTr(" _AIRSPEED"), " %9.2f");
+			speed.AddDataStream(oapiTr("Mach"),     ImAxis_Y2, lmach, oapiTr(" __MACH"),    " %6.2f");
 
-			StreamGraph &atm = CreateGraph("Atmosphere", "Temperature (K)", "Pressure (kPa)");
-			atm.AddDataStream("Temperature", ImAxis_Y1, ltemp, " ___TEMP",    " %7.1f");
-			atm.AddDataStream("Static",      ImAxis_Y2, lspre, " _______STP", " %10.4f");
-			atm.AddDataStream("Dynamic",     ImAxis_Y2, ldpre, " _______DNP", " %10.4f");
+			StreamGraph &atm = CreateGraph(oapiTr("Atmosphere"), oapiTr("Temperature (K)"), oapiTr("Pressure (kPa)"));
+			atm.AddDataStream(oapiTr("Temperature"), ImAxis_Y1, ltemp, oapiTr(" ___TEMP"),    " %7.1f");
+			atm.AddDataStream(oapiTr("Static"),      ImAxis_Y2, lspre, oapiTr(" _______STP"), " %10.4f");
+			atm.AddDataStream(oapiTr("Dynamic"),     ImAxis_Y2, ldpre, oapiTr(" _______DNP"), " %10.4f");
 
-			StreamGraph &ld = CreateGraph("Lift & Drag", "Force (kN)", "L/D");
-			ld.AddDataStream("Lift", ImAxis_Y1, llift, " _____LIFT", " %9.2f");
-			ld.AddDataStream("Drag", ImAxis_Y1, ldrag, " _____DRAG", " %9.2f");
-			ld.AddDataStream("L/D",  ImAxis_Y2, lld,   " _____L/D",  " %8.3f");
+			StreamGraph &ld = CreateGraph(oapiTr("Lift & Drag"), oapiTr("Force (kN)"), oapiTr("L/D"));
+			ld.AddDataStream(oapiTr("Lift"), ImAxis_Y1, llift, oapiTr(" _____LIFT"), " %9.2f");
+			ld.AddDataStream(oapiTr("Drag"), ImAxis_Y1, ldrag, oapiTr(" _____DRAG"), " %9.2f");
+			ld.AddDataStream(oapiTr("L/D"),  ImAxis_Y2, lld,   oapiTr(" _____L/D"),  " %8.3f");
 
-			StreamGraph &mass = CreateGraph("Mass", "Mass (Ton)");
-			mass.AddDataStream("Total",      ImAxis_Y1, lmass, " _TOTMASS", " %8.0f");
-			mass.AddDataStream("Propellant", ImAxis_Y1, lprop, " _PRPMASS", " %8.0f");
+			StreamGraph &mass = CreateGraph(oapiTr("Mass"), oapiTr("Mass (Ton)"));
+			mass.AddDataStream(oapiTr("Total"),      ImAxis_Y1, lmass, oapiTr(" _TOTMASS"), " %8.0f");
+			mass.AddDataStream(oapiTr("Propellant"), ImAxis_Y1, lprop, oapiTr(" _PRPMASS"), " %8.0f");
 
-			StreamGraph &aoa = CreateGraph("AoA", "Angle (°)");
-			aoa.AddDataStream("AOA",  ImAxis_Y1, laoa,  " ____AOA", " %7.1f");
-			aoa.AddDataStream("Slip", ImAxis_Y1, lslip, " ___SLIP", " %7.1f");
+			StreamGraph &aoa = CreateGraph(oapiTr("AoA"), oapiTr("Angle (°)"));
+			aoa.AddDataStream(oapiTr("AOA"),  ImAxis_Y1, laoa,  oapiTr(" ____AOA"), " %7.1f");
+			aoa.AddDataStream(oapiTr("Slip"), ImAxis_Y1, lslip, oapiTr(" ___SLIP"), " %7.1f");
 
 			static char* desc = (char*)"Open a window to track flight parameters of a spacecraft.";
 			m_dwCmd = oapiRegisterCustomCmd((char*)"Flight Data Monitor", desc, hookOpenDlg, this);
@@ -293,19 +293,19 @@ namespace oapi {
 			// sampling period
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(80.0f);
-			ImGui::SliderFloat("Sampling period", &m_DT, 0.1f, 100.0f, "%.1fs", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat(oapiTr("Sampling period"), &m_DT, 0.1f, 100.0f, "%.1fs", ImGuiSliderFlags_Logarithmic);
 
 			// reset
 			ImGui::SameLine();
-			if(ImGui::Button(ICON_FA_ERASER " Reset")) {
+			if(ImGui::Button((std::string(ICON_FA_ERASER " ") + oapiTr("Reset")).c_str())) {
 				ResetData();
 			}
 
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(160.0f);
-			if(ImGui::BeginAnimatedCombo("##Graphs", "Graphs", ImGuiComboFlags_HeightLargest)) {
+			if(ImGui::BeginAnimatedCombo("##Graphs", oapiTr("Graphs"), ImGuiComboFlags_HeightLargest)) {
 				for(auto &graph: m_graphs) {
-					ImGui::Checkbox(graph.m_title.c_str(), &graph.m_enabled);
+					ImGui::Checkbox(oapiTr(graph.m_title.c_str()), &graph.m_enabled);
 				}
 
 				ImGui::EndAnimatedCombo();
@@ -314,13 +314,13 @@ namespace oapi {
 
 			// start/stop
 			bool recording = m_LogFile != NULL;
-			if(ImGui::Checkbox("Save to file", &recording)) {
+			if(ImGui::Checkbox(oapiTr("Save to file"), &recording)) {
 				if(recording) StartRecording();
 				else StopRecording();
 			}
 
 			ImGui::SameLine();
-			if(ImGui::Button(m_bLogging ? ICON_FA_STOP " Stop" : ICON_FA_PLAY " Start")) {
+			if(ImGui::Button(m_bLogging ? (std::string(ICON_FA_STOP " ") + oapiTr("Stop")).c_str() : (std::string(ICON_FA_PLAY " ") + oapiTr("Start")).c_str())) {
 				m_bLogging = !m_bLogging;
 			}
 			

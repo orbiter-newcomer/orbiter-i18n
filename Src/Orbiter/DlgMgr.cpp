@@ -543,12 +543,16 @@ void DialogManager::InitImGui()
 	
 	const CFG_FONTPRM &prm = g_pOrbiter->Cfg()->CfgFontPrm;
 
-	// The bundled fonts only contain Latin glyphs. In Chinese mode an
-	// open-source CJK font (Noto Sans CJK SC Bold, SIL Open Font License) is merged
-	// into each font, otherwise Chinese UI text renders as '?'.
+	// The bundled fonts only contain Latin glyphs. An open-source CJK font
+	// (Noto Sans CJK SC Bold, SIL Open Font License) is merged into each font,
+	// otherwise Chinese UI text renders as '?'.
+	// It is loaded REGARDLESS of the current language: the glyph atlas is built
+	// only once at startup, but the language can be switched at runtime
+	// (Options page). If CJK was only merged in Chinese mode, switching from
+	// English to Chinese at runtime would leave the atlas without CJK glyphs
+	// and all Chinese ImGui text would show as mojibake boxes.
 	const char* cjkFontFile = "Fonts/NotoSansCJKsc-Bold.ttf";
-	bool cjkAvailable = orbiter::IsChinese()
-		&& GetFileAttributesA(cjkFontFile) != INVALID_FILE_ATTRIBUTES;
+	bool cjkAvailable = GetFileAttributesA(cjkFontFile) != INVALID_FILE_ATTRIBUTES;
 	const ImWchar* cjkRanges = cjkAvailable ? io.Fonts->GetGlyphRangesChineseSimplifiedCommon() : nullptr;
 	ImFontConfig cjk_config;
 	cjk_config.MergeMode = true;

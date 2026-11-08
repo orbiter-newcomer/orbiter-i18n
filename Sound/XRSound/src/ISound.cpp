@@ -1,4 +1,4 @@
-// ==============================================================
+﻿// ==============================================================
 // miniaudio implementation of the ISound API
 // 
 // Copyright (c) 2025 Gondos
@@ -18,7 +18,7 @@ static std::list<ISound *> g_soundList;
 class ISoundDialog: public ImGuiDialog
 {
 public:
-    ISoundDialog():ImGuiDialog("Audio debug") {}
+    ISoundDialog():ImGuiDialog(oapiTr("Audio debug")) {}
     void OnDraw() override {
         if (ImGui::BeginTable("table", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable)) {
             ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthFixed, 70.0f);
@@ -28,16 +28,16 @@ public:
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 switch (sound->m_state) {
-                    case ISound::State::PLAYING: ImGui::TextUnformatted("PLAYING"); break;
-                    case ISound::State::PAUSED:  ImGui::TextUnformatted("PAUSED"); break;
-                    case ISound::State::STOPPED: ImGui::TextUnformatted("STOPPED"); break;
+                    case ISound::State::PLAYING: ImGui::TextUnformatted(oapiTr("PLAYING")); break;
+                    case ISound::State::PAUSED:  ImGui::TextUnformatted(oapiTr("PAUSED")); break;
+                    case ISound::State::STOPPED: ImGui::TextUnformatted(oapiTr("STOPPED")); break;
                 }
 
                 ImGui::TableNextColumn();
                 if (ma_sound_is_looping(&sound->m_sound)) {
-                    ImGui::TextUnformatted("Looping");
+                    ImGui::TextUnformatted(oapiTr("Looping"));
                 } else {
-                    ImGui::TextUnformatted("One shot");
+                    ImGui::TextUnformatted(oapiTr("One shot"));
                 }
 
                 ImGui::TableNextColumn();
