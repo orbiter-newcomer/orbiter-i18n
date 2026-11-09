@@ -1,0 +1,114 @@
+# Orbiter Chinese Localization (English Summary)
+
+This repository is a **Chinese localization branch** of [Orbiter](https://github.com/orbitersim/orbiter), the open-source space flight simulator. It is based on the latest upstream code (64-bit build).
+
+- Localization repo: https://github.com/orbiter-newcomer/orbiter-i18n (localization code on the `zh-cn` branch)
+- Current version: **v1.0.3**
+
+---
+
+## Switching the language
+
+### Option 1: In-game (recommended)
+
+1. Start `Orbiter.exe` to open the **Launchpad**
+2. Click **Options**
+3. Open the **UI** page
+4. Select **Chinese (Simplified)** in the **Language** drop-down
+5. The change takes effect immediately and is saved
+
+### Option 2: Configuration file
+
+Edit `Localization.cfg` in the game root directory:
+
+```ini
+; Chinese
+Language=zh
+
+; English (default)
+Language=en
+```
+
+---
+
+## English mode
+
+**English mode is byte-for-byte identical to upstream Orbiter.** All localization changes are gated behind Chinese mode only; the English UI, MFDs and text keep the original official behaviour. This is a hard constraint of the project.
+
+---
+
+## What is localized
+
+- **Launchpad / Options / dialogs / Object Info window / MFD menus / input boxes / menu bar**
+- **Built-in MFDs**: Orbit, Surface, Map, HSI, VOR/VTOL, Docking, Align Planes, Sync Orbit, Transfer, COM/NAV
+- **Add-on MFDs**: Terminal (LuaMFD), Generic Camera, Ascent profile, Attitude RCS, TransX (variables, help system, menus, precision levels, data labels, plans)
+- **Scenario Editor** (full UI: base/body selectors, date page, attitude page, docking page, propellant buttons, etc.)
+- **Vessel editor pages**: DeltaGlider, ShuttleA
+- **Planetarium**: 88 constellation names in Chinese
+- **Label mode**: body names and 39 launch-site names in Chinese (surface features such as craters/cities stay in English)
+- **Terminology**: Eject→出发, Intercept→交会, Through point→飞掠, etc.
+- **Fonts**: Noto Sans CJK SC for Chinese; runtime language switching supported
+
+---
+
+## Upstream / add-on bugs fixed along the way
+
+| Component | Issue | Fix |
+|---|---|---|
+| TransX | Apoapsis latitude shown as NaN (asin normalized by planet radius) | Normalize by position vector magnitude |
+| TransX | Launch azimuth printed even when no solution exists | Use standard formula `cos(i)=cos(φ)·sin(A)`; show N/A when unsolvable |
+| TransX | Stack buffer overflow crash | Enlarge buffers (20/30 → 64 bytes) |
+| TransX | UTF-8 truncation garbage | Enlarge buffers / safe formatting |
+| TransX | Duplicate variable-name draw causing overlap | Remove duplicate draw |
+| Data | 20 `.mkr` files with non-ASCII characters | Normalize to ASCII (Sao Paulo / Xi'an etc.) |
+| D3D9Client | ImGui mojibake after runtime language switch | Always merge CJK font into atlas |
+| Core | Chinese text mangled by ANSI APIs | Use W APIs (UTF-8 → UTF-16) |
+
+---
+
+## Build
+
+Requirements: Visual Studio 2022, DirectX SDK (June 2010), CMake 3.31+.
+
+```cmd
+build64.cmd
+```
+
+Release:
+
+```powershell
+cmake --preset windows-x64-release -DDXSDK_DIR="D:/Microsoft DirectX SDK (June 2010)"
+cmake --build --preset windows-x64-release --parallel 6
+```
+
+---
+
+## Distribution package (v1.0.3)
+
+- `Orbiter.exe` (Release build with all localization)
+- 22 plugin DLLs + Scenario Editor + D3D9Client
+- **SPICE ephemeris** `Kernels/orbiter.bsp` (~1.5 GB, required)
+- Official low-resolution planet textures (D3D9Moon / D3D9Mars etc.)
+- Updated MSVC runtime (14.44)
+- Development MFD template (MFDTemplate) disabled
+
+> Note: high-resolution planet textures are distributed separately by the official Orbiter project and are **not** included.
+
+---
+
+## Important note
+
+> **The localization code may be refactored in the future.**
+>
+> Current implementations favour correctness over elegance. Any refactoring must preserve the rule that **English mode behaves exactly like upstream**, with Chinese adjustments implemented only as fixed offsets or conditional branches.
+
+---
+
+## Credits
+
+- Localization & testing: [@orbiter-newcomer](https://github.com/orbiter-newcomer)
+- AI-assisted development: DeepSeek (translation, code changes, bug investigation)
+
+## License
+
+MIT, following the original [Orbiter](https://github.com/orbitersim/orbiter) project.
