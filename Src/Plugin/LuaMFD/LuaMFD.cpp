@@ -155,10 +155,10 @@ bool ScriptMFD::Update (oapi::Sketchpad *skp)
 	InterpreterList::Environment *env = vi->env[pg];
 	int yofs = (5*ch)/4;
 	char cbuf[256];
-	sprintf (cbuf, "Term %d/%d", pg+1, npg);
+	sprintf (cbuf, oapiTr("Term %d/%d"), pg+1, npg);
 	Title (skp, cbuf);
 	if (env->interp->IsBusy())
-		skp->Text (W-cw*5, 1, "busy", 4);
+		skp->Text (W-cw*5, 1, oapiTr("busy"), (int)strlen(oapiTr("busy")));
 
 	oapi::Pen *pen = GetDefaultPen(0);
 	skp->SetPen(pen);

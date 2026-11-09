@@ -67,7 +67,7 @@ TransxMFD::~TransxMFD()
 // Called by Orbiter when a screen update is needed
 bool TransxMFD::Update (oapi::Sketchpad *sketchpad)
 {
-    Title (sketchpad, "TransX MFD");
+    Title (sketchpad, oapiTr("TransX MFD"));
 	oapi::Pen *pen = GetDefaultPen (TransXFunction::Green); // Retrieves a default MFD pen
 	valid=viewstate->doupdate(sketchpad,W,H,this);
 	shipptrs::refreshsave();//allow save again, as new values are now available
@@ -78,7 +78,7 @@ bool TransxMFD::Update (oapi::Sketchpad *sketchpad)
 	
 	if (debug!=0)
 	{
-		char buffer[20]="";
+		char buffer[64]="";
 
 		int length=sprintf(buffer,"Debug:%g",debug);
 		sketchpad->Text(0, linespacing*22, buffer, length);

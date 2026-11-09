@@ -85,22 +85,22 @@ bool MFDvariable::showgeneric(oapi::Sketchpad *sketchpad, int width, int line, c
 	int linecentre=(int) width/2;
 	int linepos= 6*line;
 	int inlength=strlen(inbuff);
-	strcpy(buffer,name);
-	int length=strlen(buffer);
-	sketchpad->Text(linecentre, linepos, buffer, length);
+	const char *dispName = oapiTr(name);   // variable names are translated at display time
+	int length = (int)strlen(dispName);
+	sketchpad->Text(linecentre, linepos, dispName, length);
 	showadjustment(sketchpad, width, line);
 	linepos+=line+line;
-	sketchpad->Text(linecentre, linepos, inbuff,inlength);
+	{ const char *iv = oapiTr(inbuff); sketchpad->Text(linecentre, linepos, iv,(int)strlen(iv)); }
 	if (execcountdown>0)
 	{
 		linepos+=line;
 		if (execstatus==1)
 		{
-			strcpy(buffer,"Executed");
+			strcpy(buffer,oapiTr("Executed"));
 		}
 		else
 		{
-			strcpy(buffer,"No Command");
+			strcpy(buffer,oapiTr("No Command"));
 		}
 		execcountdown--;
 		if (execcountdown==0) execstatus=0;

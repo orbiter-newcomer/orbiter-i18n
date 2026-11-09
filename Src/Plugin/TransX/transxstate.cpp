@@ -222,7 +222,7 @@ void transxstate::savecurrent(FILEHANDLE scn)
 	if (saveflag) return;
 	saveflag=true;
 	//Save each function
-	char buffer[20]="";//Too big, but who cares!
+	char buffer[64]="";//Large enough for translated strings
 	strcpy(buffer,"FNumber");
 	oapiWriteScenario_int(scn,buffer,baselist.size());
 	std::deque<class basefunction*>::iterator a;
@@ -472,33 +472,33 @@ bool transxstate::doupdate(oapi::Sketchpad *sketchpad, int tw, int th,unsigned i
 	initflag=true;
 	if (helpsystem)
 	{
-		char help1[40],help2[40],help3[40],help4[40],help5[40];
+		char help1[160],help2[160],help3[160],help4[160],help5[160];
 		//Help for variable
 		MFDvariable *variable;
 		variable=cvarfunction->getcurrentvariable(currvarview);
 		if (variable!=NULL)
 		{
 			variable->gethelpstrings(help1,help2);
-			sketchpad->Text(0,11*linespacing,help1,strlen(help1));
-			sketchpad->Text(0,12*linespacing,help2,strlen(help2));
+			{ const char *h=oapiTr(help1); sketchpad->Text(0,11*linespacing,h,(int)strlen(h)); }
+			{ const char *h=oapiTr(help2); sketchpad->Text(0,12*linespacing,h,(int)strlen(h)); }
 		}
 		//Help for function
 		cfunction->gethelp(help1,help2,help3,help4,help5);
-		sketchpad->Text(0,16*linespacing,help1,strlen(help1));
-		sketchpad->Text(0,17*linespacing,help2,strlen(help2));
-		sketchpad->Text(0,18*linespacing,help3,strlen(help3));
-		sketchpad->Text(0,19*linespacing,help4,strlen(help4));
-		sketchpad->Text(0,20*linespacing,help5,strlen(help5));
+		{ const char *h=oapiTr(help1); sketchpad->Text(0,16*linespacing,h,(int)strlen(h)); }
+		{ const char *h=oapiTr(help2); sketchpad->Text(0,17*linespacing,h,(int)strlen(h)); }
+		{ const char *h=oapiTr(help3); sketchpad->Text(0,18*linespacing,h,(int)strlen(h)); }
+		{ const char *h=oapiTr(help4); sketchpad->Text(0,19*linespacing,h,(int)strlen(h)); }
+		{ const char *h=oapiTr(help5); sketchpad->Text(0,20*linespacing,h,(int)strlen(h)); }
 	}
 	else
 	{
 		cvarfunction->processvisiblevars(currview);//Update any visibility changes
 		cfunction->doupdate(sketchpad,tw,th,currview);
 	}
-	char buffer[20]="";
-	int length=snprintf(buffer,sizeof(buffer)-1,"Stage %i:%i",curfunction,(int)baselist.size());
+	char buffer[64]="";
+	int length=snprintf(buffer,sizeof(buffer)-1,oapiTr("Stage %i:%i"),curfunction,(int)baselist.size());
 	sketchpad->Text(tw/2,0,buffer,length);
-	length=sprintf(buffer,"Vars Stage %i",curvarfunction);
+	length=sprintf(buffer,oapiTr("Vars Stage %i"),curvarfunction);
 	sketchpad->Text(tw/2,4*linespacing,buffer,length);
 
 	// Send info about current bodies
@@ -518,5 +518,5 @@ bool transxstate::doupdate(oapi::Sketchpad *sketchpad, int tw, int th,unsigned i
 
 void transxstate::showinitialstage(oapi::Sketchpad *sketchpad,int linespacing,int tw)
 {
-	sketchpad->Text(tw/2,0,"General Setup",13);
+	{ const char *gs = oapiTr("General Setup"); sketchpad->Text(tw/2,0,gs,(int)strlen(gs)); }
 }

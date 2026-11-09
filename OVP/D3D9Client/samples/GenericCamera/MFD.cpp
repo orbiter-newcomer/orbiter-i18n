@@ -405,20 +405,20 @@ bool CameraMFD::Update(oapi::Sketchpad *pSkp)
 		}
 	}
 	else {
-		static const char *msg = { "No Graphics API" };
+		const char *msg = oapiTr("No Graphics API");
 		pSkp->Text(W / 2, H / 2, msg, lstrlen(msg));
 		return true;
 	}
 	
 
 	if (!hCamera) {
-		static const char *msg = { "Custom Cameras Disabled" };
+		const char *msg = oapiTr("Custom Cameras Disabled");
 		pSkp->Text(W / 2, H / 2, msg, lstrlen(msg));
 		return true;
 	}
 
 	if (nDock == 0 && nAtch == 0) {
-		static const char *msg = { "No Dock/Attachment points" };
+		const char *msg = oapiTr("No Dock/Attachment points");
 		pSkp->Text(W / 2, H / 2, msg, lstrlen(msg));
 		return true;
 	}
@@ -434,7 +434,7 @@ bool CameraMFD::Update(oapi::Sketchpad *pSkp)
 	            ? std::string(" [ID:") + hVessel->GetAttachmentId(hVessel->GetAttachmentHandle(bParent, index)) + "]"
 	            : "";
 
-	sprintf_s(text, 256, "Viewing %s %s%d)%s", hVessel->GetName(), mode[type], index, atchId.c_str());
+	sprintf_s(text, 256, oapiTr("Viewing %s %s%d)%s"), hVessel->GetName(), oapiTr(mode[type]), index, atchId.c_str());
 
 	
 	pSkp->QuickBrush(0xA0000000);
@@ -445,7 +445,7 @@ bool CameraMFD::Update(oapi::Sketchpad *pSkp)
 
 	hShell->Title (pSkp, text);
 
-	sprintf_s(text, 256, "[%s] FOV=%0.0f° Ofs=%2.2f[m]", paci[bParent], fov*2.0, offset);
+	sprintf_s(text, 256, oapiTr("[%s] FOV=%0.0f° Ofs=%2.2f[m]"), oapiTr(paci[bParent]), fov*2.0, offset);
 
 	pSkp->Text(10, H - tbgh, text, lstrlen(text));
 	

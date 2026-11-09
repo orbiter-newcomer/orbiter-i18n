@@ -167,13 +167,13 @@ void InputBox::OnDraw() {
             ImGui::SetKeyboardFocusHere();
         bool entered = ImGui::InputText("##InputText", inputbuf, IM_ARRAYSIZE(inputbuf), ImGuiInputTextFlags_EnterReturnsTrue);
 
-        if (ImGui::Button("OK") || entered) {
+        if (ImGui::Button(orbiter::Tr("OK")) || entered) {
             cbEnter(this, inputbuf, userdata);
             ImGui::CloseCurrentPopup();
             active = false;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
+        if (ImGui::Button(orbiter::Tr("Cancel"))) {
             if (cbCancel)
                 cbCancel(this, inputbuf, userdata);
             ImGui::CloseCurrentPopup();
