@@ -74,7 +74,7 @@ protected:
 	OBJHANDLE centralbody;
 	class mapfunction *mappointer;
 	int value;
-	char intbuffer[30];
+	char intbuffer[64];
 	AdjustMode adjMode;
 public:
 	virtual void enter_variable();

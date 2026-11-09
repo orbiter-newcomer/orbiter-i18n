@@ -357,6 +357,16 @@ void GraphMFD::SetAxisTitle (int g, int axis, char *title)
 		strncpy (graph[g].absc_title, title, 63);
 }
 
+// UTF-8 text output for the legacy GDI graph labels.
+static void GraphTextOutUtf8 (HDC hDC, int x, int y, const char *s)
+{
+	if (!s) return;
+	wchar_t wbuf[512];
+	int n = MultiByteToWideChar (CP_UTF8, 0, s, -1, wbuf, 512);
+	if (n <= 0) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
+	TextOutW ((HDC)hDC, x, y, wbuf, n-1);
+}
+
 void GraphMFD::Plot (HDC hDC, int g, int h0, int h1, const char *title)
 {
 	GRAPH &gf = graph[g];
@@ -401,7 +411,7 @@ void GraphMFD::Plot (HDC hDC, int g, int h0, int h1, const char *title)
 		oss << gf.absc_title;
 		if (gf.absc_tickscale != 1.0f) oss << " x " << 1.0/gf.absc_tickscale;
 		oss << '\0';
-		TextOut (hDC, (x0+x1)/2, y0+(3*ch)/4, oss.str().c_str(), strlen(oss.str().c_str()));
+		GraphTextOutUtf8 (hDC, (x0+x1)/2, y0+(3*ch)/4, oss.str().c_str());
 	}
 
 	// ordinate ticks/labels
@@ -434,7 +444,7 @@ void GraphMFD::Plot (HDC hDC, int g, int h0, int h1, const char *title)
 		oss << gf.data_title;
 		if (gf.data_tickscale != 1.0f) oss << " x " << 1.0/gf.data_tickscale;
 		oss << '\0';
-		TextOut (hDC, 0, (y0+y1)/2, oss.str().c_str(), strlen(oss.str().c_str()));
+		GraphTextOutUtf8 (hDC, 0, (y0+y1)/2, oss.str().c_str());
 	}
 
 	// plot frame
@@ -505,7 +515,7 @@ void GraphMFD::Plot (HDC hDC, int g, int h0, int h1, const char *title)
 	if (title) {
 		SelectDefaultFont (hDC, 1);
 		SetTextColor (hDC, 0x00FF00);
-		TextOut (hDC, (x0+x1)/2, y1, title, strlen(title));
+		GraphTextOutUtf8 (hDC, (x0+x1)/2, y1, title);
 	}
 }
 

@@ -119,23 +119,23 @@ AscentMFD::AscentMFD (DWORD w, DWORD h, VESSEL *vessel)
 	ref = vessel->GetSurfaceRef();
 
 	g = AddGraph ();
-	SetAxisTitle (g, 0, "Time: s");
-	SetAxisTitle (g, 1, "Alt: km");
+	SetAxisTitle (g, 0, (char*)oapiTr("Time: s"));
+	SetAxisTitle (g, 1, (char*)oapiTr("Alt: km"));
 	AddPlot (g, g_Data.time, g_Data.alt, ndata, 1, &g_Data.sample);
 
 	g = AddGraph ();
-	SetAxisTitle (g, 0, "Alt: km");
-	SetAxisTitle (g, 1, "Pitch: deg");
+	SetAxisTitle (g, 0, (char*)oapiTr("Alt: km"));
+	SetAxisTitle (g, 1, (char*)oapiTr("Pitch: deg"));
 	AddPlot (g, g_Data.alt, g_Data.pitch, ndata, 1, &g_Data.sample);
 
 	g = AddGraph ();
-	SetAxisTitle (g, 0, "Alt: km");
-	SetAxisTitle (g, 1, "Vel: km/s");
+	SetAxisTitle (g, 0, (char*)oapiTr("Alt: km"));
+	SetAxisTitle (g, 1, (char*)oapiTr("Vel: km/s"));
 	AddPlot (g, g_Data.alt, g_Data.rvel, ndata, 1, &g_Data.sample);
 
 	g = AddGraph ();
-	SetAxisTitle (g, 0, "Alt: km");
-	SetAxisTitle (g, 1, "Vel: km/s");
+	SetAxisTitle (g, 0, (char*)oapiTr("Alt: km"));
+	SetAxisTitle (g, 1, (char*)oapiTr("Vel: km/s"));
 	AddPlot (g, g_Data.alt, g_Data.tvel, ndata, 1, &g_Data.sample);
 	AddPlot (g, ref_alt, ref_tvel, ndata, 5);
 
@@ -229,7 +229,7 @@ int AscentMFD::ButtonMenu (const MFDBUTTONMENU **menu) const
 
 void AscentMFD::Update (HDC hDC)
 {
-	Title (hDC, "Ascent profile");
+	Title (hDC, oapiTr("Ascent profile"));
 
 	if (alt_auto) {
 		float altmin, altmax, tmp;
@@ -248,15 +248,15 @@ void AscentMFD::Update (HDC hDC)
 	switch (page) {
 	case 0:
 		SetAutoRange (0, 0);
-		Plot (hDC, 0, ch, (H+ch)/2, "Altitude");
+		Plot (hDC, 0, ch, (H+ch)/2, oapiTr("Altitude"));
 		SetAutoRange (1, 1);
-		Plot (hDC, 1, (H+ch)/2, H, "Pitch");
+		Plot (hDC, 1, (H+ch)/2, H, oapiTr("Pitch"));
 		break;
 	case 1:
 		if (vrad_auto) SetAutoRange (2, 1, 0);
-		Plot (hDC, 2, ch, (H+ch)/2, "V rad");
+		Plot (hDC, 2, ch, (H+ch)/2, oapiTr("V rad"));
 		if (vtan_auto) SetAutoRange (3, 1, 0);
-		Plot (hDC, 3, (H+ch)/2, H, "V tan");
+		Plot (hDC, 3, (H+ch)/2, H, oapiTr("V tan"));
 		break;
 	}
 }

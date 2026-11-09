@@ -321,7 +321,7 @@ void slingshot::graphupdate(oapi::Sketchpad *sketchpad, Graph *graph,basefunctio
 
 void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int height, basefunction *base)
 {
-	char buffer[20];
+	char buffer[64];
 	int linespacing=height/24;
 	int pos=16*linespacing;
 	int len;
@@ -339,7 +339,7 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 	// Get the target inclination (absolute wrt global coordinates)
 	VECTOR3 down = {0, -1, 0};
 	double targetInc = 180/PI*acos(cosangle(down, planorbit.getplanevector()));
-	sprintf(buffer, "Incl.  :%.4g°", targetInc);
+	sprintf(buffer, oapiTr("Incl.  :%.4g°"), targetInc);
 	sketchpad->Text( 0, pos, buffer, strlen(buffer));
 	pos += linespacing;
 
@@ -348,31 +348,42 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 	double lan = atan2(LAN.z, LAN.x) * 180 / PI;
 	if(lan < 0)
 		lan += 360;
-	sprintf(buffer, "LAN    :%.4g°", lan);
+	sprintf(buffer, oapiTr("LAN    :%.4g°"), lan);
 	sketchpad->Text( 0, pos, buffer, strlen(buffer));
 	pos += linespacing;
 
 	if (status.status==1)
 	{ //Vessel is landed!
-		VECTOR3 tintersectvector=planorbit.getintersectvector(craft);//Gets intersection vector
-		tpos=status.rpos;
-		if (dotp(tintersectvector,tpos)<0)
-			angle+=90;
-		else
-			angle=90-angle;
-		if (angle<0) angle+=360;
+		// Compute the launch azimuth from the standard relation
+		//   cos(i) = cos(lat) * sin(azimuth)
+		// where i is the target orbit inclination and lat the launch site
+		// latitude. Launching eastwards minimises the inclination and makes
+		// use of the planet rotation.
+		// No valid azimuth exists when the target inclination is below the
+		// launch site latitude (the orbit plane cannot contain that ground
+		// point); report "no solution" instead of printing a bogus heading.
 		OBJHANDLE hmajor = base->gethmajor();
-		if(oapiGetPlanetPeriod(hmajor) < 0) // retrograde rotation
-		{
-			angle += 180;
-			if(angle > 360)
-				angle -= 360;
+		tpos=status.rpos;
+		MATRIX3 planetrot;
+		oapiGetRotationMatrix(hmajor, &planetrot);
+		VECTOR3 relpos = mul(getinvmatrix(planetrot), tpos);
+		double lat = asin(relpos.y / length(relpos));   // launch site latitude (rad)
+		double sinAz = cos(targetInc*PI/180.0) / cos(lat);   // targetInc is in degrees
+		if (fabs(sinAz) > 1.0) {
+			len=sprintf(buffer, "%s%s", oapiTr("Heading:"), oapiTr("not available"));
+		} else {
+			double az = asin(sinAz) * 180.0/PI;         // -90..90 (north-referenced)
+			if (az < 0.0) az = 180.0 - fabs(az);        // retrograde target: south-east
+			if (oapiGetPlanetPeriod(hmajor) < 0) {      // retrograde planet rotation
+				az += 180.0;
+				if (az > 360) az -= 360;
+			}
+			len=sprintf(buffer,oapiTr("Heading:%.4g°"), az);
 		}
-		len=sprintf(buffer,"Heading:%.4g°", angle);
 	}
 	else
 	{
-		len=sprintf(buffer, "Rel Inc:%.4g°", angle);
+		len=sprintf(buffer, "%s%.4g°", oapiTr("Rel Inc:"), angle);
 	}
 	sketchpad->Text( 0, pos, buffer, len);
 
@@ -515,13 +526,16 @@ void encounterplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int height
 			MATRIX3 planetrot;
 			oapiGetRotationMatrix(hmajor, &planetrot);
 			VECTOR3 relposition = mul(getinvmatrix(planetrot), position);
-			double lat = asin(relposition.y / radius) * 180 / PI;
+			// The latitude must be normalised by the distance from the planet
+			// centre (ped+10 here), not by the planet radius, otherwise the
+			// argument can exceed 1 and asin() returns NaN.
+			double lat = asin(relposition.y / length(relposition)) * 180 / PI;
 			double lng = (atan2(relposition.z, relposition.x)) * 180 / PI;
 			lng -= 360.0 * craft.GetTimeToRadius(radius, false) / oapiGetPlanetPeriod(hmajor);
 			while(lng < -180)
 				lng += 360;
 			char output[64];
-			sprintf(output, "Pe Lat/Long: %.4g, %.4g", lat, lng);
+			sprintf(output, oapiTr("Pe Lat/Long: %.4g, %.4g"), lat, lng);
 			sketchpad->Text( 0, pos, output, strlen(output));
 			pos += linespacing;
 		}

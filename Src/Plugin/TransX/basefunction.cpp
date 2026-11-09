@@ -408,7 +408,7 @@ bool basefunction::initialisevars()
 {
 	m_target.init(&vars,2,2,"Select Target",hmajor);
 	m_planauto.init(&vars,2,2,"Autoplan",0,1,"On","Off","","","");
-	m_plantype.init(&vars,2,2,"Plan type",0,2,"Initial","Through point","Cruise plan","","");
+	m_plantype.init(&vars,2,2,"Plan type",0,2,"Initial","TX_Through point","Cruise plan","","");
 	m_planinitial.init(&vars,2,2,"Plan",0,1,"None","Escape","","","");//No minor & not hyp. approach
 	m_planthrough.init(&vars,2,2,"Plan",0,2,"None","Slingshot","Encounter","","");//Hyp approach
 	m_planminor.init(&vars,2,2,"Plan",0,2,"None","Eject","Sling Direct","","");//Minor body defined
@@ -765,7 +765,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 
 	int wpos=0;
 	int hpos=linespacing;
-	char buffer[20]="";
+	char buffer[64]="";
 	OrbitElements plan;
 	if (planpointer!=NULL)
 	{
@@ -786,10 +786,10 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 	switch (viewmode)
 	{
 	case 1:
-		strcpy(buffer,"View:Target");
+		strcpy(buffer,oapiTr("View:Target"));
 		break;
 	case 2:
-		strcpy(buffer,"View:Setup");
+		strcpy(buffer,oapiTr("View:Setup"));
 		break;
 	case 3:
 		if (planpointer!=NULL)
@@ -803,10 +803,10 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 			//No break here
 		}
 	case 4:
-		strcpy(buffer,"View:Manoeuvre");
+		strcpy(buffer,oapiTr("View:Manoeuvre"));
 		break;
 	default:
-		strcpy(buffer,"View:Setup");
+		strcpy(buffer,oapiTr("View:Setup"));
 		viewmode=2;
 		break;
 	}
@@ -939,7 +939,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 				hpos+=linespacing;
 				double intercepttime=primary.gettimeintercept();
 				double arrmjd=oapiTime2MJD(intercepttime);
-				int len=snprintf(buffer, sizeof(buffer) - 1, "Enc. MJD %.4f", arrmjd);
+				int len=snprintf(buffer, sizeof(buffer) - 1, oapiTr("Enc. MJD %.4f"), arrmjd);
 				sketchpad->Text(wpos, hpos, buffer, len);
 			}
 		}
@@ -959,12 +959,12 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 					TextShow(sketchpad,"Focus ApD:", wpos,hpos, craft.getapodistance());
 				}
 				hpos+=linespacing;
-				char buffer[20]="";
-				int length=snprintf(buffer, sizeof(buffer) - 1, "Pe MJD:   %.4f",(craft.getpedeltatime()+craft.gettimestamp())/SECONDS_PER_DAY+simstartMJD);
+				char buffer[64]="";
+				int length=snprintf(buffer, sizeof(buffer) - 1, "%s   %.4f", oapiTr("Pe MJD:"),(craft.getpedeltatime()+craft.gettimestamp())/SECONDS_PER_DAY+simstartMJD);
 				sketchpad->Text(wpos,hpos,buffer, length);
 				hpos+=linespacing;
 				VECTOR3 south = {0, -1, 0};
-				length = snprintf(buffer, sizeof(buffer) - 1, "Inc:      %.4g°", 180/PI*acos(cosangle(south, craft.getplanevector())));
+				length = snprintf(buffer, sizeof(buffer) - 1, "%s      %.4g°", oapiTr("Inc:"), 180/PI*acos(cosangle(south, craft.getplanevector())));
 				sketchpad->Text(wpos,hpos,buffer, length);
 				hpos+=linespacing;
 			}
@@ -973,7 +973,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 				TextShow(sketchpad,"Hyp PeD ",wpos,hpos,hypormaj.getpedistance());
 				hpos+=linespacing;
 				double timeatped=(hypormaj.gettimestamp()+hypormaj.getpedeltatime())/SECONDS_PER_DAY+simstartMJD;
-				int length=snprintf(buffer, sizeof(buffer) - 1, "H. Pe MJD %.2f", timeatped);
+				int length=snprintf(buffer, sizeof(buffer) - 1, "%s %.2f", oapiTr("H. Pe MJD"), timeatped);
 				sketchpad->Text(wpos,hpos,buffer,length);
 			}
 		}

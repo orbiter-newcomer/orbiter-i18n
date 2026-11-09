@@ -53,8 +53,8 @@ class minorejectplan:public plan
 {
 public:
 	virtual int getplanid(){return 1;};
-	virtual void getlabel(char *buffer){strcpy(buffer,"Plan:Escape");};
-	virtual void getviewname(char *buffer){strcpy(buffer,"View:Escape Plan");};
+	virtual void getlabel(char *buffer){strcpy(buffer,oapiTr("Plan:Escape"));};
+	virtual void getviewname(char *buffer){strcpy(buffer,oapiTr("View:Escape Plan"));};
 	virtual void getplanorbit(OrbitElements *tplanorbit);
 	virtual void graphscale(Graph *graph);//Use to scale graph for later update
 	virtual bool maingraph(oapi::Sketchpad *sketchpad,Graph *graph, basefunction *base);
@@ -103,8 +103,8 @@ private:
 	virtual void calcejectvector(const VECTOR3 &rminplane,const VECTOR3 &minorvel, double inheritedvelocity);
 public:
 	virtual int getplanid(){return 2;};
-	virtual void getlabel(char *buffer){strcpy(buffer,"Plan:Eject");};
-	virtual void getviewname(char *buffer){strcpy(buffer,"View:Eject Plan");};
+	virtual void getlabel(char *buffer){strcpy(buffer,oapiTr("Plan:Eject"));};
+	virtual void getviewname(char *buffer){strcpy(buffer,oapiTr("View:Eject Plan"));};
 	virtual class plan *iclone(){return new majorejectplan();};
 	virtual ~majorejectplan(){};
 };
@@ -123,8 +123,8 @@ public:
 	virtual ~slingejectplan(){};
 	virtual class plan *iclone(){return new slingejectplan();};
 	virtual int getplanid(){return 3;};
-	virtual void getlabel(char *buffer){strcpy(buffer,"Plan:Sling Direct");};
-	virtual void getviewname(char *buffer){strcpy(buffer,"View:Sling Direct");};
+	virtual void getlabel(char *buffer){strcpy(buffer,oapiTr("Plan:Sling Direct"));};
+	virtual void getviewname(char *buffer){strcpy(buffer,oapiTr("View:Sling Direct"));};
 
 };
 
@@ -143,8 +143,8 @@ public:
 	encounterplan(){drawnbase=false;};
 	virtual void graphupdate(oapi::Sketchpad *sketchpad, Graph *graph, basefunction *base);
 	virtual void wordupdate(oapi::Sketchpad *sketchpad, int width, int height, basefunction *base);
-	virtual void getlabel(char *buffer){strcpy(buffer,"Plan:Encounter");};
-	virtual void getviewname(char *buffer){strcpy(buffer,"View:Encounter");};
+	virtual void getlabel(char *buffer){strcpy(buffer,oapiTr("Plan:Encounter"));};
+	virtual void getviewname(char *buffer){strcpy(buffer,oapiTr("View:Encounter"));};
 	virtual ~encounterplan(){};
 };
 
@@ -163,8 +163,8 @@ public:
 	virtual double getentryvelocity(){return inwardvelocity;};
 	virtual double getratio2radius(){return ratiotoradius;};
 	virtual int getplanid(){return 4;};
-	virtual void getlabel(char *buffer){strcpy(buffer,"Plan:Slingshot");};
-	virtual void getviewname(char *buffer){strcpy(buffer,"View:Slingshot");};
+	virtual void getlabel(char *buffer){strcpy(buffer,oapiTr("Plan:Slingshot"));};
+	virtual void getviewname(char *buffer){strcpy(buffer,oapiTr("View:Slingshot"));};
 private:
 	virtual bool init(class MFDvarhandler *vars, class basefunction *base);
 	MFDvardiscrete m_selectorbit;

@@ -208,17 +208,17 @@ void MFDvarmoon::ch_adjmode()
 void MFDvarmoon::showadjustment(oapi::Sketchpad *sketchpad, int width, int line) const
 // This shows the mode of adjustment currently in force for the current MFDvariable
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	int ypos=int(7*line);
 	int xpos=int(width/2);
 	int length;
 	switch (adjMode)
 	{
 	case Planet:
-		length=sprintf(buffer,"Planets/Moons");
+		length=sprintf(buffer,"%s",oapiTr("Planets/Moons"));
 		break;
 	case Craft:
-		length=sprintf(buffer,"Ships");
+		length=sprintf(buffer,"%s",oapiTr("Ships"));
 		break;
 	}
 	sketchpad->Text(xpos, ypos, buffer, length);
@@ -227,13 +227,13 @@ void MFDvarmoon::showadjustment(oapi::Sketchpad *sketchpad, int width, int line)
 void MFDvarmoon::getsaveline(char *buffer) const
 {
 	sprintf(buffer, " %d ", adjMode);
-	char tbuffer[30];
+	char tbuffer[64];
 	if (target!=NULL)
 		oapiGetObjectName(target,tbuffer,30);
 	else
 	{
 		if (value==1)
-			strcpy(tbuffer,"Escape");
+			strcpy(tbuffer,oapiTr("Escape"));
 		else
 			strcpy(tbuffer,"None");
 	}
@@ -295,7 +295,7 @@ bool MFDvarmoon::validate()
 
 bool MFDvarmoon::show(oapi::Sketchpad *sketchpad, int width, int line)
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	if (target!=NULL)
 	{
 		oapiGetObjectName(target,buffer,20);
@@ -346,10 +346,10 @@ void MFDvarfloat::init(MFDvarhandler *vars, int viewmode1, int viewmode2, const 
 
 bool MFDvarshiplist::show(oapi::Sketchpad *sketchpad,int width,int line)
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	liststring *entry=static_cast<liststring*>(iterator->current());//It is this type
 	if (entry==NULL)
-		strcpy(buffer,"New Plan");
+		strcpy(buffer,oapiTr("New Plan"));
 	else
 	{
 		char *shipname=entry->getbuffer();
@@ -387,14 +387,8 @@ void MFDvarshiplist::dec_variable()
 
 bool MFDvarfloat::show(oapi::Sketchpad *sketchpad, int width, int line)
 {
-	char buffer[20]="";
-	int linecentre=(int) width/2;
-	int linepos= 6*line;
-	strcpy(buffer,name);
-	int length=strlen(buffer);
-	sketchpad->Text(linecentre, linepos, buffer, length);
+	char buffer[64]="";
 	showadjustment(sketchpad, width, line);
-	linepos+=line+line;
 	TextForm(buffer," ",value);
 	showgeneric(sketchpad, width, line, buffer);
 	return true;
@@ -403,7 +397,7 @@ bool MFDvarfloat::show(oapi::Sketchpad *sketchpad, int width, int line)
 void MFDvarfloat::getsaveline(char *buffer) const
 {
 	sprintf(buffer, " %i ", adjMode);
-	char tbuffer[30];
+	char tbuffer[64];
 	sprintf(tbuffer," %.12g",value);
 	strcat(buffer,tbuffer);
 }
@@ -447,34 +441,34 @@ void MFDvarfloat::showadjustment(oapi::Sketchpad *sketchpad, int width, int line
 	switch (adjMode)
 	{
     case Rough:
-		length=sprintf(buffer,"Rough");
+		length=sprintf(buffer,"%s",oapiTr("Rough"));
 		break;
 	case Coarse:
-		length=sprintf(buffer,"Coarse");
+		length=sprintf(buffer,"%s",oapiTr("Coarse"));
 		break;
 	case Medium:
-		length=sprintf(buffer,"Medium");
+		length=sprintf(buffer,"%s",oapiTr("Medium"));
 		break;
 	case Fine:
-		length=sprintf(buffer,"Fine");
+		length=sprintf(buffer,"%s",oapiTr("Fine"));
 		break;
 	case Super:
-		length=sprintf(buffer,"Super");
+		length=sprintf(buffer,"%s",oapiTr("Super"));
 		break;
 	case Ultra:
-		length=sprintf(buffer,"Ultra");
+		length=sprintf(buffer,"%s",oapiTr("Ultra"));
 		break;
 	case Hyper:
-		length=sprintf(buffer,"Hyper");
+		length=sprintf(buffer,"%s",oapiTr("Hyper"));
 		break;
     case Micro:
-		length=sprintf(buffer,"Micro");
+		length=sprintf(buffer,"%s",oapiTr("Micro"));
 		break;
 	case AutoMin:
-		length=sprintf(buffer,"Auto-Min™");
+		length=sprintf(buffer,"%s",oapiTr("Auto-Min"));
 		break;
 	case Reset:
-		length=sprintf(buffer,"Reset");
+		length=sprintf(buffer,"%s",oapiTr("Reset"));
 		break;
 	}
 	sketchpad->Text(xpos, ypos, buffer, length);
@@ -612,7 +606,7 @@ MFDvarfloat::~MFDvarfloat()
 
 bool MFDsemiintdiscrete::show(oapi::Sketchpad *sketchpad, int width, int line)
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	double temp=value*0.5;
 	sprintf(buffer,"%.1f",temp);
 	showgeneric(sketchpad, width, line,buffer);
@@ -621,7 +615,7 @@ bool MFDsemiintdiscrete::show(oapi::Sketchpad *sketchpad, int width, int line)
 
 bool MFDvarMJD::show(oapi::Sketchpad *sketchpad, int width, int line)
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	sprintf(buffer,"%.4f", value);
 	showgeneric(sketchpad, width, line, buffer);
 	return true;
@@ -724,7 +718,7 @@ void MFDvarangle::init(MFDvarhandler *vars, const char *vname, bool vloop)
 
 bool MFDvarangle::show(oapi::Sketchpad *sketchpad, int width, int line)
 {
-	char buffer[20]="";
+	char buffer[64]="";
 	sprintf(buffer,"%.4f'", value/PI*180);
 	showgeneric(sketchpad, width,line,buffer);
 	return true;

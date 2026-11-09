@@ -1,4 +1,4 @@
-﻿// Copyright (c) Martin Schweiger
+// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #define OAPI_IMPLEMENTATION
@@ -883,11 +883,22 @@ void Instrument::DisplayTitle (oapi::Sketchpad *skp, const char *title) const
 	skp->Text (cw/2, 0, title, strlen(title));
 }
 
+// UTF-8 text output for the legacy GDI paths (non-ASCII titles would be
+// mangled by the ANSI TextOut).
+static void TextOutUtf8 (HDC hDC, int x, int y, const char *s)
+{
+	if (!s) return;
+	wchar_t wbuf[512];
+	int n = MultiByteToWideChar (CP_UTF8, 0, s, -1, wbuf, 512);
+	if (n <= 0) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
+	TextOutW (hDC, x, y, wbuf, n-1);
+}
+
 void Instrument::DisplayTitle (HDC hDC, const char *title) const
 {
 	// obsolete
 	SetTextColor (hDC, col_grey1);
-	TextOut (hDC, cw/2, 0, title, strlen(title));
+	TextOutUtf8 (hDC, cw/2, 0, title);
 }
 
 void Instrument::DisplayModes (int page)
@@ -1000,13 +1011,24 @@ void Instrument::DrawMenu ()
 			int total = w1 + gap + w2;
 			int lx = side ? (IW - cw/2 - total) : x;
 
+			// Menu labels are provided by the MFD modes in English; translate them
+			// at display time (English mode returns the original text unchanged).
+			const char *l1 = mnu[item].line1 ? orbiter::Tr(mnu[item].line1) : 0;
+			const char *l2 = mnu[item].line2 ? orbiter::Tr(mnu[item].line2) : 0;
+			if (l1) w1 = (int)skp->GetTextWidth(l1, (int)strlen(l1));
+			else w1 = 0;
+			if (l2) w2 = (int)skp->GetTextWidth(l2, (int)strlen(l2));
+			else w2 = 0;
+			total = w1 + gap + w2;
+			lx = side ? (IW - cw/2 - total) : x;
+
 			skp->SetTextAlign (oapi::Sketchpad::LEFT);
-			if (mnu[item].line1) {
-				skp->Text (lx, y, mnu[item].line1, strlen(mnu[item].line1));
+			if (l1) {
+				skp->Text (lx, y, l1, strlen(l1));
 				lx += w1 + gap;
 			}
-			if (mnu[item].line2) {
-				skp->Text (lx, y, mnu[item].line2, strlen(mnu[item].line2));
+			if (l2) {
+				skp->Text (lx, y, l2, strlen(l2));
 			}
 
 			if ((id <= MFD_RIGHT || IsRuningInExternMFD()) && mnu[item].selchar != '\0') {
