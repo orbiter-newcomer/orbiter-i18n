@@ -173,7 +173,7 @@ BEGIN_DATA
 +102.80	-5.00	:	de Beausoleil
 +96.10	+2.00	:	de Beauvoir
 +355.00	+20.50	:	de Lalande
-+324.30	+37.40	:	de Staël
++324.30	+37.40	:	de Sta?l
 +275.60	-6.50	:	De Witt
 +10.60	-37.30	:	Deborah
 +11.30	+32.20	:	Defa
@@ -430,7 +430,7 @@ BEGIN_DATA
 +67.00	+41.10	:	Kylli
 +107.60	+70.20	:	La Fayette
 +336.70	+26.70	:	Lachappelle
-+285.20	+81.20	:	Lagerlöf
++285.20	+81.20	:	Lagerl?f
 +74.30	+84.60	:	Landowska
 +155.00	-17.00	:	Langtry
 +2.90	-4.20	:	Lara
@@ -561,7 +561,7 @@ BEGIN_DATA
 +317.60	-8.80	:	Nedko
 +124.40	+12.40	:	Neeltje
 +329.20	-26.80	:	Nelike
-+125.10	+5.90	:	N?mcová
++125.10	+5.90	:	N?mcov?
 +307.80	-35.30	:	Nevelson
 +61.80	-53.30	:	Ngaio
 +331.90	+6.00	:	Ngone
@@ -626,7 +626,7 @@ BEGIN_DATA
 +39.20	+14.60	:	[Pavlova]
 +294.30	-28.90	:	Peck
 +357.20	-20.40	:	Peggy
-+190.60	-23.60	:	Peña
++190.60	-23.60	:	Pe?a
 +252.70	+35.90	:	Phaedra
 +151.90	-40.70	:	Philomena
 +314.70	-46.20	:	Phryne
@@ -708,7 +708,7 @@ BEGIN_DATA
 +216.60	-21.00	:	Seiko
 +155.90	+68.50	:	Selma
 +312.60	-36.30	:	Seseg
-+326.50	+52.60	:	Sévigné
++326.50	+52.60	:	S?vign?
 +326.50	+18.20	:	Seymour
 +213.60	+3.00	:	Shakira
 +258.90	-44.00	:	Shasenem
@@ -770,7 +770,7 @@ BEGIN_DATA
 +147.40	+64.60	:	Tsvetayeva
 +318.50	-14.10	:	Tsyrma
 +204.60	+23.60	:	Tubman
-+193.00	+76.80	:	Tünde
++193.00	+76.80	:	T?nde
 +229.30	+80.90	:	Tursunoy
 +221.00	+21.70	:	Tussaud
 +15.50	-62.90	:	Tuyara
@@ -811,7 +811,7 @@ BEGIN_DATA
 +124.60	-38.10	:	Veronica
 +220.50	-60.30	:	Vesna
 +349.50	+42.60	:	Veta
-+141.40	+17.30	:	Vigée-Lebrun
++141.40	+17.30	:	Vig?e-Lebrun
 +240.50	-36.10	:	Viola
 +7.70	-26.90	:	Virga
 +185.90	-52.90	:	Virginia

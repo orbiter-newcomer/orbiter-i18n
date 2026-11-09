@@ -9,6 +9,7 @@
 #include "Psys.h"
 #include "Mesh.h"
 #include "Log.h"
+#include "Localization.h"
 
 using std::min;
 using std::max;
@@ -490,10 +491,14 @@ void oapi::CelestialSphere::RenderMarker(oapi::Sketchpad* pSkp, const VECTOR3& r
 		} break;
 		}
 
-		if (len = label1.size())
-			pSkp->Text(x, y - scale, label1.c_str(), len);
-		if (len = label2.size())
-			pSkp->Text(x, y + scale + 15, label2.c_str(), len);
+		if (len = label1.size()) {
+			const char *tr = orbiter::Tr(label1.c_str());
+			pSkp->Text(x, y - scale, tr, (int)strlen(tr));
+		}
+		if (len = label2.size()) {
+			const char *tr = orbiter::Tr(label2.c_str());
+			pSkp->Text(x, y + scale + 15, tr, (int)strlen(tr));
+		}
 	}
 }
 

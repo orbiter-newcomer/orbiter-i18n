@@ -5,7 +5,7 @@ ShapeIdx 1
 END_HEADER
 
 BEGIN_DATA
-+182.50	-43.00	:	Áine
++182.50	-43.00	:	?ine
 +182.50	+13.80	:	Amaethon
 +129.40	-14.70	:	Amergin
 +284.90	-12.60	:	Angus
@@ -24,21 +24,21 @@ BEGIN_DATA
 +280.20	-31.90	:	Elathan
 +126.70	-50.50	:	Eochaid
 +57.20	-37.30	:	Govannan
-+260.60	-59.70	:	Gráinne
++260.60	-59.70	:	Gr?inne
 +15.50	+9.10	:	Gwern
 +278.40	-60.50	:	Gwydion
 +138.20	-1.80	:	Llyr
 +102.40	-40.20	:	Luchtar
 +315.70	+28.00	:	Lug
-+162.10	-16.80	:	Mael Dúin
++162.10	-16.80	:	Mael D?in
 +281.10	+58.80	:	Maeve
-+120.30	+3.10	:	Manannán
++120.30	+3.10	:	Manann?n
 +176.30	-25.60	:	Math
 +21.20	+3.70	:	Midir
 +207.40	-4.90	:	Morvran
 +143.10	+21.10	:	Niamh
 +72.10	+87.40	:	Ogma
-+146.60	-52.30	:	Oisín
++146.60	-52.30	:	Ois?n
 +200.90	-66.10	:	Pryderi
 +88.60	-25.20	:	Pwyll
 +165.10	-80.90	:	Rhiannon

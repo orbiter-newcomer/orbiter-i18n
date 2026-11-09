@@ -370,7 +370,7 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 		double lat = asin(relpos.y / length(relpos));   // launch site latitude (rad)
 		double sinAz = cos(targetInc*PI/180.0) / cos(lat);   // targetInc is in degrees
 		if (fabs(sinAz) > 1.0) {
-			len=sprintf(buffer, "%s%s", oapiTr("Heading:"), oapiTr("not available"));
+			len=sprintf(buffer, "%s", oapiTr("Heading: N/A"));
 		} else {
 			double az = asin(sinAz) * 180.0/PI;         // -90..90 (north-referenced)
 			if (az < 0.0) az = 180.0 - fabs(az);        // retrograde target: south-east

@@ -348,7 +348,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 		const SurfParam *sp = (g_focusobj->ProxyPlanet() == refplanet ? vessel->GetSurfParam() : NULL);
 		char cbuf[128];
 		oapi::Font *pfont = 0;
-		int y = IH-ch-ch/2;   // shift the info lines up by half a character
+		int y = orbiter::IsChinese() ? IH-ch-ch/2 : IH-ch;   // Chinese layout shifts the info lines up
 		if (track) {
 			skp->SetTextColor (draw[2][0].col);
 			skp->Text (IW-(cw*22)/2, 0, orbiter::Tr("TRK"), (int)strlen(orbiter::Tr("TRK")));
@@ -369,7 +369,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 				orbiter::Tr(b->Name()), fabs(lng)*DEG, lng>=0.0 ? 'E':'W', fabs(lat)*DEG,
 				lat>=0.0 ? 'N':'S', orbiter::Tr("Alt"), DistStr(rad-refplanet->Size()));
 			skp->SetTextColor (draw[1][0].col);
-			if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
+			if (!pfont) pfont = skp->SetFont (orbiter::IsChinese() ? (infoFont ? infoFont : GetDefaultFont (0)) : GetDefaultFont (1));
 			skp->Text (cw/2, y, orbiter::Tr("TGT:"), (int)strlen(orbiter::Tr("TGT:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
@@ -387,7 +387,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			Orthodome (lng0, lat0, lng, lat, adist, hdg);
 			sprintf (cbuf+strlen(cbuf)-1, ", %s%s, %s %05.1fº]", orbiter::Tr("Dst"), DistStr(adist*rad), orbiter::Tr("Brg"), Deg(posangle(hdg)));
 			skp->SetTextColor (draw[2][0].col);
-			if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
+			if (!pfont) pfont = skp->SetFont (orbiter::IsChinese() ? (infoFont ? infoFont : GetDefaultFont (0)) : GetDefaultFont (1));
 			skp->Text (cw/2, y, orbiter::Tr("BSE:"), (int)strlen(orbiter::Tr("BSE:")));
 			skp->Text (cw*4, y, cbuf, strlen(cbuf));
 			y -= ch;
@@ -405,7 +405,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 			sprintf (cbuf+strlen(cbuf)-1, ", %s %05.1fº]", orbiter::Tr("Crs"), Deg(posangle(crs)));
 		}
 		skp->SetTextColor (draw[0][0].col);
-		if (!pfont) pfont = skp->SetFont (infoFont ? infoFont : GetDefaultFont (0));
+		if (!pfont) pfont = skp->SetFont (orbiter::IsChinese() ? (infoFont ? infoFont : GetDefaultFont (0)) : GetDefaultFont (1));
 		skp->Text (cw/2, y, orbiter::Tr("SHP:"), (int)strlen(orbiter::Tr("SHP:")));
 		skp->Text (cw*4, y, cbuf, strlen(cbuf));
 		y -= ch;
