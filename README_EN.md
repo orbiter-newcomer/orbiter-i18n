@@ -3,7 +3,7 @@
 This repository is a **Chinese localization branch** of [Orbiter](https://github.com/orbitersim/orbiter), the open-source space flight simulator. It is based on the latest upstream code (64-bit build).
 
 - Localization repo: https://github.com/orbiter-newcomer/orbiter-i18n (localization code on the `zh-cn` branch)
-- Current version: **v1.0.3**
+- Current version: **v1.0.4**
 
 ---
 
@@ -55,6 +55,7 @@ Language=en
 
 | Component | Issue | Fix |
 |---|---|---|
+| TransX | **Crash (0xc0000005) as soon as the MFD opens**: uninitialised parent-body pointer while initialising the solar system | Initialise the pointer, skip NaN distances, fall back to the sun when no parent is found |
 | TransX | Apoapsis latitude shown as NaN (asin normalized by planet radius) | Normalize by position vector magnitude |
 | TransX | Launch azimuth printed even when no solution exists | Use standard formula `cos(i)=cos(φ)·sin(A)`; show N/A when unsolvable |
 | TransX | Stack buffer overflow crash | Enlarge buffers (20/30 → 64 bytes) |
@@ -70,20 +71,24 @@ Language=en
 
 Requirements: Visual Studio 2022, DirectX SDK (June 2010), CMake 3.31+.
 
-```cmd
-build64.cmd
-```
-
-Release:
+Debug:
 
 ```powershell
-cmake --preset windows-x64-release -DDXSDK_DIR="D:/Microsoft DirectX SDK (June 2010)"
-cmake --build --preset windows-x64-release --parallel 6
+cmake --build build64 --config Debug --parallel 6
+```
+
+Release (Visual Studio / CMake generator, 64-bit, 6 parallel jobs):
+
+```powershell
+cmake -S . -B build64 -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_INSTALL_PREFIX="<source dir>/install64" `
+  -DDXSDK_DIR="D:/Microsoft DirectX SDK (June 2010)"
+cmake --build build64 --config Release --parallel 6
 ```
 
 ---
 
-## Distribution package (v1.0.3)
+## Distribution package (v1.0.4)
 
 - `Orbiter.exe` (Release build with all localization)
 - 22 plugin DLLs + Scenario Editor + D3D9Client

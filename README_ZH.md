@@ -3,7 +3,7 @@
 本仓库是 [Orbiter](https://github.com/orbitersim/orbiter)（开源航天飞行模拟器）的**中文汉化**分支，基于官方最新代码的 64 位构建。
 
 - 汉化仓库：https://github.com/orbiter-newcomer/orbiter-i18n （汉化代码在 `zh-cn` 分支）
-- 当前版本：**v1.0.3**
+- 当前版本：**v1.0.4**
 
 ---
 
@@ -53,6 +53,7 @@ Language=en
 | v1.0.1 | TransX 航向标签翻译修复 |
 | v1.0.2 | 88 星座中文名、天体/发射基地标签翻译、地物数据乱码修复、Map MFD 英文布局隔离、无解数据统一（N/A） |
 | v1.0.3 | 分发包完善：SPICE 星历（orbiter.bsp）、低清行星贴图、新版 MSVC 运行时 |
+| v1.0.4 | **修复 TransX MFD 打开即崩溃**（BodyProvider 父天体指针未初始化）；重新构建分发包 |
 
 ---
 
@@ -120,6 +121,7 @@ Language=en
 
 | 组件 | 问题 | 修复 |
 |---|---|---|
+| TransX | **打开 MFD 即崩溃（0xc0000005）**：初始化太阳系时父天体指针未初始化，找不到父体时解引用野指针 | 初始化指针、排除 NaN 距离、找不到父体时兜底挂到太阳 |
 | TransX | 近点纬度显示 NaN（asin 误用行星半径归一化） | 改用位置向量模长归一化 |
 | TransX | 发射方位角无解时仍输出无意义航向 | 改用标准公式 `cos(i)=cos(φ)·sin(A)`，无解显示 N/A / 不可用 |
 | TransX | 栈缓冲区溢出导致崩溃 | 统一扩大缓冲区（20/30 → 64 字节） |
@@ -139,22 +141,29 @@ Language=en
 - DirectX SDK（June 2010）
 - CMake 3.31+
 
-### Debug 构建
-
-```cmd
-build64.cmd
-```
-
-### Release 构建
+### Debug 构建（可选）
 
 ```powershell
-cmake --preset windows-x64-release -DDXSDK_DIR="D:/Microsoft DirectX SDK (June 2010)" -DCMAKE_MAKE_PROGRAM="<VS 自带 ninja 路径>"
-cmake --build --preset windows-x64-release --parallel 6
+cmake --build build64 --config Debug --parallel 6
 ```
+
+### Release 构建（Visual Studio / CMake 生成器）
+
+```powershell
+# 配置（VS 2022 生成器，x64，安装前缀指向 install64）
+cmake -S . -B build64 -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_INSTALL_PREFIX="<源码目录>/install64" `
+  -DDXSDK_DIR="D:/Microsoft DirectX SDK (June 2010)"
+
+# 6 核并行构建
+cmake --build build64 --config Release --parallel 6
+```
+
+构建产物同步到 `install64/Orbiter` 后即可运行。
 
 ---
 
-## 七、分发包（v1.0.3）
+## 七、分发包（v1.0.4）
 
 分发包包含完整的可运行文件：
 
