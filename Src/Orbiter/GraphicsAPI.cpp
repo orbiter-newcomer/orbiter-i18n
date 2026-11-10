@@ -479,7 +479,6 @@ HBITMAP GraphicsClient::ReadImageFromFile (const char *fname, UINT w, UINT h)
 {
 	std::wstring wpath = PathToWide(fname);
 	if (wpath.empty()) {
-		LOGOUT_WARN("Couldn't convert image file path: %s", fname);
 		return 0;
 	}
 
@@ -532,7 +531,6 @@ bool GraphicsClient::WriteImageDataToFile (const ImageData &data,
 	strcat (cbuf, extension[fmt]);
 	std::wstring wcbuf = PathToWide(cbuf);
 	if (wcbuf.empty()) {
-		LOGOUT_WARN("Couldn't convert image file path: %s", cbuf);
 		return false;
 	}
 

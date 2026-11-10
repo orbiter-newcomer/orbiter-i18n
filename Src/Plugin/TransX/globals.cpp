@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cmath>
 #include "orbitersdk.h"
+#include "mfd.h"
 #include "shiplist.h"
 #include <list>
 
@@ -164,7 +165,7 @@ void TextShow(oapi::Sketchpad *sketchpad,const char *label,int wpos,int hpos,OBJ
 	oapiGetObjectName(handle,buffer2,20);
 	strcpy(buffer,oapiTr(label));
 	strcat(buffer,oapiTr(buffer2));
-	sketchpad->Text(wpos,hpos,buffer,strlen(buffer));
+	sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer,strlen(buffer));
 }
 
 void TextForm(char *buffer,const char *label,double value)
@@ -204,7 +205,7 @@ void TextShow(oapi::Sketchpad *sketchpad,const char *label, int wpos, int hpos, 
 	TextForm(buffer,label,value);
 
 	int length=strlen(buffer);
-	sketchpad->Text( wpos, hpos, buffer, length);
+	sketchpad->Text( wpos+MfdLeftMargin(), hpos, buffer, length);
 }
 
 // Find length of vector

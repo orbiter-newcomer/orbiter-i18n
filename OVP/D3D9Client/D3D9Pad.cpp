@@ -1,4 +1,4 @@
-﻿// ===================================================
+// ===================================================
 // Copyright (C) 2012-2026 Jarmo Nikkanen
 // licensed under LGPL v2
 // ===================================================
@@ -12,20 +12,6 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Config.h"
 #include "Log.h"
-// MFDFONTDBG: real-time debug log (flushed every line)
-#include <cstdarg>
-#include <cstdio>
-static void MfdDbgLog(const char *fmt, ...)
-{
-	static FILE *fp = nullptr;
-	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
-	if (!fp) return;
-	va_list ap; va_start(ap, fmt);
-	vfprintf(fp, fmt, ap);
-	va_end(ap);
-	fputc('\n', fp);
-	fflush(fp);
-}
 
 #include "Mesh.h"
 
@@ -1024,19 +1010,6 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 	if (NeedsUnicodeText(wstr)) {
 		return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(wstr.c_str(), int(wstr.length())));
 	}
-
-	{
-		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
-		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
-		bool nonAscii = false;
-		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
-		if (nonAscii) {
-			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
-			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
-			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
-			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
-		}
-	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
 	return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(str.c_str(), str.length()));
@@ -1216,19 +1189,6 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 		int ox = 0, oy = 0;
 		GetOrigin(&ox, &oy);
 		return TextW(x + ox, y + oy, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
-	}
-
-	{
-		// MFDFONTDBG: text routed to the ANSI bitmap path; flag non-latin input
-		int l2 = (ulen < 0) ? (int)strlen(utf8) : ulen;
-		bool nonAscii = false;
-		for (int i = 0; i < l2; i++) if ((unsigned char)utf8[i] >= 0x80) { nonAscii = true; break; }
-		if (nonAscii) {
-			LOGFONTA lfD; memset(&lfD, 0, sizeof(lfD));
-			HFONT hfD = cfont ? cfont->GetGDIFont() : NULL;
-			if (hfD) GetObjectA(hfD, sizeof(lfD), &lfD);
-			MfdDbgLog("ANSI_NONASCII len=%d face=%s", l2, lfD.lfFaceName);
-		}
 	}
 	std::string str = UTF8ToCP1252(utf8, ulen);
 
@@ -1981,7 +1941,10 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 	char metricFace[64];
 	strcpy_s(metricFace, 64, face);
 	const char *drawFace = face;
-	if (zhMode) drawFace = "Noto Sans CJK SC";
+	// Chinese UI: rotated fonts (orientation != 0) keep the original Latin face.
+	// Their glyphs are numeric/unit labels; replacing the face with the CJK font
+	// changes glyph width/size and breaks the rotated MFD scale annotations.
+	if (zhMode && orientation == 0) drawFace = "Noto Sans CJK SC";
 
 	hFont = NULL;
 
@@ -2002,7 +1965,6 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 		cacheHit = true;
 		break;
 	}
-	LogAlw("FONTCACHEDBG h=%d face=%s style=%d prop=%d hit=%d", height, face, (int)style, prop?1:0, cacheHit?1:0);
 
 	int weight = (style & FONT_BOLD) ? FW_BOLD : FW_NORMAL;
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
@@ -2045,7 +2007,6 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 				DeleteObject(hMetric);
 			}
 		}
-		LogAlw("FONTCACHEDBG new font created h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 
 		DeleteObject(hNew);
 
@@ -2102,7 +2063,6 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		qcacheHit = true;
 		break;
 	}
-	LogAlw("FONTCACHEDBG q h=%d face=%s w=%d wt=%d hit=%d", height, face, width, weight, qcacheHit?1:0);
 
 	DWORD italic = (style & FONT_ITALIC) ? TRUE : FALSE;
 	DWORD underline = (style & FONT_UNDERLINE) ? TRUE : FALSE;
@@ -2125,7 +2085,6 @@ D3D9PadFont::D3D9PadFont(int height, char *face, int width, int weight, FontStyl
 		pFont = std::make_shared<D3D9Text>(pDev);
 		pFont->SetNoDownscale(m_bNoDownscale);
 		pFont->Init(hFont);
-		LogAlw("FONTCACHEDBG q new h=%d face=%s ptr=%p", height, face, (void*)pFont.get());
 		pFont->SetRotation(0.0f);
 		pFont->SetTextSpace(spacing);
 

@@ -101,6 +101,15 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	double tlng, tlat; // target location
 	bool draw_cone = false; // draw VTOL cone?
 
+	const bool zh = orbiter::IsChinese();
+	// ---- 中文布局偏置表（官方坐标为基准，仅中文模式追加以下固定偏置）----
+	// 单位: cw（MFD 字符宽）。标定方法: 中文标签宽度 - 对应英文标签宽度。
+	static const struct {
+		int navRowX;   // 右上角 NAV 行: "接收机"(约6cw) - "NAV"(3cw) = 3cw，左移防止右端截断
+		int altLblX;   // 高度柱条标签: 中文更宽，向左让出与"升降率"的间距
+		int vspdLblX;  // 升降率柱条标签: 向右让出间距
+	} zhOff_Landing = { -3, 0, 0 };
+
 	DisplayTitle (skp, orbiter::Tr("VOR/VTOL"));
 
 	if (nv >= vessel->nnav) return; // sanity check
@@ -108,7 +117,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 
 	skp->SetTextColor (draw[0][0].col);
 	sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), nv+1, nav->freq);
-	skp->Text (IW-cw*15, 0, cbuf, strlen (cbuf));
+	skp->Text (IW-cw*15 + (zh ? zhOff_Landing.navRowX*cw : 0), 0, cbuf, strlen (cbuf));
 
 	if (nav->sender) {
 		switch (nav->sender->Type()) {
@@ -147,11 +156,13 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Line (circx-circr, circy, circx+circr+1, circy);
 
 	// target distance
+	if (zh) skp->SetFont(GetDefaultFont(1));   // 中文模式：刻度字号与对接 MFD 统一（小号）
 	for (i = 1; i <= 4; i++) {
 		rd = (i*circr)/4;
 		cbuf[0] = '0'+i;
 		skp->Text (circx+1, circy-rd-ch, cbuf, 1);
 	}
+	if (zh) skp->SetFont(GetDefaultFont(0));
 	double adist, dist, ldist, hspd, lhspd, bdir, vdir, r;
 	int dx, dy, xc, yc;
 	Orthodome (sp->lng, sp->lat, tlng, tlat, adist, bdir);
@@ -163,12 +174,14 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->Text (x, ch*2, cbuf, strlen(cbuf));
 
 	// horizontal airspeed
+	if (zh) skp->SetFont(GetDefaultFont(1));   // 中文模式：刻度字号与对接 MFD 统一（小号）
 	skp->SetTextColor (draw[1][0].col);
 	for (i = 1; i <= 4; i++) {
 		rd = (i*circr)/4;
 		cbuf[0] = '0'+i-1;
 		skp->Text (circx+1, circy+rd-2, cbuf, 1);
 	}
+	if (zh) skp->SetFont(GetDefaultFont(0));
 	Vector hvel (tmul (sp->ref->GRot(), sp->groundvel_glob));
 	hvel.Set (mul (sp->L2H, hvel));
 	hspd = std::hypot (hvel.x, hvel.z);
@@ -195,6 +208,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, yc-ch, orbiter::Tr("ALT"), (int)strlen(orbiter::Tr("ALT"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	strcpy (cbuf, DistStr(sp->alt)+1); i = strlen(cbuf);
 	skp->Text (xc-(i*cw)/2, yc, cbuf, i);
+	if (zh) skp->SetFont(GetDefaultFont(1));   // 中文模式：刻度字号与对接 MFD 统一（小号）
 	for (i = 0; i <= 4; i++) {
 		dy = (barh*i)/4;
 		skp->Line (dx, bar0-dy, dx+barw+2, bar0-dy);
@@ -202,6 +216,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Text (dx+barw+3, bar0-dy-ch/2, &no, 1);
 	}
 
+	if (zh) skp->SetFont(GetDefaultFont(0));
 	// vertical velocity bar
 	static double lvel_min = -1.0;
 	static double lvel_max =  3.0;
@@ -218,6 +233,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	{ skp->SetTextAlign (oapi::Sketchpad::CENTER); skp->Text (xc, yc-ch, orbiter::Tr("VSPD"), (int)strlen(orbiter::Tr("VSPD"))); skp->SetTextAlign (oapi::Sketchpad::LEFT); }
 	strcpy (cbuf, DistStr (fabs(hvel.y))+1); i = strlen(cbuf);
 	skp->Text (xc-(i*cw)/2, yc, cbuf, i);
+	if (zh) skp->SetFont(GetDefaultFont(1));   // 中文模式：刻度字号与对接 MFD 统一（小号）
 	for (i = 0; i <= 4; i++) {
 		dy = (barh*i)/4;
 		skp->Line (dx, bar0-dy, dx+barw+2, bar0-dy);
@@ -225,13 +241,14 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Text (dx+barw+3, bar0-dy-ch/2, cbuf, strlen(cbuf));
 	}
 
+	if (zh) skp->SetFont(GetDefaultFont(0));
 	skp->SetFont (GetDefaultFont (2));
 	skp->SetTextAlign (oapi::Sketchpad::CENTER);
 	skp->Text ((IW* 9)/12-(5*barw)/2, bar0-barh/2, "10 ^ x m", 8);
 	skp->Text ((IW*11)/12-2*barw, bar0-barh/2, "10 ^ x m/s", 10);
-	skp->Text (circx-barw, circy-circr/2, "10 ^ x m", 8);
+	skp->Text (circx-barw-cw/2, circy-circr/2, "10 ^ x m", 8);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 	skp->SetTextColor (draw[1][0].col);
-	skp->Text (circx-barw, circy+circr/2, "10 ^ x m/s", 10);
+	skp->Text (circx-barw-cw/2, circy+circr/2, "10 ^ x m/s", 10);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 
 	// VTOL cone
 	if (draw_cone) {

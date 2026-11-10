@@ -1,4 +1,4 @@
-﻿// ==============================================================
+// ==============================================================
 // Class VideoTab (implementation)
 // Manages the user selections in the "Video" tab of the Orbiter
 // Launchpad dialog.
@@ -486,7 +486,7 @@ INT_PTR CALLBACK VideoTab::SetupDlgProcWrp(HWND hWnd, UINT uMsg, WPARAM wParam, 
 		case WM_INITDIALOG: 
 			VTab = (class VideoTab *)lParam;
 			VTab->InitSetupDialog(hWnd);
-			if (!IsChineseUI()) VTab->LocalizeSetupDialogEnglish(hWnd);
+			if (IsChineseUI()) VTab->LocalizeSetupDialogChinese(hWnd);
 			return true;
 
 		case WM_COMMAND:

@@ -1213,8 +1213,9 @@ namespace orbiter {
 		{ "Orbital speed", "轨道速度" },
 
 		// ---- Orbit MFD (final scheme) -------------------------------------
-		{ "Ship plane", "自身" },
-		{ "Target plane", "目标" },
+		{ "ORBIT_PRJ_ECL", "黄道" },
+		{ "ORBIT_PRJ_SHIP", "自身" },
+		{ "ORBIT_PRJ_TGT", "目标" },
 
 		// ---- Orbit MFD -----------------------------------------------------
 		{ "Orbit: ", "轨道：" },
@@ -2072,6 +2073,9 @@ static void BuildTables()
 		{ "SURF_TAS",  "TAS" },
 		{ "SURF_IAS",  "IAS" },
 		{ "SURF_OS",   "OS" },
+		{ "ORBIT_PRJ_ECL",  "Ecliptic" },
+		{ "ORBIT_PRJ_SHIP", "Ship" },
+		{ "ORBIT_PRJ_TGT",  "Target" },
 	};
 	static const size_t kNumAliases = sizeof(g_aliases) / sizeof(g_aliases[0]);
 
@@ -2101,13 +2105,6 @@ static void BuildTables()
 				auto it2 = g_enToZhLower.find(lower);
 				if (it2 != g_enToZhLower.end()) return it2->second.c_str();
 			}
-		}
-		static std::set<std::string> missSet;
-		if (missSet.size() < 300 && missSet.insert(key).second) {
-			// Only log ASCII keys (dynamic object names are noise)
-			bool ascii = true;
-			for (char c : key) if ((unsigned char)c >= 0x80) { ascii = false; break; }
-			if (ascii) LOGOUT("LOCALIZATION miss: [%s]", english);
 		}
 		return english;
 	}

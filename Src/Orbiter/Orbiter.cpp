@@ -439,8 +439,29 @@ HRESULT Orbiter::Create (HINSTANCE hInstance)
 	// preload modules from command line requests
 	LoadModules("Modules\\Plugin", pConfig->CfgCmdlinePrm.LoadPlugins);
 
-	// preload ALL plugin modules (all plugins enabled by user request)
-	LoadModules("Modules\\Plugin");
+	// preload active plugin modules, listed in the master config file
+	// (ACTIVE_MODULES block of Orbiter.cfg). The list is parsed directly from the
+	// file here to avoid the Config stream state issue that could leave the
+	// in-memory list empty and prevent the modules from being loaded.
+	std::list<std::string> activeModules;
+	{
+		std::ifstream ifs(MasterConfigFile);
+		if (ifs) {
+			std::string line;
+			bool inBlock = false;
+			while (std::getline(ifs, line)) {
+				size_t b = line.find_first_not_of(" \t\r");
+				if (b == std::string::npos) continue;
+				size_t e = line.find_last_not_of(" \t\r");
+				std::string item = line.substr(b, e-b+1);
+				if (item.compare(0, 14, "ACTIVE_MODULES") == 0) { inBlock = true; continue; }
+				if (!inBlock) continue;
+				if (item.compare(0, 11, "END_MODULES") == 0) break;
+				activeModules.push_back(item);
+			}
+		}
+	}
+	LoadModules("Modules\\Plugin", activeModules);
 
 	// preload startup plugin modules
 	LoadStartupModules();
@@ -911,11 +932,8 @@ void Orbiter::CloseSession ()
 		m_pConsole = NULL;
 	}
 
-	LOGOUT("CLOSESESSION step0: enter normal cleanup");
 	if (pConfig->CfgDebugPrm.ShutdownMode == 0 && !bFastExit) { // normal cleanup
-		LOGOUT("CLOSESESSION step1: before Show");
 		m_pLaunchpad->Show(); // show launchpad dialog again
-		LOGOUT("CLOSESESSION step2: before ShowWaitPage");
 		m_pLaunchpad->ShowWaitPage (true, simheapsize);
 		if (gclient) {
 			gclient->clbkCloseSession (false);
@@ -931,12 +949,8 @@ void Orbiter::CloseSession ()
 
 		if (g_input)  { delete g_input; g_input = 0; }
 		if (g_select) { delete g_select; g_select = 0; }
-		LOGOUT("CLOSESESSION step5: before delete g_pane");
 		if (g_pane) { delete g_pane;   g_pane = 0; }
-		LOGOUT("CLOSESESSION step6: g_pane deleted");
-		LOGOUT("CLOSESESSION step7: before delete pDlgMgr");
 		if (pDlgMgr)  { delete pDlgMgr; pDlgMgr = 0; }
-		LOGOUT("CLOSESESSION step8: pDlgMgr deleted");
 		Instrument::GlobalExit (gclient);
 		meshmanager.Flush(); // destroy buffered meshes
 		DestroyWorld ();     // destroy logical objects
@@ -950,13 +964,9 @@ void Orbiter::CloseSession ()
 		pDI->DestroyDevices();
 		pDI->SetRenderWindow(NULL);
 
-		LOGOUT("CLOSESESSION step11: before ShowWaitPage(false)");
 		m_pLaunchpad->ShowWaitPage (false);
-		LOGOUT("CLOSESESSION step12: done");
 	} else {
-		LOGOUT("CLOSESESSION step7: before delete pDlgMgr");
 		if (pDlgMgr)  { delete pDlgMgr; pDlgMgr = 0; }
-		LOGOUT("CLOSESESSION step8: pDlgMgr deleted");
 		if (gclient) {
 			gclient->clbkCloseSession (true);
 			gclient->clbkDestroyRenderWindow (true);

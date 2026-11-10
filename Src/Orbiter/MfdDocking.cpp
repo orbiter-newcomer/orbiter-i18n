@@ -123,6 +123,14 @@ int Instrument_Docking::ProcessMessage (int msg, void *data)
 void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 {
 	int i, len, rd, x0, x1, y0, y1, xc, yc, x = cw/2, y = ch;
+
+	const bool zh = orbiter::IsChinese();
+	// ---- 中文布局偏置表（官方坐标为基准，仅中文模式追加以下固定偏置）----
+	// 单位: cw（MFD 字符宽）。标定方法: 中文标签宽度 - 对应英文标签宽度。
+	// 中文模式新增的固定偏置（列位置改为按实测文本宽度自适应，见下）
+	static const struct {
+		int navRowX;   // 右上角 NAV 行: "接收机" - "NAV" = 3cw，左移防右端截断
+	} zhOff_Dock = { -3 };
 	char cbuf[256], modestr[64] = "";
 
 	strcpy (cbuf, orbiter::Tr("APPR/DOCK"));
@@ -230,7 +238,7 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		NavRadioSpec *nav = vessel->nav+nv;
 
 		sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), nv+1, nav->freq);
-		skp->Text (IW-cw*15, 0, cbuf, strlen (cbuf));
+		skp->Text (IW-cw*15 + (zh ? zhOff_Dock.navRowX*cw : 0), 0, cbuf, strlen (cbuf));
 
 		if (nav->sender) {
 			switch (nav->sender->Type()) {
@@ -383,21 +391,23 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		skp->Line (circx+x, circy-y0, circx+x, circy-y1-1);
 
 		skp->SetPen(draw[0][0].solidpen);
-		const bool zhLay = (strcmp(orbiter::Tr("Build"), "Build") != 0);
-		int hdLblW = (int)skp->GetTextWidth(orbiter::Tr("hD"), (int)strlen(orbiter::Tr("hD")));
+		// 中文模式：第二列取官方列位与“第一列文本实测结束 + 间距”的较大者，
+		// 避免中文标签/数值变宽后重叠；英文模式保留官方固定列。
 		sprintf (cbuf, "%s %s", orbiter::Tr("hD"), DistStr(fabs(Z.x), 5));
 		x0 = cw / 2;
 		y0 = (ch * 5) / 2;
-		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal distance from approach path
-		int hdW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int hdRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int hdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(Z.x) > 2e-3)
-			DrawArrow(x0 + (zhLay ? hdW : hdLblW) + cw/2, y0, Z.x < 0 ? 3 : 1, skp);
+		DrawArrow(x0 + hdArrowOff, y0, Z.x < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 5));
-		x0 = (zhLay ? cw/2 + hdW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
-		skp->Text(x0, y0, cbuf, strlen(cbuf)); // vertical distance from approach path
-		int vdLblW = (int)skp->GetTextWidth(orbiter::Tr("vD"), (int)strlen(orbiter::Tr("vD")));
+		x0 = cw/2 + cw*11;
+		if (zh) { int need = cw/2 + hdRowW + 2*cw; if (need > x0) x0 = need; }
+		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int vdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(Z.y) > 2e-3)
-			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : vdLblW) + cw/2, y0, Z.y < 0 ? 2 : 0, skp);
+		DrawArrow(x0 + vdArrowOff, y0, Z.y < 0 ? 2 : 0, skp);
 
 		// Ship's relative velocity projected into ship's approach xy plane
 		double dvx = (adposold.x-adpos.x)/dt;
@@ -407,17 +417,18 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		sprintf(cbuf, "%s %s", orbiter::Tr("hV"), DistStr(fabs(dvx), 4));
 		x0 = cw / 2;
 		y0 = (ch * 7) / 2;
-		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
-		int hvW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-		int hvLblW = (int)skp->GetTextWidth(orbiter::Tr("hV"), (int)strlen(orbiter::Tr("hV")));
+		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int hvRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
+		int hvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(dvx) > 2e-4)
-			DrawArrow(x0 + (zhLay ? hvW : hvLblW) + cw/2, y0, dvx < 0 ? 3 : 1, skp);
+		DrawArrow(x0 + hvArrowOff, y0, dvx < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vV"), DistStr(fabs(dvy), 4));
-		x0 = (zhLay ? cw/2 + hvW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
-		skp->Text(x0, y0, cbuf, strlen(cbuf)); // horizontal velocity relative to approach path
-		int vvLblW = (int)skp->GetTextWidth(orbiter::Tr("vV"), (int)strlen(orbiter::Tr("vV")));
+		x0 = cw/2 + cw*11;
+		if (zh) { int need = cw/2 + hvRowW + 2*cw; if (need > x0) x0 = need; }
+		skp->Text(x0, y0, cbuf, strlen(cbuf));
+		int vvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(dvy) > 2e-4)
-			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : vvLblW) + cw/2, y0, dvy < 0 ? 2 : 0, skp);
+		DrawArrow(x0 + vvArrowOff, y0, dvy < 0 ? 2 : 0, skp);
 
 		double r_scaled = (scale ? r*10.0 : r);
 		if (r_scaled > 1e-2) {
@@ -484,25 +495,27 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		double absYdeg = fabs(yaw)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("Y"), absYdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int yW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-		int yLblW = (int)skp->GetTextWidth(orbiter::Tr("Y"), (int)strlen(orbiter::Tr("Y")));
+		int yArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int yRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absYdeg > 2e-2)
-			DrawArrow(x0 + (zhLay ? yW : yLblW) + cw/2, y0, yaw < 0 ? 1 : 3, skp);
-		x0 = (zhLay ? x0 + yW + cw*2 : cw/2 + cw*11);   // English: original fixed columns
+		DrawArrow(x0 + yArrowOff, y0, yaw < 0 ? 1 : 3, skp);
+		int xP = cw/2 + cw*11;
+		if (zh) { int need = cw/2 + yRowW + 2*cw; if (need > xP) xP = need; }
 		double absPdeg = fabs(pitch)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("P"), absPdeg);
-		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int pW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-		int pLblW = (int)skp->GetTextWidth(orbiter::Tr("P"), (int)strlen(orbiter::Tr("P")));
+		skp->Text(xP, y0, cbuf, strlen(cbuf));
+		int pArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int pRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absPdeg > 2e-2)
-			DrawArrow(x0 + (zhLay ? pW : pLblW) + cw/2, y0, pitch < 0 ? 0 : 2, skp);
-		x0 = (zhLay ? x0 + pW + cw*2 : cw/2 + cw*22);
+		DrawArrow(xP + pArrowOff, y0, pitch < 0 ? 0 : 2, skp);
+		int xB = cw/2 + cw*22;
+		if (zh) { int need = xP + pRowW + 2*cw; if (need > xB) xB = need; }
 		double absBdeg = fabs(bank)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("B"), absBdeg);
-		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int bLblW = (int)skp->GetTextWidth(orbiter::Tr("B"), (int)strlen(orbiter::Tr("B")));
+		skp->Text(xB, y0, cbuf, strlen(cbuf));
+		int bArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (absBdeg > 2e-2)
-			DrawArrow(x0 + (zhLay ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) : bLblW) + cw/2, y0, bank < 0 ? 1 : 3, skp);
+		DrawArrow(xB + bArrowOff, y0, bank < 0 ? 1 : 3, skp);
 	}
 
 	// distance bar

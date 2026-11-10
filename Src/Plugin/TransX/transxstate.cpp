@@ -415,6 +415,35 @@ transxstate::~transxstate()
 	todeletelist.clear();
 }
 
+// ---- ??????????(???????,????? MFD ????)----
+// ????????????? 2 ?,??????? MFD;?????????????
+static void DrawHelpLine(oapi::Sketchpad *skp, int x, int &yl, int linespacing, int tw, const char *h)
+{
+	if (!h || !*h) return;
+	const bool zh = (strcmp(oapiTr("Build"), "Build") != 0);
+	if (!zh) { skp->Text(x, yl*linespacing, h, (int)strlen(h)); yl++; return; }
+	const int maxw = tw - 8;
+	char line[512];
+	int ll = 0;
+	const char *p = h;
+	while (*p) {
+		int clen = 1;
+		unsigned char c = (unsigned char)*p;
+		if (c >= 0xF0) clen = 4; else if (c >= 0xE0) clen = 3; else if (c >= 0xC0) clen = 2;
+		for (int i = 0; i < clen; i++) line[ll+i] = p[i];
+		ll += clen; line[ll] = 0;
+		if (skp->GetTextWidth(line, ll) > maxw && ll > clen) {
+			line[ll-clen] = 0;
+			skp->Text(x, yl*linespacing, line, ll-clen);
+			yl++;
+			for (int i = 0; i < clen; i++) line[i] = p[i];
+			ll = clen; line[ll] = 0;
+		}
+		p += clen;
+	}
+	if (ll) { skp->Text(x, yl*linespacing, line, ll); yl++; }
+}
+
 bool transxstate::doupdate(oapi::Sketchpad *sketchpad, int tw, int th,unsigned int curfunction,int currview, unsigned int curvarfunction, int currvarview,TransxMFD *tmfdpointer)
 {
 	saveflag=false;
@@ -478,17 +507,19 @@ bool transxstate::doupdate(oapi::Sketchpad *sketchpad, int tw, int th,unsigned i
 		variable=cvarfunction->getcurrentvariable(currvarview);
 		if (variable!=NULL)
 		{
+			int yl = 11;
 			variable->gethelpstrings(help1,help2);
-			{ const char *h=oapiTr(help1); sketchpad->Text(0,11*linespacing,h,(int)strlen(h)); }
-			{ const char *h=oapiTr(help2); sketchpad->Text(0,12*linespacing,h,(int)strlen(h)); }
+			DrawHelpLine(sketchpad, MfdLeftMargin(), yl, linespacing, tw, oapiTr(help1));
+			DrawHelpLine(sketchpad, MfdLeftMargin(), yl, linespacing, tw, oapiTr(help2));
 		}
 		//Help for function
+		int yl2 = 16;
 		cfunction->gethelp(help1,help2,help3,help4,help5);
-		{ const char *h=oapiTr(help1); sketchpad->Text(0,16*linespacing,h,(int)strlen(h)); }
-		{ const char *h=oapiTr(help2); sketchpad->Text(0,17*linespacing,h,(int)strlen(h)); }
-		{ const char *h=oapiTr(help3); sketchpad->Text(0,18*linespacing,h,(int)strlen(h)); }
-		{ const char *h=oapiTr(help4); sketchpad->Text(0,19*linespacing,h,(int)strlen(h)); }
-		{ const char *h=oapiTr(help5); sketchpad->Text(0,20*linespacing,h,(int)strlen(h)); }
+		DrawHelpLine(sketchpad, MfdLeftMargin(), yl2, linespacing, tw, oapiTr(help1));
+		DrawHelpLine(sketchpad, MfdLeftMargin(), yl2, linespacing, tw, oapiTr(help2));
+		DrawHelpLine(sketchpad, MfdLeftMargin(), yl2, linespacing, tw, oapiTr(help3));
+		DrawHelpLine(sketchpad, MfdLeftMargin(), yl2, linespacing, tw, oapiTr(help4));
+		DrawHelpLine(sketchpad, MfdLeftMargin(), yl2, linespacing, tw, oapiTr(help5));
 	}
 	else
 	{

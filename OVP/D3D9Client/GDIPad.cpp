@@ -1,4 +1,4 @@
-﻿// ==============================================================
+// ==============================================================
 // GDIPad.cpp
 // Part of the ORBITER VISUALISATION PROJECT (OVP)
 // Dual licensed under GPL v3 and LGPL v3
@@ -12,20 +12,6 @@
 #include "D3D9Util.h"
 #include "D3D9Config.h"
 #include "Log.h"
-// MFDFONTDBG: real-time debug log (flushed every line)
-#include <cstdarg>
-#include <cstdio>
-static void MfdDbgLog(const char *fmt, ...)
-{
-	static FILE *fp = nullptr;
-	if (!fp) fp = fopen("d3d9_mfd_dbg.txt", "a");
-	if (!fp) return;
-	va_list ap; va_start(ap, fmt);
-	vfprintf(fp, fmt, ap);
-	va_end(ap);
-	fputc('\n', fp);
-	fflush(fp);
-}
 
 using namespace oapi;
 
@@ -48,7 +34,7 @@ static bool NeedsUnicodeText_GDI(const std::wstring &w)
 {
 	for (size_t i = 0; i < w.size(); i++) if ((unsigned int)w[i] > 0xFF) return true;
 	return false;
-}
+}
 // 中文模式下的 CJK 字形需要与 D3D9 路径（wfont 高度 x0.85）视觉一致
 static HFONT CreateCJKFontScaled(HFONT hRef, bool noDownscale)
 {
@@ -265,7 +251,6 @@ void GDIPad::GetOrigin (int *x, int *y) const
 //
 bool GDIPad::Text (int x, int y, const char *utf8, int len)
 {
-	MfdDbgLog("GDIPAD_TEXT len=%d first=0x%02X", len, (unsigned char)utf8[0]);
 	if (!utf8) return false;
 	std::wstring w = UTF8ToUTF16_GDI(utf8, len);
 	if (NeedsUnicodeText_GDI(w)) {
@@ -285,7 +270,6 @@ bool GDIPad::Text (int x, int y, const char *utf8, int len)
 //
 bool GDIPad::TextW (int x, int y, const LPWSTR str, int len)
 {
-	MfdDbgLog("GDIPAD_TEXTW len=%d first=0x%04X", len, (unsigned int)str[0]);
 	return (TextOutW(hDC, x, y, str, len) != FALSE);
 }
 

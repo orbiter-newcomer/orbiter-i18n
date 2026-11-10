@@ -770,7 +770,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 	if (planpointer!=NULL)
 	{
 		planpointer->getlabel(buffer);
-		sketchpad->Text(wpos,hpos,buffer,strlen(buffer));
+		sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer,strlen(buffer));
 		planpointer->getplanorbit(&plan);
 	}
 	hpos+=linespacing;
@@ -810,7 +810,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 		viewmode=2;
 		break;
 	}
-	sketchpad->Text(wpos,hpos,buffer,strlen(buffer));
+	sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer,strlen(buffer));
 	graph.setviewwindow(0,0,tw,th);
 	if (viewmode==1 && hypormaj.isvalid())//Target view
 	{
@@ -940,7 +940,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 				double intercepttime=primary.gettimeintercept();
 				double arrmjd=oapiTime2MJD(intercepttime);
 				int len=snprintf(buffer, sizeof(buffer) - 1, oapiTr("Enc. MJD %.4f"), arrmjd);
-				sketchpad->Text(wpos, hpos, buffer, len);
+				sketchpad->Text(wpos+MfdLeftMargin(), hpos, buffer, len);
 			}
 		}
 		else
@@ -961,11 +961,11 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 				hpos+=linespacing;
 				char buffer[64]="";
 				int length=snprintf(buffer, sizeof(buffer) - 1, "%s   %.4f", oapiTr("Pe MJD:"),(craft.getpedeltatime()+craft.gettimestamp())/SECONDS_PER_DAY+simstartMJD);
-				sketchpad->Text(wpos,hpos,buffer, length);
+				sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer, length);
 				hpos+=linespacing;
 				VECTOR3 south = {0, -1, 0};
 				length = snprintf(buffer, sizeof(buffer) - 1, "%s      %.4g°", oapiTr("Inc:"), 180/PI*acos(cosangle(south, craft.getplanevector())));
-				sketchpad->Text(wpos,hpos,buffer, length);
+				sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer, length);
 				hpos+=linespacing;
 			}
 			if (hypormaj.isvalid())
@@ -974,7 +974,7 @@ void basefunction::doupdate(oapi::Sketchpad *sketchpad,int tw, int th,int viewmo
 				hpos+=linespacing;
 				double timeatped=(hypormaj.gettimestamp()+hypormaj.getpedeltatime())/SECONDS_PER_DAY+simstartMJD;
 				int length=snprintf(buffer, sizeof(buffer) - 1, "%s %.2f", oapiTr("H. Pe MJD"), timeatped);
-				sketchpad->Text(wpos,hpos,buffer,length);
+				sketchpad->Text(wpos+MfdLeftMargin(),hpos,buffer,length);
 			}
 		}
 		if (viewmode==3 && planpointer!=NULL)

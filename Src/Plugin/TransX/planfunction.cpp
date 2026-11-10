@@ -340,7 +340,7 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 	VECTOR3 down = {0, -1, 0};
 	double targetInc = 180/PI*acos(cosangle(down, planorbit.getplanevector()));
 	sprintf(buffer, oapiTr("Incl.  :%.4g°"), targetInc);
-	sketchpad->Text( 0, pos, buffer, strlen(buffer));
+	sketchpad->Text( MfdLeftMargin(), pos, buffer, strlen(buffer));
 	pos += linespacing;
 
 	// Get the target LAN (absolute wrt global coordinates)
@@ -349,7 +349,7 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 	if(lan < 0)
 		lan += 360;
 	sprintf(buffer, oapiTr("LAN    :%.4g°"), lan);
-	sketchpad->Text( 0, pos, buffer, strlen(buffer));
+	sketchpad->Text( MfdLeftMargin(), pos, buffer, strlen(buffer));
 	pos += linespacing;
 
 	if (status.status==1)
@@ -385,7 +385,7 @@ void minorejectplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int heigh
 	{
 		len=sprintf(buffer, "%s%.4g°", oapiTr("Rel Inc:"), angle);
 	}
-	sketchpad->Text( 0, pos, buffer, len);
+	sketchpad->Text( MfdLeftMargin(), pos, buffer, len);
 
 	// Calculate Delta-v
 	if (status.rbody!=base->gethmajor()) return;
@@ -491,7 +491,7 @@ void encounterplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int height
 				lng += 360;
 			char output[64];
 			sprintf(output, "Land Site Lat/Long: %.4g, %.4g", lat, lng);
-			sketchpad->Text( 0, pos, output, strlen(output));
+			sketchpad->Text( MfdLeftMargin(), pos, output, strlen(output));
 			pos += linespacing;
 		}
 	}
@@ -536,7 +536,7 @@ void encounterplan::wordupdate(oapi::Sketchpad *sketchpad, int width, int height
 				lng += 360;
 			char output[64];
 			sprintf(output, oapiTr("Pe Lat/Long: %.4g, %.4g"), lat, lng);
-			sketchpad->Text( 0, pos, output, strlen(output));
+			sketchpad->Text( MfdLeftMargin(), pos, output, strlen(output));
 			pos += linespacing;
 		}
 	}

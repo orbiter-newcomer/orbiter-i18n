@@ -691,7 +691,6 @@ void Instrument::SetSize (const Spec &spec, bool defer_alloc)
 			ch = LOWORD(charsize);
 			gc->clbkReleaseSketchpad (skp);
 		}
-		LOGOUT("LAYOUTDBG cw=%d ch=%d IW=%d IH=%d", (int)cw, (int)ch, (int)IW, (int)IH);
 	}
 }
 

@@ -1,4 +1,4 @@
-﻿#include "Orbitersdk.h"
+#include "Orbitersdk.h"
 // =================================================================================================================================
 // The MIT Lisence:
 //
@@ -317,7 +317,6 @@ restart:
 		&wfont                // ppFont
 	));
 
-	LogAlw("FONTCACHEDBG wf face=%s h=%d zh=%d", lf.lfFaceName, lf.lfHeight, zhMode?1:0);
 	SetLineSpace(0);
 	SetTextShare(0);
 	SetTextSpace(0);
@@ -487,8 +486,12 @@ float D3D9Text::PrintSkp(D3D9Pad *pSkp, float xpos, float ypos, const char *_str
 	unsigned char c = str[0];
 	int idx = 1;
 
+	// Chinese UI: the ASCII glyphs are drawn at 85% scale, so the bounding box
+	// (used as the rotation centre for rotated text) must use the same scale,
+	// otherwise rotated labels (e.g. MFD scale annotations) rotate around the
+	// wrong centre and drift into neighbouring text.
 	while (c && (idx<=len || len<=0)) {
-		bbox_r += ceil(Data(c)->sp + spacing);
+		bbox_r += ceil((Data(c)->sp + spacing) * zscale);
 		c = str[idx++];
 	}
 

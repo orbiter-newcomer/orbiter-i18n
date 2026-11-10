@@ -261,7 +261,7 @@ void Instrument_Orbit::DisplayOrbit (oapi::Sketchpad *skp, int which, oapi::IVEC
 
 void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 {
-	static const char *projstr[3] = {"Ecliptic", "Ship plane", "Target plane"};
+	static const char *projstr[3] = {"ORBIT_PRJ_ECL", "ORBIT_PRJ_SHIP", "ORBIT_PRJ_TGT"};
 	Matrix rot1, rot2, irot;
 
 	bool bValidShpEl = (elref != 0);
@@ -276,7 +276,7 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 		}
 		shpel->Calculate (pos, vel, td.SimT1);
 		sprintf (title_str, "%s%s", orbiter::Tr("Orbit: "), orbiter::Tr(elref->Name()));
-		sprintf (proj_str, "%s%s", orbiter::Tr("Proj: "), orbiter::Tr(projstr[projmode]));
+		sprintf (proj_str, "%s%s", orbiter::Tr("Proj: "), orbiter::Tr2(projstr[projmode]));
 		instable = (shpel->PeDist() < elref->Size());
 		scale = pixrad / (shpel->e < 1.0 ? shpel->ApDist() :
 						  max (2.0*shpel->PeDist(), shpel->Radius()));
@@ -303,10 +303,8 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 		{	// Frame/projection header, right-aligned as a whole so that it never
 			// overlaps the left-aligned title. Widths are measured at runtime, so
 			// Chinese and English layouts both fit.
-			LOGOUT("MFDORBIT: frame header begin");
 			const char *frmStr = orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU");
 			const char *prjStr = orbiter::Tr(projmode == PRJ_SHIP ? "SHP" : projmode == PRJ_TGT ? "TGT" : (frmmode == FRM_ECL ? "ECL" : "EQU"));
-			LOGOUT("MFDORBIT: frame strs frm=%s prj=%s", frmStr, prjStr);
 			const char *lbl = orbiter::Tr("Frm");
 			const char *plbl = orbiter::Tr("Prj");
 			int lw = (int)skp->GetTextWidth(lbl, (int)strlen(lbl));
@@ -315,7 +313,6 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			int pw = (int)skp->GetTextWidth(prjStr, (int)strlen(prjStr));
 			int total = lw + cw + fw + cw*3 + plw + cw + pw;
 			int hx = IW - total - cw;
-			LOGOUT("MFDORBIT: framewidths lw=%d fw=%d plw=%d pw=%d", lw, fw, plw, pw);
 			skp->SetTextColor (draw[2][0].col);
 			skp->Text (hx, 1, lbl, (int)strlen(lbl)); hx += lw + cw;
 			skp->Text (hx, 1, frmStr, (int)strlen(frmStr)); hx += fw + cw*3;
@@ -360,18 +357,14 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 		}
 	}
 
-	LOGOUT("MFDORBIT: before DisplayTitle title=[%s]", title_str);
 	DisplayTitle (skp, title_str);
-	LOGOUT("MFDORBIT: after DisplayTitle");
 	// output elref's contribution to gravity field
 	bool dominant;
 	double gfrac = g_psys->GetGravityContribution (elref, vessel->GPos(), &dominant);
 	char cbuf[128];
 	sprintf (cbuf, "%s %0.2f", orbiter::Tr("G"), gfrac);
 	skp->SetTextColor (draw[!dominant ? 3 : gfrac < 0.0 ? 1 : 0][0].col);
-	LOGOUT("MFDORBIT: G line before width cbuf=[%s]", cbuf);
 	int gw = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-	LOGOUT("MFDORBIT: G line width=%d", gw);
 	skp->Text ((IW-gw)/2, IH-(3*ch)/2, cbuf, (int)strlen(cbuf));
 
 	if (dispmode != DISP_GRAPH) { // list ship and target orbit parameters

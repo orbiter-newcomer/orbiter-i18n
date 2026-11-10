@@ -37,6 +37,11 @@ VECTOR3 GetRotationToTarget(VESSEL * vessel, const VECTOR3 & target);
 double GetBurnTime(VESSEL *vessel, double deltaV);
 double GetBurnStart(VESSEL *vessel, THGROUP_TYPE thGroupType, double instantaneousBurnTime, double deltaV);
 
+// Chinese labels overlap the left MFD border, so left-side text is shifted right
+// MfdLeftMargin() pixels. English mode returns 0 (original layout preserved).
+inline bool MfdZhUI() { const char *b = oapiTr("Build"); return b && (unsigned char)b[0] >= 0x80; }
+inline int MfdLeftMargin() { return MfdZhUI() ? 8 : 0; }
+
 // Standard formatting function
 void TextShow(oapi::Sketchpad *sketchpad, const char *label, int wpos, int hpos, double value);
 void TextShow(oapi::Sketchpad *sketchpad, const char *label, int wpos, int hpos, OBJHANDLE handle);

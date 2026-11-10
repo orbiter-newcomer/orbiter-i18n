@@ -1,4 +1,4 @@
-﻿// Copyright (c) Martin Schweiger
+// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #include "MfdSync.h"
@@ -236,19 +236,28 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetTextColor (draw[0][0].col);
 
 	y = 1 + (ch*3)/2;
-	// English UI: original layout (unchanged). Chinese UI: original layout plus
-	// fixed offsets (the translated headers are wider than the English ones).
-	const bool zhLayout = (strcmp(oapiTr("Build"), "Build") != 0);
-	if (zhLayout) {
-		x  = IW - (33*cw)/2 - 2*cw;   // shift table left
-		x0 = x + 4*cw;                // first data column
-		x1 = x0 + 10*cw;              // second data column
+	// ---- 中文布局偏置（官方坐标为基准，仅中文模式追加）----
+	// 中文模式：三列按表头实测宽度紧凑排列，并整体右对齐到 MFD 右边缘；
+	// 英文模式：保持官方固定列布局。
+	const bool zh = orbiter::IsChinese();
+	if (zh) {
+		const char *h0 = orbiter::Tr("Ob");
+		const char *h1 = orbiter::Tr("Sh-ToR");
+		const char *h2 = orbiter::Tr("Tg-ToR");
+		int w0 = (int)skp->GetTextWidth(h0, (int)strlen(h0));
+		int w1 = (int)skp->GetTextWidth(h1, (int)strlen(h1));
+		int w2 = (int)skp->GetTextWidth(h2, (int)strlen(h2));
+		int gap = cw;            // 列间距（紧凑）
+		int rightMargin = cw/2;  // 右边距
+		x  = IW - rightMargin - (w0 + gap + w1 + gap + w2);
+		x0 = x + w0 + gap;
+		x1 = x0 + w1 + gap;
 	} else {
 		x  = IW - (33*cw)/2;          // original layout
 		x0 = x + 2*cw;
 		x1 = x + 9*cw;
 	}
-	if (zhLayout) {
+	if (zh) {
 		char hl0[16], hl1[32], hl2[32];
 		strcpy(hl0, orbiter::Tr("Ob"));
 		strcpy(hl1, orbiter::Tr("Sh-ToR"));
