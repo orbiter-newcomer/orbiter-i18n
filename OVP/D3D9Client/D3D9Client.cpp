@@ -346,6 +346,8 @@ const void *D3D9Client::GetConfigParam (DWORD paramtype) const
 // This is called only once when the launchpad will appear
 // This callback will initialize the Video tab only
 //
+#include "D3DTranslationLayer.inc"
+
 bool D3D9Client::clbkInitialise()
 {
 	_TRACE;
@@ -360,6 +362,11 @@ bool D3D9Client::clbkInitialise()
 
 	if (hDXMod) pDirect3DCreate9On12 = (__Direct3DCreate9On12)GetProcAddress(hDXMod, "Direct3DCreate9On12");
 
+#if defined(D3D9CLIENT_BACKEND_DXVK) || defined(D3D9CLIENT_BACKEND_DGVoodoo)
+	// Backend variant plugin: load the selected D3D9 translation layer
+	g_pD3DObject = CreateD3D9Object();
+	oapiWriteLog("[D3D9] Native Interface");
+#else
 	if (OapiExtension::RunsUnderWINE() || pDirect3DCreate9On12 == nullptr) {
 		g_pD3DObject = Direct3DCreate9(D3D_SDK_VERSION);
 		oapiWriteLog("[D3D9] Native Interface");
@@ -369,6 +376,7 @@ bool D3D9Client::clbkInitialise()
 		if (Config->Enable9On12) oapiWriteLog("[D3D9] DX9 emulation via DX12");
 		else oapiWriteLog("[D3D9] Native Interface");
 	}
+#endif
 
 	if (g_pD3DObject) oapiWriteLog("[D3D9] DirectX9 Created...");
 	else {

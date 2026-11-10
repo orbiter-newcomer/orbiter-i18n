@@ -86,6 +86,19 @@ cmake -S . -B build64 -G "Visual Studio 17 2022" -A x64 `
 cmake --build build64 --config Release --parallel 6
 ```
 
+### Package build note
+
+- `cmake --install` automatically creates the full directory skeleton of `Textures2\` (high-resolution texture override folder, searched before `Textures\`) mirroring the `Textures\` structure. High-res textures can then simply be dropped into the matching subfolder (same-named files override the low-res versions).
+
+### Render engine selection (optional)
+
+The Launchpad **Video** tab offers two D3D9Client engine variants (same renderer, different D3D9 implementations):
+
+- **D3D9Client**: system Direct3D9 / Direct3D9On12 (default, upstream behaviour)
+- **D3D9ClientDXVK**: renders through **DXVK** (Vulkan; requires a Vulkan runtime)
+
+The DXVK translation-layer DLL lives in `RenderingBackends\dxvk\` (shipped with the distribution package) and is loaded at runtime by the `D3D9ClientDXVK` engine plugin. No DLL is replaced or deleted, and switching engines takes effect immediately through the official engine mechanism. The dgVoodoo2 variant is not included because its global D3D9 API hooking conflicts with the system D3D9 implementation loaded in the same process.
+
 ---
 
 ## Version history (recent)
@@ -94,6 +107,7 @@ cmake --build build64 --config Release --parallel 6
 |---|---|
 | v1.0.5 | **Localization code refactoring (phase 1)**: localizable data moved into standalone `.inc` files (official source diff reduced by ~27%); MFD layout rewritten as "official coordinates + Chinese offset table"; TransX help text auto-wrap; D3D9Client resources/.rc restored to official English; debug code removed; all plugins loaded via config |
 | v1.0.6 | **Localization code refactoring (phase 2)**: layout logic extracted to `MfdLayoutZh.inc`; MFD fixed offsets consolidated into `MfdZh.inc` (no more magic numbers in official sources); `cw`/`ch` redefined as panel-relative units so all MFD layouts scale with the panel and no longer depend on font metrics |
+| v1.0.7 | **Rendering engine upgrade**: an additional official graphics-engine plugin variant, `D3D9ClientDXVK` (DXVK/Vulkan), selectable and hot-switchable in the Launchpad video tab (no DLL replacement); the distribution build now creates the full `Textures2` high-res texture directory skeleton |
 
 ---
 

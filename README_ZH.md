@@ -56,6 +56,7 @@ Language=en
 | v1.0.4 | **修复 TransX MFD 打开即崩溃**（BodyProvider 父天体指针未初始化）；重新构建分发包 |
 | v1.0.5 | **汉化代码重构（一期）**：可剥离的汉化数据集中到独立 `.inc` 文件（官方源码改动量减少约 27%）；MFD 排版改为“官方坐标 + 中文偏置表”架构；TransX 帮助文本按宽度自动折行；D3D9Client 资源/.rc 恢复官方英文；调试代码清理；插件改为 config 加载全部 |
 | v1.0.6 | **汉化代码重构（二期）**：布局逻辑抽离到 `MfdLayoutZh.inc`；MFD 固定偏移集中到 `MfdZh.inc`（官方源文件中魔法数字清零）；`cw/ch` 改为面板比例定义——面板缩放时 MFD 布局整体等比缩放，不再依赖字体度量 |
+| v1.0.7 | **渲染引擎升级**：新增 `D3D9ClientDXVK`（DXVK/Vulkan）官方图形引擎插件变体，在启动器“视频”页直接选择、即时切换（不替换系统 DLL）；分发包构建自动创建 `Textures2` 高清纹理目录骨架 |
 
 ---
 
@@ -162,6 +163,19 @@ cmake --build build64 --config Release --parallel 6
 ```
 
 构建产物同步到 `install64/Orbiter` 后即可运行。
+
+### 分发包构建说明
+
+- 执行 `cmake --install` 时会自动创建 `Textures2\`（高清纹理覆盖目录，加载优先级高于 `Textures\`）的**完整目录骨架**，结构与 `Textures\` 一致；以后直接把高清贴图放进对应子目录即可（同名文件自动覆盖低清版）
+
+### 渲染引擎（可选）
+
+启动器 **视频** 页的“图形引擎”下拉框提供两个 D3D9Client 变体（同一渲染器、不同 D3D9 实现）：
+
+- **D3D9Client**：系统 Direct3D9 / Direct3D9On12（默认，官方行为）
+- **D3D9ClientDXVK**：通过 **DXVK** 使用 Vulkan 渲染（需要系统 Vulkan 运行时；对老 D3D9 驱动/新显卡更友好）
+
+DXVK 翻译层文件位于 `RenderingBackends\dxvk\`（随分发包分发），由 `D3D9ClientDXVK` 引擎插件在运行时加载；**不替换、不删除任何 DLL**，切换引擎即时生效（走官方引擎加载机制）。dgVoodoo2 变体因与系统 D3D9 实现共存冲突（全局 API 拦截架构）未包含。
 
 ---
 

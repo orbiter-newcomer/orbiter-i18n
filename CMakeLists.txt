@@ -277,6 +277,33 @@ install(DIRECTORY Scenarios Textures Meshes Config GravityModels Kernels Script 
 	DESTINATION ${ORBITER_INSTALL_ROOT_DIR}
 )
 
+# Textures2 = high-resolution texture override folder (searched before Textures).
+# Install any existing high-res textures and create the full directory skeleton
+# mirroring Textures, so high-res textures can simply be dropped into the
+# matching subfolder later. Runs automatically on every "cmake --install".
+install(DIRECTORY Textures2/ DESTINATION ${ORBITER_INSTALL_ROOT_DIR}/Textures2 OPTIONAL)
+install(CODE [[
+  # 安装阶段：按 Textures 的结构创建 Textures2 目录骨架（高清贴图覆盖目录）
+  set(_tex_dir "${CMAKE_INSTALL_PREFIX}/Orbiter/Textures")
+  set(_htex_dir "${CMAKE_INSTALL_PREFIX}/Orbiter/Textures2")
+  if(EXISTS "${_tex_dir}")
+    file(GLOB_RECURSE _tex_subdirs LIST_DIRECTORIES true "${_tex_dir}/*")
+    set(_created 0)
+    foreach(_d ${_tex_subdirs})
+      if(IS_DIRECTORY "${_d}")
+        file(RELATIVE_PATH _rel "${_tex_dir}" "${_d}")
+        if(NOT EXISTS "${_htex_dir}/${_rel}")
+          file(MAKE_DIRECTORY "${_htex_dir}/${_rel}")
+          math(EXPR _created "${_created}+1")
+        endif()
+      endif()
+    endforeach()
+    message(STATUS "Textures2: directory skeleton ready (${_created} new directories)")
+  else()
+    message(STATUS "Textures2: ${_tex_dir} not found, skeleton skipped")
+  endif()
+]])
+
 set(CMAKE_MODULE_PATH
 	${ORBITER_BINARY_ROOT_DIR}
     ${CMAKE_MODULE_PATH}

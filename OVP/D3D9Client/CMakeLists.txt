@@ -160,61 +160,78 @@ set_property(SOURCE ${ShaderFiles}
     PROPERTY VS_SETTINGS "ExcludedFromBuild=true"
 )
 
-add_library(D3D9Client MODULE
-	${SourceFiles}
-	${IncludeFiles}
-    ${APIHeaders}
-	${ShaderFiles}
-	D3D9Client.rc
-)
+# ---------------------------------------------------------------------------
+# D3D9Client backend variants
+# The same renderer sources are built three times:
+#   D3D9Client      - system D3D9 (or Direct3D9On12), original behaviour
+#   D3D9ClientDXVK  - loads RenderingBackends\dxvk\d3d9.dll     (Vulkan)
+# (D3D9ClientDG / dgVoodoo2 variant removed: dgVoodoo2 hooks the D3D9 API
+#  globally and does not support being loaded alongside the system d3d9.dll)
+# Each variant is a regular Orbiter graphics-engine plugin and shows up in
+# the Launchpad video tab through the official engine mechanism.
+# ---------------------------------------------------------------------------
+function(add_d3d9client_variant target_name backend_macro)
+	add_library(${target_name} MODULE
+		${SourceFiles}
+		${IncludeFiles}
+		${APIHeaders}
+		${ShaderFiles}
+		D3D9Client.rc
+	)
 
-target_include_directories(D3D9Client PUBLIC
-	${ORBITER_SOURCE_SDK_INCLUDE_DIR}
-	${DXSDK_DIR}/Include
-	${imgui_SOURCE_DIR}/
-	${imgui_SOURCE_DIR}/backends/
-)
+	target_include_directories(${target_name} PUBLIC
+		${ORBITER_SOURCE_SDK_INCLUDE_DIR}
+		${DXSDK_DIR}/Include
+		${imgui_SOURCE_DIR}/
+		${imgui_SOURCE_DIR}/backends/
+	)
 
-target_link_directories(D3D9Client PUBLIC
-	${ORBITER_BINARY_SDK_DIR}/lib
-	${DXSDK_LIB_DIR2}
-	${DXSDK_LIB_DIR}
-)
+	target_link_directories(${target_name} PUBLIC
+		${ORBITER_BINARY_SDK_DIR}/lib
+		${DXSDK_LIB_DIR2}
+		${DXSDK_LIB_DIR}
+	)
 
-target_link_libraries(D3D9Client
-	orbiter.lib
-	orbitersdk.lib
-	d3d9.lib
-	debug d3dx9d.lib
-	optimized d3dx9.lib
-	kernel32.lib
-	user32.lib
-	gdi32.lib
-	winspool.lib
-	comdlg32.lib
-	advapi32.lib
-	shell32.lib
-	ole32.lib
-	oleaut32.lib
-	uuid.lib
-	odbc32.lib
-	odbccp32.lib
-	version.lib
-	msimg32.lib
-)
+	target_link_libraries(${target_name}
+		orbiter.lib
+		orbitersdk.lib
+		d3d9.lib
+		debug d3dx9d.lib
+		optimized d3dx9.lib
+		kernel32.lib
+		user32.lib
+		gdi32.lib
+		winspool.lib
+		comdlg32.lib
+		advapi32.lib
+		shell32.lib
+		ole32.lib
+		oleaut32.lib
+		uuid.lib
+		odbc32.lib
+		odbccp32.lib
+		version.lib
+		msimg32.lib
+	)
 
-set_target_properties(D3D9Client
-	PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Modules/Plugin
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Modules/Plugin
-	COMPILE_DEFINITIONS D3D9CLIENT_EXPORTS
-	FOLDER OVP
-)
+	set_target_properties(${target_name}
+		PROPERTIES
+		LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Modules/Plugin
+		LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Modules/Plugin
+		COMPILE_DEFINITIONS D3D9CLIENT_EXPORTS
+		FOLDER OVP
+	)
 
-add_custom_command(
-	TARGET D3D9Client PRE_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${D3D9_SOURCE_DIR}/shaders/ ${ORBITER_BINARY_MODULE_DIR}/D3D9Client
-)
+	if (NOT "${backend_macro}" STREQUAL "")
+		target_compile_definitions(${target_name} PRIVATE ${backend_macro})
+	endif()
+
+	add_dependencies(${target_name}
+		${OrbiterTgt}
+		Orbitersdk
+		D3D9Client_Interface
+	)
+endfunction()
 
 add_custom_command(OUTPUT ${INCLUDE_TARGET_DIR}/gcCoreAPI.h ${INCLUDE_TARGET_DIR}/gcGUI.h
 	DEPENDS ${D3D9_SOURCE_DIR}/gcGUI.h ${D3D9_SOURCE_DIR}/gcCore.h ${D3D9_SOURCE_DIR}/gcCore.cpp
@@ -226,14 +243,16 @@ add_custom_target(D3D9Client_Interface
 	DEPENDS ${INCLUDE_TARGET_DIR}/gcCoreAPI.h ${INCLUDE_TARGET_DIR}/gcGUI.h
 )
 
-add_dependencies(D3D9Client
-	${OrbiterTgt}
-	Orbitersdk
-	D3D9Client_Interface
+add_d3d9client_variant(D3D9Client "")
+add_d3d9client_variant(D3D9ClientDXVK "D3D9CLIENT_BACKEND_DXVK")
+
+add_custom_command(
+	TARGET D3D9Client PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${D3D9_SOURCE_DIR}/shaders/ ${ORBITER_BINARY_MODULE_DIR}/D3D9Client
 )
 
-install(TARGETS D3D9Client
-	LIBRARY	
+install(TARGETS D3D9Client D3D9ClientDXVK
+	LIBRARY
 	DESTINATION ${ORBITER_INSTALL_PLUGIN_DIR}
 )
 
