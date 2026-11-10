@@ -3,7 +3,7 @@
 This repository is a **Chinese localization branch** of [Orbiter](https://github.com/orbitersim/orbiter), the open-source space flight simulator. It is based on the latest upstream code (64-bit build).
 
 - Localization repo: https://github.com/orbiter-newcomer/orbiter-i18n (localization code on the `zh-cn` branch)
-- Current version: **v1.0.4**
+- Current version: **v1.0.6**
 
 ---
 
@@ -88,6 +88,15 @@ cmake --build build64 --config Release --parallel 6
 
 ---
 
+## Version history (recent)
+
+| Version | Highlights |
+|---|---|
+| v1.0.5 | **Localization code refactoring (phase 1)**: localizable data moved into standalone `.inc` files (official source diff reduced by ~27%); MFD layout rewritten as "official coordinates + Chinese offset table"; TransX help text auto-wrap; D3D9Client resources/.rc restored to official English; debug code removed; all plugins loaded via config |
+| v1.0.6 | **Localization code refactoring (phase 2)**: layout logic extracted to `MfdLayoutZh.inc`; MFD fixed offsets consolidated into `MfdZh.inc` (no more magic numbers in official sources); `cw`/`ch` redefined as panel-relative units so all MFD layouts scale with the panel and no longer depend on font metrics |
+
+---
+
 ## Distribution package (v1.0.4)
 
 - `Orbiter.exe` (Release build with all localization)
@@ -101,11 +110,14 @@ cmake --build build64 --config Release --parallel 6
 
 ---
 
-## Important note
+## Code refactoring (completed)
 
-> **The localization code may be refactored in the future.**
->
-> Current implementations favour correctness over elegance. Any refactoring must preserve the rule that **English mode behaves exactly like upstream**, with Chinese adjustments implemented only as fixed offsets or conditional branches.
+> The localization code has gone through two refactoring phases (v1.0.5 / v1.0.6). Goals: **strip localizable content out of upstream sources**, reduce the diff against upstream, and make MFD layouts stable under panel scaling / font-size changes.
+
+- **Localization data lives in standalone files**: `Src/Orbiter/Localization.cpp` (translation table + `Tr()`/`Tr2()`), ten `*Zh.inc` files (strings for plugins/vessels, embedded via `#include`), `MfdZh.inc` (MFD Chinese offset data) and `MfdLayoutZh.inc` (layout helpers)
+- **MFD layout rule**: official coordinates are kept; Chinese mode only adds `zhOff_*` offsets; where text width matters (e.g. Docking column positions) the layout uses the measured text width so Chinese labels never overlap
+- **`cw`/`ch` are panel-relative units** (`ch=(IH*9)/200`, `cw=(ch*3)/5`): layouts scale proportionally with the MFD panel and are no longer affected by font metrics
+- **Hard constraint**: English mode behaves exactly like upstream; all localization changes are gated behind Chinese mode, and D3D9Client resources/.rc are restored to official English
 
 ---
 

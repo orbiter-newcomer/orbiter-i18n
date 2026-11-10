@@ -8,6 +8,7 @@
 #include "Config.h"
 #include "Mfd.h"
 #include "Localization.h"
+#include "MfdZh.inc"
 #include "MfdOrbit.h"
 #include "MfdSurface.h"
 #include "MfdMap.h"
@@ -683,14 +684,10 @@ void Instrument::SetSize (const Spec &spec, bool defer_alloc)
 		mfdfont[3] = gc->clbkCreateFont (-h, true, "Sans");
 		mfdfontmenu = gc->clbkCreateFont (-h, false, "!Fixed");
 
-		oapi::Sketchpad *skp = gc->clbkGetSketchpad (surf);
-		if (skp) {
-			skp->SetFont (mfdfont[0]);
-			DWORD charsize = skp->GetCharSize();
-			cw = HIWORD(charsize);
-			ch = LOWORD(charsize);
-			gc->clbkReleaseSketchpad (skp);
-		}
+		// 面板比例布局单位：cw/ch 由面板尺寸派生（不再取字体度量）。
+		// 这样面板缩放时所有 MFD 的布局按比例同步缩放，字体/字号变化也不会导致错位。
+		ch = (IH*9)/200;   // 行高单位（与官方标准字体高度公式一致）
+		cw = (ch*3)/5;     // 字符宽单位（等宽字体宽高比约 0.6）
 	}
 }
 
@@ -906,7 +903,7 @@ void Instrument::DisplayModes (int page)
 	char *name;
 	int n, x, y, pg;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = max (bt_dy, ch*2 + ch/4);
+	int dy = max (bt_dy, ch*zhOff_Menu.rowCh + (ch/4)*zhOff_Menu.rowQuarterCh);
 	int slot;
 
 	ClearSurface();
@@ -948,7 +945,7 @@ void Instrument::DisplayModes (int page)
 			KeyStr[1] = (id == MFD_RIGHT ? 'R' : 'L');
 			KeyStr[8] = Key2Char[m->Spec()->key];
 			skp->SetTextColor (col_grey2);
-			skp->Text (x, y + ch + ch/4, KeyStr, 10);
+			skp->Text (x, y + ch*zhOff_Menu.keyCh + (ch/4)*zhOff_Menu.keyQuarterCh, KeyStr, 10);
 		}
 		y += dy;
 		slot++;
@@ -983,7 +980,7 @@ void Instrument::DrawMenu ()
 	const MFDBUTTONMENU *mnu;
 	int side, i, n, x, y, item, itemofs, nmnu;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = max (bt_dy, ch*2 + ch/4);
+	int dy = max (bt_dy, ch*zhOff_Menu.rowCh + (ch/4)*zhOff_Menu.rowQuarterCh);
 
 	ClearSurface();
 	oapi::Sketchpad *skp = BeginDraw ();
@@ -1006,9 +1003,9 @@ void Instrument::DrawMenu ()
 
 			int w1 = mnu[item].line1 ? (int)skp->GetTextWidth(mnu[item].line1, (int)strlen(mnu[item].line1)) : 0;
 			int w2 = mnu[item].line2 ? (int)skp->GetTextWidth(mnu[item].line2, (int)strlen(mnu[item].line2)) : 0;
-			int gap = (mnu[item].line1 && mnu[item].line2) ? cw/2 : 0;
+			int gap = (mnu[item].line1 && mnu[item].line2) ? (cw/2)*zhOff_Menu.itemGapHalfCw : 0;
 			int total = w1 + gap + w2;
-			int lx = side ? (IW - cw/2 - total) : x;
+			int lx = side ? (IW - (cw/2)*zhOff_Menu.rightGapHalfCw - total) : x;
 
 			// Menu labels are provided by the MFD modes in English; translate them
 			// at display time (English mode returns the original text unchanged).

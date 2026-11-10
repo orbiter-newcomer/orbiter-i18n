@@ -3,6 +3,8 @@
 
 #include "MfdOrbit.h"
 #include "Localization.h"
+#include "MfdZh.inc"
+#include "MfdLayoutZh.inc"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"
@@ -301,24 +303,16 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 	if (dispmode != DISP_LIST) { // draw orbit graphs
 		bool eclproj;
 		{	// Frame/projection header, right-aligned as a whole so that it never
-			// overlaps the left-aligned title. Widths are measured at runtime, so
-			// Chinese and English layouts both fit.
-			const char *frmStr = orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU");
-			const char *prjStr = orbiter::Tr(projmode == PRJ_SHIP ? "SHP" : projmode == PRJ_TGT ? "TGT" : (frmmode == FRM_ECL ? "ECL" : "EQU"));
-			const char *lbl = orbiter::Tr("Frm");
-			const char *plbl = orbiter::Tr("Prj");
-			int lw = (int)skp->GetTextWidth(lbl, (int)strlen(lbl));
-			int fw = (int)skp->GetTextWidth(frmStr, (int)strlen(frmStr));
-			int plw = (int)skp->GetTextWidth(plbl, (int)strlen(plbl));
-			int pw = (int)skp->GetTextWidth(prjStr, (int)strlen(prjStr));
-			int total = lw + cw + fw + cw*3 + plw + cw + pw;
-			int hx = IW - total - cw;
-			skp->SetTextColor (draw[2][0].col);
-			skp->Text (hx, 1, lbl, (int)strlen(lbl)); hx += lw + cw;
-			skp->Text (hx, 1, frmStr, (int)strlen(frmStr)); hx += fw + cw*3;
-			skp->SetTextColor (draw[2][1].col);
-			skp->Text (hx, 1, plbl, (int)strlen(plbl)); hx += plw + cw;
-			skp->Text (hx, 1, prjStr, (int)strlen(prjStr));
+			// overlaps the left-aligned title (helper in MfdLayoutZh.inc).
+			const char *texts[4] = {
+				orbiter::Tr("Frm"),
+				orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU"),
+				orbiter::Tr("Prj"),
+				orbiter::Tr(projmode == PRJ_SHIP ? "SHP" : projmode == PRJ_TGT ? "TGT" : (frmmode == FRM_ECL ? "ECL" : "EQU"))
+			};
+			const DWORD colors[4] = { draw[2][0].col, draw[2][0].col, draw[2][1].col, draw[2][1].col };
+			const int gaps[4] = { 1, 3, 1, 0 };
+			DrawRightAlignedSegments(skp, IW - zhOff_Orbit.headerRightCw*cw, 1, texts, colors, gaps, 4, cw);
 		}
 		if (bValidShpEl && projmode == PRJ_SHIP) {
 			irot = IRotMatrix (shpel->cost, shpel->sint, shpel->cosi, shpel->sini);
@@ -345,15 +339,14 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			DisplayOrbit (skp, 1, o_pt2);
 		}
 	} else {
-		{	// Frame header (list mode), right-aligned.
-			const char *frmStr = orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU");
-			const char *lbl = orbiter::Tr("Frm");
-			int lw = (int)skp->GetTextWidth(lbl, (int)strlen(lbl));
-			int fw = (int)skp->GetTextWidth(frmStr, (int)strlen(frmStr));
-			int hx = IW - (lw + cw + fw) - cw;
-			skp->SetTextColor (draw[2][0].col);
-			skp->Text (hx, 1, lbl, (int)strlen(lbl)); hx += lw + cw;
-			skp->Text (hx, 1, frmStr, (int)strlen(frmStr));
+		{	// Frame header (list mode), right-aligned (helper in MfdLayoutZh.inc).
+			const char *texts[2] = {
+				orbiter::Tr("Frm"),
+				orbiter::Tr(frmmode == FRM_ECL ? "ECL" : "EQU")
+			};
+			const DWORD colors[2] = { draw[2][0].col, draw[2][0].col };
+			const int gaps[2] = { 1, 0 };
+			DrawRightAlignedSegments(skp, IW - zhOff_Orbit.headerRightCw*cw, 1, texts, colors, gaps, 2, cw);
 		}
 	}
 
@@ -389,7 +382,7 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			// widest row ends at the right edge of the MFD (text left-aligned).
 			int tgtMaxW = 0;
 			DisplayElements (skp, tgtel, 0, 0, 1, &tgtMaxW);
-			int tgtX = IW - cw/2 - tgtMaxW;
+			int tgtX = IW - (cw/2)*zhOff_Orbit.tgtRightHalfCw - tgtMaxW;
 			if (tgtX < IW/2) tgtX = IW/2;
 			skp->Text (tgtX, (ch*3)/2, cbuf, (int)strlen(cbuf));
 			DisplayElements (skp, tgtel, tgtX, (ch*5)/2, 0, 0);

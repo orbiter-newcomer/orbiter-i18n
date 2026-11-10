@@ -3,6 +3,7 @@
 
 #include "MfdDocking.h"
 #include "Localization.h"
+#include "MfdZh.inc"
 #include "Pane.h"
 #include "Psys.h"
 #include "Nav.h"
@@ -125,12 +126,6 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 	int i, len, rd, x0, x1, y0, y1, xc, yc, x = cw/2, y = ch;
 
 	const bool zh = orbiter::IsChinese();
-	// ---- 中文布局偏置表（官方坐标为基准，仅中文模式追加以下固定偏置）----
-	// 单位: cw（MFD 字符宽）。标定方法: 中文标签宽度 - 对应英文标签宽度。
-	// 中文模式新增的固定偏置（列位置改为按实测文本宽度自适应，见下）
-	static const struct {
-		int navRowX;   // 右上角 NAV 行: "接收机" - "NAV" = 3cw，左移防右端截断
-	} zhOff_Dock = { -3 };
 	char cbuf[256], modestr[64] = "";
 
 	strcpy (cbuf, orbiter::Tr("APPR/DOCK"));
@@ -398,14 +393,14 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		y0 = (ch * 5) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
 		int hdRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-		int hdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int hdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(Z.x) > 2e-3)
 		DrawArrow(x0 + hdArrowOff, y0, Z.x < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vD"), DistStr(fabs(Z.y), 5));
 		x0 = cw/2 + cw*11;
-		if (zh) { int need = cw/2 + hdRowW + 2*cw; if (need > x0) x0 = need; }
+		if (zh) { int need = cw/2 + hdRowW + zhOff_Dock.colGap*cw; if (need > x0) x0 = need; }
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int vdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int vdArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(Z.y) > 2e-3)
 		DrawArrow(x0 + vdArrowOff, y0, Z.y < 0 ? 2 : 0, skp);
 
@@ -419,14 +414,14 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		y0 = (ch * 7) / 2;
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
 		int hvRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
-		int hvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int hvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(dvx) > 2e-4)
 		DrawArrow(x0 + hvArrowOff, y0, dvx < 0 ? 3 : 1, skp);
 		sprintf(cbuf, "%s %s", orbiter::Tr("vV"), DistStr(fabs(dvy), 4));
 		x0 = cw/2 + cw*11;
-		if (zh) { int need = cw/2 + hvRowW + 2*cw; if (need > x0) x0 = need; }
+		if (zh) { int need = cw/2 + hvRowW + zhOff_Dock.colGap*cw; if (need > x0) x0 = need; }
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int vvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int vvArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*5)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (fabs(dvy) > 2e-4)
 		DrawArrow(x0 + vvArrowOff, y0, dvy < 0 ? 2 : 0, skp);
 
@@ -495,25 +490,25 @@ void Instrument_Docking::UpdateDraw (oapi::Sketchpad *skp)
 		double absYdeg = fabs(yaw)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("Y"), absYdeg);
 		skp->Text(x0, y0, cbuf, strlen(cbuf));
-		int yArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int yArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		int yRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absYdeg > 2e-2)
 		DrawArrow(x0 + yArrowOff, y0, yaw < 0 ? 1 : 3, skp);
 		int xP = cw/2 + cw*11;
-		if (zh) { int need = cw/2 + yRowW + 2*cw; if (need > xP) xP = need; }
+		if (zh) { int need = cw/2 + yRowW + zhOff_Dock.colGap*cw; if (need > xP) xP = need; }
 		double absPdeg = fabs(pitch)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("P"), absPdeg);
 		skp->Text(xP, y0, cbuf, strlen(cbuf));
-		int pArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int pArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		int pRowW = (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf));
 		if (absPdeg > 2e-2)
 		DrawArrow(xP + pArrowOff, y0, pitch < 0 ? 0 : 2, skp);
 		int xB = cw/2 + cw*22;
-		if (zh) { int need = xP + pRowW + 2*cw; if (need > xB) xB = need; }
+		if (zh) { int need = xP + pRowW + zhOff_Dock.colGap*cw; if (need > xB) xB = need; }
 		double absBdeg = fabs(bank)*DEG;
 		sprintf(cbuf, "%s  %0.1lf", orbiter::Tr("B"), absBdeg);
 		skp->Text(xB, y0, cbuf, strlen(cbuf));
-		int bArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + cw/2 : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
+		int bArrowOff = (zh ? (int)skp->GetTextWidth(cbuf, (int)strlen(cbuf)) + (cw/2)*zhOff_Dock.arrowHalfCw : (cw*3)/2);   // 中文：箭头放在数值之后（整行末尾）；英文：官方公式（数值前）
 		if (absBdeg > 2e-2)
 		DrawArrow(xB + bArrowOff, y0, bank < 0 ? 1 : 3, skp);
 	}

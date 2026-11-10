@@ -3,6 +3,7 @@
 
 #include "MfdAlign.h"
 #include "Localization.h"
+#include "MfdLayoutZh.inc"
 #include "Pane.h"
 #include "Planet.h"
 #include "Psys.h"
@@ -279,8 +280,7 @@ void Instrument_OPlaneAlign::UpdateDraw (oapi::Sketchpad *skp)
 	}
 
 	// output relevant elements of current and target orbits, and relative inclination + rate
-	{
-		int i;
+	{	// 三列（表头 + 两行数据）按实测列宽紧凑排列（helper 在 MfdLayoutZh.inc）
 		char hcol[3][32], r1[3][64], r2[3][64];
 		strcpy(hcol[0], orbiter::Tr("Current"));
 		strcpy(hcol[1], orbiter::Tr("Target"));
@@ -291,25 +291,11 @@ void Instrument_OPlaneAlign::UpdateDraw (oapi::Sketchpad *skp)
 		sprintf(r2[0], "%s% 7.2f°", orbiter::Tr("LAN"), Deg(shpel->theta));
 		sprintf(r2[1], "%s% 7.2f°", orbiter::Tr("LAN"), Deg(tgtel->theta));
 		sprintf(r2[2], "%s %+7.3f°/s", orbiter::Tr("R"), Deg(didt));
-		int colx[3], colw[3];
-		for (i = 0; i < 3; i++) {
-			colw[i] = (int)skp->GetTextWidth(hcol[i], (int)strlen(hcol[i]));
-			int w = (int)skp->GetTextWidth(r1[i], (int)strlen(r1[i]));
-			if (w > colw[i]) colw[i] = w;
-			w = (int)skp->GetTextWidth(r2[i], (int)strlen(r2[i]));
-			if (w > colw[i]) colw[i] = w;
-			colw[i] += cw;
-		}
-		colx[0] = x; colx[1] = colx[0]+colw[0]; colx[2] = colx[1]+colw[1];
+		const char *h[3] = { hcol[0], hcol[1], hcol[2] };
+		const char *a[3] = { r1[0], r1[1], r1[2] };
+		const char *b[3] = { r2[0], r2[1], r2[2] };
 		skp->SetPen(draw[0][1].solidpen);
-		for (i = 0; i < 3; i++) skp->Text(colx[i], y, hcol[i], (int)strlen(hcol[i]));
-		y += ch+1;
-		for (i = 0; i < 3; i++) skp->Line(colx[i], y, colx[i]+colw[i]-cw/2, y);
-		y += 1;
-		for (i = 0; i < 3; i++) skp->Text(colx[i], y, r1[i], (int)strlen(r1[i]));
-		y += ch;
-		for (i = 0; i < 3; i++) skp->Text(colx[i], y, r2[i], (int)strlen(r2[i]));
-		y += 2 * ch;
+		y = DrawMeasured3Columns(skp, x, y, cw, ch, h, a, b);
 	}
 
 	// node encounter data

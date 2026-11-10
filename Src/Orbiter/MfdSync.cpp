@@ -3,6 +3,7 @@
 
 #include "MfdSync.h"
 #include "Localization.h"
+#include "MfdZh.inc"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"
@@ -247,8 +248,8 @@ void Instrument_OSync::UpdateDraw (oapi::Sketchpad *skp)
 		int w0 = (int)skp->GetTextWidth(h0, (int)strlen(h0));
 		int w1 = (int)skp->GetTextWidth(h1, (int)strlen(h1));
 		int w2 = (int)skp->GetTextWidth(h2, (int)strlen(h2));
-		int gap = cw;            // 列间距（紧凑）
-		int rightMargin = cw/2;  // 右边距
+		int gap = zhOff_Sync.colGap*cw;    // 列间距（紧凑）
+		int rightMargin = (cw/2)*zhOff_Sync.rightHalfCw;  // 右边距
 		x  = IW - rightMargin - (w0 + gap + w1 + gap + w2);
 		x0 = x + w0 + gap;
 		x1 = x0 + w1 + gap;

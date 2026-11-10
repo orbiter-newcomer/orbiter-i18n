@@ -3,6 +3,7 @@
 
 #include "MfdLanding.h"
 #include "Localization.h"
+#include "MfdZh.inc"
 #include "Nav.h"
 #include "Astro.h"
 #include "Config.h"
@@ -102,13 +103,6 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	bool draw_cone = false; // draw VTOL cone?
 
 	const bool zh = orbiter::IsChinese();
-	// ---- 中文布局偏置表（官方坐标为基准，仅中文模式追加以下固定偏置）----
-	// 单位: cw（MFD 字符宽）。标定方法: 中文标签宽度 - 对应英文标签宽度。
-	static const struct {
-		int navRowX;   // 右上角 NAV 行: "接收机"(约6cw) - "NAV"(3cw) = 3cw，左移防止右端截断
-		int altLblX;   // 高度柱条标签: 中文更宽，向左让出与"升降率"的间距
-		int vspdLblX;  // 升降率柱条标签: 向右让出间距
-	} zhOff_Landing = { -3, 0, 0 };
 
 	DisplayTitle (skp, orbiter::Tr("VOR/VTOL"));
 
@@ -246,9 +240,9 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetTextAlign (oapi::Sketchpad::CENTER);
 	skp->Text ((IW* 9)/12-(5*barw)/2, bar0-barh/2, "10 ^ x m", 8);
 	skp->Text ((IW*11)/12-2*barw, bar0-barh/2, "10 ^ x m/s", 10);
-	skp->Text (circx-barw-cw/2, circy-circr/2, "10 ^ x m", 8);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
+	skp->Text (circx-barw-(cw/2)*zhOff_Landing.cirScaleLblHalfCw, circy-circr/2, "10 ^ x m", 8);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 	skp->SetTextColor (draw[1][0].col);
-	skp->Text (circx-barw-cw/2, circy+circr/2, "10 ^ x m/s", 10);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
+	skp->Text (circx-barw-(cw/2)*zhOff_Landing.cirScaleLblHalfCw, circy+circr/2, "10 ^ x m/s", 10);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 
 	// VTOL cone
 	if (draw_cone) {
