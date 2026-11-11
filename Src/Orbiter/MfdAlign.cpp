@@ -3,7 +3,7 @@
 
 #include "MfdAlign.h"
 #include "Localization.h"
-#include "MfdLayoutZh.inc"
+#include "MfdZh.inc"
 #include "Pane.h"
 #include "Planet.h"
 #include "Psys.h"

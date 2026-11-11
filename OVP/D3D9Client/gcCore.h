@@ -904,12 +904,18 @@ public:
 inline gcCore2* gcGetCoreInterface()
 {
 	if (pCoreInterface) return pCoreInterface;
-	HMODULE hModule = GetModuleHandle("D3D9Client.dll");
-	if (hModule) {
+	// 引擎有两个构建变体：D3D9Client.dll（系统 D3D9）与 D3D9ClientDXVK.dll（Vulkan/DXVK），
+	// 两者导出相同的 gcBindCoreMethod 接口；运行时只有其中一个被加载，这里依次尝试。
+	static const char *engine_dlls[] = { "D3D9Client.dll", "D3D9ClientDXVK.dll" };
+	for (int i = 0; i < ARRAYSIZE(engine_dlls); i++) {
+		HMODULE hModule = GetModuleHandle(engine_dlls[i]);
+		if (!hModule) continue;
 		__gcBindCoreMethod pBindCoreMethod = (__gcBindCoreMethod)GetProcAddress(hModule, "gcBindCoreMethod");
 		if (pBindCoreMethod) return (pCoreInterface = new gcCore2(pBindCoreMethod));
-		else oapiWriteLogV("gcGetCoreInterface() FAILED");
-	} else oapiWriteLogV("gcGetCoreInterface() FAILED. D3D9Client Not Found");
+		oapiWriteLogV("gcGetCoreInterface() FAILED");
+		return NULL;
+	}
+	oapiWriteLogV("gcGetCoreInterface() FAILED. D3D9Client Not Found");
 	return NULL;
 }
 

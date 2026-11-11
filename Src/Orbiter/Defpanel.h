@@ -19,6 +19,8 @@
 
 class DefaultPanel {
 	friend class Pane;
+	// Chinese MFD button labels (data in InstrumentZh.inc, logic in ZhCommon.inc)
+	void DrawZhMfdButtonLabels ();
 
 public:
 	DefaultPanel (Pane *_pane, int cidx);

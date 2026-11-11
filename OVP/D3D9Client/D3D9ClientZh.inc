@@ -1,3 +1,96 @@
+// D3D9ClientZh.inc - D3D9Client 各设置对话框/窗口的汉化数据（中文模式）
+//
+// 按用户要求把同一 target 的窗口数据集中到本文件。各源文件定义对应宏后包含：
+//   AtmoControls.cpp : #define ZH_D3D9_ATMO
+//   DebugControls.cpp: #define ZH_D3D9_DEBUG
+//   VideoTab.cpp     : #define ZH_D3D9_VIDEO
+// 英文模式下这些数据不使用，控件保持官方英文原样。
+//
+
+#if defined(ZH_D3D9_ATMO)
+// Localization data for the atmospheric controls dialog (moved out of AtmoControls.cpp)
+// ==============================================================
+// Dialog message handler
+
+// Chinese UI localization for the atmospheric controls dialog (rc stays English)
+static const struct { const wchar_t *en; const wchar_t *zh; } atmMap[] = {
+    { L"Copy To Surface", L"复制到表面" },
+    { L"Copy to Low Orbit", L"复制到低轨道" },
+    { L"Copy to High Orbit", L"复制到高轨道" },
+    { L"Visualize Scatter Tables", L"可视化散射表" },
+    { L"Load Settings", L"加载设置" },
+    { L"Save Settings", L"保存设置" },
+    { L"Configuration", L"配置" },
+    { L"Close", L"关闭" }
+};
+
+#elif defined(ZH_D3D9_DEBUG)
+// Localization data for the D3D9 Debug Controls dialog (moved out of DebugControls.cpp)
+// ==============================================================
+// Chinese UI localization for the D3D9 Debug Controls dialog.
+// The .rc resources stay English (used as-is in English mode); in Chinese
+// mode the controls are re-labelled at dialog initialisation time.
+static const struct { const wchar_t *en; const wchar_t *zh; } dbgMap[] = {
+    { L"Mesh Options", L"网格选项" },
+    { L"Close", L"关闭" },
+    { L"Open", L"打开" },
+    { L"Execute", L"执行" },
+    { L"Display", L"显示" },
+    { L"Camera", L"相机" },
+    { L"Group Idx", L"组索引" },
+    { L"Mesh Idx", L"网格索引" },
+    { L"Highlight selected group", L"高亮所选组" },
+    { L"Highlight selected mesh", L"高亮所选网格" },
+    { L"Boxes", L"包围盒" },
+    { L"Normalize", L"归一化" },
+    { L"Mipmap fade", L"Mipmap 淡出" },
+    { L"Reduce seams", L"减少接缝" },
+    { L"Spheres", L"球体" },
+    { L"Surface Tiles", L"表面瓦片" },
+    { L"Selected group only", L"仅所选组" },
+    { L"Bounding geometry", L"包围几何" },
+    { L"Visualize local light cones", L"可视化局部光锥" },
+    { L"Mesh debugger", L"网格调试器" },
+    { L"Misc.", L"杂项" },
+    { L"Scene Debugger", L"场景调试器" },
+    { L"Texture Tools", L"纹理工具" },
+    { L"Selected mesh only", L"仅所选网格" },
+    { L"Dual sided", L"双面" },
+    { L"Selected visual only", L"仅所选视觉体" },
+    { L"Speed", L"速度" },
+    { L"Static", L"静态" },
+    { L"Add ambient light", L"添加环境光" },
+    { L"Wireframe", L"线框" },
+    { L"Material", L"材质" },
+    { L"Material property", L"材质属性" },
+    { L"Default Shader", L"默认着色器" },
+    { L"Debug Mode", L"调试模式" },
+    { L"Display special buffer", L"显示特殊缓冲区" },
+    { L"Resolution Bias", L"分辨率偏置" },
+    { L"Select Action", L"选择操作" },
+    { L"Target", L"目标" },
+    { L"Noise:", L"噪声:" },
+    { L"Save materials", L"保存材质" },
+    { L"Create kernel", L"创建内核" },
+    { L"Data window", L"数据窗口" },
+    { L"Save envmap", L"保存环境贴图" },
+    { L"Reload Shader", L"重载着色器" },
+    { L"Reload Textures", L"重载纹理" },
+    { L"Texture: None", L"纹理：无" },
+    { L"Pick", L"拾取" },
+    { L"Mesh: None", L"网格：无" },
+    { L"Group Status:", L"组状态：" },
+    { L"Paste", L"粘贴" },
+    { L"Copy", L"复制" },
+    { L"Link channels", L"链接通道" },
+    { L"Use and Save the property", L"使用并保存该属性" },
+    { L"Extend material range", L"扩展材质范围" },
+    { L"FPS Limiter", L"FPS 限制" },
+    { L"Export textures", L"导出纹理" },
+    { L"-- Select a mesh group --", L"-- 选择一个网格组 --" }
+};
+
+#elif defined(ZH_D3D9_VIDEO)
 // Auto-generated English -> Chinese UI strings for the D3D9Client setup dialogs
 static const wchar_t *L10nChinese(const wchar_t *en)
 {
@@ -169,3 +262,7 @@ void VideoTab::LocalizeSetupDialogChinese(HWND hWnd)
 	EnumChildWindows(hWnd, LocalizeChildChinese, 0);
 	EnumChildWindows(hWnd, LocalizeComboChinese, 0);
 }
+
+#else
+#error D3D9ClientZh.inc: define ZH_D3D9_ATMO, ZH_D3D9_DEBUG or ZH_D3D9_VIDEO before including
+#endif

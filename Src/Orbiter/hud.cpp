@@ -11,6 +11,8 @@
 #include "Pane.h"
 #include "Log.h"
 #include <fstream>
+#define ZH_HUD
+#include "InstrumentZh.inc"   // 汉化扩展：其他仪表数据（玻璃座舱面板 + HUD；流程见 ZhCommon.inc）
 
 using namespace std;
 
@@ -122,6 +124,7 @@ void HUD::DrawDefault (oapi::Sketchpad *skp)
 
 void HUD::RenderDefault ()
 {
+	ZhHud::Begin();
 	int ivtx = 0, iidx = 0;
 	AddMesh_CenterMarker (ivtx, iidx);
 	UpdateMesh (ivtx, iidx);
@@ -477,12 +480,17 @@ void HUD::AddMesh_Readout (int &ivtx, int &iidx, int side, const char *str, int 
 		ldy = renderprm.scal*11;
 		lx0 = (side ? x0 + dx + renderprm.scal*2 : x0 - ldx - renderprm.scal*2);
 		ly0 = y0 + renderprm.scal*14;
-		gs->Vtx[ivtx+2].x = gs->Vtx[ivtx+3].x = (gs->Vtx[ivtx+0].x = gs->Vtx[ivtx+1].x = (float)lx0) + (float)ldx;
-		gs->Vtx[ivtx+1].y = gs->Vtx[ivtx+3].y = (gs->Vtx[ivtx+0].y = gs->Vtx[ivtx+2].y = (float)ly0) + (float)ldy;
-		gs->Vtx[ivtx+2].tu = gs->Vtx[ivtx+3].tu = (gs->Vtx[ivtx+0].tu = gs->Vtx[ivtx+1].tu = (float)((146+label*26)/hudtexw)) + (float)(26/hudtexw);
-		gs->Vtx[ivtx+1].tv = gs->Vtx[ivtx+3].tv = (gs->Vtx[ivtx+0].tv = gs->Vtx[ivtx+2].tv = (float)(62.5/hudtexh)) + (float)(11/hudtexh);
-		ivtx += 4;
-		nbox++;
+		int zhLabelX = (int)(lx0 + ldx*0.5);
+		if (side) zhLabelX += (int)(renderprm.scal*4);   // 右侧读数标签右移，避免贴住数值
+		if (!ZhHud::AddReadoutLabel (label, zhLabelX, (int)(ly0 + ldy*0.5),
+			max (16, (int)(renderprm.scal*17)))) {
+			gs->Vtx[ivtx+2].x = gs->Vtx[ivtx+3].x = (gs->Vtx[ivtx+0].x = gs->Vtx[ivtx+1].x = (float)lx0) + (float)ldx;
+			gs->Vtx[ivtx+1].y = gs->Vtx[ivtx+3].y = (gs->Vtx[ivtx+0].y = gs->Vtx[ivtx+2].y = (float)ly0) + (float)ldy;
+			gs->Vtx[ivtx+2].tu = gs->Vtx[ivtx+3].tu = (gs->Vtx[ivtx+0].tu = gs->Vtx[ivtx+1].tu = (float)((146+label*26)/hudtexw)) + (float)(26/hudtexw);
+			gs->Vtx[ivtx+1].tv = gs->Vtx[ivtx+3].tv = (gs->Vtx[ivtx+0].tv = gs->Vtx[ivtx+2].tv = (float)(62.5/hudtexh)) + (float)(11/hudtexh);
+			ivtx += 4;
+			nbox++;
+		}
 	}
 	if (rmarker) {
 		ldx = renderprm.scal*8;
@@ -1445,7 +1453,10 @@ void HUD_Orbit::UpdateMesh (int &ivtx, int &iidx)
 		refname[i] = '\0';
 		refwidth = TexBltString (refname, 50, 243) + 50;
 	}
-	AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 0, 242, refwidth, 14);
+	if (!ZhHud::AddBand (0, (int)spec.CX, (int)(renderprm.scal*10 + renderprm.scal*9.8),
+		max (12, (int)(renderprm.scal*18)), name)) {
+		AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 0, 242, refwidth, 14);
+	}
 
 	Vector V = self->GVel() - cntobj->GVel();
 	Vector Vunit = V.unit();
@@ -1713,7 +1724,10 @@ void HUD_Surface::UpdateMesh (int &ivtx, int &iidx)
 		refname[i] = '\0';
 		refwidth = TexBltString (refname, 310, 243) + 54;
 	}
-	AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 256, 242, refwidth, 14);
+	if (!ZhHud::AddBand (1, (int)spec.CX, (int)(renderprm.scal*10 + renderprm.scal*9.8),
+		max (12, (int)(renderprm.scal*18)), name)) {
+		AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 256, 242, refwidth, 14);
+	}
 
 	// velocity marker
 	if (sp->groundspd > 1.0)
@@ -1967,13 +1981,16 @@ void HUD_Docking::UpdateMesh (int &ivtx, int &iidx)
 
 		NavRadioSpec *nav = self->nav+nv;
 
-		sprintf (cbuf, "NAV%d %0.2fMHz", nv+1, nav->freq);
-		if (_strnicmp(cbuf, navname, 127)) {
-			for (i = 0; cbuf[i] && i<127; i++) navname[i] = cbuf[i];
-			navname[i] = '\0';
-			navwidth = TexBltString (navname, 256, 230);
+		if (!ZhHud::AddDockNav ((int)spec.CX, (int)(renderprm.scal*30 + renderprm.scal*9.8),
+			max (16, (int)(renderprm.scal*17)), nv+1, nav->freq)) {
+			sprintf (cbuf, "NAV%d %0.2fMHz", nv+1, nav->freq);
+			if (_strnicmp(cbuf, navname, 127)) {
+				for (i = 0; cbuf[i] && i<127; i++) navname[i] = cbuf[i];
+				navname[i] = '\0';
+				navwidth = TexBltString (navname, 256, 230);
+			}
+			AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*navwidth*0.7, renderprm.scal*30, renderprm.scal*navwidth*1.4, renderprm.scal*19.6, 256, 229, navwidth, 13);
 		}
-		AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*navwidth*0.7, renderprm.scal*30, renderprm.scal*navwidth*1.4, renderprm.scal*19.6, 256, 229, navwidth, 13);
 
 		if (nav->sender) {
 			switch (nav->sender->Type()) {
@@ -1997,7 +2014,10 @@ void HUD_Docking::UpdateMesh (int &ivtx, int &iidx)
 		refname[i] = '\0';
 		refwidth = TexBltString (refname, 47, 230) + 47;
 	}
-	AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 0, 229, refwidth, 13);
+	if (!ZhHud::AddBand (2, (int)spec.CX, (int)(renderprm.scal*10 + renderprm.scal*9.8),
+		max (12, (int)(renderprm.scal*18)), refstr)) {
+		AddMesh_Billboard (ivtx, iidx, spec.CX-renderprm.scal*refwidth*0.7, renderprm.scal*10, renderprm.scal*refwidth*1.4, renderprm.scal*19.6, 0, 229, refwidth, 13);
+	}
 
 	if (!tgt) return; // no docking target
 

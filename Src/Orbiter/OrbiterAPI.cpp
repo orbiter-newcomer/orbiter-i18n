@@ -66,6 +66,19 @@ DLLEXPORT const char *oapiTr (const char *english)
 	return orbiter::Tr(english);
 }
 
+// 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）
+extern void ZhHudAddText (int x, int y, int size, const char *utf8);
+
+DLLEXPORT void oapiZhHudText (int x, int y, int size, const char *utf8)
+{
+	ZhHudAddText (x, y, size, utf8);
+}
+
+DLLEXPORT int oapiZhActive ()
+{
+	return orbiter::IsChinese() ? 1 : 0;
+}
+
 DLLEXPORT const char *oapiGetCmdLine ()
 {
 	return orbiter::CommandLine::Instance().CmdLine();

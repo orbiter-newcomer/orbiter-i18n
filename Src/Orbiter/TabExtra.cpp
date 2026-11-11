@@ -787,7 +787,8 @@ bool ExtraStabilisation::clbkOpen (HWND hParent)
 }
 
 
-#include "TabExtraZh.inc"
+#define LAUNCHPAD_ZH_EXTRA
+#include "LaunchpadZh.inc"
 void ExtraStabilisation::InitDialog (HWND hWnd)
 {
 	SetDialog (hWnd, pTab->Cfg()->CfgPhysicsPrm);

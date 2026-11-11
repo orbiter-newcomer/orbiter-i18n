@@ -20,6 +20,7 @@ public:
 	virtual ~Instrument_User();
 	int Type() const { return type; }
 	char ModeSelKey () const { return selkey; }
+	const char *ModeName () const { return name; }
 	inline bool KeyImmediate (char *kstate) { return mfd->ConsumeKeyImmediate (kstate); }
 	inline bool KeyBuffered (DWORD key) { return mfd->ConsumeKeyBuffered (key); }
 	inline bool ProcessButton (int bt, int event) { return mfd->ConsumeButton (bt, event); }

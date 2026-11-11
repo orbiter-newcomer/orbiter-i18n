@@ -1851,7 +1851,8 @@ static void SetDlgTextU(HWND hDlg, int id, const char *utf8)
 	}
 }
 
-#include "DebugControlsZh.inc"
+#define ZH_D3D9_DEBUG
+#include "D3D9ClientZh.inc"
 
 static BOOL CALLBACK ZhDebugLocCb(HWND hWnd, LPARAM)
 {

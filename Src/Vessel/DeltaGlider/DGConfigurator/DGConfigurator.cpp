@@ -75,7 +75,8 @@ void DGConfig::Apply (HWND hWnd)
 	EnableHires (enable);
 }
 
-#include "DGConfiguratorZh.inc"
+#define DG_ZH_CONFIG
+#include "../DeltaGliderToolsZh.inc"
 INT_PTR CALLBACK DGConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {

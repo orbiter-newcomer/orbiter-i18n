@@ -33,6 +33,9 @@
 #include "meshres_vc.h"
 #include "meshres_p0.h"
 #include "DrawAPI.h"
+#include "DeltaGliderZh.inc"   // 本体：HUD 中文辅助
+#define DG_ZH_EDITOR
+#include "DeltaGliderToolsZh.inc"   // 游戏外：场景编辑器载具页 + 启动器配置   // 汉化扩展：编辑器页面 / HUD 中文辅助
 #include <stdio.h>
 #include <string>
 #include <math.h>
@@ -519,7 +522,8 @@ bool DeltaGlider::clbkDrawHUD (int mode, const HUDPAINTSPEC *hps, oapi::Sketchpa
 		double tmp;
 		if (!ssys_aerodyn->AirbrakeState().IsActive() || modf(oapiGetSimTime(), &tmp) < 0.5) {
 			skp->SetTextAlign(oapi::Sketchpad::CENTER, oapi::Sketchpad::BOTTOM);
-			skp->Text(hps->CX, hps->CY - hps->Markersize/2, "AIRBRK", 6);
+			const char *abstr = ZhDgAirbrakeText();   // 汉化：中文模式显示"减速板"
+			skp->Text(hps->CX, hps->CY - hps->Markersize/2, abstr, (int)strlen(abstr));
 		}
 	}
 
@@ -628,10 +632,13 @@ void DeltaGlider::clbkRenderHUD (int mode, const HUDPAINTSPEC *hps, SURFHANDLE h
 	if (!ssys_aerodyn->AirbrakeState().IsClosed()) {
 		double tmp;
 		if (!ssys_aerodyn->AirbrakeState().IsActive() || modf (oapiGetSimTime(), &tmp) < 0.5) {
-			memcpy (vtx+nvtx, vbrk, 4*sizeof(NTVERTEX));
-			for (i = 0; i < 6; i++) idx[nidx+i] = ibrk[i]+nvtx;
-			nvtx += 4;
-			nidx += 6;
+			if (!ZhDgAirbrakeReplaceIcon ((int)cx, (int)(cy - hps->Markersize/2), (int)max (12.0f, hps->Markersize/3.0f))) {
+				// 英文模式：保留 HUD 纹理中的原 "AIRBRK" 图标
+				memcpy (vtx+nvtx, vbrk, 4*sizeof(NTVERTEX));
+				for (i = 0; i < 6; i++) idx[nidx+i] = ibrk[i]+nvtx;
+				nvtx += 4;
+				nidx += 6;
+			}
 		}
 	}
 
@@ -1796,8 +1803,6 @@ void UpdateDamage (HWND hTab, DeltaGlider *dg)
 	SetWindowText (GetDlgItem (hTab, IDC_RIGHTWING_STATUS), cbuf);
 	oapiSetGaugePos (GetDlgItem (hTab, IDC_RIGHTWING_SLIDER), i);
 }
-
-#include "DeltaGliderZh.inc"
 
 // --------------------------------------------------------------
 // Message procedure for editor page 1 (animation settings)

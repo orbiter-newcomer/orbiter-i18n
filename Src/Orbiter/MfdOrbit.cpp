@@ -4,7 +4,6 @@
 #include "MfdOrbit.h"
 #include "Localization.h"
 #include "MfdZh.inc"
-#include "MfdLayoutZh.inc"
 #include "Pane.h"
 #include "Celbody.h"
 #include "Psys.h"

@@ -477,7 +477,8 @@ void SetVisual(vObject *vo)
 }
 
 
-#include "AtmoControlsZh.inc"
+#define ZH_D3D9_ATMO
+#include "D3D9ClientZh.inc"
 
 static BOOL CALLBACK ZhAtmLocCb(HWND hWnd, LPARAM)
 {

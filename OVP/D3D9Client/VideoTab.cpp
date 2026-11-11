@@ -1077,4 +1077,5 @@ void VideoTab::ScanAtmoCfgs()
 	}
 }
 
-#include "VideoTabL10n.inc"
+#define ZH_D3D9_VIDEO
+#include "D3D9ClientZh.inc"

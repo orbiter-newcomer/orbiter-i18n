@@ -16,6 +16,7 @@
 #include <math.h>
 #include "orbitersdk.h"
 #include "AscentMFD.h"
+#include "AscentMFDZh.inc"   // Chinese button labels (data)
 
 // ==============================================================
 // Global variables
@@ -211,8 +212,10 @@ bool AscentMFD::ConsumeButton (int bt, int event)
 
 char *AscentMFD::ButtonLabel (int bt)
 {
-	char *label[4] = {"PG", "AR", "VRR", "VTR"};
-	return (bt < 4 ? label[bt] : 0);
+	static const char *label[4] = {"PG", "AR", "VRR", "VTR"};
+	if (bt < 0 || bt >= 4) return 0;
+	if (oapiZhActive()) return (char*)g_zhAscentMfdBtnLabel[bt];   // Chinese mode: return Chinese label
+	return (char*)label[bt];
 }
 
 int AscentMFD::ButtonMenu (const MFDBUTTONMENU **menu) const

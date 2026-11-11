@@ -5,6 +5,7 @@
 #define ORBITER_MODULE
 #include "orbitersdk.h"
 #include "LuaMFD.h"
+#include "LuaMfdZh.inc"   // Chinese button labels (data)
 
 using std::min;
 
@@ -43,9 +44,11 @@ ScriptMFD::~ScriptMFD ()
 // Return button labels
 char *ScriptMFD::ButtonLabel (int bt)
 {
-	// The labels for the two buttons used by our MFD mode
+	// The labels for the buttons used by our MFD mode
 	static const char *label[5] = {"INP", "NEW", "DEL", "PG>", "<PG"};
-	return (char*)(bt < 5 ? label[bt] : 0);
+	if (bt < 0 || bt >= 5) return 0;
+	if (oapiZhActive()) return (char*)g_zhLuaMfdTermLabel[bt];   // Chinese mode: return Chinese label
+	return (char*)label[bt];
 }
 
 // Return button menus

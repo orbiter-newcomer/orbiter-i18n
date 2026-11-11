@@ -110,7 +110,7 @@ void AtlantisConfig::Apply (HWND hWnd)
 	MshEnableHires (mshhires);
 }
 
-#include "AtlantisConfigZh.inc"
+#include "../AtlantisToolsZh.inc"
 INT_PTR CALLBACK AtlantisConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {

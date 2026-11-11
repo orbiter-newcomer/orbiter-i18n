@@ -12,6 +12,7 @@
 #include "gcCoreAPI.h"
 #include "Shell.h"
 #include "DrawAPI.h"
+#include "GenericCameraZh.inc"   // 汉化扩展：中文模式布局偏置 + 按钮中文标签
 
 using std::min;
 
@@ -305,9 +306,11 @@ void CameraMFD::PreviousAttachment()
 //
 char *CameraMFD::ButtonLabel (int bt)
 {
-	// The labels for the two buttons used by our MFD mode
+	// The labels for the buttons used by our MFD mode
 	static const char *label[] = {"NA", "PA", "ND", "PD", "FWD", "BWD", "VES", "NV", "ZM+", "ZM-", "PAR", "CRS"};
-	return (char*)(bt < ARRAYSIZE(label) ? label[bt] : 0);
+	if (bt < 0 || bt >= (int)ARRAYSIZE(label)) return 0;
+	if (oapiZhActive()) return (char*)g_zhGcamBtnLabel[bt];   // Chinese mode: return Chinese label
+	return (char*)label[bt];
 }
 
 
@@ -440,14 +443,14 @@ bool CameraMFD::Update(oapi::Sketchpad *pSkp)
 	pSkp->QuickBrush(0xA0000000);
 	pSkp->QuickPen(0);
 	pSkp->Rectangle(1, 1, W - 1, tbgh);
-	pSkp->Rectangle(1, H - tbgh, W - 1, H - 1);
-	
+	pSkp->Rectangle(1, H - tbgh - ZhGcamStatusBarExtend(), W - 1, H - 1);   // 中文模式按偏置加高
 
+	
 	hShell->Title (pSkp, text);
 
 	sprintf_s(text, 256, oapiTr("[%s] FOV=%0.0f° Ofs=%2.2f[m]"), oapiTr(paci[bParent]), fov*2.0, offset);
 
-	pSkp->Text(10, H - tbgh, text, lstrlen(text));
+	pSkp->Text(10, H - tbgh + ZhGcamStatusYOffset(), text, lstrlen(text));   // 中文模式按偏置上移
 	
 	return true;
 }

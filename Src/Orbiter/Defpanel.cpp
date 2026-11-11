@@ -9,6 +9,12 @@
 using std::min;
 using std::max;
 
+#define ZH_PANEL
+#include "InstrumentZh.inc"
+
+// 汉化扩展：释放 HUD 中文字体缓存（定义在 hud.cpp / ZhCommon.inc 的 ZH_HUD 段）
+extern void ZhHudReleaseFonts (oapi::GraphicsClient *gc);   // 汉化扩展：其他仪表数据（玻璃座舱面板 + HUD；流程见 ZhCommon.inc）
+
 extern Orbiter *g_pOrbiter;
 extern Vessel *g_focusobj;
 extern char DBG_MSG[256];
@@ -385,6 +391,7 @@ void DefaultPanel::InitDeviceObjects ()
 	int fh3 = (4*fh)/5;
 	mfdPen  = gc->clbkCreatePen (1, 0, RGB(0,255,0));
 	mfdFont = gc->clbkCreateFont (fh1, true, "Sans");
+	CreateZhMfdButtonFonts (gc, pane->H);
 }
 
 void DefaultPanel::RestoreDeviceObjects (LPDIRECT3D7 d3d, LPDIRECT3DDEVICE7 dev)
@@ -398,6 +405,8 @@ void DefaultPanel::DestroyDeviceObjects ()
 	if (gc) {
 		if (mfdFont) gc->clbkReleaseFont (mfdFont);
 		if (mfdPen)  gc->clbkReleasePen (mfdPen);
+		ReleaseZhMfdButtonFonts (gc);
+		ZhHudReleaseFonts (gc);   // 汉化扩展：同时释放 HUD 中文字体缓存
 		if (surf)    gc->clbkReleaseSurface (surf);
 	}
 }
@@ -537,6 +546,8 @@ void DefaultPanel::Render ()
 	vofs += 4*5;
 
 	gc->clbkRender2DPanel (&surf, (MESHHANDLE)&mesh, &transf, transpmfd);
+
+	if (orbiter::IsChinese()) DrawZhMfdButtonLabels ();
 }
 
 bool DefaultPanel::ProcessMouse (UINT event, DWORD state, int x, int y)

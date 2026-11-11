@@ -6,6 +6,7 @@
 #include "Interpreter.h"
 #include "VesselAPI.h"
 #include "MfdApi.h"
+#include "LuaMfdZh.inc"   // Chinese button label mapping for Lua MFDs
 
 
 /*
@@ -9849,6 +9850,7 @@ char* VesselMFD::ButtonLabel(int bt) {
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 1);
+	if (label) label = (char*)ZhLuaMfdLabel(label);   // Chinese mode: map Lua MFD button label
 	return label;
 }
 int VesselMFD::ButtonMenu(const MFDBUTTONMENU** menu) const {

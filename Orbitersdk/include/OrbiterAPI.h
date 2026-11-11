@@ -2484,6 +2484,24 @@ OAPIFUNC int oapiGetOrbiterVersion ();
 OAPIFUNC const char *oapiTr (const char *english);
 
 /**
+ * \brief Registers a short text to be drawn on the glass cockpit HUD
+ * \param x,y centre position in HUD/panel pixel coordinates
+ * \param size font height in pixels
+ * \param utf8 UTF-8 text
+ * \note Only active in Chinese mode and only for the 2D glass cockpit view.
+ *   Allows vessel modules to display Chinese HUD annotations that cannot be
+ *   represented with the HUD texture character set.
+ */
+OAPIFUNC void oapiZhHudText (int x, int y, int size, const char *utf8);
+
+/**
+ * \brief Returns non-zero if the Chinese localisation is currently active.
+ * \note Allows plugin modules to apply Chinese-mode-only layout offsets while
+ *   keeping the official (English) layout unchanged.
+ */
+OAPIFUNC int oapiZhActive ();
+
+/**
  * \brief Returns the API version number against which the module
  *   was linked.
  * \return module version number

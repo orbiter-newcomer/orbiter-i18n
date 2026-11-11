@@ -2521,7 +2521,7 @@ void InitEdPg1 (HWND hDlg, OBJHANDLE hVessel)
 	UpdatePodSliders (hDlg, v);
 }
 
-#include "ShuttleAZh.inc"
+#include "ShuttleAToolsZh.inc"
 
 // --------------------------------------------------------------
 // Message procedure for editor page 1 (animation settings)

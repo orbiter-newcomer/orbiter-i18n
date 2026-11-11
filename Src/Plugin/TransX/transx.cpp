@@ -20,6 +20,7 @@
 
 #define STRICT
 #define ORBITER_MODULE
+#include "TransXZh.inc"   // Chinese button labels (data)
 #include <windows.h>
 #include <cstdio>
 #include <cmath>
@@ -119,7 +120,9 @@ char *TransxMFD::ButtonLabel (int bt)
 // Routine to pass button label back to Orbiter. Called by Orbiter
 {
 	const char *label[] = {"HLP","FWD","BCK", "VW","VAR","-VR", "ADJ", "-AJ","++", "--","EXE","ENT"};
-	return (char*)(bt < sizeof(label) / sizeof(char*) ? label[bt] : 0);
+	if (bt < 0 || bt >= (int)(sizeof(label) / sizeof(char*))) return 0;
+	if (oapiZhActive()) return (char*)g_zhTransXBtnLabel[bt];   // Chinese mode: return Chinese label
+	return (char*)label[bt];
 }
 
 int TransxMFD::ButtonMenu (const MFDBUTTONMENU **menu) const

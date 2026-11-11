@@ -16,6 +16,9 @@
 #include "DlgMgr.h"
 #include <assert.h>
 
+// 汉化扩展：玻璃座舱 HUD 文本中文绘制（实现见 ZhCommon.inc 的 ZH_HUD 段）
+extern void ZhHudDrawFrame (oapi::GraphicsClient *gc, DWORD col);
+
 using namespace std;
 
 extern Orbiter *g_pOrbiter;
@@ -659,7 +662,10 @@ void Pane::Render ()
 			panel->Display (0);
 			if (hud) hud->Render ();
 		} else if (defpanel) {   // generic glass cockpit mode
-			if (hud) hud->Render ();
+			if (hud) {
+				hud->Render ();
+				ZhHudDrawFrame (gc, hudCol);   // 汉化 HUD 文本叠加绘制（英文模式无操作）
+			}
 			defpanel->Render ();
 		}
 	}

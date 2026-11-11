@@ -101,8 +101,11 @@ public:
 	inline bool Initialize()
 	{
 		typedef gcGUIBase * (__cdecl *__gcGetGUICore)();
-		HMODULE hModule = GetModuleHandle("D3D9Client.dll");
-		if (hModule) {
+		// 引擎有两个构建变体（D3D9Client.dll / D3D9ClientDXVK.dll），运行时只有一个被加载
+		static const char *engine_dlls[] = { "D3D9Client.dll", "D3D9ClientDXVK.dll" };
+		for (int i = 0; i < ARRAYSIZE(engine_dlls); i++) {
+			HMODULE hModule = GetModuleHandle(engine_dlls[i]);
+			if (!hModule) continue;
 			__gcGetGUICore pGetGUICore = (__gcGetGUICore)GetProcAddress(hModule, "gcGetGUICore");
 			if (pGetGUICore) return ((pApp = pGetGUICore()) != NULL);
 		}

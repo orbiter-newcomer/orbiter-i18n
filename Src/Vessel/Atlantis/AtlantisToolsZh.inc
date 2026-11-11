@@ -1,3 +1,17 @@
+// =============================================================================
+// AtlantisToolsZh.inc - Atlantis 飞船「游戏外」汉化数据
+//
+// 内容：启动器 → 载具配置 → Atlantis Configuration 对话框（AtlantisConfig.dll）。
+// Atlantis 本体在游戏内没有专用文本（界面文本走主程序通用翻译表），
+// 因此本船只有这一个「游戏外」数据文件。
+// =============================================================================
+// =============================================================================
+// AtlantisConfigZh.inc - 面板窗口数据：启动器「载具配置 → Atlantis Configuration」对话框
+//
+// 该对话框由 AtlantisConfig.dll 注册为 Launchpad 列表项（oapiRegisterLaunchpadItem），
+// 只在启动器（Launchpad）中打开，与场景编辑器无关。
+// 本文件只放对话框界面中文数据（英文 .rc 资源保持原样，作为英文模式母本）。
+// =============================================================================
 // Chinese localization for the Atlantis configuration dialog (moved out of AtlantisConfig.cpp)
 // ---- Chinese localization for this dialog (English resources remain the master copy) ----
 static const wchar_t *ZhUiText(const wchar_t *en)

@@ -94,6 +94,12 @@ public:
 	const char *ButtonLabel (int bt);
 	// returns the label to print on the specified MFD button or 0 if not assigned
 
+	bool InModeSelect () const { return modepage >= 0; }
+	// true if the MFD is currently displaying the mode selection page
+
+	virtual const char *ModeName () const { return 0; }
+	// registered mode name for custom (plugin/vessel) MFD modes, 0 for builtin modes
+
 	virtual const char *BtnLabel (int bt) const { return 0; }
 	// overwritten by derived MFDs to specify their button labels
 	// bt is 'logical' button number (already contains menu page)
