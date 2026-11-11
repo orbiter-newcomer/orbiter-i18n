@@ -146,6 +146,9 @@ public:
 	void NotifyObjectSize (const Body *obj);
 
 	void SetWarpFactor (double warp, bool force = false, double delay = 0.0);
+	void UpdateRelativityWarp ();
+	double DisplayWarp () const;
+	// time warp value to display (hides the automatic relativistic scaling)
 	// Set time acceleration factor
 
 	VOID SetFOV (double fov, bool limit_range = true);
@@ -215,6 +218,8 @@ public:
 	void EndPlayback ();
 	inline int RecorderStatus() const { return (bRecord ? 1 : bPlayback ? 2 : 0); }
 	inline bool IsPlayback() const { return bPlayback; }
+	double          m_relUserWarp;   // user-selected time warp (relativistic scaling applied on top)
+	bool            m_relWarpActive; // relativistic warp currently applied
 	const char *GetDefRecordName (void) const;
 	void FRecorder_Reset ();
 	// reset flight recorder status

@@ -674,6 +674,180 @@ Vector SingleGacc (const Vector &rpos, const CelestialBody *body)
 	return rpos * (Ggrav * body->Mass() / (d*d*d)) + SingleGacc_perturbation (rpos, body);
 }
 
+// ====================================================================
+// Relativistic (1PN) single-source gravitational acceleration.
+// rpos = body position - reference position (points from reference to body)
+// rvel = reference velocity - body velocity (relative velocity)
+// Returns total acceleration (Newtonian + first post-Newtonian correction).
+// ====================================================================
+Vector SingleGacc_pn (const Vector &rpos, const Vector &rvel, const CelestialBody *body)
+{
+	double d = rpos.length();
+	if (d <= 0) return Vector(0,0,0);
+	double GM = Ggrav * body->Mass();
+	double c2 = c_light * c_light;
+	double d3 = d*d*d;
+	Vector R (-rpos);          // from body to reference point
+	double v2 = rvel.length2();
+	double rv = dotp (R, rvel);
+	// 1PN correction (Schwarzschild, coordinate time):
+	// a_pn = GM/(c^2 d^3) * [ (4GM/d - v^2) R + 4 (R.v) v ]
+	Vector a_pn = (R * (4.0*GM/d - v2) + rvel * (4.0*rv)) * (GM/(c2*d3));
+	// Lense-Thirring (gravitomagnetic frame dragging) correction
+	// J = inertia_factor * M * R^2 * omega * axis
+	Vector J = body->RotAxis() * (body->InertiaFactor() * GM/Ggrav * body->Size()*body->Size() * body->RotOmega());
+	Vector rhat = R * (1.0/d);   // unit vector from body to reference
+	Vector Bg = (R * (3.0*dotp(rhat, J)) - J) * (Ggrav/(c2*d3));
+	Vector a_lt = crossp (rvel, Bg) * -2.0;
+	return rpos * (GM/d3) + a_pn + a_lt + SingleGacc_perturbation (rpos, body);
+}
+
+// ====================================================================
+// Kerr-Schild metric helpers (geometrised units: G = c = 1, M = 1)
+// ====================================================================
+
+static double ks_radius (double x, double y, double z, double a2)
+{
+	double rho2 = x*x + y*y + z*z;
+	double b = 0.5*(rho2 - a2);
+	double r2 = b + sqrt (b*b + a2*z*z);
+	return sqrt (r2 > 0.0 ? r2 : 0.0);
+}
+
+// Kerr-Schild metric: g_munu = eta_munu + f k_mu k_nu  (M = 1)
+static void ks_metric (const double p[3], double a, double g[4][4], double k[4], double &f)
+{
+	double x = p[0], y = p[1], z = p[2];
+	double a2 = a*a;
+	double r = ks_radius (x, y, z, a2);
+	if (r < 1e-12) r = 1e-12;
+	double r2 = r*r;
+	double denom = r2*r2 + a2*z*z;
+	f = (denom > 1e-300 ? 2.0*r2*r/denom : 0.0);
+	k[0] = 1.0;
+	k[1] = (r*x + a*y)/(r2 + a2);
+	k[2] = (r*y - a*x)/(r2 + a2);
+	k[3] = z/r;
+	for (int mu = 0; mu < 4; mu++)
+		for (int nu = 0; nu < 4; nu++)
+			g[mu][nu] = (mu == nu ? (mu == 0 ? -1.0 : 1.0) : 0.0) + f*k[mu]*k[nu];
+}
+
+// inverse: g^munu = eta^munu - f k^mu k^nu, k^mu = (-k_0, k_1, k_2, k_3)
+static void ks_inverse (const double k[4], double f, double gi[4][4])
+{
+	double ku[4] = { -k[0], k[1], k[2], k[3] };
+	for (int mu = 0; mu < 4; mu++)
+		for (int nu = 0; nu < 4; nu++) {
+			double eta = (mu == nu ? (mu == 0 ? -1.0 : 1.0) : 0.0);
+			gi[mu][nu] = eta - f*ku[mu]*ku[nu];
+		}
+}
+
+// numerical Christoffel symbols of the Kerr-Schild metric
+static void ks_christoffel (const double p[3], double a, double Gamma[4][4][4])
+{
+	double g[4][4], gp[4][4][4], k[4], f;
+	for (int al = 0; al < 4; al++) {
+		double h = 1e-6 * (fabs (p[0]) + fabs (p[1]) + fabs (p[2]) + 1.0);
+		double pp[3] = {p[0], p[1], p[2]}, pm[3] = {p[0], p[1], p[2]};
+		pp[al] += h; pm[al] -= h;
+		double gpp[4][4], gpm[4][4], kk[4], ff;
+		ks_metric (pp, a, gpp, kk, ff);
+		ks_metric (pm, a, gpm, kk, ff);
+		for (int mu = 0; mu < 4; mu++)
+			for (int nu = 0; nu < 4; nu++)
+				gp[al][mu][nu] = (gpp[mu][nu] - gpm[mu][nu])/(2.0*h);
+	}
+	ks_metric (p, a, g, k, f);
+	double gi[4][4];
+	ks_inverse (k, f, gi);
+	for (int mu = 0; mu < 4; mu++)
+		for (int al = 0; al < 4; al++)
+			for (int be = 0; be < 4; be++) {
+				double sum = 0.0;
+				for (int nu = 0; nu < 4; nu++)
+					sum += gi[mu][nu]*(gp[al][nu][be] + gp[be][nu][al] - gp[nu][al][be]);
+				Gamma[mu][al][be] = 0.5*sum;
+			}
+}
+
+// ====================================================================
+// Exact Kerr (Kerr-Schild Cartesian) gravitational acceleration.
+// rpos: body position - reference position (from reference to body)
+// rvel: reference velocity - body velocity (relative velocity)
+// Returns the coordinate acceleration of a test particle in the global
+// (Cartesian) frame. Geometrised internally, converted back to SI.
+// ====================================================================
+Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialBody *body)
+{
+	double mass = body->Mass();
+	double GM = Ggrav * mass;
+	double c = c_light;
+	double L = GM/(c*c);              // geometric length scale [m]
+	if (L <= 0.0 || mass <= 1e-300) return SingleGacc_pn (rpos, rvel, body);
+
+	// spin angular momentum J = I * omega * axis
+	double R = body->Size();
+	double Imom = body->InertiaFactor() * mass * R * R;
+	Vector J = body->RotAxis() * (Imom * body->RotOmega());
+	double Jmag = J.length();
+	Vector ez = (Jmag > 1e-300 ? J * (1.0/Jmag) : body->RotAxis());
+	// orthonormal basis (z = spin axis)
+	Vector ref = (fabs (ez.x) < 0.9 ? Vector(1,0,0) : Vector(0,1,0));
+	Vector ex = crossp (ez, ref);
+	double exl = ex.length();
+	if (exl < 1e-12) return SingleGacc_pn (rpos, rvel, body);
+	ex *= (1.0/exl);
+	Vector ey = crossp (ez, ex);
+
+	// Kerr spin parameter (dimensionless): a/M = J c / (G M^2)
+	double aM = Jmag * c / (Ggrav * mass * mass);
+	if (aM > 1000.0) aM = 1000.0;
+
+	// position and velocity in Kerr coordinates (geometrised)
+	double p[3];
+	p[0] = dotp (rpos, ex)/L;
+	p[1] = dotp (rpos, ey)/L;
+	p[2] = dotp (rpos, ez)/L;
+	double v[3];
+	v[0] = dotp (rvel, ex)/c;
+	v[1] = dotp (rvel, ey)/c;
+	v[2] = dotp (rvel, ez)/c;
+	if (v[0]*v[0] + v[1]*v[1] + v[2]*v[2] >= 1.0) return SingleGacc_pn (rpos, rvel, body);
+
+	// metric
+	double g[4][4], k[4], f;
+	ks_metric (p, aM, g, k, f);
+
+	// 4-velocity u^mu (coordinate time): u^i = v^i u^t, normalized g_munu u^mu u^nu = -1
+	double svv = 0.0, s0v = 0.0;
+	for (int i = 1; i < 4; i++) {
+		for (int j = 1; j < 4; j++) svv += g[i][j]*v[i-1]*v[j-1];
+		s0v += 2.0*g[0][i]*v[i-1];
+	}
+	double norm = 1.0 - svv - s0v;
+	if (norm <= 1e-12) return SingleGacc_pn (rpos, rvel, body);
+	double ut = 1.0/sqrt (norm);
+	double u[4] = { ut, v[0]*ut, v[1]*ut, v[2]*ut };
+
+	// coordinate acceleration a^i = -Gamma^i_ab u^a u^b / (u^t)^2
+	double Gamma[4][4][4];
+	ks_christoffel (p, aM, Gamma);
+	double at[3];
+	for (int i = 1; i < 4; i++) {
+		double sum = 0.0;
+		for (int al = 0; al < 4; al++)
+			for (int be = 0; be < 4; be++)
+				sum += Gamma[i][al][be]*u[al]*u[be];
+		at[i-1] = -sum/(ut*ut);
+	}
+
+	// back to SI units and global frame
+	double scale = c*c/L;
+	return (ex*at[0] + ey*at[1] + ez*at[2]) * scale;
+}
+
 Vector PlanetarySystem::Gacc (const Vector &gpos, const Body *exclude, const GFieldData *gfd) const
 {
 	Vector acc;
@@ -694,21 +868,53 @@ Vector PlanetarySystem::Gacc (const Vector &gpos, const Body *exclude, const GFi
 	return acc;
 }
 
-Vector PlanetarySystem::Gacc_intermediate (const Vector &gpos, double n, const Body *exclude, GFieldData *gfd) const
+Vector PlanetarySystem::Gacc_intermediate (const Vector &gpos, double n, const Body *exclude, GFieldData *gfd, const Vector *gvel, int relMethod) const
 {
 	Vector acc;
 	DWORD i, j;
-	
-	if (gfd) { // use body's source list
+	bool rel = (gvel != 0); // relativistic correction requested (vessel path)
+	bool kerr = (rel && relMethod == 1);
+
+	// find dominant gravity source (strongest GM/r^2) for the exact Kerr solver
+	int domIdx = -1;
+	if (kerr) {
+		double domG = 0.0;
+		for (i = 0; i < celestials.size(); i++) {
+			if (exclude == celestials[i]) continue;
+			Vector r = celestials[i]->InterpolatePosition (n) - gpos;
+			double d2 = r.length2();
+			if (d2 < 1e-6) continue;
+			double gg = celestials[i]->Mass()/d2;
+			if (gg > domG) { domG = gg; domIdx = (int)i; }
+		}
+	}
+
+	if (gfd) { // use body''s source list
 		for (j = 0; j < gfd->ngrav; j++) {
 			i = gfd->gravidx[j];
 			if (exclude == celestials[i]) continue;
-			acc += SingleGacc (celestials[i]->InterpolatePosition (n) - gpos, celestials[i]);
+			Vector rpos = celestials[i]->InterpolatePosition (n) - gpos;
+			if (rel) {
+				Vector rvel = *gvel - celestials[i]->GVel();
+				if (kerr && (int)i == domIdx)
+					acc += SingleGacc_kerr (rpos, rvel, celestials[i]);
+				else
+					acc += SingleGacc_pn (rpos, rvel, celestials[i]);
+			} else
+				acc += SingleGacc (rpos, celestials[i]);
 		}
 	} else { // use full gbody list
 		for (i = 0; i < celestials.size(); i++) {
 			if (exclude == celestials[i]) continue;
-			acc += SingleGacc (celestials[i]->InterpolatePosition (n) - gpos, celestials[i]);
+			Vector rpos = celestials[i]->InterpolatePosition (n) - gpos;
+			if (rel) {
+				Vector rvel = *gvel - celestials[i]->GVel();
+				if (kerr && (int)i == domIdx)
+					acc += SingleGacc_kerr (rpos, rvel, celestials[i]);
+				else
+					acc += SingleGacc_pn (rpos, rvel, celestials[i]);
+			} else
+				acc += SingleGacc (rpos, celestials[i]);
 		}
 	}
 	return acc;

@@ -63,7 +63,10 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	20.0*RAD,	// APropSubLimit (angle step limit for angular subsampling)
 	10, 		// PropSubMax (max number of subsampling steps)
 	30.0*RAD,	// APropCouplingLimit (angle step limit for cross term suppresion)
-	3600.0*RAD	// APropTorqueLimit (angle step limit for torque suppression)
+	3600.0*RAD,	// APropTorqueLimit (angle step limit for torque suppression)
+	false,		// bRelativity (relativistic effects disabled by default)
+	0,			// RelativityGravityMethod (0=1PN weak field)
+	0			// RelativityFTLMode (0=report error, 1=clamp to 0.99c)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {
@@ -609,6 +612,9 @@ bool Config::Load(const char *fname)
 	GetBool (ifs, "BaseCollision", CfgPhysicsPrm.bBaseCollision);
 	GetBool (ifs, "VesselCollision", CfgPhysicsPrm.bVesselCollision);
 	GetBool (ifs, "StabiliseOrbits", CfgPhysicsPrm.bOrbitStabilise);
+	GetBool (ifs, "Relativity", CfgPhysicsPrm.bRelativity);
+	GetInt (ifs, "RelativityGravityMethod", CfgPhysicsPrm.RelativityGravityMethod);
+	GetInt (ifs, "RelativityFTLMode", CfgPhysicsPrm.RelativityFTLMode);
 	GetReal (ifs, "StabilisePLimit", CfgPhysicsPrm.Stabilise_PLimit);
 	GetReal (ifs, "StabiliseSLimit", CfgPhysicsPrm.Stabilise_SLimit);
 	if (GetString (ifs, "PertPropSubsampling", cbuf, sizeof(cbuf)))
@@ -1179,6 +1185,12 @@ BOOL Config::Write (const char *fname) const
 			ofs << "VesselCollision = " << BoolStr (CfgPhysicsPrm.bVesselCollision) << '\n';
 		if (CfgPhysicsPrm.bOrbitStabilise != CfgPhysicsPrm_default.bOrbitStabilise || bEchoAll)
 			ofs << "StabiliseOrbits = " << BoolStr (CfgPhysicsPrm.bOrbitStabilise) << '\n';
+		if (CfgPhysicsPrm.bRelativity != CfgPhysicsPrm_default.bRelativity || bEchoAll)
+			ofs << "Relativity = " << BoolStr (CfgPhysicsPrm.bRelativity) << '\n';
+		if (CfgPhysicsPrm.RelativityGravityMethod != CfgPhysicsPrm_default.RelativityGravityMethod || bEchoAll)
+			ofs << "RelativityGravityMethod = " << CfgPhysicsPrm.RelativityGravityMethod << '\n';
+		if (CfgPhysicsPrm.RelativityFTLMode != CfgPhysicsPrm_default.RelativityFTLMode || bEchoAll)
+			ofs << "RelativityFTLMode = " << CfgPhysicsPrm.RelativityFTLMode << '\n';
 		if (CfgPhysicsPrm.Stabilise_PLimit != CfgPhysicsPrm_default.Stabilise_PLimit || bEchoAll)
 			ofs << "StabilisePLimit = " << CfgPhysicsPrm.Stabilise_PLimit << '\n';
 		if (CfgPhysicsPrm.Stabilise_SLimit != CfgPhysicsPrm_default.Stabilise_SLimit || bEchoAll)

@@ -16,6 +16,8 @@ class SuperVessel;
 struct TimeJumpData;
 
 Vector SingleGacc (const Vector &rpos, const CelestialBody *body);
+Vector SingleGacc_pn (const Vector &rpos, const Vector &rvel, const CelestialBody *body);
+// relativistic (1PN) single-source gravitational acceleration
 Vector SingleGacc_perturbation (const Vector &rpos, const CelestialBody *body);
 
 class PlanetarySystem {
@@ -151,7 +153,7 @@ public:
 	// if gfd != 0 then only objects from this source list are computed (plus an additional
 	// one tested for inclusion in the list)
 
-	Vector Gacc_intermediate (const Vector &gpos, double n, const Body *exclude = 0, GFieldData *gfd = 0) const;
+	Vector Gacc_intermediate (const Vector &gpos, double n, const Body *exclude = 0, GFieldData *gfd = 0, const Vector *gvel = 0, int relMethod = 0) const;
 	// Acceleration vector due to gravitational forces at global position gpos at intermediate
 	// time t = t0+n*dt, where 0 <= n <= 1 is a fractional time step, n = (t-t0)/dt, and dt = t1-t0.
 	// Uses linear interpolation of celestial body positions.

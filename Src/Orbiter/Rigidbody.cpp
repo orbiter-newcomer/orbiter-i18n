@@ -339,7 +339,9 @@ void RigidBody::GetIntermediateMoments (Vector &acc, Vector &tau,
 	const StateVectors &state, double tfrac, double dt)
 {
 	// linear acceleration due to graviational field
-	acc = g_psys->Gacc_intermediate (state.pos, tfrac, this, &gfielddata);
+	acc = g_psys->Gacc_intermediate (state.pos, tfrac, this, &gfielddata,
+		g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity ? &state.vel : NULL,
+		g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod);
 
 	// angular acceleration due to gravity gradient torque
 	if (!cbody || bIgnoreGravTorque) {

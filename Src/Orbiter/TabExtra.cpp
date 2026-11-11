@@ -66,6 +66,7 @@ void orbiter::ExtraTab::GetConfig (const Config *cfg)
 	ht = RegisterExtraParam(new ExtraPropagation(this), NULL); TRACENEW
 	RegisterExtraParam(new ExtraDynamics(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraStabilisation(this), ht); TRACENEW
+	RegisterExtraParam(new ExtraRelativity(this), ht); TRACENEW
 	ht = RegisterExtraParam(new ExtraInstruments(this), NULL); TRACENEW
 	RegisterExtraParam(new ExtraMfdConfig(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraVesselConfig(this), NULL); TRACENEW
@@ -548,6 +549,67 @@ INT_PTR CALLBACK ExtraDynamics::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	}
 	return BuiltinLaunchpadItem::DlgProc (hWnd, uMsg, wParam, lParam);
 }
+
+//-----------------------------------------------------------------------------
+// Physics engine: Relativistic gravity field solver
+//-----------------------------------------------------------------------------
+
+char *ExtraRelativity::Name ()
+{
+	return (char*)orbiter::Tr ("Relativity");
+}
+
+char *ExtraRelativity::Description ()
+{
+	return (char*)orbiter::Tr ("Select the gravity field solver used for relativistic effects. Relativistic effects themselves are enabled in the Physics settings.");
+}
+
+bool ExtraRelativity::clbkOpen (HWND hParent)
+{
+	OpenDialog (hParent, IDD_EXTRA_RELATIVITY, DlgProc);
+	return true;
+}
+
+void ExtraRelativity::InitDialog (HWND hWnd)
+{
+	SetDialog (hWnd);
+}
+
+void ExtraRelativity::SetDialog (HWND hWnd)
+{
+	bool kerr = (pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 1);
+	SendDlgItemMessage (hWnd, kerr ? IDC_REL_METHOD_KERR : IDC_REL_METHOD_1PN, BM_SETCHECK, BST_CHECKED, 0);
+}
+
+bool ExtraRelativity::StoreParams (HWND hWnd)
+{
+	bool kerr = (SendDlgItemMessage (hWnd, IDC_REL_METHOD_KERR, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod = kerr ? 1 : 0;
+	return true;
+}
+
+INT_PTR CALLBACK ExtraRelativity::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg) {
+	case WM_INITDIALOG:
+		((ExtraRelativity*)lParam)->InitDialog (hWnd);
+		orbiter::LocalizeWindowTree (hWnd);
+		break;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+			if (((ExtraRelativity*)GetWindowLongPtr (hWnd, DWLP_USER))->StoreParams (hWnd))
+				EndDialog (hWnd, 0);
+			break;
+		case IDCANCEL:
+			EndDialog (hWnd, 0);
+			break;
+		}
+		break;
+	}
+	return BuiltinLaunchpadItem::DlgProc (hWnd, uMsg, wParam, lParam);
+}
+
 
 //-----------------------------------------------------------------------------
 // Physics engine: Parameters for angular state propagation

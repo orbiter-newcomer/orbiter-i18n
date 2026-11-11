@@ -21,6 +21,7 @@
 #define OAPI_IMPLEMENTATION
 
 #include "Orbiter.h"
+#include "Localization.h"
 #include "Vessel.h"
 #include "Supervessel.h"
 #include "Config.h"
@@ -949,7 +950,18 @@ void Vessel::GetIntermediateMoments (Vector &acc, Vector &tau, const StateVector
 	// note: we may want to remove aerodynamic forces from Flin_add/Amom_add and calculate
 	// intermediate states here instead
 	RigidBody::GetIntermediateMoments (acc, tau, state, tfrac, dt);  // get gravitational component
-	acc += mul (state.Q, F/mass);
+	Vector a_ng = mul (state.Q, F/mass);
+	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) {
+		// relativistic correction of non-gravitational accelerations:
+		// a = [a0 - (v.a0) v/c^2] / gamma  (longitudinal -> gamma^3, transversal -> gamma)
+		double v2 = state.vel.length2();
+		double c2 = c_light*c_light;
+		if (v2 < c2*0.999999) {
+			double gamma = 1.0/sqrt (1.0 - v2/c2);
+			a_ng = (a_ng - state.vel * (dotp (state.vel, a_ng)/c2)) / gamma;
+		}
+	}
+	acc += a_ng;
 	tau += M/mass;
 }
 
@@ -6856,6 +6868,31 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 }
 void Vessel::Update (bool force)
 {
+	// Relativistic FTL velocity protection --------------------------------------
+	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) {
+		double v2 = s0->vel.length2();
+		double c2 = c_light*c_light;
+		if (v2 >= c2) {
+			if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityFTLMode == 1) {
+				// clamp velocity to 0.9c along its current direction
+				double vl = sqrt (v2);
+				double fac = 0.9 * c_light / vl;
+				s0->vel *= fac;
+				if (s1) s1->vel *= fac;
+			} else {
+				static bool bFTLReported = false;
+				if (!bFTLReported) {
+					bFTLReported = true;
+					g_pOrbiter->Pause (true);
+					char msg[512];
+					sprintf_s (msg, 512, "Relativistic mode: FTL velocity detected (|v| = %.4e m/s). Simulation paused.", sqrt (v2));
+					LOGOUT_ERR (msg);
+				}
+				return;
+			}
+		}
+	}
+
 	// if the vessel is part of a composite structure or passively attached
 	// to a parent vessel, its state is updated by the composite or parent
 	if (attach)

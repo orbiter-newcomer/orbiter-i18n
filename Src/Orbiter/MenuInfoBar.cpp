@@ -676,7 +676,7 @@ public:
 				p3.x += size.x/4.5f*1.5f;
 				drawList->AddTriangleFilled(p1, p2, p3, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,1.0,1.0,alpha)));
 				char buf[64];
-				sprintf(buf, "%0.*fx", td.Warp() < 9.99 ? 1:0, td.Warp());
+				sprintf(buf, "%0.*fx", g_pOrbiter->DisplayWarp() < 9.99 ? 1:0, g_pOrbiter->DisplayWarp());
 				drawList->AddText(pos + ImVec2(size.x + 2,0), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0,1.0,1.0,alpha)), buf);
 			}
 			break;
@@ -729,7 +729,7 @@ public:
 			if(!g_pOrbiter->IsRunning()) {
 				ImGui::SameLine();
 				DrawSymbol(1);
-			} else if(td.Warp() != 1.0 || prm.bWarpAlways) {
+			} else if(g_pOrbiter->DisplayWarp() != 1.0 || prm.bWarpAlways) {
 				ImGui::SameLine();
 				DrawSymbol(2);
 			}

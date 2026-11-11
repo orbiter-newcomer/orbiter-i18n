@@ -69,6 +69,10 @@ public:
 	// oapiGetPlanetObliquityMatrix
 
 	inline const Vector &RotAxis() const { return R_axis; }
+	inline double RotOmega() const { return rot_omega; }
+	// sidereal rotation angular velocity [rad/s]
+	inline double InertiaFactor() const { return inertia_factor; }
+	// moment of inertia factor I/(M R^2); 0.4 = uniform sphere
 	// rotation axis (direction of north pole) in global coords
 
 	const Elements *Els() const;
@@ -217,6 +221,7 @@ private:
 	double rot_T, rot_omega; // siderial rotation time and angular velocity
 	double Dphi;             // rotation offset at t=0
 	Vector R_axis;           // rotation axis direction (north pole) in global coords
+	double inertia_factor; // moment of inertia factor I/(M R^2) (0.4 = uniform sphere)
 
 	double *jcoeff;          // coefficients Jn of the harmonic expansion of planet ellipsoid shape, starting with J2 (jcoeff[0]=J2, jcoeff[1]=J3, etc.)
 	DWORD njcoeff;           // number of coefficients in the jcoeff list

@@ -342,6 +342,8 @@ Orbiter::Orbiter ()
 	bFastExit       = false;
 	bRoughType      = false;
 	bStartVideoTab  = false;
+	m_relUserWarp   = 1.0;
+	m_relWarpActive = false;
 	//lstatus.bkgDC   = 0;
 	cfglen          = 0;
 	ncustomcmd      = 0;
@@ -1088,6 +1090,7 @@ INT Orbiter::Run ()
 		} else {
 			if (bSession) {
 				if (bAllowInput) bActive = true, bAllowInput = false;
+				UpdateRelativityWarp();
 				if (BeginTimeStep (bRunning)) {
 					UpdateWorld();
 					EndTimeStep (bRunning);
@@ -1125,6 +1128,7 @@ void Orbiter::SingleFrame ()
 {
 	if (bSession) {
 		if (bAllowInput) bActive = true, bAllowInput = false;
+				UpdateRelativityWarp();
 		if (BeginTimeStep (bRunning)) {
 			UpdateWorld();
 			EndTimeStep (bRunning);
@@ -1403,6 +1407,7 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 	const double EPS = 1e-6;
 	if      (warp < MinWarpLimit) warp = MinWarpLimit;
 	else if (warp > MaxWarpLimit) warp = MaxWarpLimit;
+	m_relUserWarp = warp; // remember user-selected warp (relativistic scaling applied on top)
 	if (fabs (warp-td.Warp()) > EPS) {
 		td.SetWarp (warp, delay);
 		if (td.WarpChanged()) ApplyWarpFactor();
@@ -1420,6 +1425,50 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 		sprintf (cbuf, "Time acceleration set to %0.1f", warp);
 		m_pConsole->Echo(cbuf);
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Name: UpdateRelativityWarp()
+// Desc: Relativistic time acceleration: when relativistic physics is enabled
+//       and the camera focus is a vessel, scale the global time acceleration
+//       by the vessel Lorentz factor gamma.
+//-----------------------------------------------------------------------------
+void Orbiter::UpdateRelativityWarp ()
+{
+	if (!pConfig->CfgPhysicsPrm.bRelativity) {
+		if (m_relWarpActive) {
+			td.SetWarp (m_relUserWarp, 0);
+			m_relWarpActive = false;
+			if (td.WarpChanged()) ApplyWarpFactor();
+		}
+		return;
+	}
+
+	double gamma = 1.0;
+	if (g_focusobj) {
+		double v2 = g_focusobj->GVel().length2();
+		double c2 = c_light*c_light;
+		if (v2 < c2*0.999999) gamma = 1.0/sqrt (1.0 - v2/c2);
+	}
+	double target = m_relUserWarp * gamma;
+	if      (target < MinWarpLimit) target = MinWarpLimit;
+	else if (target > MaxWarpLimit) target = MaxWarpLimit;
+	if (fabs (target - td.Warp()) > 1e-6) {
+		td.SetWarp (target, 0);
+		m_relWarpActive = true;
+		if (td.WarpChanged()) ApplyWarpFactor();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Name: DisplayWarp()
+// Desc: Return the time acceleration value to display to the user. While the
+//       automatic relativistic scaling is active, the user-selected warp is
+//       shown instead of the effective (gamma-scaled) value.
+//-----------------------------------------------------------------------------
+double Orbiter::DisplayWarp () const
+{
+	return (m_relWarpActive ? m_relUserWarp : td.Warp());
 }
 
 //-----------------------------------------------------------------------------

@@ -756,6 +756,9 @@ void OptionsPage_Physics::UpdateControls(HWND hPage)
 		Cfg()->CfgPhysicsPrm.bBaseCollision ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_PHYS_VESSELCOLLISION, BM_SETCHECK,
 		Cfg()->CfgPhysicsPrm.bVesselCollision ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_SETCHECK,
+		Cfg()->CfgPhysicsPrm.bRelativity ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_SETCURSEL, Cfg()->CfgPhysicsPrm.RelativityFTLMode, 0);
 }
 
 // ----------------------------------------------------------------------
@@ -768,6 +771,9 @@ void OptionsPage_Physics::UpdateConfig(HWND hPage)
 	Cfg()->CfgPhysicsPrm.bAtmWind = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_WIND, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgPhysicsPrm.bBaseCollision = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_BASECOLLISION, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgPhysicsPrm.bVesselCollision = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_VESSELCOLLISION, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	Cfg()->CfgPhysicsPrm.bRelativity = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	int iFTL = (int)SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_GETCURSEL, 0, 0);
+	if (iFTL >= 0 && iFTL <= 1) Cfg()->CfgPhysicsPrm.RelativityFTLMode = iFTL;
 }
 
 // ----------------------------------------------------------------------
@@ -776,6 +782,10 @@ BOOL OptionsPage_Physics::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 {
 	OptionsPage::OnInitDialog(hPage, wParam, lParam);
 	return TRUE;
+	// FTL velocity handling combo box
+	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Report error")).c_str());
+	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Clamp to 0.9c")).c_str());
+	SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_SETCURSEL, Cfg()->CfgPhysicsPrm.RelativityFTLMode, 0);
 }
 
 // ----------------------------------------------------------------------
@@ -829,6 +839,14 @@ BOOL OptionsPage_Physics::OnCommand( HWND hPage, WORD ctrlId, WORD notification,
 			{
 				bool check = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_VESSELCOLLISION, BM_GETCHECK, 0, 0) == BST_CHECKED);
 				Cfg()->CfgPhysicsPrm.bVesselCollision = check;
+				return FALSE;
+			}
+			break;
+		case IDC_OPT_PHYS_RELATIVITY:
+			if (notification == BN_CLICKED)
+			{
+				bool check = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_GETCHECK, 0, 0) == BST_CHECKED);
+				Cfg()->CfgPhysicsPrm.bRelativity = check;
 				return FALSE;
 			}
 			break;

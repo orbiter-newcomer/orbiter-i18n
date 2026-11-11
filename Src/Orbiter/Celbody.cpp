@@ -58,6 +58,7 @@ CelestialBody::CelestialBody (char *fname)
 		RegisterModule (cbuf);
 
 	GetItemReal (ifs, "SidRotPeriod", rot_T);
+	GetItemReal (ifs, "InertiaFactor", inertia_factor);
 	GetItemReal (ifs, "SidRotOffset", Dphi);
 	GetItemReal (ifs, "Obliquity", eps_rel);
 	GetItemReal (ifs, "LAN", Lrel0);
@@ -177,6 +178,7 @@ void CelestialBody::DefaultParam ()
 	mjd_rel           = MJD2000; // J2000
 	prec_T            = 0.0;   // no precession
 	rot_T             = 1e100; // no planet rotation
+	inertia_factor    = 0.4;   // uniform sphere assumption by default
 	Dphi              = 0.0;
 	njcoeff           = 0;     // shape for gravity calculations: spherical by default
 	cbody             = 0;     // no parent body

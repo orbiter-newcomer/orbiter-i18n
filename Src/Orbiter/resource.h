@@ -132,6 +132,7 @@
 #define IDD_EXTRA_PERFORMANCE1          301
 #define IDD_EXTRA_LAUNCHPAD             301
 #define IDD_EXTRA_DBGRENDER             302
+#define IDD_EXTRA_RELATIVITY            303
 #define IDLAUNCH                        1000
 #define IDEXIT                          1001
 #define IDC_MAINTAB                     1002
@@ -268,6 +269,10 @@
 #define IDC_OPT_PHYS_WIND               1096
 #define IDC_OPT_PHYS_BASECOLLISION      1403
 #define IDC_OPT_PHYS_VESSELCOLLISION    1404
+#define IDC_OPT_PHYS_RELATIVITY        1405
+#define IDC_REL_METHOD_1PN              1406
+#define IDC_REL_METHOD_KERR             1407
+#define IDC_OPT_PHYS_RELFTL            1408
 #define IDC_OPT_JOY_DEVICE              1097
 #define IDC_OPT_JOY_THROTTLE            1098
 #define IDC_OPT_JOY_INIT                1099

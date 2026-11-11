@@ -21,6 +21,8 @@ const double iparsec = 1.0/parsec;
 // inverse of parsec
 
 const double Ggrav = 6.67259e-11;
+// speed of light in vacuum [m/s]
+const double c_light = 299792458.0;
 // gravitational constant [m^3 kg^-1 s^-2]
 
 const double MJD2000 = 51544.5;

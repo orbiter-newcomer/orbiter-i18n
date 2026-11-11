@@ -1298,6 +1298,20 @@ namespace orbiter {
 		{ "ATT_NAV",  "接收机" },
 		{ "ATT_ACT",  "激活" },
 		{ "ATT_CNC",  "取消" },
+			// ---- 相对论（物理设置）----
+			{ "Relativistic effects", "相对论效应" },
+			// ---- 相对论（Extra 页引力场求解器）----
+			{ "Relativity", "相对论" },
+			{ "Gravity field solver", "引力场求解方法" },
+			{ "Weak field approximation (1PN)", "弱场近似（1PN）" },
+			{ "Exact solver (Kerr)", "精确求解（Kerr）" },
+			{ "Kerr solver is experimental; the 1PN solver is used for now.", "Kerr 求解器为实验性；目前使用 1PN 求解器。" },
+			{ "Select the gravity field solver used for relativistic effects. Relativistic effects themselves are enabled in the Physics settings.", "选择相对论引力的计算方式。相对论效应本身在“选项 → 物理模拟”中启用。" },
+			// ---- 相对论：超光速保护 ----
+			{ "Report error", "报错" },
+			{ "Clamp to 0.9c", "限制到 0.9c" },
+			{ "Relativistic mode", "相对论模式" },
+			{ "FTL velocity detected in relativistic mode. The simulation has been paused.", "检测到超光速速度（相对论模式），模拟已暂停。" },
 	};
 
 	static const size_t kNumTranslations = sizeof(g_translations) / sizeof(g_translations[0]);
