@@ -36,6 +36,9 @@ struct CelDataStruct
 	float	 fPanoCenterU;	// tile centre longitude (panorama u), for wrapping
 	float	 fPad10;
 	float	 fPad11;
+	// gravitational aberration (static observer inside the potential well)
+	float4	 vFrameDir;		// xyz = observer -> dominant body (world frame), w = enable flag
+	float4	 fFrame;		// x = GM/c^2 [m], y = observer distance [m]
 };
 
 // Booleans go to sepatate structure. (not mixing different datatypes in a structure)
@@ -68,11 +71,71 @@ sampler2D tTexB;
 
 #include "RelativityShaders.hlsl"
 
+// Gravitational aberration (inverse): coordinate/source frame direction ->
+// local rest frame direction of a static observer at distance r from the
+// dominant source. Inverse of FrameInverse() in StarsLens.hlsl:
+//     tan(alpha_local) = tan(alpha_geom) * sqrt(1 - rs/r)
+// where alpha is measured from the outward radial direction.
+float3 FrameInverseInv(float3 d)
+{
+	float mu = Const.fFrame.x;
+	float r  = Const.fFrame.y;
+	if (mu <= 1e-6 || r <= 1.0) return d;
+	float rs = 2.0 * mu;
+	float f = 1.0 - rs / r;
+	if (f <= 1e-4) return d;			// inside/near the horizon: leave unchanged
+	float fs = sqrt(max(f, 1e-6));
+	float3 er = normalize(-Const.vFrameDir.xyz);	// outward radial
+	float cosA = dot(d, er);
+	float sin2 = max(0.0, 1.0 - cosA * cosA);
+	float sinA = sqrt(sin2);
+	float L = sqrt(max(cosA * cosA + sin2 * fs * fs, 1e-9));
+	float cosL = clamp(cosA / L, -1.0, 1.0);
+	float sinL = sqrt(max(0.0, 1.0 - cosL * cosL));
+	float3 eperp = d - er * cosA;
+	float pl = length(eperp);
+	if (pl > 1e-6) eperp = eperp / pl;
+	else eperp = float3(0.0, 0.0, 0.0);
+	return normalize(er * cosL + eperp * sinL);
+}
+
 CelSphereVS CelVS(TILEVERTEX vrt)
 {
 	// Zero output.
 	CelSphereVS outVS = (CelSphereVS)0;
 	float3 posW = mul(float4(vrt.posL, 1.0f), Const.mWorld).xyz;
+
+	// Gravitational lensing (small deflections only): the plain star field must
+	// follow the same small deflection as the lensed cubemap near the "hole"
+	// boundary, otherwise the two images are offset there (visible seam). Only
+	// the first-order inverse of LensDirection() is applied and the shift is
+	// clamped to a few degrees: the strong-field part is rendered by the cubemap
+	// composite and large vertex displacements would tear the tile mesh.
+	if (Const.fLensCount > 0.5) {
+		float lenL = length(posW);
+		if (lenL > 1e-6) {
+			float3 dL = posW / lenL;
+			float3 dSrc = LensDirection(dL);		// observed -> source
+			float3 delta = dSrc - dL;
+			float dl = length(delta);
+			if (dl > 1e-6) {
+				const float maxA = 0.0873;			// clamp ~5 deg
+				if (dl > maxA) delta *= (maxA / dl);
+				// first-order inverse: observed ~= source - delta
+				posW = normalize(dL - delta) * lenL;
+			}
+		}
+	}
+
+	// Gravitational aberration (static observer inside the potential well):
+	// bring the source/coordinate frame direction into the local rest frame
+	// first. This is the inverse of FrameInverse() used by the lensed cubemap
+	// composite path, so the plain star field and the lensed cubemap stay
+	// consistent at the "hole" boundary.
+	if (Const.vFrameDir.w > 0.5) {
+		float lenG = length(posW);
+		if (lenG > 1e-6) posW = FrameInverseInv(posW / lenG) * lenG;
+	}
 
 	// Relativistic aberration: move the background image direction from the
 	// rest frame to the observer frame (texture coordinates stay attached to
@@ -82,11 +145,11 @@ CelSphereVS CelVS(TILEVERTEX vrt)
 		if (len > 1e-6) posW = AberrateDir(posW / len) * len;
 	}
 
-	// Gravitational lensing: bend the star field near the celestial bodies
-	{
-		float len2 = length(posW);
-		if (len2 > 1e-6) posW = LensDirection(posW / len2) * len2;
-	}
+	// NOTE: no gravitational lensing here. The plain star field / background
+	// image path must stay un-lensed (only the kinematic aberration above is
+	// applied): the lensing is handled by the lensed-cubemap composite pass.
+	// The former LensDirection() call here bent the background image away and
+	// made the milky way disappear from the plain star field rendering.
 
 	// Equirectangular panorama projection (lensing source frame render):
 	// output the spherical longitude/latitude as clip space coordinates.

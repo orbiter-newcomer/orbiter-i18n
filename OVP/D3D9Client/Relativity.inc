@@ -1261,11 +1261,31 @@ void CSphereManager::RelativitySetupCelData (LPDIRECT3DDEVICE9 dev, const D3DXMA
 		CelData.fAberrOn = 0.0f;
 	}
 
-	// Gravitational lensing bodies (Relativity.inc)
+	// Gravitational aberration of the plain star field (static observer inside
+	// the potential well of the dominant source). The plain star field is
+	// rendered un-lensed but the gravitational (not kinematic) aberration is a
+	// real geometric effect of the observer position, so it is applied here in
+	// the tile vertex shader, chained with the kinematic aberration.
+	CelData.vFrameDir = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+	CelData.fFrame = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 0.0f);
 	{
 		const Scene::LENSBODY *bodies = NULL;
 		int n = bNoRel ? 0 : scn->GetLensBodies(&bodies);
 		if (n > 12) n = 12;
+		// dominant source = largest mu/r, same choice as the lens composite pass
+		if (n > 0 && !bNoRel && (Config->RelLensing || Config->RelAberration)) {
+			int dom = -1;
+			double domPot = 0.0;
+			for (int i = 0; i < n; i++) {
+				if (bodies[i].dist < 1.0) continue;
+				double pot = (double)bodies[i].mu / (double)bodies[i].dist;
+				if (pot > domPot) { domPot = pot; dom = i; }
+			}
+			if (dom >= 0 && domPot > 1e-12) {
+				CelData.vFrameDir = D3DXVECTOR4(bodies[dom].dir[0], bodies[dom].dir[1], bodies[dom].dir[2], 1.0f);
+				CelData.fFrame = D3DXVECTOR4(bodies[dom].mu, (float)bodies[dom].dist, 0.0f, 0.0f);
+			}
+		}
 		CelData.fLensCount = (float)n;
 		CelData.fLensModel = scn->GetLensModel();
 		for (int i = 0; i < 12; i++) {

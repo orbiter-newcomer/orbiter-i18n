@@ -382,9 +382,6 @@ float4 PSMain(float2 uv : TEXCOORD0) : COLOR
 	// sample the source frame star field (with a soft blend across the cubemap
 	// face seams)
 	float3 col = SampleCubeSmooth(s);
-	// debug switch: negative brightness shows the raw lens cubemap (no blending)
-	if (Const.fBlend.z < 0.0f) return float4(col, 1.0f);
-	col *= Const.fBlend.z;
 
 	// "hole" blend weight: the apparent shift caused by the gravitational lensing
 	// (s2 -> s, excluding the kinematic aberration and the global gravitational
@@ -395,6 +392,25 @@ float4 PSMain(float2 uv : TEXCOORD0) : COLOR
 	float3 sn  = normalize(s);
 	float shift = acos(clamp(dot(s2n, sn), -1.0f, 1.0f));
 	float w = smoothstep(max(Const.fBlend.x, 1e-5f), max(Const.fBlend.y, Const.fBlend.x + 1e-5f), shift);
+
+	// debug modes (negative brightness):
+	// -1: show the raw lens cubemap full screen;
+	// -2: show the hole weight map (red = lensed cubemap, black = plain star field);
+	// -3: normal compositing with a green boundary line of the blend band drawn on top.
+	float zz = (Const.fBlend.z < 0.0f) ? 1.0f : Const.fBlend.z;
+	col *= zz;
+
+	if (Const.fBlend.z < -2.5f) {
+		// boundary line at the centre of the blend band, one pixel wide
+		float mid = 0.5f * (Const.fBlend.x + Const.fBlend.y);
+		float grad = length(float2(ddx(shift), ddy(shift)));
+		float d = abs(shift - mid);
+		float bw = 1.0f - smoothstep(grad * 0.5f, grad * 1.5f, d);
+		if (bw > 0.01f) return float4(0.0f, 1.0f, 0.2f, 1.0f);
+		return float4(col, w);
+	}
+	if (Const.fBlend.z < -1.5f) return float4(w, w * 0.25f, 0.0f, 1.0f);
+	if (Const.fBlend.z < 0.0f)  return float4(col, 1.0f);
 
 	return float4(col, w);
 }

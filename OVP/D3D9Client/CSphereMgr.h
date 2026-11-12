@@ -47,6 +47,9 @@ public:
 		float	 fPanoMode;		// 1 = equirectangular projection
 		float	 fPanoCenterU;	// tile centre longitude (panorama u), for wrapping
 		float	 fPad10, fPad11;
+		// gravitational aberration (static observer inside the potential well)
+		D3DXVECTOR4 vFrameDir;	// xyz = observer -> dominant body (world frame), w = enable flag
+		D3DXVECTOR4 fFrame;		// x = GM/c^2 [m], y = observer distance [m], z/w = unused
 	} CelData;
 
 	struct CelDataFlow
