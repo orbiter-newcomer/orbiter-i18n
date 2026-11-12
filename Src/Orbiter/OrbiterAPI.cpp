@@ -78,6 +78,8 @@ DLLEXPORT int oapiZhActive ()
 {
 	return orbiter::IsChinese() ? 1 : 0;
 }
+// Relativistic extension API implementations (RelativityApi.inc)
+#include "RelativityApi.inc"
 
 DLLEXPORT const char *oapiGetCmdLine ()
 {

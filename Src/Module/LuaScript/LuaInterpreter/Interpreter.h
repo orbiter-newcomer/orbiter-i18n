@@ -457,6 +457,7 @@ protected:
 	static int oapi_set_maininfovisibilitymode (lua_State *L);
 
 	// Time functions
+	static int oapi_get_time_dilation (lua_State *L);
 	static int oapi_get_simtime (lua_State *L);
 	static int oapi_get_simstep (lua_State *L);
 	static int oapi_get_systime (lua_State *L);

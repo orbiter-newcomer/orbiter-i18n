@@ -327,6 +327,27 @@ Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialB
 	return acc;
 }
 
+// -----------------------------------------------------------------------------
+// Strong-field guard for the acceleration solvers: the 1PN/Kerr solutions are
+// not reliable in the deep strong-field regime (r < 10 rs of any source).
+// Returns true when the position lies inside that regime, in which case the
+// caller falls back to the Newtonian acceleration.
+// -----------------------------------------------------------------------------
+static bool RelativityGaccStrongField (const std::vector<CelestialBody*> &celestials,
+	const Vector &gpos, double n, const Body *exclude)
+{
+	const double rsFactor = 10.0;
+	const double cc2 = c_light*c_light;
+	for (size_t i = 0; i < celestials.size(); i++) {
+		if (exclude == celestials[i]) continue;
+		double rs = 2.0*Ggrav*celestials[i]->Mass()/cc2;
+		if (rs <= 0.0) continue;
+		Vector r = celestials[i]->InterpolatePosition (n) - gpos;
+		if (r.length() < rsFactor*rs) return true;
+	}
+	return false;
+}
+
 #endif // REL_PHYS_PSYS
 
 #ifdef REL_PHYS_RIGIDBODY
@@ -351,6 +372,11 @@ static bool RelativityEnckePerturbation (Vector &acc, const CelestialBody *cbody
 	if (!cbody || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return false;
 	// Newtonian gravity model: no additional gravitational correction
 	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 2) return false;
+	// Strong-field guard: no relativistic perturbation in the deep field
+	{
+		double rs = 2.0*Ggrav*cbody->Mass()/(c_light*c_light);
+		if (rs > 0.0 && state_rel.pos.length() < 10.0*rs) return false;
+	}
 	Vector rpos, rvel;
 	rpos.Set (-state_rel.pos.x, -state_rel.pos.y, -state_rel.pos.z); // central body -> vessel
 	rvel.Set (state_rel.vel.x, state_rel.vel.y, state_rel.vel.z);    // vessel velocity relative to central body
@@ -367,7 +393,9 @@ static bool RelativityEnckePerturbation (Vector &acc, const CelestialBody *cbody
 #endif // REL_PHYS_RIGIDBODY
 
 #ifdef REL_PHYS_VESSEL
-// ---- Vessel.cpp: non-gravitational correction + FTL velocity protection ----
+// ---- Vessel.cpp: non-gravitational correction + FTL/strong-field protection ----
+
+extern PlanetarySystem *g_psys;   // defined in Orbiter.cpp (needed by the strong-field guard)
 
 // -----------------------------------------------------------------------------
 // Relativity: vessel dynamics corrections.
@@ -418,9 +446,77 @@ static bool RelativityFTLGuard (StateVectors &st0, StateVectors *st1)
 	return true;
 }
 
+// -----------------------------------------------------------------------------
+// Relativity: strong-field protection.
+//
+// The 1PN/Kerr solvers are only reliable outside the deep strong-field regime.
+// If a vessel (or its numerical state) enters r < 10 rs of any gravitational
+// source, or its state becomes invalid (NaN), it is marked for destruction
+// instead of letting the simulation hang (analogous to the FTL guard).
+// Returns true if the vessel update must be aborted.
+// -----------------------------------------------------------------------------
+static bool RelativityStrongFieldGuard (Vessel *vessel)
+{
+	if (!vessel || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return false;
+	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 2) return false; // Newtonian model: no relativistic solver
+	if (!g_psys) return false;
+
+	const Vector &pos = vessel->GPos();
+	const double rsFactor = 10.0;
+	const double cc2 = c_light*c_light;
+
+	CelestialBody *dom = 0;
+	double domR = 0.0, domRs = 0.0, domRatio = 1e300;
+	for (size_t i = 0; i < g_psys->nGrav(); i++) {
+		CelestialBody *cb = g_psys->GetGravObj ((int)i);
+		if (!cb) continue;
+		double rs = 2.0*Ggrav*cb->Mass()/cc2;
+		if (rs <= 0.0) continue;
+		Vector dr = cb->GPos() - pos;
+		double r = dr.length();
+		double ratio = r/rs;
+		if (ratio < domRatio) { domRatio = ratio; dom = cb; domR = r; domRs = rs; }
+	}
+
+	// invalid state (e.g. NaN from a numerical failure): remove as well
+	bool invalid = (dom == 0);
+	if (!invalid && domRatio >= rsFactor) return false;
+
+	char msg[512];
+	if (invalid)
+		sprintf_s (msg, 512, "Relativistic mode: vessel state is invalid (numerical failure). Vessel removed.");
+	else
+		sprintf_s (msg, 512, "Relativistic mode: vessel entered the strong-field region (r = %.4e m, rs = %.4e m, r/rs = %.2f). Vessel removed.", domR, domRs, domRatio);
+	LOGOUT_ERR (msg);
+	vessel->RequestDestruct();
+	return true;
+}
+
 #endif // REL_PHYS_VESSEL
 
 #ifdef REL_PHYS_WARP
+// ---- Orbiter.cpp: relativistic time acceleration (Lorentz factor) ----------
+
+extern PlanetarySystem *g_psys;   // defined in Orbiter.cpp
+
+// -----------------------------------------------------------------------------
+// Focus fallback for Orbiter::KillVessels(): when the focus vessel is deleted
+// and no focusable vessel remains, switch to any remaining vessel (e.g. a
+// non-focusable observer vessel). This keeps the simulation alive instead of
+// destroying the render window, which can crash during cleanup when the focus
+// vessel is removed by the strong-field guard.
+// -----------------------------------------------------------------------------
+static Vessel *RelativityFocusFallback (Vessel *vessel, double &dmin)
+{
+	Vessel *tgt = 0;
+	for (DWORD j = 0; j < g_psys->nVessel(); j++) {
+		Vessel *v = g_psys->GetVessel(j);
+		if (v->KillPending() || v == vessel) continue;
+		double d = vessel->GPos().dist (v->GPos());
+		if (d < dmin) dmin = d, tgt = v;
+	}
+	return tgt;
+}
 // ---- Orbiter.cpp: relativistic time acceleration (Lorentz factor) ----------
 
 // -----------------------------------------------------------------------------
@@ -448,6 +544,39 @@ double Orbiter::RelWarpScale () const
 }
 
 //-----------------------------------------------------------------------------
+// Name: RelGravTimeFactor()
+// Desc: Gravitational time dilation factor at the focus vessel:
+//         1 / sqrt(1 - 2*Phi/c^2),  Phi = sum(G*M_i/r_i)
+//       (weak field, linear superposition over all celestial bodies). When the
+//       vessel sits deep inside a gravity well its proper time runs slower than
+//       coordinate time; the effect is applied "under water" together with the
+//       velocity Lorentz factor by UpdateRelativityWarp(). Returns 1.0 when
+//       relativistic physics is disabled or there is no focus vessel.
+//-----------------------------------------------------------------------------
+double Orbiter::RelGravTimeFactor () const
+{
+	if (!pConfig->CfgPhysicsPrm.bRelativity) return 1.0;
+	if (pConfig->CfgPhysicsPrm.RelativityGravityMethod == 2) return 1.0; // Newtonian model: no gravitational time dilation
+	if (!g_focusobj || !g_psys) return 1.0;
+	const double G  = 6.67428e-11;
+	const double c2 = c_light*c_light;
+	const Vector &pos = g_focusobj->GPos();
+	double phi = 0.0;  // positive magnitude of the (negative) gravitational potential
+	const size_t n = g_psys->nGrav();
+	for (size_t i = 0; i < n; i++) {
+		CelestialBody *cb = g_psys->GetGravObj ((int)i);
+		if (!cb) continue;
+		Vector dr = cb->GPos() - pos;
+		double r = dr.length();
+		if (r < 1.0) continue;	// numeric guard
+		phi += G * cb->Mass() / r;
+	}
+	double f = 1.0 - 2.0*phi/c2;
+	if (f < 1e-6) f = 1e-6;		// guard near the horizon
+	return 1.0 / sqrt (f);
+}
+
+//-----------------------------------------------------------------------------
 // Name: UpdateRelativityWarp()
 // Desc: Relativistic time acceleration: when relativistic physics is enabled
 //       and the camera focus is a vessel, scale the global time acceleration
@@ -457,7 +586,11 @@ double Orbiter::RelWarpScale () const
 //-----------------------------------------------------------------------------
 void Orbiter::UpdateRelativityWarp ()
 {
-	double gamma = RelWarpScale();
+	// Total proper-time factor: velocity Lorentz factor x gravitational time
+	// dilation (weak field), both applied under water.
+	double velgamma = RelWarpScale();
+	double gravgamma = RelGravTimeFactor();
+	double gamma = velgamma * gravgamma;
 	double target = m_relUserWarp * gamma;
 	if      (target < MinWarpLimit) target = MinWarpLimit;
 	else if (target > MaxWarpLimit) target = MaxWarpLimit;
@@ -466,6 +599,17 @@ void Orbiter::UpdateRelativityWarp ()
 		if (td.WarpChanged()) ApplyWarpFactor();
 	}
 	m_relWarpActive = (gamma != 1.0);
+
+	// Diagnostic (sampled, 1 s): confirm the velocity and gravitational
+	// proper-time factors actually used by the simulation.
+	{
+		static double dbgLastT = -1e100;
+		if (td.SimT0 - dbgLastT > 1.0) {
+			dbgLastT = td.SimT0;
+			LOGOUT ("RELTIME: velGamma=%.9f gravFactor=%.9f userWarp=%.3f effWarp=%.3f",
+				velgamma, gravgamma, m_relUserWarp, td.Warp());
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

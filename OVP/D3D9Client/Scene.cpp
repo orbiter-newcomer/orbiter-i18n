@@ -1515,8 +1515,14 @@ void Scene::RenderMainScene()
 	// TEMP DIAGNOSTIC: cubemap tile wireframe, no lensing, billboard disabled
 	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady;
 	RelLog("Scene: cel sphere lenscube=%d aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", (int)bUseLensCube, Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
+	// "hole" method: render the plain star field first (sharp, with kinematic
+	// aberration); the lensed cubemap is then rendered and composited on top,
+	// replacing the plain star field only where the gravitational apparent
+	// shift is large. Rendering the plain field first keeps the background
+	// image manager state clean (the cubemap face rendering leaves internal
+	// state behind that would otherwise suppress the plain background image).
+	m_celSphere->Render(pDevice, sky_color, false, false);
 	if (bUseLensCube) RenderLensCubemap();
-	m_celSphere->Render(pDevice, sky_color, bUseLensCube);
 	if (bUseLensCube) CompositeStarField();
 
 	// Set Initial Near clip plane distance
@@ -1649,6 +1655,10 @@ void Scene::RenderMainScene()
 
 					m_celSphere->EnsureMarkerDrawingContext((oapi::Sketchpad**)&pSketch, 0, m_celSphere->MarkerColor(0), m_celSphere->MarkerPen(0));
 					RenderObjectMarker(pSketch, pp, std::string(name), std::string(), 0, viewH / 80);
+
+					// Debug aid: marker at the relativity-shifted apparent position
+					// (implementation in Relativity.inc)
+					RenderLensedBodyMarkers (pSketch, plist[i].vo, name, viewH / 80);
 				}
 
 				if (isActive && (mkrmode & MKR_SURFMARK) && (oapiGetObjectType(hObj) == OBJTP_PLANET))

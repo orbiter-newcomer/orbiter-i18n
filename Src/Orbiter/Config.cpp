@@ -115,6 +115,8 @@ CFG_VISUALPRM CfgVisualPrm_default = {
 	false,		// bRelAberration (relativistic aberration visual effect disabled)
 	false,		// bRelLensing (relativistic gravitational lensing visual effect disabled)
 	false,		// bRelLensWireframe (lensing source field wireframe debug disabled)
+	true,		// bRelGravRedshift (gravitational redshift of the observed sky enabled)
+	false,		// bRelBodyMarkers (relativity-shifted body position markers disabled)
 	2.0			// RelExposureWhite (Doppler exposure adaptation white point)
 };
 

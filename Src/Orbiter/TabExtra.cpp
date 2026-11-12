@@ -1292,20 +1292,22 @@ bool ExtraRenderingOptions::clbkOpen (HWND hParent)
 
 void ExtraRenderingOptions::InitDialog (HWND hWnd)
 {
-	SetDialog (hWnd, pTab->Cfg()->CfgDebugPrm, pTab->Cfg()->CfgVisualPrm.bRelLensWireframe);
+	SetDialog (hWnd, pTab->Cfg()->CfgDebugPrm, pTab->Cfg()->CfgVisualPrm.bRelLensWireframe,
+		pTab->Cfg()->CfgVisualPrm.bRelBodyMarkers);
 }
 
 void ExtraRenderingOptions::ResetDialog (HWND hWnd)
 {
 	extern CFG_DEBUGPRM CfgDebugPrm_default;
-	SetDialog (hWnd, CfgDebugPrm_default, false);
+	SetDialog (hWnd, CfgDebugPrm_default, false, false);
 }
 
-void ExtraRenderingOptions::SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm, bool bLensWireframe)
+void ExtraRenderingOptions::SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm, bool bLensWireframe, bool bRelBodyMarkers)
 {
 	SendDlgItemMessage (hWnd, IDC_CHECK1, BM_SETCHECK, prm.bWireframeMode ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage (hWnd, IDC_CHECK2, BM_SETCHECK, prm.bNormaliseNormals ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage (hWnd, IDC_CHECK3, BM_SETCHECK, bLensWireframe ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage (hWnd, IDC_OPT_DBG_RELBODYMARKERS, BM_SETCHECK, bRelBodyMarkers ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool ExtraRenderingOptions::StoreParams (HWND hWnd)
@@ -1314,6 +1316,7 @@ bool ExtraRenderingOptions::StoreParams (HWND hWnd)
 	cfg->CfgDebugPrm.bWireframeMode = (SendDlgItemMessage (hWnd, IDC_CHECK1, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	cfg->CfgDebugPrm.bNormaliseNormals = (SendDlgItemMessage (hWnd, IDC_CHECK2, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	cfg->CfgVisualPrm.bRelLensWireframe = (SendDlgItemMessage (hWnd, IDC_CHECK3, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	cfg->CfgVisualPrm.bRelBodyMarkers = (SendDlgItemMessage (hWnd, IDC_OPT_DBG_RELBODYMARKERS, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	return true;
 }
 

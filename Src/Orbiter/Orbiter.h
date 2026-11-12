@@ -150,6 +150,9 @@ public:
 	double RelWarpScale () const;
 	// Lorentz factor applied internally to the player-selected time warp
 	// (1.0 when relativistic physics is disabled). Never exposed in the UI.
+	double RelGravTimeFactor () const;
+	// Gravitational time dilation factor 1/sqrt(1-2*Phi/c^2) at the focus
+	// vessel (weak field, multi-body potential; 1.0 when relativity is off).
 	double DisplayWarp () const;
 	// time warp value to display (hides the automatic relativistic scaling)
 	// Set time acceleration factor

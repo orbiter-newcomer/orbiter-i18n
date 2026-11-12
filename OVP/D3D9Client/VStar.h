@@ -53,6 +53,7 @@ public:
 private:
 	double maxdist;                    ///< max render distance
 	static SURFHANDLE deftex; ///< default texture
+	bool RelativityRender (LPDIRECT3DDEVICE9 dev); ///< black-hole glow (RelativityBlackHole.inc)
 };
 
 #endif // !__VSTAR_H

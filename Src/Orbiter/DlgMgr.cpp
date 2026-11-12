@@ -696,6 +696,12 @@ static std::string LocalizedDialogTitle(const std::string& name)
 }
 
 void ImGuiDialog::Display() {
+	// Force the dialog into the main viewport: with multi-viewport enabled, a
+	// dialog that was previously dragged outside the main window becomes a
+	// separate platform (top-level) window, which can be covered by a
+	// full-screen render window and then cannot be reached. Keeping the
+	// dialogs in the main viewport avoids that entirely.
+	ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 	ImGui::SetNextWindowSize(ImVec2(defaultSize.width, defaultSize.height), ImGuiCond_FirstUseEver);
 
 	std::string dispName = LocalizedDialogTitle(name);

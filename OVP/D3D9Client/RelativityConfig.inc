@@ -10,11 +10,16 @@ static void RelD3D9ConfigReset (D3D9Config *cfg)
 	cfg->RelDoppler			= 0;
 	cfg->RelAberration		= 0;
 	cfg->RelLensing			= 0;
+	cfg->RelGravRedshift	= 0;
+	cfg->RelBodyMarkers		= 0;
 	cfg->RelGravityMethod	= 0;
 	cfg->RelInternalMode		= 0;
 	cfg->RelExposureWhite	= 2.0;
 	cfg->RelNearGuard		= 500.0;
 	cfg->LensCubemapSize		= 1024;
+	cfg->LensBlendStart		= 0.2;
+	cfg->LensBlendEnd		= 1.0;
+	cfg->LensBrightness		= 1.0;
 	cfg->RelLensWireframe	= false;
 }
 
@@ -31,6 +36,7 @@ static void RelD3D9ConfigRead (FILEHANDLE hFile, D3D9Config *cfg)
 		else if (i >= 2048) cfg->LensCubemapSize = 2048;
 		else cfg->LensCubemapSize = 1024;
 	}
+	if (oapiReadItem_float (hFile, (char*)"LensBlendStart", d))		cfg->LensBlendStart = max(0.0, min(45.0, d)); 	if (oapiReadItem_float (hFile, (char*)"LensBlendEnd", d))		cfg->LensBlendEnd = max(0.0, min(90.0, d)); 	if (oapiReadItem_float (hFile, (char*)"LensBrightness", d))		cfg->LensBrightness = max(-10.0, min(4.0, d));   // negative = debug: show the raw lens cubemap 	if (cfg->LensBlendEnd <= cfg->LensBlendStart) 		cfg->LensBlendEnd = cfg->LensBlendStart + 0.1;
 }
 
 static void RelD3D9ConfigWrite (FILEHANDLE hFile, const D3D9Config *cfg)
@@ -38,4 +44,7 @@ static void RelD3D9ConfigWrite (FILEHANDLE hFile, const D3D9Config *cfg)
 	oapiWriteItem_int   (hFile, (char*)"RelInternalMode", cfg->RelInternalMode);
 	oapiWriteItem_float (hFile, (char*)"RelNearGuard", cfg->RelNearGuard);
 	oapiWriteItem_int   (hFile, (char*)"LensCubemapSize", cfg->LensCubemapSize);
+	oapiWriteItem_float (hFile, (char*)"LensBlendStart", cfg->LensBlendStart);
+	oapiWriteItem_float (hFile, (char*)"LensBlendEnd", cfg->LensBlendEnd);
+	oapiWriteItem_float (hFile, (char*)"LensBrightness", cfg->LensBrightness);
 }

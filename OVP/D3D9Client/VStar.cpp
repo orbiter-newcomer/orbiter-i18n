@@ -14,6 +14,7 @@
 #include "VStar.h"
 #include "D3D9Surface.h"
 #include "D3D9Config.h"
+#include "RelativityBlackHole.inc"
 
 SURFHANDLE vStar::deftex = 0;
 
@@ -34,6 +35,7 @@ void vStar::GlobalInit (oapi::D3D9Client *gc)
 void vStar::GlobalExit()
 {
 	DELETE_SURFACE(deftex);
+	RelativityBlackHoleCleanup();
 }
 
 bool vStar::Update (bool bMainScene)
@@ -51,6 +53,9 @@ bool vStar::Render(LPDIRECT3DDEVICE9 dev)
 	_TRACE;
 
 	if (Config->bGlares) return true;
+
+	// Relativistic extension: black hole (strong-field body) rendering
+	if (RelativityRender (dev)) return true;
 
 	double dist_scale;
 	float rad_scale = float(size * relScale);	// relScale: relativistic aberration apparent size
@@ -96,4 +101,3 @@ bool vStar::Render(LPDIRECT3DDEVICE9 dev)
 	D3D9Effect::RenderBillboard(&mWorld, SURFACE(deftex)->GetTexture(), 1.0f);
 	return true;
 }
-

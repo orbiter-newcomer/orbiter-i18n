@@ -199,6 +199,10 @@ struct STARS_LENS_CONST {
 	D3DXVECTOR4 vLens[12];
 	float fLensMu[12];
 	D3DXVECTOR4 vLensSpin[12];	// xyz = spin axis, w = Kerr a/M
+	D3DXVECTOR4 vFrameDir;		// xyz: observer -> dominant source (inward radial, world frame)
+	D3DXVECTOR4 fFrame;			// x = GM/c^2 [m], y = observer distance [m], z = enable flag
+	D3DXVECTOR4 vFrameSpin;		// xyz = dominant source spin axis (world frame), w = Kerr a/M
+	D3DXVECTOR4 fBlend;			// x = blend start [rad], y = blend end [rad], z = brightness gain
 };
 
 void Scene::InitLensCubemap()
@@ -346,6 +350,39 @@ void Scene::CompositeStarField()
 	}
 	// aberration and gravitational lensing for the star field
 	c.fParams = D3DXVECTOR4((float)beta, Config->RelAberration ? 1.0f : 0.0f, (float)n, relLensModel);
+	// "hole" blend: the lensed cubemap only replaces the plain star field where the
+	// gravitational apparent shift exceeds the configured angles; elsewhere the
+	// regular (sharp) star field rendering is kept.
+	c.fBlend = D3DXVECTOR4(
+		(float)(Config->LensBlendStart * D3DX_PI / 180.0),
+		(float)(Config->LensBlendEnd * D3DX_PI / 180.0),
+		(float)Config->LensBrightness, 0.0f);
+
+	// ---- Gravitational aberration of the star field ----
+	// Observer inside the potential well: the local-frame direction is squeezed
+	// by sqrt(1-rs/r) when mapped to the coordinate frame, and rays inside the
+	// photon-sphere capture cone go black. The dominant source (largest mu/r)
+	// defines the well; the shader applies the mapping for that body only.
+	{
+		int dom = -1;
+		double domPot = 0.0;
+		for (int i = 0; i < n; i++) {
+			if (bodies[i].dist < 1.0) continue;
+			double pot = (double)bodies[i].mu / (double)bodies[i].dist;
+			if (pot > domPot) { domPot = pot; dom = i; }
+		}
+		if (dom >= 0 && domPot > 1e-9) {
+			c.vFrameDir = D3DXVECTOR4(bodies[dom].dir[0], bodies[dom].dir[1], bodies[dom].dir[2], 0.0f);
+			c.fFrame = D3DXVECTOR4(bodies[dom].mu, bodies[dom].dist, 1.0f, (float)dom);
+			c.vFrameSpin = D3DXVECTOR4(bodies[dom].axis[0], bodies[dom].axis[1], bodies[dom].axis[2], bodies[dom].aM);
+			RelLog("Frame: dom=%d mu=%.4e r=%.4e rs/r=%.4f", dom, bodies[dom].mu, bodies[dom].dist, 2.0*bodies[dom].mu/bodies[dom].dist);
+		}
+		else {
+			c.vFrameDir = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+			c.fFrame = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 0.0f);
+			c.vFrameSpin = D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f);
+		}
+	}
 
 	static const SMVERTEX vtx[4] = {
 		{ -1.0f, -1.0f, 0.0f, 0.0f, 1.0f },
@@ -370,12 +407,14 @@ void Scene::CompositeStarField()
 	HR(pDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR));
 	HR(pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE));
 
-	// additive blending, no depth
+	// "hole" compositing: the shader outputs alpha = blend weight (0 = keep the
+	// plain sharp star field, 1 = use the lensed cubemap), so a plain alpha blend
+	// replaces the star field only where the gravitational shift is large.
 	HR(pDevice->SetRenderState(D3DRS_ZENABLE, FALSE));
 	HR(pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE));
 	HR(pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE));
-	HR(pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE));
-	HR(pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE));
+	HR(pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA));
+	HR(pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA));
 	HR(pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));
 	HR(pDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE));
 
@@ -396,12 +435,41 @@ void Scene::CompositeStarField()
 // TO THAT BODY, so bodies the observer is co-moving with (e.g. standing on a
 // planet) are not displaced.
 // --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// Gravitational light deflection angle for a ray with impact parameter b.
+// Mirrors LensDeflectionSchw() in StarsLens.hlsl so that the apparent body
+// positions stay consistent with the lensed star field:
+//   weak field:  4 mu / b
+//   strong field: post-Newtonian expansion blended into the logarithmic
+//                 photon-sphere divergence (Bozza 2008).
+// --------------------------------------------------------------------------
+static double RelBodyDeflection (double mu, double b, bool strong)
+{
+	if (mu <= 0.0 || b <= 0.0) return 0.0;
+	if (!strong) return 4.0*mu/b;
+	const double BC_PER_MU = 5.19615242;	// 3*sqrt(3)
+	double bc = BC_PER_MU*mu;
+	double x = max (b/bc, 1.0001);
+	double u = mu/b;
+	double aPN = 4.0*u + 15.0*3.14159265358979*0.25*u*u + (128.0/3.0)*u*u*u;
+	double aS  = -log(x - 1.0) - 0.4016 + 0.825*(x - 1.0);
+	// Blend weight: w=0 near the photon sphere (x ~ 1.2, use the strong field
+	// expression), w=1 in the weak field (x >> 1, use the post-Newtonian
+	// expression). NOTE: the previous version applied the weight in the wrong
+	// direction, which made the weak-field region use the divergent strong
+	// field expression (huge deflections for distant bodies -> they jumped out
+	// of view). Same convention as LensDeflectionSchw() in StarsLens.hlsl.
+	double w = min(1.0, max(0.0, (x - 1.2)*1.6));
+	w = w*w*(3.0 - 2.0*w);
+	return max (aPN + (aS - aPN)*(1.0 - w), 0.0);
+}
+
 void Scene::ApplyRelativityToBodies()
 {
 	// Gravitational lensing data is independent of the aberration switch
 	ComputeLensBodies();
 
-	if (!Config->RelAberration) return;
+	if (!Config->RelAberration && !Config->RelLensing) return;
 
 	// Skip the scene initialisation frames: the visuals are not fully set up
 	// yet and the object handles may be incomplete.
@@ -450,8 +518,8 @@ void Scene::ApplyRelativityToBodies()
 		VECTOR3 vrel = vObs - vBody;
 		double vm = sqrt(dotp(vrel, vrel));
 		double beta = min(vm / REL_C_LIGHT, 0.9999);
-		if (beta < 1e-6) continue;                       // effect negligible
-		VECTOR3 vdir = vrel / vm;
+		bool bAberr = (Config->RelAberration && beta > 1e-6);
+		VECTOR3 vdir = (vm > 1e-12) ? vrel / vm : _V(1.0, 0.0, 0.0);
 
 		// Use the TRUE body position and the camera position for the direction,
 		// not vo->PosFromCamera(): the latter is overwritten by this function on
@@ -469,7 +537,7 @@ void Scene::ApplyRelativityToBodies()
 		double c0 = dotp(dir, vdir);
 		double gamma = 1.0 / sqrt(max(1e-12, 1.0 - beta * beta));
 
-		double c2 = (c0 + beta) / max(1.0 + beta * c0, 1e-9);
+		double c2 = bAberr ? (c0 + beta) / max(1.0 + beta * c0, 1e-9) : c0;
 		c2 = max(-1.0, min(1.0, c2));
 
 		VECTOR3 perp = dir - vdir * c0;
@@ -477,7 +545,7 @@ void Scene::ApplyRelativityToBodies()
 		if (pl > 1e-12) perp = perp / pl;
 		else perp = _V(0.0, 0.0, 0.0);
 
-		VECTOR3 ndir = vdir * c2 + perp * sqrt(max(0.0, 1.0 - c2 * c2));
+		VECTOR3 ndir = bAberr ? (vdir * c2 + perp * sqrt(max(0.0, 1.0 - c2 * c2))) : dir;
 		double nl = length(ndir);
 		if (!(nl > 1e-12)) continue;
 		ndir = ndir / nl;
@@ -485,9 +553,139 @@ void Scene::ApplyRelativityToBodies()
 		// Apparent angular size scale: d(theta')/d(theta) == delta, the same
 		// factor as the Doppler factor. Bodies in the receding direction appear
 		// enlarged, bodies in the approach direction appear shrunk.
-		double delta = 1.0 / max(gamma * (1.0 + beta * c0), 1e-6);
+		double delta = bAberr ? (1.0 / max(gamma * (1.0 + beta * c0), 1e-6)) : 1.0;
 		delta = max(0.01, min(100.0, delta));
 
+		// ---- gravitational lensing of the apparent body position ----
+		// The body is treated as a background source behind the lensing body:
+		// its apparent direction is rotated towards the lens by the deflection
+		// angle of the corresponding ray (same formula as the star field). This
+		// keeps the bodies consistent with the lensed sky. (No shape distortion
+		// or multiple images in this approximation.)
+		// diagnostic reason logger for the lens source loop
+		auto dbgSrc = [&](int li, const char *why, double x1, double x2) {
+			static int cnt = 0;
+			if (cnt++ % 240 != 1) return;
+			char nm[64] = "";
+			oapiGetObjectName (hBody, nm, 64);
+			RelLog("RelSrc: %s li=%d why=%s x1=%.4e x2=%.4e", nm, li, why, x1, x2);
+		};
+		if (Config->RelLensing && relLensCount > 0) {
+			for (int li = 0; li < relLensCount; li++) {
+				const LENSBODY &lb = relLensBodies[li];
+				if (lb.mu < 1e-2) { dbgSrc(li, "mu", lb.mu, 0.0); continue; }
+				if (fabs (dist - (double)lb.dist) < 1e-3*(double)lb.dist) { dbgSrc(li, "self", dist, (double)lb.dist); continue; }	// lens source itself
+				// A body closer to the camera than the lensing body cannot be
+				// deflected by it. Instead of a hard on/off test (which flickered
+				// when the two distances were almost equal - e.g. a body seen close
+				// to the lens but slightly in front of it), fade the deflection out
+				// smoothly within 2% of the lens distance.
+				double wFront = 1.0;
+				if (dist < (double)lb.dist) {
+					double rel = (dist - (double)lb.dist) / (double)lb.dist;	// negative
+					wFront = max (0.0, 1.0 + rel/0.02);
+				}
+				if (wFront <= 1e-6) { dbgSrc(li, "front", dist, (double)lb.dist); continue; }
+				VECTOR3 L = _V(lb.dir[0], lb.dir[1], lb.dir[2]);
+				double cosT = dotp (ndir, L);
+				cosT = max(-1.0, min(1.0, cosT));
+				double sinT = sqrt(max(0.0, 1.0 - cosT*cosT));
+				double b = (double)lb.dist * sinT;
+				if (b < 1.0) b = 1.0;
+				bool strong = (relLensModel > 0.5) || ((double)lb.dist < 20.0*(double)lb.mu);
+				// Solve the lens equation beta = theta - alpha(theta) for the
+				// apparent (single-image) position of the body. beta is the true
+				// angular separation body<->lens, theta the apparent one and alpha
+				// the deflection at impact parameter b = Dd sin(theta). Solving it
+				// (instead of rotating by a fixed/saturated angle) makes the image
+				// move continuously as the body approaches the lens line of sight,
+				// like the main image of a real gravitational lens.
+				double betaSep = acos (cosT);				// true separation (rad)
+
+				// Solve f(theta) = theta - beta - alpha(theta) = 0 (lens equation,
+				// single-image branch) with a bisection. When no solution exists for
+				// the exact separation (the ray would be captured / the approximation
+				// breaks down), solve for the nearest separations that DO have a
+				// solution and interpolate linearly. This keeps the apparent position
+				// continuous over the whole angular range instead of switching the
+				// lensing on/off at some thresholds.
+				auto solveTheta = [&](double beta, double &out) -> bool {
+					double hi = min (1.0, beta + 0.5);		// <= ~57 deg image distance
+					double fHi = hi - beta - RelBodyDeflection ((double)lb.mu, max (1.0, (double)lb.dist * sin (hi)), strong);
+					if (!(fHi > 0.0) || fHi != fHi) return false;	// no solution / NaN
+					double lo = beta;
+					for (int it = 0; it < 24; it++) {
+						double mid = 0.5*(lo + hi);
+						double bb = (double)lb.dist * sin (mid);
+						if (bb < 1.0) bb = 1.0;
+						double a = RelBodyDeflection ((double)lb.mu, bb, strong);
+						if (!(a >= 0.0) || a != a) a = 0.0;	// NaN guard
+						double f = mid - beta - a;
+						if (f < 0.0) lo = mid; else hi = mid;
+					}
+					out = 0.5*(lo + hi);
+					return (out >= beta);
+				};
+
+				double theta;
+				if (!solveTheta (betaSep, theta)) {
+					// no solution here: interpolate from the nearest solvable angles
+					const double DTH = 0.02;			// search step (rad ~ 1.15 deg)
+					double b1 = 0.0, t1 = 0.0, b2 = 0.0, t2 = 0.0;
+					for (int k = 1; k <= 20; k++) {
+						double b = betaSep - k*DTH;
+						if (b <= 1e-4) break;
+						double tv;
+						if (solveTheta (b, tv)) { b1 = b; t1 = tv; break; }
+					}
+					for (int k = 1; k <= 20; k++) {
+						double b = betaSep + k*DTH;
+						double tv;
+						if (solveTheta (b, tv)) { b2 = b; t2 = tv; break; }
+					}
+					dbgSrc(li, "interp", b1, b2);
+					if (b1 > 0.0 && b2 > 0.0) {
+						theta = t1 + (t2 - t1)*(betaSep - b1)/(b2 - b1);
+					} else if (b1 > 0.0) {
+						theta = t1;						// extrapolate constant
+					} else if (b2 > 0.0) {
+						theta = t2;
+					} else {
+						dbgSrc(li, "nosolve", betaSep, 0.0);
+						continue;						// nothing solvable nearby
+					}
+					if (!(theta >= betaSep)) { dbgSrc(li, "thetalt", theta, betaSep); continue; }
+				}
+				// smooth front/behind transition: scale the deflection angle
+				if (wFront < 1.0) {
+					theta = betaSep + (theta - betaSep)*wFront;
+				}
+
+				// main image lies on the far side of the lens: rotate the apparent
+				// direction away from the lens by theta (in the body-lens plane)
+				VECTOR3 u = ndir - L*cosT;
+				double ul = length(u);
+				if (ul < 1e-9) { dbgSrc(li, "ul", ul, betaSep); continue; }
+				u = u / ul;
+				ndir = L*cos(theta) + u*sin(theta);
+				double nn = length(ndir);
+				if (nn > 1e-12) ndir = ndir / nn;
+			}
+		}
+
+		// diagnostic log (sampled): final apparent direction shift
+		{
+			static int dbgBody = 0;
+			if (dbgBody++ % 240 == 1) {
+				char bnm[64] = "";
+				oapiGetObjectName (hBody, bnm, 64);
+				VECTOR3 trueDir = rel / dist;
+				double c = dotp (trueDir, ndir);
+				c = max(-1.0, min(1.0, c));
+				RelLog("RelBodyFinal: %s shift=%.3f deg lens=%d aberr=%d lensCount=%d",
+					bnm, acos(c)*DEG, (int)Config->RelLensing, (int)bAberr, relLensCount);
+			}
+		}
 		vo->RepositionFromCamera(ndir * dist, delta);
 
 		// Diagnostic: report the processed bodies (sampled, readable at runtime)
@@ -518,6 +716,8 @@ void Scene::SyncRelativityConfig()
 	const bool *pA = (const bool *)gc->GetConfigParam(CFGPRM_RELABERRATION);
 	const bool *pL = (const bool *)gc->GetConfigParam(CFGPRM_RELLENSING);
 	const bool *pW = (const bool *)gc->GetConfigParam(CFGPRM_RELLENSWIREFRAME);
+	const bool *pG = (const bool *)gc->GetConfigParam(CFGPRM_RELGRAVREDSHIFT);
+	const bool *pB = (const bool *)gc->GetConfigParam(CFGPRM_RELBODYMARKERS);
 	const double *pE = (const double *)gc->GetConfigParam(CFGPRM_RELEXPOSURE);
 	const int *pM = (const int *)gc->GetConfigParam(CFGPRM_RELGRAVMETHOD);
 
@@ -528,10 +728,12 @@ void Scene::SyncRelativityConfig()
 	bool bPhysRel = (pPhys && *pPhys);
 	Config->RelDoppler    = (bPhysRel && pD && *pD) ? 1 : 0;
 	Config->RelAberration = (bPhysRel && pA && *pA) ? 1 : 0;
-	Config->RelLensing    = (bPhysRel && pL && *pL) ? 1 : 0;
+	Config->RelLensing    = (bPhysRel && pL && *pL && (pM ? *pM : 0) != 2) ? 1 : 0;   // Newtonian model: no gravity visuals
 	Config->RelLensWireframe = (pW && *pW);
+	Config->RelGravRedshift  = (bPhysRel && pG && *pG && (pM ? *pM : 0) != 2) ? 1 : 0;   // Newtonian model: no gravitational redshift
+	Config->RelBodyMarkers   = (pB && *pB) ? 1 : 0;   // debug markers (independent of the physics switch)
 	if (pE) Config->RelExposureWhite = *pE;
-	if (pM) Config->RelGravityMethod = (*pM == 2) ? 0 : *pM;   // Newtonian physics -> 1PN visual lens model
+	if (pM) Config->RelGravityMethod = *pM;   // 0 = 1PN (weak field), 1 = Kerr (strong field), 2 = Newtonian (no gravity visuals)
 }
 
 // --------------------------------------------------------------------------
@@ -648,7 +850,43 @@ bool Scene::SetupRelativityPass()
 	if (oapiCameraInternal()) {
 		if (Config->RelInternalMode == 1 || Config->RelInternalMode == 2) fDop = 0.0f;
 	}
-	if (fDop <= 0.0f && fAb <= 0.0f) return false;
+
+	// ---- Gravitational redshift of the observed sky ----
+	// Light arriving from distant sources is blue-shifted for an observer
+	// sitting inside a gravitational potential well:
+	//   delta_grav = 1 / sqrt(1 - 2*Phi/c^2),   Phi = sum(G*M_i/r_i)
+	// (weak field, linear superposition over all celestial bodies). The
+	// frequency ratio is applied together with the velocity Doppler factor
+	// in Relativity.hlsl. The effect depends only on the observer position.
+	float fGravRed = 1.0f;
+	if (Config->RelGravRedshift) {
+		const double G  = 6.67428e-11;
+		const double c2 = REL_C_LIGHT * REL_C_LIGHT;
+		double phi = 0.0;
+		for (VOBJREC *pv = vobjFirst; pv; pv = pv->next) {
+			vObject *vo = pv->vobj;
+			if (!vo) continue;
+			const int tp = vo->Type();
+			if (tp != OBJTP_STAR && tp != OBJTP_PLANET) continue;
+			OBJHANDLE hBody = vo->GetObjectA();
+			if (!hBody) continue;
+			const double mass = oapiGetMass(hBody);
+			if (mass <= 0.0) continue;
+			VECTOR3 gpos;
+			oapiGetGlobalPos(hBody, &gpos);
+			const double dx = gpos.x - Camera.pos.x;
+			const double dy = gpos.y - Camera.pos.y;
+			const double dz = gpos.z - Camera.pos.z;
+			const double dst = sqrt(dx*dx + dy*dy + dz*dz);
+			if (dst < 1e3) continue;			// camera inside the body
+			phi += G * mass / dst;
+		}
+		double f = 1.0 - 2.0*phi/c2;
+		if (f < 1e-6) f = 1e-6;				// guard near the horizon
+		fGravRed = (float)(1.0 / sqrt(f));
+	}
+
+	if (fDop <= 0.0f && fAb <= 0.0f && fGravRed == 1.0f) return false;
 
 	pRelativity->SetFloat("vTan", &vTan, sizeof(vTan));
 	pRelativity->SetFloat("vVelCam", &vdir, sizeof(vdir));
@@ -657,6 +895,7 @@ bool Scene::SetupRelativityPass()
 	pRelativity->SetFloat("fDoppler", fDop);
 	pRelativity->SetFloat("fAberr", fAb);
 	pRelativity->SetFloat("fExposure", (float)Config->RelExposureWhite);
+	pRelativity->SetFloat("fGravRed", fGravRed);
 
 	// Near-field protection: exclude pixels belonging to the observer's own
 	// vessel / cockpit from the effects. Requires the vessel depth buffer,
@@ -850,6 +1089,22 @@ void Scene::RelativityApplySunGlare (FVECTOR4 &clr, float &glare) const
 	}
 }
 
+
+// --------------------------------------------------------------------------
+// Debug aid: markers at the relativity-shifted (apparent) positions of the
+// bodies, drawn next to the true-position markers so that the displacement
+// caused by aberration/gravitational lensing can be inspected visually.
+// Enabled from the Extra -> Debug rendering options page.
+// --------------------------------------------------------------------------
+void Scene::RenderLensedBodyMarkers (oapi::Sketchpad *pSkp, vObject *vo, const char *name, int scale)
+{
+	if (!Config->RelBodyMarkers || !vo) return;
+	if (!(Config->RelLensing || Config->RelAberration)) return;
+	VECTOR3 appPos = GetCameraGPos() + vo->PosFromCamera();
+	std::string lensLabel = std::string(name) + " (lensed)";
+	m_celSphere->EnsureMarkerDrawingContext((oapi::Sketchpad**)&pSkp, 0, m_celSphere->MarkerColor(1), m_celSphere->MarkerPen(1));
+	RenderObjectMarker (pSkp, appPos, lensLabel, std::string(), 0, scale);
+}
 #endif // REL_INC_SCENE
 
 #ifdef REL_INC_CELSPHERE

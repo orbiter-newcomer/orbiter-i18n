@@ -4,6 +4,7 @@
 #define INTERPRETER_IMPLEMENTATION
 
 #include "Interpreter.h"
+#include "InterpreterRelativity.inc"
 #include "VesselAPI.h"
 #include "MFDAPI.h"
 #include "DrawAPI.h"
@@ -875,6 +876,7 @@ void Interpreter::LoadAPI ()
 
 		// time functions
 		{"get_simtime", oapi_get_simtime},
+		{"get_time_dilation", oapi_get_time_dilation},
 		{"get_simstep", oapi_get_simstep},
 		{"get_systime", oapi_get_systime},
 		{"get_sysstep", oapi_get_sysstep},
@@ -2628,6 +2630,7 @@ int Interpreter::oapi_get_simtime (lua_State *L)
 	lua_pushnumber (L, oapiGetSimTime());
 	return 1;
 }
+
 
 /***
 Returns the length of the last simulation time step.

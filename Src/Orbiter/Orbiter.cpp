@@ -57,6 +57,9 @@ using namespace oapi;
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+// Relativity extension: focus fallback for KillVessels (implementation in RelativityPhysics.inc)
+static Vessel *RelativityFocusFallback (Vessel *vessel, double &dmin);
+
 #define OUTPUT_DBG
 #define LOADSTATUSCOL 0xC08080 //0xFFD0D0
 
@@ -1336,6 +1339,10 @@ bool Orbiter::KillVessels ()
 							if (d < dmin) dmin = d, tgt = v;
 						}
 					}
+					if (!tgt) {
+						// Fallback: any remaining vessel (implementation in RelativityPhysics.inc)
+						tgt = RelativityFocusFallback (vessel, dmin);
+					}
 					if (tgt) SetFocusObject (tgt, false);
 					else return false; // no focus object available - give up
 				}
@@ -1412,7 +1419,7 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 	// effective value back, i.e. the "runaway time acceleration" bug.
 	if (!force && fabs (warp - m_relUserWarp) < EPS) return; // no change
 	m_relUserWarp = warp;
-	double eff = warp * RelWarpScale();
+	double eff = warp * RelWarpScale() * RelGravTimeFactor();
 	if (fabs (eff - td.Warp()) > EPS) {
 		td.SetWarp (eff, delay);
 		if (td.WarpChanged()) ApplyWarpFactor();

@@ -131,6 +131,8 @@ struct CFG_VISUALPRM {
 	bool   bRelAberration;      // relativistic aberration visual effect
 	bool   bRelLensing;         // relativistic gravitational lensing visual effect
 	bool   bRelLensWireframe;   // debug: render the lensing source field as a tile wireframe
+bool   bRelGravRedshift;     // relativistic gravitational redshift visual effect
+	bool   bRelBodyMarkers;      // debug: draw markers at the relativity-shifted body positions
 	double RelExposureWhite;    // Doppler observer exposure adaptation white point (0=disabled)
 };
 

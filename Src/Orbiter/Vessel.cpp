@@ -6863,6 +6863,9 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 }
 void Vessel::Update (bool force)
 {
+	// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
+	if (RelativityStrongFieldGuard (this)) return;
+
 	// Relativistic FTL velocity protection (implementation in RelativityVessel.inc)
 	if (RelativityFTLGuard (*s0, s1)) return;
 

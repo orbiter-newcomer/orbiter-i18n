@@ -43,7 +43,8 @@ void RelativityVisualUpdateControls (HWND hPage, Config *cfg)
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_SETCHECK,
 		cfg->CfgVisualPrm.bRelAberration ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_SETCHECK,
-		cfg->CfgVisualPrm.bRelLensing ? BST_CHECKED : BST_UNCHECKED, 0);
+		cfg->CfgVisualPrm.bRelLensing ? BST_CHECKED : BST_UNCHECKED, 0);	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELGRAVREDSHIFT, BM_SETCHECK,
+		cfg->CfgVisualPrm.bRelGravRedshift ? BST_CHECKED : BST_UNCHECKED, 0);
 	{
 		double k = cfg->CfgVisualPrm.RelExposureWhite;
 		int pos = (k <= 0.0) ? 8 : (int)((k - 1.0) / 0.5 + 0.5) + 1;
@@ -59,7 +60,7 @@ void RelativityVisualUpdateConfig (HWND hPage, Config *cfg)
 	// relativistic visual effects
 	cfg->CfgVisualPrm.bRelDoppler = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELDOPPLER, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	cfg->CfgVisualPrm.bRelAberration = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	cfg->CfgVisualPrm.bRelLensing = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	cfg->CfgVisualPrm.bRelLensing = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_GETCHECK, 0, 0) == BST_CHECKED);	cfg->CfgVisualPrm.bRelGravRedshift = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELGRAVREDSHIFT, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	{
 		int pos = (int)SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_GETPOS, 0, 0);
 		cfg->CfgVisualPrm.RelExposureWhite = (pos >= 8) ? 0.0 : (1.0 + (pos - 1) * 0.5);

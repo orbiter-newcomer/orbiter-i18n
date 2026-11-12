@@ -16,6 +16,8 @@ void Config::RelativityLoad (std::istream &ifs)
 	GetBool (ifs, "RelativityAberration", CfgVisualPrm.bRelAberration);
 	GetBool (ifs, "RelativityLensing", CfgVisualPrm.bRelLensing);
 	GetBool (ifs, "RelativityLensWireframe", CfgVisualPrm.bRelLensWireframe);
+	GetBool (ifs, "RelativityGravRedshift", CfgVisualPrm.bRelGravRedshift);
+	GetBool (ifs, "RelativityBodyMarkers", CfgVisualPrm.bRelBodyMarkers);
 	if (GetReal (ifs, "RelativityExposure", d))
 		CfgVisualPrm.RelExposureWhite = max (0.0, min (8.0, d));
 }
@@ -29,7 +31,10 @@ void Config::RelativityWriteVisual (std::ostream &ofs, bool bEchoAll) const
 		if (CfgVisualPrm.bRelLensing != CfgVisualPrm_default.bRelLensing || bEchoAll)
 			ofs << "RelativityLensing = " << BoolStr (CfgVisualPrm.bRelLensing) << '\n';
 		if (CfgVisualPrm.bRelLensWireframe != CfgVisualPrm_default.bRelLensWireframe || bEchoAll)
-			ofs << "RelativityLensWireframe = " << BoolStr (CfgVisualPrm.bRelLensWireframe) << '\n';
+			ofs << "RelativityLensWireframe = " << BoolStr (CfgVisualPrm.bRelLensWireframe) << '\n';		if (CfgVisualPrm.bRelGravRedshift != CfgVisualPrm_default.bRelGravRedshift || bEchoAll)
+			ofs << "RelativityGravRedshift = " << BoolStr (CfgVisualPrm.bRelGravRedshift) << '\n';
+		if (CfgVisualPrm.bRelBodyMarkers != CfgVisualPrm_default.bRelBodyMarkers || bEchoAll)
+			ofs << "RelativityBodyMarkers = " << BoolStr (CfgVisualPrm.bRelBodyMarkers) << '\n';
 		if (CfgVisualPrm.RelExposureWhite != CfgVisualPrm_default.RelExposureWhite || bEchoAll)
 			ofs << "RelativityExposure = " << CfgVisualPrm.RelExposureWhite << '\n';
 }
@@ -54,7 +59,10 @@ const void *Config::GetRelativityParam (DWORD paramtype) const
 	case CFGPRM_RELLENSING:
 		return (void*)&CfgVisualPrm.bRelLensing;
 	case CFGPRM_RELLENSWIREFRAME:
-		return (void*)&CfgVisualPrm.bRelLensWireframe;
+		return (void*)&CfgVisualPrm.bRelLensWireframe;	case CFGPRM_RELGRAVREDSHIFT:
+		return (void*)&CfgVisualPrm.bRelGravRedshift;
+	case CFGPRM_RELBODYMARKERS:
+		return (void*)&CfgVisualPrm.bRelBodyMarkers;
 	case CFGPRM_RELEXPOSURE:
 		return (void*)&CfgVisualPrm.RelExposureWhite;
 	case CFGPRM_PHYSRELATIVITY:

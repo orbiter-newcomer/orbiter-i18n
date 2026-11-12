@@ -83,11 +83,16 @@ public:
 	int RelDoppler;					///< Relativistic Doppler shift (red/blue) visual effect (0=off, 1=on)
 	int RelAberration;				///< Relativistic aberration visual effect (0=off, 1=on)
 	int RelLensing;					///< Relativistic gravitational lensing visual effect (0=off, 1=on)
+	int RelGravRedshift;			///< Relativistic gravitational redshift visual effect (0=off, 1=on)
+	int RelBodyMarkers;				///< Debug: markers at relativity-shifted body positions (0=off, 1=on)
 	int RelGravityMethod;			///< Relativity gravity solver from the physics engine (0=1PN, 1=Kerr)
 	int RelInternalMode;			///< Relativistic geometric effects in cockpit view (0=full, 1=doppler only, 2=off)
 	double RelExposureWhite;		///< Doppler observer exposure adaptation white point (0=disabled, default 2.0)
 	double RelNearGuard;			///< near-field protection distance [m] (0=disabled, default 500)
 	int LensCubemapSize;			///< star field cubemap resolution for gravitational lensing (512/1024/2048)
+	double LensBlendStart;			///< lensing: apparent shift [deg] below which the plain star field is kept
+	double LensBlendEnd;			///< lensing: apparent shift [deg] above which the lensed cubemap replaces the plain star field
+	double LensBrightness;			///< lensing: brightness gain applied to the lensed star field cubemap
 	bool RelLensWireframe;			///< debug: render the lensing source field as a tile wireframe
 	int MicroMode;					///< Surface micro textures enable flag (0=disabled, 1=enabled)
 	int MicroFilter;				///< Surface micro texture filter mode (0=Point, 1=Linear ,2=Anisotropic 2x ,3=Anisotropic 4x, 4=Anisotropic 8x, Anisotropic 16x)

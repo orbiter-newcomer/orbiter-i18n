@@ -457,6 +457,7 @@ private:
 	VECTOR3 RelativityApparentSunDir(const VECTOR3 &trueDir) const;
 	void RelativityApplySunGlare(FVECTOR4 &clr, float &glare) const;
 	void ApplyRelativityToBodies();
+	void RenderLensedBodyMarkers (oapi::Sketchpad *pSkp, vObject *vo, const char *name, int scale);
 	void ComputeLensBodies();
 	void InitLensCubemap();
 	void ExitLensCubemap();

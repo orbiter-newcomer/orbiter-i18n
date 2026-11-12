@@ -702,6 +702,11 @@ Vector PlanetarySystem::Gacc_intermediate (const Vector &gpos, double n, const B
 	Vector acc;
 	DWORD i, j;
 	bool rel = (gvel != 0 && relMethod != 2); // relativistic correction requested (vessel path); 2 = Newtonian model
+
+	// Strong-field guard: the 1PN/Kerr solvers are not reliable in the deep
+	// strong-field regime (r < 10 rs of any source). Fall back to the Newtonian
+	// acceleration there (implementation in RelativityPhysics.inc).
+	if (rel && RelativityGaccStrongField (celestials, gpos, n, exclude)) rel = false;
 	bool kerr = (rel && relMethod == 1);
 
 	// find dominant gravity source (strongest GM/r^2) for the exact Kerr solver

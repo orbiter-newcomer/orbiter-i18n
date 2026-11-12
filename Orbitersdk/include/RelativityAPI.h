@@ -68,6 +68,10 @@
  *   bool
  */
 #define CFGPRM_RELLENSWIREFRAME 0x002D
+/** Gravitational redshift of the observed sky (bool). */
+#define CFGPRM_RELGRAVREDSHIFT 0x002E
+/** Debug: draw markers at the relativity-shifted apparent positions of the bodies (bool). */
+#define CFGPRM_RELBODYMARKERS 0x002F
 
 // --- API functions -----------------------------------------------------
 
@@ -83,5 +87,23 @@
  *   relativistic visual effects.
  */
 OAPIFUNC bool oapiGetRelativitySpin (OBJHANDLE hObj, double *aM, VECTOR3 *axis);
+
+/**
+ * \brief Relativistic time dilation at the focus vessel: proper time rate
+ *   d(tau)/dt = 1 / (velGamma * gravFactor) (1.0 = no time dilation).
+ */
+OAPIFUNC double oapiGetRelativityTimeDilation ();
+
+/**
+ * \brief Gravitational time dilation factor 1/sqrt(1-2*Phi/c^2) at the
+ *   focus vessel (1.0 when relativistic physics is disabled).
+ */
+OAPIFUNC double oapiGetRelativityGravTimeFactor ();
+
+/**
+ * \brief Velocity Lorentz factor gamma of the focus vessel
+ *   (1.0 when relativistic physics is disabled).
+ */
+OAPIFUNC double oapiGetRelativityVelTimeFactor ();
 
 #endif // !__RELATIVITYAPI_H

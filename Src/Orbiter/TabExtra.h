@@ -293,7 +293,7 @@ public:
 private:
 	void InitDialog (HWND hWnd);
 	void ResetDialog (HWND hWnd);
-	void SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm, bool bLensWireframe);
+	void SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm, bool bLensWireframe, bool bRelBodyMarkers);
 	bool StoreParams (HWND hWnd);
 	static INT_PTR CALLBACK DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };

@@ -2501,6 +2501,7 @@ OAPIFUNC void oapiZhHudText (int x, int y, int size, const char *utf8);
  */
 OAPIFUNC int oapiZhActive ();
 
+
 /**
  * \brief Returns the API version number against which the module
  *   was linked.

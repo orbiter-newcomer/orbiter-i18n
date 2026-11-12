@@ -22,6 +22,10 @@ struct StarsLensConst
 	float4   vLens[12];		// xyz = body direction (world frame), w = distance [m]
 	float4   fLensMu[3];	// GM/c^2 of the 12 bodies (packed as 3 float4)
 	float4   vLensSpin[12];	// xyz = spin axis (world frame), w = Kerr a/M
+	float4   vFrameDir;		// xyz = observer -> dominant source (inward radial, world frame)
+	float4   fFrame;		// x = GM/c^2 [m], y = observer distance [m], z = enable flag
+	float4   vFrameSpin;	// xyz = dominant source spin axis (world frame), w = Kerr a/M
+	float4   fBlend;		// x = blend start [rad], y = blend end [rad], z = brightness gain
 };
 
 uniform extern StarsLensConst Const;
@@ -103,6 +107,113 @@ float LensDeflectionSchw(float mu, float b)
 	return max(lerp(aS, aPN, w), 0.0f);
 }
 
+// ---------------------------------------------------------------------
+// Gravitational aberration: static observer inside the potential well of
+// the dominant source. The local (observer frame) direction is squeezed
+// when mapped to the coordinate frame:
+//     tan(alpha_geom) = tan(alpha_loc) / sqrt(1 - rs/r)
+// where alpha is measured from the outward radial direction. Rays captured
+// by the photon sphere (inward-going with impact parameter below
+// b_c = 3*sqrt(3)*mu) are marked as shadowed (black).
+// ---------------------------------------------------------------------
+float3 FrameInverse(float3 d, out float shadow)
+{
+	shadow = 0.0f;
+	if (Const.fFrame.z < 0.5f) return d;
+
+	float mu = Const.fFrame.x;
+	float r  = Const.fFrame.y;
+	if (mu <= 1e-6f || r <= 1.0f) return d;
+
+	float3 inward = Const.vFrameDir.xyz;		// observer -> source
+	float3 er = -inward;						// outward radial
+	float rs = 2.0f * mu;
+	float f = 1.0f - rs / r;
+
+	// Model tier: fParams.w = 0 -> weak field (1PN), 1 -> strong field (Kerr).
+	// The weak-field tier uses the first order frame factor far from the body,
+	// but near the horizon the first order expansion is invalid (it would keep
+	// sqrt(1-rs/r) ~ 0.5 while the exact value tends to 0) and the mapping
+	// tears. Upgrade to the exact expression inside the strong-field zone.
+	bool bStrong = (Const.fParams.w > 0.5f);
+	bool bNear   = (r < 10.0f * rs);	// strong-field neighbourhood
+	bool bExact  = bStrong || bNear;
+
+	float fs;
+	if (bExact) {
+		if (f <= 1e-4f) { shadow = 1.0f; return d; }	// inside/at the horizon
+		fs = sqrt(f);
+	}
+	else {
+		fs = max(1.0f - rs / (2.0f * r), 1e-3f);	// weak field: sqrt(1-rs/r) ~ 1-rs/(2r)
+	}
+
+	float cosA = dot(d, er);
+	float sin2 = max(0.0f, 1.0f - cosA * cosA);
+	float sinA = sqrt(sin2);
+
+	// Photon-sphere capture test (black hole shadow). The shadow is a real
+	// physical feature, so it is also rendered for the weak-field tier in the
+	// strong-field neighbourhood (bExact = Kerr tier or r < 10 rs). Farther
+	// out the weak-field tier keeps the plain approximation (no capture).
+	if (bExact) {
+		float b = r * sinA / fs;
+		float bc = 5.19615242f * mu;
+		if (cosA < 0.0f && b < bc) { shadow = 1.0f; return d; }
+	}
+
+	// local frame -> coordinate frame direction (with numerical limiters)
+	float denom = sqrt(max(sin2 + cosA * cosA * f, 1e-9f));
+	if (denom < 1e-6f) return d;
+	float cosG = clamp(cosA * fs / denom, -1.0f, 1.0f);
+	float sinG = sqrt(max(0.0f, 1.0f - cosG * cosG));
+	float3 eperp = d - er * cosA;
+	float pl = length(eperp);
+	if (pl > 1e-6f) eperp = eperp / pl;
+	else eperp = float3(0.0f, 0.0f, 0.0f);
+	return normalize(er * cosG + eperp * sinG);
+}
+
+// ---------------------------------------------------------------------
+// Kerr frame dragging: the local (ZAMO) frame is dragged around the spin
+// axis of the dominant source. Weak/strong-field analytic approximation:
+//   dphi = 2 * a/M * (mu/r)^2 * cos(theta)
+// where theta is the angle between the ray direction and the spin axis.
+// At r ~ 3 rs and a/M = 0.5 this is ~2 degrees, growing towards the horizon.
+// ---------------------------------------------------------------------
+float3 DragRotate(float3 d)
+{
+	if (Const.fFrame.z < 0.5f) return d;
+	float4 sp = Const.vFrameSpin;
+	if (sp.w <= 1e-6f) return d;
+
+	float mu = Const.fFrame.x;
+	float r  = Const.fFrame.y;
+	if (mu <= 1e-6f || r <= 1.0f) return d;
+
+	float aM = min(sp.w, 1.0f);
+	float q = min(mu / r, 0.999f);
+	float cs = dot(d, sp.xyz);
+
+	// Model tier: weak field (1PN) uses the first order Lense-Thirring term;
+	// the strong field (Kerr) tier enhances it by 1/(1-rs/r) near the horizon.
+	float dphi;
+	if (Const.fParams.w > 0.5f) {
+		float f = max(1.0f - 2.0f * mu / r, 1e-3f);
+		dphi = 2.0f * aM * q * q * cs / f;
+	}
+	else {
+		dphi = 2.0f * aM * q * q * cs;
+	}
+	dphi = clamp(dphi, -1.0f, 1.0f);
+	if (abs(dphi) < 1e-7f) return d;
+
+	float ca = cos(dphi);
+	float sa = sin(dphi);
+	float3 axis = sp.xyz;
+	return normalize(d * ca + cross(axis, d) * sa + axis * dot(axis, d) * (1.0f - ca));
+}
+
 // single inverse mapping step: bent direction -> source direction
 // Only the 4 most significant bodies are mapped (pixel shader 3.0 instruction
 // budget); the remaining bodies contribute a negligible deflection.
@@ -116,14 +227,29 @@ float3 LensInverseOnce(float3 d, int n, bool bKerr)
 		float mu = GetLensMu(i);
 		if (dst < 1.0f || mu < 1e-6f) continue;
 
+		// Only rays whose line of sight heads towards the body are deflected.
+		// For the opposite half of the sky the starlight approaches the observer
+		// from behind and never passes near the body; without this test the
+		// weak-field formula diverges exactly behind the observer (b -> 0) and
+		// applies a huge fake deflection there.
+		if (dot(d, ld.xyz) <= 0.0f) continue;
+
 		float cosA = dot(d, ld.xyz);
 		float sinA = sqrt(max(1e-8f, 1.0f - cosA * cosA));
 		float b = dst * sinA;
 		if (b < 1e-3f) b = 1e-3f;
 
+		// The plain 4*mu/b weak-field deflection diverges as b -> 0 (rays
+		// passing close to the photon sphere), which folds the inverse mapping
+		// into radial streaks. Use the finite strong-field expression near the
+		// body (within ~20 mu ~ 10 rs) and keep the weak-field formula farther
+		// out.
+		bool bNear = (dst < 20.0f * mu);
 		float alpha;
-		if (bKerr) alpha = LensDeflectionSchw(mu, b);
-		else       alpha = 4.0f * mu / b;
+		if (bKerr || bNear) alpha = LensDeflectionSchw(mu, b);
+		else                alpha = 4.0f * mu / b;
+		if (!(alpha >= 0.0f)) alpha = 0.0f;		// NaN/negative guard
+		alpha = min(alpha, 1.2f);					// limiter (rad)
 
 		// First order Kerr spin correction (weak field limit): the deflection
 		// is asymmetric about the spin axis (spin-orbit coupling). The term is
@@ -233,14 +359,42 @@ float4 PSMain(float2 uv : TEXCOORD0) : COLOR
 	if (Const.fParams.y > 0.5f && Const.fParams.x > 1e-6f)
 		s1 = AberrateInverse(dw);
 
+	// rest frame -> coordinate frame (observer inside the gravitational well)
+	float shadow = 0.0f;
+	float3 s2 = FrameInverse(s1, shadow);
+	if (shadow > 0.5f) {
+		// capture region (black hole shadow): like any other lensing effect it is
+		// only composited where the hole blend is active, so that large blend
+		// angles keep the plain star field everywhere.
+		float ws = smoothstep(max(Const.fBlend.x, 1e-5f), max(Const.fBlend.y, Const.fBlend.x + 1e-5f), 3.14159f);
+		return float4(0.0f, 0.0f, 0.0f, ws);
+	}
+
+	// Kerr frame dragging (spin-drag rotation of the local frame)
+	s2 = DragRotate(s2);
+
 	// rest frame -> source direction (inverse lensing)
-	float3 s = (Const.fParams.z > 0.5f) ? LensInverse(s1) : s1;
+	float3 s = (Const.fParams.z > 0.5f) ? LensInverse(s2) : s2;
 
 	// degenerate direction guard: keep a valid sample
-	if (!(dot(s, s) > 0.25f)) s = s1;
+	if (!(dot(s, s) > 0.25f)) s = s2;
 
 	// sample the source frame star field (with a soft blend across the cubemap
 	// face seams)
 	float3 col = SampleCubeSmooth(s);
-	return float4(col, 1.0f);
+	// debug switch: negative brightness shows the raw lens cubemap (no blending)
+	if (Const.fBlend.z < 0.0f) return float4(col, 1.0f);
+	col *= Const.fBlend.z;
+
+	// "hole" blend weight: the apparent shift caused by the gravitational lensing
+	// (s2 -> s, excluding the kinematic aberration and the global gravitational
+	// aberration/frame compression) decides where the lensed cubemap replaces
+	// the plain sharp star field. Shift below fBlend.x keeps the plain star
+	// field (alpha 0), above fBlend.y uses the cubemap (alpha 1).
+	float3 s2n = normalize(s2);
+	float3 sn  = normalize(s);
+	float shift = acos(clamp(dot(s2n, sn), -1.0f, 1.0f));
+	float w = smoothstep(max(Const.fBlend.x, 1e-5f), max(Const.fBlend.y, Const.fBlend.x + 1e-5f), shift);
+
+	return float4(col, w);
 }

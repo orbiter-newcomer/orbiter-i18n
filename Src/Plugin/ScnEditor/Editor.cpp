@@ -14,6 +14,7 @@
 #include "orbitersdk.h"
 #include "resource.h"
 #include "Editor.h"
+#include "ScnEditorRelativity.inc"
 
 // Forward declaration: UTF-8 -> UTF-16 helper (defined later in this file)
 static std::wstring Utf8ToWideS(const char *s);
@@ -327,9 +328,10 @@ bool ScnEditor::CreateVessel (char *name, char *classname)
 	VESSELSTATUS2 vs;
 	memset (&vs, 0, sizeof(vs));
 	vs.version = 2;
+
 	vs.rbody = oapiGetGbodyByName ((char*)"Earth");
 	if (!vs.rbody) vs.rbody = oapiGetGbodyByIndex (0);
-	double rad = 1.1 * oapiGetSize (vs.rbody);
+	double rad = ScnEditorSafeOrbitRadius (vs.rbody);	// 20 rs for black holes
 	double vel = sqrt (GGRAV * oapiGetMass (vs.rbody) / rad);
 	vs.rpos = _V(rad,0,0);
 	vs.rvel = _V(0,0,vel);

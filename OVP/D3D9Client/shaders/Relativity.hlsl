@@ -31,6 +31,7 @@ uniform extern float  fGamma;     // 1 / sqrt(1 - beta^2)
 uniform extern float  fDoppler;   // 0..1 master strength
 uniform extern float  fAberr;     // 0..1 master strength
 uniform extern float  fExposure;  // observer exposure adaptation white point (0 = disabled)
+uniform extern float  fGravRed;   // gravitational frequency ratio (1 = effect disabled)
 uniform extern float  fNearGuard; // near-field protection distance [m] (0 = disabled)
 
 #define PI 3.14159265358979
@@ -143,14 +144,22 @@ float4 PSMain(float x : TEXCOORD0, float y : TEXCOORD1) : COLOR
 	float2 uv2 = clamp(ProjUV(ds), 0.001, 0.999);
 	float3 col = tex2D(tBack, uv2).rgb;
 
-	// ---- Doppler: colour tilt + relativistic beaming ----
-	if (fDop > 0.0)
+	// ---- Doppler shift + gravitational redshift: colour tilt + beaming ----
+	// The observed frequency ratio combines the velocity Doppler factor and the
+	// gravitational blueshift of light falling into the observer's potential
+	// well:  delta = delta_doppler * delta_grav   (delta_grav = 1 when the
+	// gravitational redshift effect is disabled).
+	if (fDop > 0.0 || fGravRed != 1.0)
 	{
 		float cosT = dot(d, vVelCam);
-		float delta = 1.0 / max(fGamma * (1.0 - fBeta * cosT), 1e-3);
+		float delta = 1.0;
+		if (fDop > 0.0)
+			delta = 1.0 / max(fGamma * (1.0 - fBeta * cosT), 1e-3);
+		delta *= max(fGravRed, 1e-3);
+		float wgt = saturate(max(fDop, (fGravRed != 1.0) ? 1.0 : 0.0));
 		float3 tint = DopplerTint(delta);
 		float beam = clamp(pow(abs(delta), 4.0), 0.02, 64.0);
-		col = lerp(col, col * tint * beam, saturate(fDop));
+		col = lerp(col, col * tint * beam, wgt);
 
 		// ---- observer exposure adaptation ----
 		// The beamed (blue-shifted) sky is up to delta^4 times brighter and
