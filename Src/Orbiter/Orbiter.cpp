@@ -1159,7 +1159,7 @@ void Orbiter::UpdateServerWnd (HWND hWnd)
 	SetWindowText (GetDlgItem (hWnd, IDC_STATIC2), cbuf);
 	sprintf (cbuf, "%0.5f", td.MJD0);
 	SetWindowText (GetDlgItem (hWnd, IDC_STATIC3), cbuf);
-	sprintf (cbuf, "%0.1fx", td.Warp());
+	sprintf (cbuf, "%0.1fx", DisplayWarp());
 	SetWindowText (GetDlgItem (hWnd, IDC_STATIC4), cbuf);
 	sprintf (cbuf, "%f", td.SimDT);
 	SetWindowText (GetDlgItem (hWnd, IDC_STATIC5), cbuf);
@@ -1401,15 +1401,20 @@ void Orbiter::NotifyObjectSize (const Body *obj)
 //-----------------------------------------------------------------------------
 void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 {
-	if (warp == td.Warp())
-		return; // nothing to do
 	if (bPlayback && pConfig->CfgRecPlayPrm.bReplayWarp && !force) return;
 	const double EPS = 1e-6;
 	if      (warp < MinWarpLimit) warp = MinWarpLimit;
 	else if (warp > MaxWarpLimit) warp = MaxWarpLimit;
-	m_relUserWarp = warp; // remember user-selected warp (relativistic scaling applied on top)
-	if (fabs (warp-td.Warp()) > EPS) {
-		td.SetWarp (warp, delay);
+	// The player always selects the unscaled warp factor. The relativistic
+	// gamma scaling is applied on top internally (see UpdateRelativityWarp)
+	// and must never be written back into the user-selected value: doing so
+	// would multiply the warp by gamma every time a UI control reads the
+	// effective value back, i.e. the "runaway time acceleration" bug.
+	if (!force && fabs (warp - m_relUserWarp) < EPS) return; // no change
+	m_relUserWarp = warp;
+	double eff = warp * RelWarpScale();
+	if (fabs (eff - td.Warp()) > EPS) {
+		td.SetWarp (eff, delay);
 		if (td.WarpChanged()) ApplyWarpFactor();
 		if (bRecord && pConfig->CfgRecPlayPrm.bRecordWarp) {
 			char cbuf[256];
@@ -1428,47 +1433,53 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 }
 
 //-----------------------------------------------------------------------------
+// Name: RelWarpScale()
+// Desc: Lorentz factor used to scale the player-selected time acceleration.
+//       Returns 1 when relativistic physics is disabled (the acceleration is
+//       then used as-is). The scaling is a simulation-internal detail: the
+//       player still selects and sees the unscaled factor.
+//-----------------------------------------------------------------------------
+double Orbiter::RelWarpScale () const
+{
+	if (!pConfig->CfgPhysicsPrm.bRelativity) return 1.0;
+	if (!g_focusobj) return 1.0;
+	double v2 = g_focusobj->GVel().length2();
+	double c2 = c_light*c_light;
+	if (v2 >= c2*0.999999) return 1.0; // guard (velocity clamp is applied elsewhere)
+	return 1.0/sqrt (1.0 - v2/c2);
+}
+
+//-----------------------------------------------------------------------------
 // Name: UpdateRelativityWarp()
 // Desc: Relativistic time acceleration: when relativistic physics is enabled
 //       and the camera focus is a vessel, scale the global time acceleration
-//       by the vessel Lorentz factor gamma.
+//       by the vessel Lorentz factor gamma. This is applied "under water":
+//       the effective warp used by the simulation differs from the factor the
+//       player selects and sees (m_relUserWarp).
 //-----------------------------------------------------------------------------
 void Orbiter::UpdateRelativityWarp ()
 {
-	if (!pConfig->CfgPhysicsPrm.bRelativity) {
-		if (m_relWarpActive) {
-			td.SetWarp (m_relUserWarp, 0);
-			m_relWarpActive = false;
-			if (td.WarpChanged()) ApplyWarpFactor();
-		}
-		return;
-	}
-
-	double gamma = 1.0;
-	if (g_focusobj) {
-		double v2 = g_focusobj->GVel().length2();
-		double c2 = c_light*c_light;
-		if (v2 < c2*0.999999) gamma = 1.0/sqrt (1.0 - v2/c2);
-	}
+	double gamma = RelWarpScale();
 	double target = m_relUserWarp * gamma;
 	if      (target < MinWarpLimit) target = MinWarpLimit;
 	else if (target > MaxWarpLimit) target = MaxWarpLimit;
 	if (fabs (target - td.Warp()) > 1e-6) {
 		td.SetWarp (target, 0);
-		m_relWarpActive = true;
 		if (td.WarpChanged()) ApplyWarpFactor();
 	}
+	m_relWarpActive = (gamma != 1.0);
 }
 
 //-----------------------------------------------------------------------------
 // Name: DisplayWarp()
-// Desc: Return the time acceleration value to display to the user. While the
-//       automatic relativistic scaling is active, the user-selected warp is
-//       shown instead of the effective (gamma-scaled) value.
+// Desc: Return the time acceleration value to display to the user. The player
+//       only controls the unscaled warp factor: the automatic relativistic
+//       scaling stays invisible.
 //-----------------------------------------------------------------------------
 double Orbiter::DisplayWarp () const
 {
-	return (m_relWarpActive ? m_relUserWarp : td.Warp());
+	if (pConfig->CfgPhysicsPrm.bRelativity) return m_relUserWarp;
+	return td.Warp();
 }
 
 //-----------------------------------------------------------------------------
@@ -1478,7 +1489,8 @@ double Orbiter::DisplayWarp () const
 void Orbiter::IncWarpFactor ()
 {
 	const double EPS = 1e-6;
-	double logw = log10 (td.Warp());
+	// Step through the factors the player sees, not the internally scaled ones.
+	double logw = log10 (DisplayWarp());
 	SetWarpFactor (pow (10.0, floor (logw+EPS)+1.0));
 }
 
@@ -1489,7 +1501,8 @@ void Orbiter::IncWarpFactor ()
 void Orbiter::DecWarpFactor ()
 {
 	const double EPS = 1e-6;
-	double logw = log10 (td.Warp());
+	// Step through the factors the player sees, not the internally scaled ones.
+	double logw = log10 (DisplayWarp());
 	SetWarpFactor (pow (10.0, ceil (logw-EPS)-1.0));
 }
 
@@ -1976,13 +1989,20 @@ bool Orbiter::UnregisterCustomCmd (int cmdId)
 
 int Orbiter::RegisterMenuCmd (const char *label, const char *imagepath, CustomFunc func, void *context)
 {
-	// share g_customcmdid for unique id
-	menuitems.emplace_back(label, imagepath, g_customcmdid++, func, context);
+	// Share g_customcmdid for unique ids. The same id has to be used in the
+	// menu item list, in the menu bar and as the return value: the caller
+	// passes it back to UnregisterMenuCmd, which must find the entry in both
+	// containers. Storing the incremented value in one place and the original
+	// one in another leaves stale entries behind when a module is unloaded;
+	// such an entry keeps a callback into the unloaded module and dereferencing
+	// it later (when the menu bar is rebuilt) crashes the application.
+	const int id = g_customcmdid++;
+	menuitems.emplace_back(label, imagepath, id, func, context);
 	if(g_pane) {
-		g_pane->MIBar()->RegisterMenuItem(label, imagepath, g_customcmdid, func, context);
+		g_pane->MIBar()->RegisterMenuItem(label, imagepath, id, func, context);
 	}
 
-	return g_customcmdid;
+	return id;
 }
 void Orbiter::UnregisterMenuCmd (int cmdId)
 {

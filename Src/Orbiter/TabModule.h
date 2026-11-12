@@ -52,10 +52,16 @@ namespace orbiter {
 		void InitActivation();
 		// activate modules listed in config file and tick entries in list
 
+		void ApplyCheckStates();
+		// (re-)apply the module check states from the module records; used
+		// after the tree control has finished its initialisation, because the
+		// control resets the check states during/after creation.
+
 		void ExpandCollapseAll(bool expand);
 		HTREEITEM GetCategoryItem(char* cat);
 
 	private:
+		HTREEITEM pendCheckItem;     // deferred check-box click target (see OnNotify)
 		SplitterCtrl splitListDesc;  // splitter control for module list(left) and description(right)
 		RECT r_bt0, r_bt1, r_bt2;
 		RECT r_lst0, r_dsc0;     // REMOVE!

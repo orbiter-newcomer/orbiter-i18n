@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include <windows.h>
+#include <cstdarg>
 #include "Orbiter.h"
 #include "Launchpad.h"
 #include "TabModule.h"
@@ -18,12 +19,29 @@ using std::max;
 
 extern char DBG_MSG[256];
 static int counter = -1;
+static bool inCheckCascade = false;   // guard against recursive TVN_ITEMCHANGED
+
+// Temporary diagnostic log for the module tab, written to an independent file
+// so that it also works in Launchpad mode (the Orbiter log may not be
+// initialised there yet).
+static void dbgModLog (const char *fmt, ...)
+{
+	FILE *f = NULL;
+	if (fopen_s (&f, "ModuleTab.log", "a") != 0 || !f) return;
+	va_list ap;
+	va_start (ap, fmt);
+	vfprintf (f, fmt, ap);
+	va_end (ap);
+	fprintf (f, "\n");
+	fclose (f);
+}
 
 //-----------------------------------------------------------------------------
 
 orbiter::ModuleTab::ModuleTab (const LaunchpadDialog *lp): LaunchpadTab (lp)
 {
 	nmodulerec = 0;
+	pendCheckItem = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -66,7 +84,13 @@ void orbiter::ModuleTab::Create ()
 
 BOOL orbiter::ModuleTab::OnInitDialog (HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-	SetWindowLongPtr (GetDlgItem (hTab, IDC_MOD_TREE), GWL_STYLE, TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | TVS_NOTOOLTIPS | WS_BORDER | WS_TABSTOP);
+	// Do NOT re-set the full tree style here: the original code replaced it
+	// with a style list that omitted TVS_CHECKBOXES, which also discarded the
+	// state image list the control creates for the check boxes - the saved
+	// check states were then drawn blank/garbled. Keep the styles from the
+	// dialog resource and only remove the horizontal scroll bar.
+	LONG style = GetWindowLongPtr (GetDlgItem (hTab, IDC_MOD_TREE), GWL_STYLE);
+	SetWindowLongPtr (GetDlgItem (hTab, IDC_MOD_TREE), GWL_STYLE, style & ~WS_HSCROLL);
 	SetWindowPos (GetDlgItem (hTab, IDC_MOD_TREE), NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER);
 
 	return FALSE;
@@ -142,6 +166,11 @@ BOOL orbiter::ModuleTab::OnSize (int w, int h)
 void orbiter::ModuleTab::Show ()
 {
 	LaunchpadTab::Show();
+	// The tree control can reset its check states during/after its initial
+	// layout (known issue, see InitActivation). Re-apply the saved selection
+	// whenever the tab becomes visible, so the ticks match the configuration.
+	PostMessage (hTab, WM_USER + 2, 0, 0);
+	SetTimer (hTab, 1, 100, NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -225,6 +254,12 @@ void orbiter::ModuleTab::RefreshLists ()
 		}
 	}
 	counter = 0;
+	{
+		int nact = 0;
+		for (int i = 0; i < nmodulerec; i++)
+			if (modulerec[i]->active) nact++;
+		
+	}
 }
 
 HTREEITEM orbiter::ModuleTab::GetCategoryItem (char *cat)
@@ -276,27 +311,62 @@ void orbiter::ModuleTab::InitActivation ()
 	catitem.hItem = hRoot;
 	subitem.mask = TVIF_PARAM;
 
+	// Suppress TVN_ITEMCHANGED processing while the initial check states are
+	// applied: SetCheckState sends TVN_ITEMCHANGED synchronously and the
+	// handler would call ActivateFromList(), which - seeing few ticks but a
+	// full active list - would wrongly deactivate the not-yet-ticked modules
+	// and wipe the saved configuration.
+	inCheckCascade = true;
+
 	// tick the active modules
+	int nset = 0;
 	while (TreeView_GetItem (hTree, &catitem)) {
 		subitem.hItem = TreeView_GetChild (hTree, catitem.hItem);
 		while (TreeView_GetItem (hTree, &subitem)) {
 			MODULEREC *rec = (MODULEREC*)subitem.lParam;
 			if (rec->active) {
 				TreeView_SetCheckState (hTree, subitem.hItem, TRUE);
+				nset++;
 			}
 			subitem.hItem = TreeView_GetNextSibling (hTree, subitem.hItem);
 		}
 		catitem.hItem = TreeView_GetNextSibling (hTree, catitem.hItem);
 	}
+	inCheckCascade = false;
 
-	// remove check boxes from categories
-	catitem.hItem = hRoot;
-	while (TreeView_GetItem (hTree, &catitem)) {
-		TreeView_SetItemState (hTree, catitem.hItem, 0, TVIS_STATEIMAGEMASK);
-		catitem.hItem = TreeView_GetNextSibling (hTree, catitem.hItem);
-	}
-
+	// Keep the check boxes on the category items: clicking a category check box
+	// toggles all of its children (handled in OnNotify, TVN_ITEMCHANGED).
 	ExpandCollapseAll (true);
+
+	// The check states set above are sometimes undone by the tree control's
+	// initial layout/painting. Re-apply them once the control has finished its
+	// initialisation (see the WM_USER+2 handler in OnMessage) and once more
+	// after a short delay (WM_TIMER), when the control is fully ready.
+	PostMessage (hTab, WM_USER + 2, 0, 0);
+	SetTimer (hTab, 1, 100, NULL);
+}
+
+void orbiter::ModuleTab::ApplyCheckStates ()
+{
+	HWND hTree = GetDlgItem(hTab, IDC_MOD_TREE);
+	inCheckCascade = true;
+	HTREEITEM hCat = TreeView_GetRoot(hTree);
+	while (hCat) {
+		HTREEITEM hChild = TreeView_GetChild(hTree, hCat);
+		while (hChild) {
+			TVITEM item;
+			item.mask = TVIF_PARAM | TVIF_HANDLE;
+			item.hItem = hChild;
+			if (TreeView_GetItem(hTree, &item)) {
+				MODULEREC *rec = (MODULEREC*)item.lParam;
+				if (rec)
+					TreeView_SetCheckState(hTree, hChild, rec->active ? TRUE : FALSE);
+			}
+			hChild = TreeView_GetNextSibling(hTree, hChild);
+		}
+		hCat = TreeView_GetNextSibling(hTree, hCat);
+	}
+	inCheckCascade = false;
 }
 
 void orbiter::ModuleTab::ActivateFromList ()
@@ -371,6 +441,55 @@ BOOL orbiter::ModuleTab::OnNotify(HWND hDlg, int idCtrl, LPNMHDR pnmh)
 			else
 				SetWindowText(GetDlgItem(hDlg, IDC_MOD_INFO), "");
 		} return TRUE;
+		case NM_CLICK: {
+			// A click on a tree check box is processed deferred (WM_USER+1),
+			// after the control has finished updating the check state. A
+			// category check box is then propagated to all its children, and
+			// every change synchronises the active module list with the
+			// configuration (this was missing entirely: selections were never
+			// written to ACTIVE_MODULES and were lost across restarts).
+			HWND hTree = GetDlgItem(hDlg, IDC_MOD_TREE);
+			LPNMITEMACTIVATE pia = (LPNMITEMACTIVATE)pnmh;
+			TVHITTESTINFO ht;
+			ht.pt = pia->ptAction;
+			TreeView_HitTest(hTree, &ht);
+			if (ht.hItem && (ht.flags & TVHT_ONITEMSTATEICON)) {
+				pendCheckItem = ht.hItem;
+				PostMessage(hDlg, WM_USER + 1, 0, 0);
+			}
+		} return TRUE;
+		case TVN_ITEMCHANGEDA:
+		case TVN_ITEMCHANGEDW: {
+			// Check box state change. This is the notification the tree control
+			// actually sends when the user clicks a check box (NM_CLICK is not
+			// sent for the state icon). A category (parent) check box is
+			// propagated to all its children; every change synchronises the
+			// active module list with the configuration (ACTIVE_MODULES).
+			NMTVITEMCHANGE *pnm = (NMTVITEMCHANGE*)pnmh;
+			
+			// Only react to genuine user clicks. The tree control also resets
+			// the check states during its initialisation, which sends
+			// TVN_ITEMCHANGED as well; treating those resets as "user
+			// deactivated the module" wiped the saved active module list. A
+			// real click means the left mouse button is held down at this point.
+			if ((pnm->uChanged & TVIF_STATE) && !inCheckCascade &&
+			    (GetKeyState(VK_LBUTTON) & 0x8000)) {
+				HWND hTree = GetDlgItem(hDlg, IDC_MOD_TREE);
+				HTREEITEM child = TreeView_GetChild(hTree, pnm->hItem);
+				inCheckCascade = true;
+				if (child) {
+					// category node: propagate the new state to all children
+					BOOL state = TreeView_GetCheckState(hTree, pnm->hItem) ? TRUE : FALSE;
+					while (child) {
+						TreeView_SetCheckState(hTree, child, state);
+						child = TreeView_GetNextSibling(hTree, child);
+					}
+				}
+				inCheckCascade = false;
+				// update Config::m_activeModules and load/unload the modules
+				ActivateFromList();
+			}
+		} return TRUE;
 		case NM_CUSTOMDRAW:
 			// this is a terrible hack to set the initial activation ticks,
 			// because for an unknown reason, setting the check state of the
@@ -381,7 +500,13 @@ BOOL orbiter::ModuleTab::OnNotify(HWND hDlg, int idCtrl, LPNMHDR pnmh)
 				counter++;
 			}
 			else if (counter == 4) {
-				ActivateFromList();
+				// Do NOT call ActivateFromList() here. At this stage the tree
+				// check states may not have been applied yet (see the known
+				// initialisation issue above), and ActivateFromList would then
+				// interpret the missing ticks as "user deactivated everything"
+				// and wipe the saved active module list (ACTIVE_MODULES). The
+				// module activation is loaded from the configuration when the
+				// simulator starts, so no synchronisation is needed here.
 			}
 			return 0;
 		}
@@ -411,6 +536,39 @@ BOOL orbiter::ModuleTab::OnMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			return TRUE;
 		}
 		break;
+	case WM_USER + 2: {
+		// (Re-)apply the saved module check states (see InitActivation).
+		ApplyCheckStates();
+		ActivateFromList();   // should be a no-op; keeps the config in sync
+	} return TRUE;
+	case WM_TIMER:
+		if (wParam == 1) {
+			// The tree is fully initialised by now: force-apply the check
+			// states once more (the control resets them during/after its
+			// initial layout, which is why the saved ticks used to vanish).
+			KillTimer(hTab, 1);
+			ApplyCheckStates();
+		}
+		return TRUE;
+	case WM_USER + 1: {
+		// Deferred processing of a tree check-box click (see OnNotify).
+		if (pendCheckItem) {
+			HWND hTree = GetDlgItem(hTab, IDC_MOD_TREE);
+			HTREEITEM child = TreeView_GetChild(hTree, pendCheckItem);
+			if (child) {
+				// category node: propagate the new state to all child modules
+				BOOL state = TreeView_GetCheckState(hTree, pendCheckItem) ? TRUE : FALSE;
+				while (child) {
+					TreeView_SetCheckState(hTree, child, state);
+					child = TreeView_GetNextSibling(hTree, child);
+				}
+			}
+			pendCheckItem = NULL;
+			// update Config::m_activeModules and load/unload the modules
+			ActivateFromList();
+		}
+		return TRUE;
+	}
 	case WM_USER:
 		InitActivation();
 

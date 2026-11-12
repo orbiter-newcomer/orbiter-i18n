@@ -36,7 +36,11 @@ Instrument_Map::Instrument_Map (Pane *_pane, INT_PTR _id, const Spec &spec, Vess
 	VectorMap::OBJTYPE sel = {0,0};
 	dispflag = dispflag_default;
 	DWORD mkrflag = 0;
-	if (_vessel == saveprm.usr) {
+	// The saved state is static and survives a simulation session, but the
+	// celestial bodies are recreated for every session. Only restore it if the
+	// saved reference body still belongs to the current planetary system;
+	// otherwise the saved pointers are dangling and must not be dereferenced.
+	if (_vessel == saveprm.usr && saveprm.ref && g_psys->isObject (saveprm.ref)) {
 		refplanet = saveprm.ref;
 		sel       = saveprm.sel;
 		zoom      = saveprm.zoom;
@@ -45,6 +49,20 @@ Instrument_Map::Instrument_Map (Pane *_pane, INT_PTR _id, const Spec &spec, Vess
 		mkrflag   = saveprm.mkrflag;
 	}
 	if (!refplanet) refplanet = _vessel->ProxyPlanet();
+	if (!refplanet) {
+		// The proxy planet is not necessarily assigned yet while the MFD is
+		// created during the panel initialisation of a new session. Fall back
+		// to the reference body of the vessel (if it is a planet), or to the
+		// first planet of the system, so that the instrument always has a
+		// valid reference body.
+		const CelestialBody *ref = _vessel->ElRef();
+		if (ref && ref->Type() == OBJTP_PLANET) {
+			refplanet = (const Planet*)ref;
+		} else {
+			const PlanetarySystem *psys = g_psys;
+			if (psys->nPlanet() > 0) refplanet = psys->GetPlanet (0);
+		}
+	}
 	map = new VectorMap();
 	map->SetLabelSize(max(9, IH / 40));
 	map->SetCBody (refplanet);
@@ -563,7 +581,7 @@ bool Instrument_Map::SelectTarget (char *str)
 {
 	const Body *body = g_psys->GetObj (str, true);
 	if (!body) {
-		body = refplanet->GetBase (str, true);
+		body = refplanet ? refplanet->GetBase (str, true) : NULL;
 		if (body) vessel->SetLandingTarget((Base*)body);
 	}
 	if (body) {
@@ -761,6 +779,7 @@ bool Instrument_Map::ClbkSubmn_Target (Select *menu, int item, char *str, void *
 	} else {    // submenu
 		switch (item) {
 		case 1: // spaceports
+			if (!map->refplanet) return false;
 			for (i = 0; i < map->refplanet->nBase(); i++)
 				menu->Append (map->refplanet->GetBase(i)->Name());
 			return (i > 0);

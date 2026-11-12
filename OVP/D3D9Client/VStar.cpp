@@ -53,7 +53,7 @@ bool vStar::Render(LPDIRECT3DDEVICE9 dev)
 	if (Config->bGlares) return true;
 
 	double dist_scale;
-	float rad_scale = float(size);
+	float rad_scale = float(size * relScale);	// relScale: relativistic aberration apparent size
 	float size_hack; // make star look bigger at distance
 
 	VECTOR3 bdir (unit(cpos));

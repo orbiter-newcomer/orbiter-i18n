@@ -2971,6 +2971,19 @@ OAPIFUNC double oapiGetSize (OBJHANDLE hObj);
  * \sa oapiGetMaxFuelMass, oapiGetEmptyMass
  */
 OAPIFUNC double oapiGetMass (OBJHANDLE hObj);
+
+/**
+ * \brief Returns the relativistic spin parameters of a celestial body.
+ * \param hObj object handle (must be a star or planet)
+ * \param aM pointer receiving the dimensionless Kerr spin parameter a/M (may be NULL)
+ * \param axis pointer receiving the normalised spin axis direction (may be NULL)
+ * \return true if the object is a celestial body with a valid mass, false otherwise.
+ * \note The spin is derived from the body rotation and inertia the same way the
+ *   physics engine does it: J = I * omega * axis, a/M = J c / (G M^2).
+ *   Used by the graphics clients for the Kerr spin correction of the
+ *   relativistic visual effects.
+ */
+OAPIFUNC bool oapiGetRelativitySpin (OBJHANDLE hObj, double *aM, VECTOR3 *axis);
 	
 /**
  * \brief Returns the position of an object in the global reference frame.

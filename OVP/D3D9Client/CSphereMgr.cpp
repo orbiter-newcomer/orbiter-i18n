@@ -58,6 +58,11 @@ CSphereManager::CSphereManager(D3D9Client *gc, const Scene *scene) : gc(gc), tex
 {
 	scn = scene;
 
+	m_bNoCull = false;
+	m_aberrOn = false;
+	m_aberrBeta = 0.0f;
+	m_aberrDir = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
+
 	gc->OutputLoadStatus(oapiTr("Loading Celestial Sphere..."),0);
 	
 	patchidx  = TileManager::patchidx;
@@ -395,9 +400,11 @@ void CSphereManager::SetBgBrightness(double val)
 
 // =======================================================================
 
-void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl)
+void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl, const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, bool bNoRel, bool bWireframe, bool bPano)
 {
 	if (m_bDisabled) return;
+
+	m_bPano = bPano;
 
 	float intens = intensity;
 	float bgscale = (float)exp(-bglvl * 12.5);
@@ -410,7 +417,47 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl)
 	RenderParam.dev = dev;
 	RenderParam.tgtlvl = level;
 	RenderParam.wmat = trans;
-	RenderParam.viewap = atan(diagscale * tan(scn->GetCameraAperture()));
+	// A cubemap face (used for the lensing) has a 90 degree field of view and
+	// its own view direction instead of the camera.
+	RenderParam.viewap = (pCamDir ? atan(sqrt(2.0) * tan(PI / 4.0)) : atan(diagscale * tan(scn->GetCameraAperture())));
+
+	// When rendering a cubemap face (pVP != NULL) the tile visibility must not
+	// be tested against the main camera frustum: the cubemap covers the whole
+	// sky while the camera only sees a small part of it. Tiles outside the
+	// camera frustum would be rejected and the cubemap would be incomplete.
+	m_bNoCull = (pVP != NULL);
+
+	// Relativistic aberration of the celestial sphere background image.
+	// When active, the tiles must not be culled by the (un-shifted) view cone:
+	// aberration moves sky directions from the rest frame into the observer
+	// frame, so tiles that are outside the nominal view cone can end up inside
+	// the rendered image.  Expand the culling cone to the rest-frame angle that
+	// maps onto the visible field of view.
+	if (!bNoRel) {
+		float relBeta = 0.0f;
+		D3DXVECTOR3 relDir(0.0f, 0.0f, 1.0f);
+		m_aberrOn = scn->GetRelativityAberration(relBeta, relDir);
+		m_aberrBeta = relBeta;
+		m_aberrDir = relDir;
+		{
+			static int dbg = -1;		// diagnostic: log state changes only
+			if ((int)m_aberrOn != dbg) {
+				dbg = (int)m_aberrOn;
+				LogAlw("CelSphere: aberration=%d beta=%.4f", (int)m_aberrOn, m_aberrBeta);
+			}
+		}
+		if (m_aberrOn) {
+			double cb = cos(RenderParam.viewap);
+			double c2 = (cb - (double)relBeta) / max(1.0 - (double)relBeta * cb, 1e-9);
+			c2 = max(-1.0, min(1.0, c2));
+			RenderParam.viewap = acos(c2);
+		}
+	}
+	else {
+		m_aberrOn = false;
+		m_aberrBeta = 0.0f;
+		m_aberrDir = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
+	}
 
 	int startlvl = min (level, 8);
 	int hemisp, ilat, ilng, idx;
@@ -421,12 +468,17 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl)
 	TEXCRDRANGE range = {0,1,0,1};
 	tilebuf = TileManager::tilebuf;
 
-	MATRIX3 rcam;
-	oapiCameraRotationMatrix(&rcam);
-
-	rcam = mul(ecl2gal, rcam);
-
-	RenderParam.camdir = _V(rcam.m13, rcam.m23, rcam.m33);
+	if (pCamDir) {
+		// custom view direction (cubemap face, world frame) -> celestial frame
+		VECTOR3 fwd = mul(ecl2gal, *pCamDir);
+		RenderParam.camdir = _V(fwd.x, fwd.y, fwd.z);
+	}
+	else {
+		MATRIX3 rcam;
+		oapiCameraRotationMatrix(&rcam);
+		rcam = mul(ecl2gal, rcam);
+		RenderParam.camdir = _V(rcam.m13, rcam.m23, rcam.m33);
+	}
 
 	WaitForSingleObject (tilebuf->hQueueMutex, INFINITE);
 
@@ -434,12 +486,52 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl)
 	CelFlow.bBeta = m_bStarImg;
 	CelData.fAlpha = intens;
 	CelData.fBeta = bgscale;
-	CelData.mViewProj = *scn->GetProjectionViewMatrix();
+	CelData.mViewProj = (pVP ? *pVP : *scn->GetProjectionViewMatrix());
+
+	// TEMP DIAGNOSTIC: flat white tiles rendered as wireframe to visualise the
+	// background tile boundaries inside the lensing cubemap.
+	CelData.fColorMode = bWireframe ? 1.0f : 0.0f;
+	CelData.fPanoMode = bPano ? 1.0f : 0.0f;
+	CelData.fPanoCenterU = 0.5f;
+	if (bWireframe) {
+		HR(dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME));
+	}
+
+	// Relativistic aberration of the celestial sphere background image
+	if (m_aberrOn) {
+		CelData.vAberr = D3DXVECTOR4(m_aberrDir.x, m_aberrDir.y, m_aberrDir.z, m_aberrBeta);
+		CelData.fAberrOn = 1.0f;
+	}
+	else {
+		CelData.vAberr = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+		CelData.fAberrOn = 0.0f;
+	}
+
+	// Gravitational lensing bodies (Relativity.inc)
+	{
+		const Scene::LENSBODY *bodies = NULL;
+		int n = bNoRel ? 0 : scn->GetLensBodies(&bodies);
+		if (n > 12) n = 12;
+		CelData.fLensCount = (float)n;
+		CelData.fLensModel = scn->GetLensModel();
+		for (int i = 0; i < 12; i++) {
+			if (i < n) {
+				CelData.vLens[i] = D3DXVECTOR4(bodies[i].dir[0], bodies[i].dir[1], bodies[i].dir[2], bodies[i].dist);
+				CelData.fLensMu[i] = bodies[i].mu;
+			}
+			else {
+				CelData.vLens[i] = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+				CelData.fLensMu[i] = 0.0f;
+			}
+		}
+	}
 
 	pShader->Setup(pPatchVertexDecl, false, 0);
 	pShader->ClearTextures();
 	pShader->SetPSConstants("Flow", &CelFlow, sizeof(CelFlow));
 	pShader->SetPSConstants("Const", &CelData, sizeof(CelData));
+
+	m_nRendered = 0;
 
 	for (hemisp = idx = 0; hemisp < 2; hemisp++) {
 		if (hemisp) { // flip world transformation to southern hemisphere
@@ -456,6 +548,17 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl)
 	}
 
 	ReleaseMutex (tilebuf->hQueueMutex);
+
+	if (bWireframe || pVP != NULL) {
+		// TEMP DIAGNOSTIC: report the rendered tile count and the face setup
+		VECTOR3 cd = RenderParam.camdir;
+		LogAlw("CelRender: camdir=(%.2f,%.2f,%.2f) viewap=%.1f deg level=%d tiles=%d",
+			cd.x, cd.y, cd.z, RenderParam.viewap * 180.0 / PI, (int)startlvl, m_nRendered);
+	}
+
+	if (bWireframe) {
+		HR(dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID));
+	}
 }
 
 // =======================================================================
@@ -475,10 +578,19 @@ void CSphereManager::ProcessTile (int lvl, int hemisp, int ilat, int nlat, int i
 
 	SetWorldMatrix (ilng, nlng, ilat, nlat);
 
+	if (m_bPano) {
+		// tile centre longitude in the equirectangular panorama (world frame),
+		// used by the shader to keep the triangles continuous across the
+		// +-180 degree longitude wrap
+		VECTOR3 wcnt = mul(ecl2gal, cnt);
+		CelData.fPanoCenterU = (float)(atan2(wcnt.z, wcnt.x) / PI2) + 0.5f;
+	}
+
 	// Check if patch bounding box intersects viewport
 
 	if (!TileInView (lvl, ilat)) return;
 
+	m_nRendered++;
 	RenderTile(lvl, hemisp, ilat, nlat, ilng, nlng, tile, range, tex, ltex, flag);
 }
 
@@ -546,6 +658,13 @@ void CSphereManager::TileExtents (int hemisp, int ilat, int nlat, int ilng, int 
 
 bool CSphereManager::TileInView (int lvl, int ilat)
 {
+	// Relativistic aberration can move a tile into the view from any sky
+	// direction, so the view-cone test on the un-shifted tile position would
+	// wrongly reject visible tiles. Skip the culling in that case.
+	// The same applies when rendering the lensing cubemap: the cubemap must
+	// contain the complete sky, not just the part visible to the camera.
+	if (m_aberrOn || m_bNoCull) return true;
+
 	VBMESH &mesh = PATCH_TPL[lvl][ilat];
 	D3DXVECTOR3 vP;
 	D3DXVec3TransformCoord(&vP, &mesh.bsCnt, &mWorld);

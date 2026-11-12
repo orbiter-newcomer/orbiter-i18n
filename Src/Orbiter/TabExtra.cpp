@@ -579,12 +579,16 @@ void ExtraRelativity::SetDialog (HWND hWnd)
 {
 	bool kerr = (pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 1);
 	SendDlgItemMessage (hWnd, kerr ? IDC_REL_METHOD_KERR : IDC_REL_METHOD_1PN, BM_SETCHECK, BST_CHECKED, 0);
+	SendDlgItemMessage (hWnd, IDC_REL_LENS_WIREFRAME, BM_SETCHECK,
+		pTab->Cfg()->CfgVisualPrm.bRelLensWireframe ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool ExtraRelativity::StoreParams (HWND hWnd)
 {
 	bool kerr = (SendDlgItemMessage (hWnd, IDC_REL_METHOD_KERR, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod = kerr ? 1 : 0;
+	pTab->Cfg()->CfgVisualPrm.bRelLensWireframe =
+		(SendDlgItemMessage (hWnd, IDC_REL_LENS_WIREFRAME, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	return true;
 }
 

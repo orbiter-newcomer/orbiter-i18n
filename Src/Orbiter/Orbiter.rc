@@ -568,7 +568,7 @@ BEGIN
 	DEFPUSHBUTTON	"Close",IDCANCEL,232,180,50,14
 END
 
-IDD_OPTIONS_VISUAL DIALOGEX 0, 0, 220, 240
+IDD_OPTIONS_VISUAL DIALOGEX 0, 0, 220, 310
 STYLE DS_SETFONT | DS_CONTROL | WS_CHILD
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
@@ -594,7 +594,14 @@ BEGIN
 	CONTROL			"Local light sources",IDC_OPT_VIS_LOCALLIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,132,154,75,10
 	LTEXT			"Ambient light level (0-255)",IDC_STATIC,12,173,82,8
 	EDITTEXT		IDC_OPT_VIS_AMBIENT,132,171,46,14,ES_AUTOHSCROLL | ES_NUMBER
-	LTEXT			"Some graphics clients may ignore, override or extend some of these settings.",IDC_STATIC,6,196,208,30
+	GROUPBOX		"Relativistic effects",IDC_STATIC,6,196,208,74
+	CONTROL			"Doppler shift (red/blue)",IDC_OPT_VIS_RELDOPPLER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,208,120,10
+	CONTROL			"Aberration",IDC_OPT_VIS_RELABERRATION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,220,100,10
+	CONTROL			"Gravitational lensing",IDC_OPT_VIS_RELLENSING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,232,150,10
+	LTEXT			"Exposure adapt",IDC_STATIC,12,246,58,8
+	CONTROL			"",IDC_OPT_VIS_RELEXPOSURE,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,74,241,100,18
+	LTEXT			"K=2.0",IDC_OPT_VIS_RELEXP_DSP,180,246,30,8
+	LTEXT			"Some graphics clients may ignore, override or extend some of these settings.",IDC_STATIC,6,276,208,30
 END
 
 IDD_OPTIONS_PHYSICS DIALOGEX 0, 0, 220, 240
@@ -1749,7 +1756,7 @@ END
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
-IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 100
+IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 114
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Orbiter: Relativity"
@@ -1759,6 +1766,8 @@ BEGIN
     CONTROL         "Weak field approximation (1PN)",IDC_REL_METHOD_1PN,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,20,150,10
     CONTROL         "Exact solver (Kerr)",IDC_REL_METHOD_KERR,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,34,150,10
     LTEXT           "Kerr solver is experimental; the 1PN solver is used for now.",IDC_STATIC,14,50,200,16
-    DEFPUSHBUTTON   "OK",IDOK,169,80,50,14
+    GROUPBOX        "Debug",IDC_STATIC,7,70,212,24
+    CONTROL         "Gravitational lensing source field wireframe",IDC_REL_LENS_WIREFRAME,"Button",BS_CHECKBOX | WS_TABSTOP,14,80,200,10
+    DEFPUSHBUTTON   "OK",IDOK,169,94,50,14
 END
 

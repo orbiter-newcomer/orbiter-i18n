@@ -53,6 +53,7 @@ void DlgMap::Display() {
 
 void DlgMap::Reset()
 {
+    if (!vectormap) return;
     zoom=1.0;
     vectormap->SetZoom(zoom);
     vectormap->SetCenter(0.0,0.0);
@@ -233,16 +234,28 @@ void DlgMap::DrawMap() {
         static ImVec2 oldsz = sz;//ImVec2(512,256);
 
         if(!vectormap) {
-            Planet *earth = g_psys->GetPlanet ("Earth");
-            if(earth) {
-                planet = "Earth";
-                vectormap=std::make_unique<VectorMap>(earth);
-                vectormap->SetCBody(earth);
+            // The vector map is planet-centred. Earth is the default (original
+            // behaviour); systems that do not contain Earth (such as the black
+            // hole test system) fall back to the first planet of the system.
+            Planet *pl = g_psys->GetPlanet ("Earth");
+            if (!pl && g_psys->nPlanet() > 0) {
+                const PlanetarySystem *psys = g_psys;   // unambiguously selects GetPlanet(int)
+                pl = psys->GetPlanet (0);
+            }
+            if(pl) {
+                planet = pl->Name();
+                vectormap=std::make_unique<VectorMap>(pl);
+                vectormap->SetCBody(pl);
                 vectormap->SetCanvas(nullptr, sz.x, sz.y);
 				vectormap->SetDisplayFlags(prm->DispFlag);
 
-                SetBody("Earth");
+                SetBody(pl->Name());
             }
+        }
+        if(!vectormap) {
+            // No planet at all: report it instead of dereferencing a NULL map.
+            ImGui::TextUnformatted(orbiter::Tr("No planet available for the map display in this system"));
+            return;
         }
 
         if(sz.x != oldsz.x || sz.y != oldsz.y) {
@@ -311,6 +324,9 @@ void DlgMap::DrawMap() {
 }
 
 void DlgMap::DrawMenu() {
+	// The menu accesses the map object; it is created by DrawMap(), so skip the
+	// menu until a map exists (also covers systems without any planet).
+	if (!vectormap) return;
 	ImGui::SetNextItemWidth(160.0f);
 	if(ImGui::BeginAnimatedCombo("##dlgmap_planet", orbiter::Tr(planet.c_str()), ImGuiComboFlags_HeightLargest)) {
         DrawTree();

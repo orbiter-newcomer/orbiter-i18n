@@ -314,7 +314,7 @@ void D3D9CelestialSphere::OnOptionChanged(DWORD cat, DWORD item)
 
 // ==============================================================
 
-void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCol)
+void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCol, bool bOverlaysOnly, bool bSkipStars)
 {
 	SetSkyColour(skyCol);
 
@@ -322,7 +322,7 @@ void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCo
 	DWORD renderFlag = *(DWORD*)m_gc->GetConfigParam(CFGPRM_PLANETARIUMFLAG);
 
 	// celestial sphere background image
-	RenderBkgImage(pDevice);
+	if (!bOverlaysOnly) RenderBkgImage(pDevice);
 
 	if (renderFlag & PLN_ENABLE) {
 
@@ -440,10 +440,13 @@ void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCo
 		}
 	}
 
-	// render stars
-	HR(s_FX->SetTechnique(s_eStar));
-	HR(s_FX->SetMatrix(s_eWVP, m_scene->GetProjectionViewMatrix()));
-	RenderStars(s_FX);
+	// render stars (the gravitational lensing composite pass renders the
+	// lensed stars instead, so the plain star rendering is skipped)
+	if (!bOverlaysOnly && !bSkipStars) {
+		HR(s_FX->SetTechnique(s_eStar));
+		HR(s_FX->SetMatrix(s_eWVP, m_scene->GetProjectionViewMatrix()));
+		RenderStars(s_FX);
+	}
 
 	// render markers and labels
 	if (renderFlag & PLN_ENABLE) {
@@ -469,7 +472,7 @@ void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCo
 
 // ==============================================================
 
-void D3D9CelestialSphere::RenderStars(ID3DXEffect *FX)
+void D3D9CelestialSphere::RenderStars(ID3DXEffect *FX, bool bDisableRel)
 {
 	_TRACE;
 
@@ -481,6 +484,24 @@ void D3D9CelestialSphere::RenderStars(ID3DXEffect *FX)
 	int bgidx = min(255, (int)(GetSkyBrightness() * 256.0));
 	int ns = m_starCutoffIdx[bgidx];
 
+	// Relativistic aberration for the background stars (disabled when the
+	// stars are rendered into the lensing cubemap: the composite pass applies
+	// the aberration and lensing transformations).
+	float relBeta = 0.0f, relOn = 0.0f;
+	D3DXVECTOR3 relDir(0.0f, 0.0f, 1.0f);
+	if (!bDisableRel && m_scene->GetRelativityAberration(relBeta, relDir)) relOn = 1.0f;
+	D3DXVECTOR4 relDir4(relDir.x, relDir.y, relDir.z, 0.0f);
+	{
+		static int dbg = -1;		// diagnostic: log state changes only
+		if ((int)relOn != dbg) {
+			dbg = (int)relOn;
+			LogAlw("Stars: aberration=%.0f beta=%.4f", relOn, relBeta);
+		}
+	}
+	FX->SetFloat(FX->GetParameterByName(0, "gAberrBeta"), relBeta);
+	FX->SetFloat(FX->GetParameterByName(0, "gAberrOn"), relOn);
+	FX->SetVector(FX->GetParameterByName(0, "gAberrDir"), &relDir4);
+
 	HR(m_pDevice->SetVertexDeclaration(pPosColorDecl));
 	HR(FX->Begin(&numPasses, D3DXFX_DONOTSAVESTATE));
 	HR(FX->BeginPass(0));
@@ -491,6 +512,28 @@ void D3D9CelestialSphere::RenderStars(ID3DXEffect *FX)
 	HR(FX->EndPass());
 	HR(FX->End());	
 }
+
+// ==============================================================
+
+// Render the complete star field into the lensing cubemap (source frame,
+// without any relativistic transformation): the background image (galaxy and
+// star chart layers) and the star dots.
+void D3D9CelestialSphere::RenderBackground(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, int level)
+{
+	// source frame render: no aberration, no lensing here (bNoRel = true);
+	// all relativistic mapping is done by the composite pass.
+	// The tile wireframe is a debug option (Launchpad Extra tab).
+	m_bkgImgMgr->Render(dev, level, GetSkyBrightness(), pVP, pCamDir, true, Config->RelLensWireframe);
+	dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
+	HR(s_FX->SetTechnique(s_eStar));
+	HR(s_FX->SetMatrix(s_eWVP, pVP ? pVP : m_scene->GetProjectionViewMatrix()));
+	RenderStars(s_FX, true);
+}
+
+// Render the background image into the equirectangular panorama texture. The
+// panorama is the lensing source frame: the pixel (u,v) stores the sky
+// radiance seen towards longitude u and latitude v.
 
 // ==============================================================
 
@@ -618,9 +661,9 @@ void D3D9CelestialSphere::RenderGridLabels(ID3DXEffect* FX, int az_idx, const oa
 
 // ==============================================================
 
-void D3D9CelestialSphere::RenderBkgImage(LPDIRECT3DDEVICE9 dev)
+void D3D9CelestialSphere::RenderBkgImage(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, const VECTOR3 *pCamDir)
 {
-	m_bkgImgMgr->Render(dev, 8, GetSkyBrightness());
+	m_bkgImgMgr->Render(dev, 8, GetSkyBrightness(), pVP, pCamDir);
 	dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 }
 

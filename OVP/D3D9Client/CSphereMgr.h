@@ -29,6 +29,24 @@ public:
 		float4x4 mViewProj;
 		float	 fAlpha;
 		float	 fBeta;
+		float	 fPad0;
+		float	 fPad1;
+		D3DXVECTOR4 vAberr;		// xyz = velocity direction (world frame), w = beta
+		float	 fAberrOn;		// 1 = relativistic aberration enabled
+		float	 fPad2, fPad3, fPad4;
+		// gravitational lensing (up to 12 celestial bodies)
+		D3DXVECTOR4 vLens[12];	// xyz = body direction (camera frame), w = distance [m]
+		float	 fLensMu[12];	// GM/c^2 of the body [m]
+		float	 fLensCount;	// number of valid bodies (0 = lensing disabled)
+		float	 fLensModel;	// 0 = 1PN weak field, 1 = Kerr/Schwarzschild
+		float	 fPad5, fPad6;
+		// diagnostic: render the tiles as white wireframe (tile boundary check)
+		float	 fColorMode;	// 1 = flat white output
+		float	 fPad7, fPad8, fPad9;
+		// equirectangular panorama projection (lensing source frame rendering)
+		float	 fPanoMode;		// 1 = equirectangular projection
+		float	 fPanoCenterU;	// tile centre longitude (panorama u), for wrapping
+		float	 fPad10, fPad11;
 	} CelData;
 
 	struct CelDataFlow
@@ -70,7 +88,7 @@ public:
 	 */
 	void SetBgBrightness(double val);
 
-	void Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl);
+	void Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl, const D3DXMATRIX *pVP = NULL, const VECTOR3 *pCamDir = NULL, bool bNoRel = false, bool bWireframe = false, bool bPano = false);
 
 protected:
 	bool LoadPatchData ();
@@ -126,6 +144,12 @@ private:
 	bool m_bBkgImg;                  ///< background image available?
 	bool m_bStarImg;                 ///< starfield image available?
 	bool m_bDisabled;                ///< background disabled?
+	bool m_bNoCull;                  ///< skip the camera frustum tile culling (cubemap rendering)
+	bool m_bPano;                    ///< equirectangular panorama projection
+	int m_nRendered;                 ///< TEMP DIAGNOSTIC: rendered tile counter
+	bool m_aberrOn;                  ///< relativistic aberration active this frame
+	float m_aberrBeta;               ///< relativistic aberration beta = v/c
+	D3DXVECTOR3 m_aberrDir;          ///< relativistic aberration velocity direction (world frame)
 	DWORD maxlvl;                    // max. patch resolution level
 	DWORD maxbaselvl;                // max. resolution level, capped at 8
 	DWORD ntex;                      // total number of loaded textures for levels <= 8

@@ -70,7 +70,11 @@ void DlgTacc::OnDraw() {
         g_pOrbiter->SetWarpFactor (10000.0);
     }
 
-    float warp = td.Warp();
+    // Read the player-selected warp factor. The relativistic gamma scaling is
+    // applied internally only: reading the effective warp back into the slider
+    // and writing it out through SetWarpFactor again would multiply the warp
+    // by gamma every frame, making the time acceleration run away.
+    float warp = (float)g_pOrbiter->DisplayWarp();
     ImGui::SetNextItemWidth(-FLT_MIN);
     ImGuiIO& io = ImGui::GetIO();
 

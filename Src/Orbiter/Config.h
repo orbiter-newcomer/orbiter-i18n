@@ -127,6 +127,11 @@ struct CFG_VISUALPRM {
 	char   CSphereBgPath[128];	// background image path
 	double CSphereBgIntens;		// intensity of background image
 	int    ElevMode;            // elevation mode: 0=none, 1=linear, 2=cubic spline
+	bool   bRelDoppler;         // relativistic Doppler shift visual effect
+	bool   bRelAberration;      // relativistic aberration visual effect
+	bool   bRelLensing;         // relativistic gravitational lensing visual effect
+	bool   bRelLensWireframe;   // debug: render the lensing source field as a tile wireframe
+	double RelExposureWhite;    // Doppler observer exposure adaptation white point (0=disabled)
 };
 
 struct CFG_CAPTUREPRM {

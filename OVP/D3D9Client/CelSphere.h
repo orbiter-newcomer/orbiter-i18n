@@ -50,17 +50,38 @@ public:
 	 * \param pDevice pointer to graphics device
 	 * \param skyCol sky background colour (atmospheric tint)
 	 */
-	void Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCol);
+	void Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCol, bool bOverlaysOnly = false, bool bSkipStars = false);
 
 	/**
 	 * \brief Render stars as pixels on the celestial sphere
 	 * \param fx  render effect
-	 * \param nmax  max. number of stars (default is all available stars)
+	 * \param bDisableRel disable the relativistic aberration (used when
+	 *   rendering the star field into the lensing cubemap)
 	 * \note if a background colour is passed into this function, the rendering
 	 *   of stars darker than the background is suppressed.
 	 * \note All device parameters are assumed to be set correctly on call.
 	 */
-	void RenderStars(ID3DXEffect *fx);
+	void RenderStars(ID3DXEffect *fx, bool bDisableRel = false);
+
+	/**
+	 * \brief Render only the background image and the stars.
+	 * \param dev render device
+	 * \param pVP custom view-projection matrix (NULL = current camera)
+	 * \param pCamDir custom view direction (NULL = current camera)
+	 * \param level background tile resolution level (matched to the cubemap resolution)
+	 * \note Used to render the source-frame star field into the lensing cubemap.
+	 */
+	void RenderBackground(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP = NULL, const VECTOR3 *pCamDir = NULL, int level = 5);
+
+	/**
+	 * \brief Render the background image into the equirectangular panorama.
+	 * \param dev render device
+	 * \param level background tile resolution level
+	 * \note Used to render the lensing source frame panorama.
+	 */
+
+	/// <summary>Sky brightness accessor for the scene (base class member is protected).</summary>
+	double GetSkyBrightnessPublic() const { return GetSkyBrightness(); }
 
 	/**
 	 * \brief Render constellation lines on the celestial sphere
@@ -109,7 +130,7 @@ public:
 	 * \brief Render a background image on the celestial sphere.
 	 * \param dev render device
 	 */
-	void RenderBkgImage(LPDIRECT3DDEVICE9 dev);
+	void RenderBkgImage(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP = NULL, const VECTOR3 *pCamDir = NULL);
 
 	static void D3D9TechInit(ID3DXEffect* fx);
 

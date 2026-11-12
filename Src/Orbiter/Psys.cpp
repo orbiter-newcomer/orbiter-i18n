@@ -697,8 +697,35 @@ Vector SingleGacc_pn (const Vector &rpos, const Vector &rvel, const CelestialBod
 	// J = inertia_factor * M * R^2 * omega * axis
 	Vector J = body->RotAxis() * (body->InertiaFactor() * GM/Ggrav * body->Size()*body->Size() * body->RotOmega());
 	Vector rhat = R * (1.0/d);   // unit vector from body to reference
-	Vector Bg = (R * (3.0*dotp(rhat, J)) - J) * (Ggrav/(c2*d3));
+	// Gravitomagnetic field B_g = [3(J.rhat) rhat - J] G/(c^2 d^3). The vector
+	// factor has to be the *unit* vector rhat: using R (length d) here makes
+	// the Lense-Thirring term dimensionally wrong (m^2/s^2 instead of m/s^2)
+	// and scales it by a factor d (1e6 for the black hole test scenario).
+	Vector Bg = (rhat * (3.0*dotp(rhat, J)) - J) * (Ggrav/(c2*d3));
 	Vector a_lt = crossp (rvel, Bg) * -2.0;
+
+	// Diagnostic (sampled every 0.5 s of simulation time): dump the actual
+	// Lense-Thirring parameters of the main (heavy) source. This confirms
+	// whether the relativistic path is active, which spin axis the source
+	// actually has, and how large the LT term is compared with Newtonian
+	// gravity. axisNdot = |axis . orbit_normal|: 0 = polar orbit (LAN is
+	// sensitive to frame dragging), 1 = equatorial (LAN does not precess).
+	{
+		static double dbgLastT = -1e100;
+		if (body->Mass() > 1e29 && td.SimT0 - dbgLastT > 0.5) {
+			dbgLastT = td.SimT0;
+			Vector nrm = crossp (rpos, rvel);
+			double nlen = nrm.length();
+			Vector axis = body->RotAxis();
+			double axisNdot = (nlen > 0.0 ? fabs (dotp (axis, nrm/nlen)) : -1.0);
+			double aN = GM/(d*d);
+			double Jlen = J.length();
+			double aM = Jlen*c_light/(Ggrav*body->Mass()*body->Mass());
+			LOGOUT ("RELPN: body=%s mass=%.4e axis=(%.4f,%.4f,%.4f) omega=%.4f inertia=%.3f J=%.4e aM=%.6f r=%.4e v=%.4e aN=%.4e aLT=%.4e |aLT|/aN=%.3e axisNdot=%.3f",
+				body->Name(), body->Mass(), axis.x, axis.y, axis.z, body->RotOmega(), body->InertiaFactor(),
+				Jlen, aM, d, rvel.length(), aN, a_lt.length(), a_lt.length()/aN, axisNdot);
+		}
+	}
 	return rpos * (GM/d3) + a_pn + a_lt + SingleGacc_perturbation (rpos, body);
 }
 
@@ -744,20 +771,40 @@ static void ks_inverse (const double k[4], double f, double gi[4][4])
 		}
 }
 
+// Kerr-Schild term H_munu = f k_mu k_nu, i.e. g_munu - eta_munu. Computing it
+// directly (instead of subtracting eta from the full metric) keeps the full
+// relative precision of the small weak-field correction: g = eta + H with
+// H ~ 1e-9 for a planet, so differentiating g would lose most of the digits
+// to catastrophic cancellation.
+static void ks_schild (const double p[3], double a, double H[4][4])
+{
+	double g[4][4], k[4], f;
+	ks_metric (p, a, g, k, f);
+	for (int mu = 0; mu < 4; mu++)
+		for (int nu = 0; nu < 4; nu++)
+			H[mu][nu] = f*k[mu]*k[nu];
+}
+
 // numerical Christoffel symbols of the Kerr-Schild metric
 static void ks_christoffel (const double p[3], double a, double Gamma[4][4][4])
 {
 	double g[4][4], gp[4][4][4], k[4], f;
-	for (int al = 0; al < 4; al++) {
+	// The metric is static: the time derivatives (nu = 0) are zero. The
+	// remaining derivatives are ordered like the spacetime index: nu = 1,2,3
+	// correspond to the spatial coordinates x, y, z.
+	for (int mu = 0; mu < 4; mu++)
+		for (int nu = 0; nu < 4; nu++) gp[0][mu][nu] = 0.0;
+	for (int nu = 1; nu < 4; nu++) {
+		int al = nu - 1;               // spatial coordinate index
 		double h = 1e-6 * (fabs (p[0]) + fabs (p[1]) + fabs (p[2]) + 1.0);
 		double pp[3] = {p[0], p[1], p[2]}, pm[3] = {p[0], p[1], p[2]};
 		pp[al] += h; pm[al] -= h;
-		double gpp[4][4], gpm[4][4], kk[4], ff;
-		ks_metric (pp, a, gpp, kk, ff);
-		ks_metric (pm, a, gpm, kk, ff);
+		double Hpp[4][4], Hpm[4][4];
+		ks_schild (pp, a, Hpp);
+		ks_schild (pm, a, Hpm);
 		for (int mu = 0; mu < 4; mu++)
-			for (int nu = 0; nu < 4; nu++)
-				gp[al][mu][nu] = (gpp[mu][nu] - gpm[mu][nu])/(2.0*h);
+			for (int be = 0; be < 4; be++)
+				gp[nu][mu][be] = (Hpp[mu][be] - Hpm[mu][be])/(2.0*h);
 	}
 	ks_metric (p, a, g, k, f);
 	double gi[4][4];
@@ -805,16 +852,48 @@ Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialB
 	double aM = Jmag * c / (Ggrav * mass * mass);
 	if (aM > 1000.0) aM = 1000.0;
 
-	// position and velocity in Kerr coordinates (geometrised)
+	// Position and velocity in Kerr coordinates (geometrised). The metric is
+	// centred on the body, while rpos runs from the particle to the body, so
+	// the particle sits at -rpos in the body-centred frame. (Using rpos here
+	// flips the sign of the radial acceleration and makes orbits escape.)
 	double p[3];
-	p[0] = dotp (rpos, ex)/L;
-	p[1] = dotp (rpos, ey)/L;
-	p[2] = dotp (rpos, ez)/L;
+	p[0] = -dotp (rpos, ex)/L;
+	p[1] = -dotp (rpos, ey)/L;
+	p[2] = -dotp (rpos, ez)/L;
 	double v[3];
 	v[0] = dotp (rvel, ex)/c;
 	v[1] = dotp (rvel, ey)/c;
 	v[2] = dotp (rvel, ez)/c;
 	if (v[0]*v[0] + v[1]*v[1] + v[2]*v[2] >= 1.0) return SingleGacc_pn (rpos, rvel, body);
+
+	// --- Kerr-Schild coordinate-time conversion (part 1) -------------------
+	// The metric and the geodesic acceleration below are expressed in
+	// Kerr-Schild (ingoing) coordinates, whose time coordinate is related to
+	// the global (inertial / Boyer-Lindquist) coordinate time by
+	//   t_KS = t_BL + F(r),   F'(r) = (r^2 + a^2)/Delta - 1 = 2 r/Delta,
+	//   Delta = r^2 - 2 r + a^2      (geometrised units, M = 1)
+	// Speeds and accelerations must be converted accordingly before the result
+	// can be used in the global frame, otherwise the O(v^2/c^2) coordinate
+	// mismatch acts as a spurious acceleration (Kerr orbits run away at high
+	// speed: |a_Kerr|/a_Newton reached 1.14 for v=0.27c in the test scenario).
+	double vBL[3] = { v[0], v[1], v[2] };   // velocity in the global frame
+	double a2m = aM*aM;
+	double rks = ks_radius (p[0], p[1], p[2], a2m);
+	double delta = rks*rks - 2.0*rks + a2m;
+	double rhat[3] = { 0.0, 0.0, 0.0 };
+	double rdot = 0.0, dF = 0.0, dF2 = 0.0, s = 1.0;
+	bool reltime = (rks > 0.5 && delta > 1e-6);   // outside the event horizon
+	if (reltime) {
+		double inv_r = 1.0/rks;
+		rhat[0] = p[0]*inv_r; rhat[1] = p[1]*inv_r; rhat[2] = p[2]*inv_r;
+		rdot = vBL[0]*rhat[0] + vBL[1]*rhat[1] + vBL[2]*rhat[2];
+		dF  = 2.0*rks/delta;                                     // F'(r) = (r^2+a^2)/Delta - 1
+		dF2 = (2.0*delta - 4.0*rks*(rks - 1.0))/(delta*delta);   // F''(r)
+		s = 1.0 + dF*rdot;
+		if (s < 1e-3) s = 1e-3;
+		// coordinate velocity used in the geodesic equation: v_KS = v_BL/s
+		v[0] = vBL[0]/s; v[1] = vBL[1]/s; v[2] = vBL[2]/s;
+	}
 
 	// metric
 	double g[4][4], k[4], f;
@@ -826,26 +905,72 @@ Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialB
 		for (int j = 1; j < 4; j++) svv += g[i][j]*v[i-1]*v[j-1];
 		s0v += 2.0*g[0][i]*v[i-1];
 	}
-	double norm = 1.0 - svv - s0v;
+	// g_00 = -1 + f, so the normalisation g_munu u^mu u^nu = -1 gives
+	// (u^t)^2 = 1/(1 - f - g_ij v^i v^j - 2 g_0i v^i).
+	double norm = 1.0 - f - svv - s0v;
 	if (norm <= 1e-12) return SingleGacc_pn (rpos, rvel, body);
 	double ut = 1.0/sqrt (norm);
 	double u[4] = { ut, v[0]*ut, v[1]*ut, v[2]*ut };
 
-	// coordinate acceleration a^i = -Gamma^i_ab u^a u^b / (u^t)^2
+	// Coordinate acceleration a^i = d^2 x^i / dt^2 from the geodesic equation:
+	//   a^i = [ -Gamma^i_ab u^a u^b + v^i Gamma^0_ab u^a u^b ] / (u^t)^2
+	// The second term comes from du^t/dtau. It is O(v^2/c^2) (negligible for
+	// planets) but matters in the strong-field / high-speed regime.
 	double Gamma[4][4][4];
 	ks_christoffel (p, aM, Gamma);
+	double att = 0.0;
+	for (int al = 0; al < 4; al++)
+		for (int be = 0; be < 4; be++)
+			att += Gamma[0][al][be]*u[al]*u[be];
 	double at[3];
 	for (int i = 1; i < 4; i++) {
 		double sum = 0.0;
 		for (int al = 0; al < 4; al++)
 			for (int be = 0; be < 4; be++)
 				sum += Gamma[i][al][be]*u[al]*u[be];
-		at[i-1] = -sum/(ut*ut);
+		at[i-1] = (-sum + v[i-1]*att)/(ut*ut);
+	}
+
+	// --- Kerr-Schild coordinate-time conversion (part 2) -------------------
+	// From a_KS = a_BL/s^2 - v_BL*s'/s^3 (s = dt_KS/dt_BL, s' = ds/dt_BL):
+	//   a_BL = a_KS*s^2 + v_BL*s'/s,   s' = F''*rdot^2 + F'*r_ddot
+	// The radial acceleration follows from the spherical-coordinate identity
+	//   r_ddot = (a_BL . rhat) + (v_BL^2 - rdot^2)/r
+	// and, using s - F'*rdot = 1, is obtained explicitly as
+	//   r_ddot = s*( (a_KS . rhat)*s^2 + F''*rdot^3/s + (v_BL^2 - rdot^2)/r )
+	double ag[3] = { at[0], at[1], at[2] };
+	if (reltime) {
+		double inv_r = 1.0/rks;
+		double v2BL = vBL[0]*vBL[0] + vBL[1]*vBL[1] + vBL[2]*vBL[2];
+		double aKSr = at[0]*rhat[0] + at[1]*rhat[1] + at[2]*rhat[2];
+		double rddot = s*(aKSr*s*s + dF2*rdot*rdot*rdot/s + (v2BL - rdot*rdot)*inv_r);
+		double fac = (dF2*rdot*rdot + dF*rddot)/s;
+		for (int i = 0; i < 3; i++)
+			ag[i] = at[i]*s*s + vBL[i]*fac;
 	}
 
 	// back to SI units and global frame
 	double scale = c*c/L;
-	return (ex*at[0] + ey*at[1] + ez*at[2]) * scale;
+	Vector acc = (ex*ag[0] + ey*ag[1] + ez*ag[2]) * scale;
+
+	// Diagnostic (sampled every 0.5 s of simulation time): dump the spin
+	// parameters and the ratio of the Kerr acceleration to the Newtonian one.
+	{
+		static double dbgLastT = -1e100;
+		if (td.SimT0 - dbgLastT > 0.5) {
+			dbgLastT = td.SimT0;
+			Vector nrm = crossp (rpos, rvel);
+			double nlen = nrm.length();
+			Vector axis = body->RotAxis();
+			double axisNdot = (nlen > 0.0 ? fabs (dotp (axis, nrm/nlen)) : -1.0);
+			double rgeo = (reltime ? rks : sqrt (p[0]*p[0] + p[1]*p[1] + p[2]*p[2]));
+			double aN = GM/rpos.length2();
+			LOGOUT ("RELKERR: body=%s aM=%.6f axis=(%.4f,%.4f,%.4f) r_geom=%.3f r=%.4e v_c=%.5f |aK|/aN=%.6f axisNdot=%.3f",
+				body->Name(), aM, axis.x, axis.y, axis.z, rgeo, rpos.length(), rvel.length()/c,
+				acc.length()/aN, axisNdot);
+		}
+	}
+	return acc;
 }
 
 Vector PlanetarySystem::Gacc (const Vector &gpos, const Body *exclude, const GFieldData *gfd) const
@@ -890,6 +1015,16 @@ Vector PlanetarySystem::Gacc_intermediate (const Vector &gpos, double n, const B
 	}
 
 	if (gfd) { // use body''s source list
+		// Diagnostic (sampled): confirm which relativity path is used and which
+		// body has been selected as the dominant Kerr source.
+		{
+			static double dbgLastT = -1e100;
+			if (td.SimT0 - dbgLastT > 0.5) {
+				dbgLastT = td.SimT0;
+				LOGOUT ("RELROUTE: rel=%d kerr=%d method=%d domIdx=%d ncelestials=%d ngfd=%d",
+					(int)rel, (int)kerr, relMethod, domIdx, (int)celestials.size(), (int)gfd->ngrav);
+			}
+		}
 		for (j = 0; j < gfd->ngrav; j++) {
 			i = gfd->gravidx[j];
 			if (exclude == celestials[i]) continue;

@@ -18,6 +18,8 @@ struct TimeJumpData;
 Vector SingleGacc (const Vector &rpos, const CelestialBody *body);
 Vector SingleGacc_pn (const Vector &rpos, const Vector &rvel, const CelestialBody *body);
 // relativistic (1PN) single-source gravitational acceleration
+Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialBody *body);
+// exact Kerr (Kerr-Schild) single-source gravitational acceleration
 Vector SingleGacc_perturbation (const Vector &rpos, const CelestialBody *body);
 
 class PlanetarySystem {

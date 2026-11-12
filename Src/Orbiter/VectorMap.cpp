@@ -267,7 +267,9 @@ bool VectorMap::SetCBody (const CelestialBody *body)
 {
 	if (body != cbody) {
 		cbody = body;
-		planet = (cbody->Type() == OBJTP_PLANET ? (const Planet*)cbody : NULL);
+		// A NULL body is valid on entry (no reference body available): the map
+		// then falls back to an empty grid instead of dereferencing NULL.
+		planet = (cbody && cbody->Type() == OBJTP_PLANET ? (const Planet*)cbody : NULL);
 		if (planet) {
 			char path[MAX_PATH], relpath[MAX_PATH];
 			sprintf (relpath, "%s\\data\\coast.vec", cbody->Name());

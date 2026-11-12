@@ -147,6 +147,9 @@ public:
 
 	void SetWarpFactor (double warp, bool force = false, double delay = 0.0);
 	void UpdateRelativityWarp ();
+	double RelWarpScale () const;
+	// Lorentz factor applied internally to the player-selected time warp
+	// (1.0 when relativistic physics is disabled). Never exposed in the UI.
 	double DisplayWarp () const;
 	// time warp value to display (hides the automatic relativistic scaling)
 	// Set time acceleration factor

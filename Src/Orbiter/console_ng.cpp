@@ -178,7 +178,7 @@ bool orbiter::ConsoleNG::ParseCmd()
 		if (sscanf(trim_string(cmd + 4), "%lf", &w) == 1)
 			m_pOrbiter->SetWarpFactor(w);
 		else {
-			sprintf(cbuf, "Time acceleration is %0.1f", td.Warp());
+			sprintf(cbuf, "Time acceleration is %0.1f", m_pOrbiter->DisplayWarp());
 			Echo(cbuf);
 		}
 	}

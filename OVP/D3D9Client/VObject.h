@@ -189,6 +189,16 @@ public:
 	virtual void ReOrigin(VECTOR3 global_pos);
 
 	/**
+	 * \brief Change the camera-relative position of the object.
+	 * \param newCpos new position relative to the camera [m]
+	 * \param scale scale factor for the apparent size (relativistic aberration)
+	 * \note Used by the relativistic aberration code to displace celestial
+	 *   bodies into the observer frame without changing their distance or
+	 *   orientation.
+	 */
+	void RepositionFromCamera(const VECTOR3 &newCpos, double scale = 1.0);
+
+	/**
 	 * \brief Level-of-detail check
 	 * \default None.
 	 * \note Derived classes can overload this method to select the level of
@@ -265,6 +275,7 @@ protected:
 	D3DXMATRIX mWorld;	// world matrix in single precision
 	double size;        // object radius [m]
 	double cdist;		// current camera distance
+	double relScale;	// apparent size scale from relativistic aberration
 	double sunapprad;	// Apparent size of the sun
 	double sundst;		// Distance to the sun [m]
 	double ctgtdst;		// Distance form a camera target 

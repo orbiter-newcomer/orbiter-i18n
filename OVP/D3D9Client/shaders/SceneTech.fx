@@ -9,6 +9,9 @@
 // ----------------------------------------------------------------------------
 
 uniform extern float4x4  gWVP;			    // Combined World, View and Projection matrix
+uniform extern float     gAberrBeta;			// Relativistic aberration: beta = v/c
+uniform extern float     gAberrOn;				// Relativistic aberration enabled flag
+uniform extern float3    gAberrDir;				// Velocity direction (world frame)
 uniform extern float4x4  gVP;			    // Combined World, View and Projection matrix
 uniform extern float4    gColor;		    // Line Color
 uniform extern texture   gTex0;			    // Diffuse texture
@@ -74,7 +77,22 @@ StarOutputVS StarTechVS(float3 posL : POSITION0, float4 col : COLOR0)
 {
 	// Zero output.
 	StarOutputVS outVS = (StarOutputVS)0;
-	outVS.posH = mul(float4(posL, 1.0f), gWVP);
+
+	// Relativistic aberration of the background stars: shift the star
+	// direction from the rest frame into the observer frame.
+	float3 d = posL;
+	if (gAberrOn > 0.0) {
+		d = normalize(d);
+		float c  = dot(d, gAberrDir);
+		float c2 = (c + gAberrBeta) / max(1.0 + gAberrBeta * c, 1e-6);
+		c2 = clamp(c2, -1.0, 1.0);
+		float3 perp = d - gAberrDir * c;
+		float pl = length(perp);
+		perp = (pl > 1e-6) ? perp / pl : float3(0.0, 0.0, 0.0);
+		d = normalize(gAberrDir * c2 + perp * sqrt(max(0.0, 1.0 - c2 * c2)));
+	}
+
+	outVS.posH = mul(float4(d, 1.0f), gWVP);
 	outVS.col  = col;
 	return outVS;
 }

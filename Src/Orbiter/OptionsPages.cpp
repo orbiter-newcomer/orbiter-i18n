@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <array>
 #include "OptionsPages.h"
+#include "RelativityVisualUi.inc"   // relativistic visual UI helpers moved out of official source
 #include "Launchpad.h"
 #include "DlgCtrl.h"
 #include "Orbiter.h"
@@ -440,6 +441,9 @@ const HELPCONTEXT* OptionsPage_Visual::HelpContext() const
 
 // ----------------------------------------------------------------------
 
+// Update the "K=x.x / off" readout of the relativistic Doppler exposure slider.
+// The rightmost tick (8) means "exposure adaptation disabled".
+
 void OptionsPage_Visual::UpdateControls(HWND hPage)
 {
 	char cbuf[256];
@@ -480,6 +484,22 @@ void OptionsPage_Visual::UpdateControls(HWND hPage)
 	sprintf(cbuf, "%d", Cfg()->CfgVisualPrm.AmbientLevel);
 	SetWindowText(GetDlgItem(hPage, IDC_OPT_VIS_AMBIENT), cbuf);
 
+	// relativistic visual effects
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELDOPPLER, BM_SETCHECK,
+		Cfg()->CfgVisualPrm.bRelDoppler ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_SETCHECK,
+		Cfg()->CfgVisualPrm.bRelAberration ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_SETCHECK,
+		Cfg()->CfgVisualPrm.bRelLensing ? BST_CHECKED : BST_UNCHECKED, 0);
+	{
+		double k = Cfg()->CfgVisualPrm.RelExposureWhite;
+		int pos = (k <= 0.0) ? 8 : (int)((k - 1.0) / 0.5 + 0.5) + 1;
+		if (pos < 1) pos = 1;
+		if (pos > 8) pos = 8;
+		SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETPOS, 1, pos);
+	}
+	UpdateRelExposureLabel(hPage);
+
 	VisualsChanged(hPage);
 }
 
@@ -515,6 +535,15 @@ void OptionsPage_Visual::UpdateConfig(HWND hPage)
 	GetWindowText(GetDlgItem(hPage, IDC_OPT_VIS_AMBIENT), cbuf, 255);
 	if (!sscanf(cbuf, "%lu", &i)) i = 15; else if (i > 255) i = 255;
 	Cfg()->SetAmbientLevel(i);
+
+	// relativistic visual effects
+	Cfg()->CfgVisualPrm.bRelDoppler = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELDOPPLER, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	Cfg()->CfgVisualPrm.bRelAberration = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	Cfg()->CfgVisualPrm.bRelLensing = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	{
+		int pos = (int)SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_GETPOS, 0, 0);
+		Cfg()->CfgVisualPrm.RelExposureWhite = (pos >= 8) ? 0.0 : (1.0 + (pos - 1) * 0.5);
+	}
 }
 
 // ----------------------------------------------------------------------
@@ -525,8 +554,17 @@ BOOL OptionsPage_Visual::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_ELEVMODE, CB_RESETCONTENT, 0, 0);
 	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("linear interpolation"));
 	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("cubic interpolation"));
+
+	// relativistic Doppler exposure adaptation slider range: tick 1..7 => K=1.0..4.0,
+	// rightmost tick (8) => exposure adaptation disabled
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETRANGEMAX, 1, 8);
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETRANGEMIN, 1, 1);
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETTICFREQ, 1, 0);
 	return TRUE;
 }
+
+// ----------------------------------------------------------------------
+
 
 // ----------------------------------------------------------------------
 

@@ -37,7 +37,8 @@ class D3D9Pad;
 #define GBUF_TEMP				2
 #define GBUF_DEPTH				3
 #define GBUF_GDI				4
-#define GBUF_COUNT				5	// Buffer count
+#define GBUF_REL				5
+#define GBUF_COUNT				6	// Buffer count
 
 #define SHM_LOD_COUNT			5
 
@@ -205,6 +206,19 @@ public:
 	void RecallDefaultState();
 	float GetDisplayScale() const { return fDisplayScale; }
 	void CreateSunGlare();
+
+	// Gravitational lensing: celestial bodies used by the star field shaders
+	struct LENSBODY {
+		float dir[3];		///< unit direction from the camera to the body (global frame)
+		float dist;			///< distance from the camera to the body [m]
+		float mu;			///< gravitational radius GM/c^2 [m]
+		float aM;			///< dimensionless Kerr spin parameter a/M (0 = no spin correction)
+		float axis[3];		///< normalised spin axis (global frame)
+	};
+	int GetLensBodies(const LENSBODY **ppBodies) const { *ppBodies = relLensBodies; return relLensCount; }
+	float GetLensOn() const { return relLensOn; }
+	float GetLensModel() const { return relLensModel; }
+	LPDIRECT3DCUBETEXTURE9 GetLensCubemap() const { return pLensCube; }
 
 
 	DWORD GetRenderPass() const;
@@ -382,6 +396,19 @@ public:
 	const D3DXVECTOR3 *GetCameraY() const { return &Camera.y; }
 	const D3DXVECTOR3 *GetCameraZ() const { return &Camera.z; }
 
+	// Relativistic aberration parameters for background rendering
+	// (star field / celestial sphere). Returns false if disabled.
+	bool GetRelativityAberration(float &beta, D3DXVECTOR3 &vdir) const;
+	/**
+	 * \brief Observer velocity for the relativistic aberration.
+	 * Uses the velocity of the body the camera is aiming at (near the view
+	 * centre); falls back to the differentiated camera velocity when the view
+	 * centre is empty. Aiming at a body keeps its image stable instead of
+	 * following the per-frame rotating velocity direction.
+	 * \return true if a non-negligible velocity was found
+	 */
+	bool GetRelAberrationVel(VECTOR3 &vel) const;
+
 	const CAMERA *	GetCamera() const { return &Camera; }
 
 	void			PushCamera();	// Push current camera onto a stack
@@ -421,6 +448,21 @@ protected:
 	void RenderGlares();
 
 private:
+	// Relativistic visual effects (phase 1: Doppler + aberration).
+	// Implementation: Relativity.inc (included at the end of Scene.cpp)
+	void InitRelativityEffects();
+	void ExitRelativityEffects();
+	void SyncRelativityConfig();
+	void ApplyRelativityToBodies();
+	void ComputeLensBodies();
+	void InitLensCubemap();
+	void ExitLensCubemap();
+	void RenderLensCubemap();
+	void CompositeStarField();
+	bool SetupRelativityPass();
+	void ComputeRelSunVisual();
+	LPDIRECT3DTEXTURE9 ApplyRelativityEffects(LPDIRECT3DTEXTURE9 pSrc);
+
 	void		ComputeLocalLightsVisibility();
 	DWORD		GetActiveParticleEffectCount();
 	float		ComputeNearClipPlane();
@@ -484,6 +526,16 @@ private:
 
 
 	CAMERA		Camera;
+	// Camera velocity in the global frame, obtained by differentiating the
+	// global camera position over simulation time. Used by the relativistic
+	// aberration: a fixed/free camera must not see any aberration, while a
+	// camera attached to the focus object gets approximately the focus
+	// velocity. (Using the focus object velocity unconditionally is wrong for
+	// free cameras: the visual sky would be shifted and rotate with the vessel.)
+	VECTOR3		camVel;
+	VECTOR3		camVelPos;       // camera position at the previous sample
+	double		camVelT;         // simulation time of the previous sample
+	bool		camVelValid;
 	D3D9Light*	Lights;
 	D3D9Sun	    sunLight;
 
@@ -506,8 +558,31 @@ private:
 
 	SurfNative *pLblSrf;
 
-	class ImageProcessing *pLightBlur, *pBlur, *pGDIOverlay, *pIrradiance, *pVisDepth, *pCreateGlare;
+	class ImageProcessing *pLightBlur, *pBlur, *pGDIOverlay, *pIrradiance, *pVisDepth, *pCreateGlare, *pRelativity;
 	class ShaderClass *pLocalCompute, *pRenderGlares;
+
+	// Relativistic visual effects state for the Sun glare (Relativity.inc)
+	VECTOR3			relSunDirVis;	///< aberration-shifted direction to the Sun (global frame)
+	D3DXVECTOR4		relSunTint;		///< Doppler colour tint for the Sun glare
+	float			relSunBeam;		///< Doppler beaming factor for the Sun glare
+	bool			bRelSunValid;
+	bool			bRelInitTried;	///< relativity resources were already created (or failed)
+
+	// Gravitational lensing data (Relativity.inc): the light deflection near
+	// the celestial bodies is evaluated per star field direction, so the body
+	// list with its mass parameter is passed to the star field shaders.
+	static const int REL_MAX_LENS = 12;
+	LENSBODY		relLensBodies[REL_MAX_LENS];
+	int				relLensCount;
+	float			relLensOn;		///< 1 = lensing disabled, 0 = enabled
+	float			relLensModel;	///< 0 = 1PN weak field, 1 = Kerr/Schwarzschild higher order
+
+	// Lensing star field cubemap (source frame star field)
+	LPDIRECT3DCUBETEXTURE9 pLensCube;
+	int				relLensCubeSize;
+	bool			bLensCubeReady;
+	float			relLensCubeBrightness;
+	class ShaderClass *pStarsLens;
 
 	class vVessel *vFocus;
 	VOBJREC *vobjEnv, *vobjIrd;

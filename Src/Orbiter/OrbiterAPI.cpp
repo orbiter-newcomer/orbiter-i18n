@@ -357,6 +357,16 @@ DLLEXPORT double oapiGetMass (OBJHANDLE hObj)
 	return ((Body*)hObj)->Mass();
 }
 
+// Relativity support: dimensionless Kerr spin parameter a/M and spin axis of a
+// celestial body, derived the same way as in the physics engine:
+//   J = I * omega * axis,  a/M = J c / (G M^2)
+#include "RelativityVisualApi.inc"   // implementation moved out of the official source
+
+DLLEXPORT bool oapiGetRelativitySpin (OBJHANDLE hObj, double *aM, VECTOR3 *axis)
+{
+	return RelGetRelativitySpin (hObj, aM, axis);
+}
+
 DLLEXPORT double oapiGetEmptyMass (OBJHANDLE hVessel)
 {
 	return ((Vessel*)hVessel)->EmptyMass();

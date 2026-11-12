@@ -18,6 +18,9 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Catalog.h"
 #include "AABBUtil.h"
+
+// Standalone relativity trace log (implemented in Relativity.inc)
+void RelLog(const char *fmt, ...);
 #include "OapiExtension.h"
 #include "DebugControls.h"
 #include "IProcess.h"
@@ -300,7 +303,12 @@ Scene::Scene(D3D9Client *_gc, DWORD w, DWORD h)
 				SAFE_DELETE(pLightBlur);
 			}
 		}
+
 	}
+
+	// Relativistic visual effects (phase 1, implementation in Relativity.inc)
+	InitRelativityEffects();
+	InitLensCubemap();
 
 	for (int i = 0; i < ARRAYSIZE(ptgBuffer);i++)  if (ptgBuffer[i]) ptgBuffer[i]->GetSurfaceLevel(0, &psgBuffer[i]);
 
@@ -331,6 +339,12 @@ Scene::~Scene ()
 	pDevice->SetRenderTarget(1, NULL);
 	pDevice->SetRenderTarget(2, NULL);
 	pDevice->SetRenderTarget(3, NULL);
+
+	// Release the relativity pass before the shared colour buffers: the
+	// ImageProcessing object must release its references before the buffers
+	// are destroyed, otherwise a device reset is blocked by undeleted resources.
+	ExitRelativityEffects();
+	ExitLensCubemap();
 
 	for (int i = 0; i < ARRAYSIZE(psgBuffer); i++) SAFE_RELEASE(psgBuffer[i]);
 	for (int i = 0; i < ARRAYSIZE(ptgBuffer); i++) SAFE_RELEASE(ptgBuffer[i]);
@@ -1167,9 +1181,17 @@ void Scene::ComputeLocalLightsVisibility()
 	VECTOR3 gsun;
 	oapiGetGlobalPos(oapiGetObjectByIndex(0), &gsun);
 
+	// Relativistic aberration: evaluate the Sun glare visibility for the
+	// apparent (aberration shifted) Sun direction. VisibilityPS suppresses the
+	// glare when this direction is outside the screen, so using the true
+	// direction makes the aberration-shifted glare disappear as soon as the
+	// true Sun leaves the field of view.
+	VECTOR3 usun = unit(gsun - Camera.pos);
+	if (bRelSunValid) usun = relSunDirVis;
+
 	// Put the Sun on a top of the list
 	LLCBuf[0].index = 0.0f;
-	LLCBuf[0].pos = FVECTOR3(unit(gsun - Camera.pos)) * 10e4;
+	LLCBuf[0].pos = FVECTOR3(usun) * 10e4;
 	LLCBuf[0].cone = 1.0f;
 
 	int nGlares = 1;
@@ -1245,6 +1267,8 @@ void Scene::RecallDefaultState()
 void Scene::RenderMainScene()
 {
 	_TRACE;
+
+	RelLog("Scene: RenderMainScene begin (frame %d)", (int)dwFrameId);
 
 	dwFrameId++; // Advance to a next frame
 
@@ -1494,7 +1518,12 @@ void Scene::RenderMainScene()
 	// Set generic clip plane distances for celestial sphere
 	SetCameraFrustumLimits(0.1, 10);
 
-	m_celSphere->Render(pDevice, sky_color);
+	// TEMP DIAGNOSTIC: cubemap tile wireframe, no lensing, billboard disabled
+	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady;
+	RelLog("Scene: cel sphere lenscube=%d aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", (int)bUseLensCube, Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
+	if (bUseLensCube) RenderLensCubemap();
+	m_celSphere->Render(pDevice, sky_color, bUseLensCube);
+	if (bUseLensCube) CompositeStarField();
 
 	// Set Initial Near clip plane distance
 	if (bClearZBuffer) SetCameraFrustumLimits(1e3, 3e8f);
@@ -2027,6 +2056,9 @@ void Scene::RenderMainScene()
 			// Grap a copy of a backbuffer
 			pDevice->StretchRect(pOffscreenTarget, NULL, psgBuffer[GBUF_COLOR], NULL, D3DTEXF_POINT);
 
+			// Relativistic visual effects (phase 1, implementation in Relativity.inc)
+			LPDIRECT3DTEXTURE9 pColorTex = ApplyRelativityEffects(ptgBuffer[GBUF_COLOR]);
+
 			pLightBlur->SetFloat("vSB", &sbf, sizeof(D3DXVECTOR2));
 			pLightBlur->SetBool("bBlendIn", false);
 			pLightBlur->SetBool("bBlur", false);
@@ -2038,7 +2070,7 @@ void Scene::RenderMainScene()
 
 			// -----------------------------------------------------
 			pLightBlur->SetBool("bSample", true);
-			pLightBlur->SetTextureNative("tBack", ptgBuffer[GBUF_COLOR], IPF_POINT | IPF_CLAMP);
+			pLightBlur->SetTextureNative("tBack", pColorTex, IPF_POINT | IPF_CLAMP);
 			pLightBlur->SetOutputNative(0, psgBuffer[GBUF_BLUR]);
 
 			if (!pLightBlur->Execute(true)) LogErr("pLightBlur Execute Failed");
@@ -2064,7 +2096,7 @@ void Scene::RenderMainScene()
 
 			pLightBlur->SetBool("bBlendIn", true);
 			pLightBlur->SetBool("bBlur", false);
-			pLightBlur->SetTextureNative("tBack", ptgBuffer[GBUF_COLOR], IPF_LINEAR | IPF_CLAMP);
+			pLightBlur->SetTextureNative("tBack", pColorTex, IPF_LINEAR | IPF_CLAMP);
 			pLightBlur->SetTextureNative("tBlur", ptgBuffer[GBUF_BLUR], IPF_LINEAR | IPF_CLAMP);
 			pLightBlur->SetOutputNative(0, gc->GetBackBuffer());
 
@@ -3385,6 +3417,9 @@ bool Scene::CameraPan(VECTOR3 pan, double speed)
 //
 bool Scene::UpdateCameraFromOrbiter(DWORD dwPass)
 {
+	static int dbgCam = 0;
+	if (dbgCam++ < 12) RelLog("Scene: UpdateCameraFromOrbiter begin (pass %d)", (int)dwPass);
+
 	MATRIX3 grot;
 	VECTOR3 pos;
 
@@ -3412,6 +3447,31 @@ bool Scene::UpdateCameraFromOrbiter(DWORD dwPass)
 	}
 
 	oapiCameraGlobalDir(&Camera.dir);
+
+	// Camera velocity for the relativistic aberration (see Relativity.inc).
+	// Differentiate the global camera position over simulation time: a fixed
+	// free camera has zero velocity (no aberration), an attached camera gets
+	// approximately the focus object velocity. Note: this function is called
+	// several times per frame (e.g. once directly from the renderer and once
+	// from UpdateCamVis), so the velocity must only be updated when the
+	// simulation time has actually advanced - otherwise a same-frame call
+	// would reset it to zero and toggle the aberration off mid-frame.
+	{
+		double t = oapiGetSimTime();
+		if (camVelValid && t > camVelT + 1e-9) {
+			camVel = (Camera.pos - camVelPos) * (1.0 / (t - camVelT));
+			if (length(camVel) > 0.9999 * 299792458.0) camVel = _V(0,0,0); // camera jump/teleport
+			camVelPos = Camera.pos;
+			camVelT = t;
+		}
+		else if (!camVelValid) {
+			camVel = _V(0,0,0);
+			camVelPos = Camera.pos;
+			camVelT = t;
+			camVelValid = true;
+		}
+	}
+
 	oapiCameraRotationMatrix(&grot);
 	D3DXMatrixIdentity(&Camera.mView);
 	D3DMAT_SetRotation(&Camera.mView, &grot);
@@ -3425,6 +3485,9 @@ bool Scene::UpdateCameraFromOrbiter(DWORD dwPass)
 	// and render coordinates.
 
 	for (VOBJREC *pv = vobjFirst; pv; pv = pv->next) pv->vobj->Update(true);
+
+	// Relativistic aberration of the celestial bodies (Relativity.inc)
+	ApplyRelativityToBodies();
 
 	return SetupInternalCamera(&Camera.mView, NULL, oapiCameraAperture(), double(viewH)/double(viewW));
 }
@@ -3766,9 +3829,29 @@ void Scene::RenderGlares()
 			VECTOR3 gsun; oapiGetGlobalPos(oapiGetObjectByIndex(0), &gsun);
 			double sdst = length(gsun - Camera.pos);
 			VECTOR3 usun = (gsun - Camera.pos) / sdst;
+			// Relativistic effects: use the aberration-shifted apparent direction
+			// of the Sun so that the glare follows the displaced Sun disc.
+			if (bRelSunValid) usun = relSunDirVis;
 			VECTOR3 pos = usun * 10e4;
 
-			if (WorldToScreenSpace2(pos, &pt))
+			// The glare is a large sprite: when its centre leaves the screen the
+			// whole glare would vanish abruptly. Allow the centre to move a bit
+			// outside the screen so the glare can fade out smoothly.
+			float clipRange = 1.0f + (600.0f * GetDisplayScale()) / float(viewW);
+
+			bool bPrj = WorldToScreenSpace2(pos, &pt, NULL, clipRange);
+			{
+				// Diagnostic: track the apparent (aberrated) Sun glare position
+				static int dbgTick = 0, dbgProj = -1;
+				dbgTick++;
+				if ((int)bPrj != dbgProj || (dbgTick % 10) == 0) {
+					dbgProj = (int)bPrj;
+					RelLog("SunTrack: proj=%d pt=(%.0f,%.0f) clip=%.2f bRel=%d",
+						(int)bPrj, pt.x, pt.y, clipRange, (int)bRelSunValid);
+				}
+			}
+
+			if (bPrj)
 			{
 				float cis = 1.0f, glare = float(Config->GFXGlare) * saturate(8.0 * AU / sdst);
 				FVECTOR4 clr = FVECTOR4(1, 1, 1, 1);
@@ -3782,10 +3865,28 @@ void Scene::RenderGlares()
 					cis = CameraInSpace();
 					glare *= pow(clr.MaxRGB(), 0.33f) * cis;				
 				}
+
+				// Relativistic Doppler: colour tint and beaming of the Sun glare
+				if (bRelSunValid) {
+					clr.x *= relSunTint.x;
+					clr.y *= relSunTint.y;
+					clr.z *= relSunTint.z;
+					glare *= relSunBeam;
+				}
 							
 				float cd = length(pt - FVECTOR2(viewW, viewH) * 0.5f) / float(viewW); // Glare distance from a screen center
 				float alpha = 2.0f * glare * max(0.5f, 1.0f - cd);
 				float size = 300.0f * GetDisplayScale() * pow(alpha, 0.25f);
+
+				{
+					// Diagnostic: track the glare alpha/position
+					static int dbgTickA = 0;
+					dbgTickA++;
+					if ((dbgTickA % 10) == 0) {
+						RelLog("SunAlpha: pt=(%.0f,%.0f) cd=%.3f alpha=%.4f glare=%.4f beam=%.3f bRel=%d",
+							pt.x, pt.y, cd, alpha, glare, relSunBeam, (int)bRelSunValid);
+					}
+				}
 
 				Const.GPUId = 0.5f / float(desc.Width);
 				Const.Pos = FVECTOR4(pt.x, pt.y, size, size);
@@ -3930,3 +4031,9 @@ int distcomp (const void *arg1, const void *arg2)
 	return (d1 > d2 ? -1 : d1 < d2 ? 1 : 0);
 }
 
+
+// ===========================================================================================
+// Relativistic visual effects (phase 1): implementation.
+// Kept in a separate file so the official scene code only keeps call sites.
+// ===========================================================================================
+#include "Relativity.inc"

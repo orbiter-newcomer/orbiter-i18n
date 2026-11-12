@@ -58,6 +58,7 @@ vObject::vObject(OBJHANDLE _hObj, const Scene *scene)
 {
 	_TRACE;
 	D3DXMatrixIdentity(&mWorld);
+	relScale = 1.0;
 	if (_hObj) size = oapiGetSize(_hObj);
 	else size = 0;
 	dmWorld = identity4();
@@ -148,6 +149,42 @@ void vObject::ReOrigin(VECTOR3 global_pos)
 	D3DMAT_SetTranslation(&mWorld, &cpos);
 }
 
+void vObject::RepositionFromCamera(const VECTOR3 &newCpos, double scale)
+{
+	// Preserve the distance scaling that a derived visual may have applied to
+	// the single precision world matrix. vPlanet, for example, scales distant
+	// bodies towards the camera for rendering (dist_scale), so overwriting the
+	// translation with the true distance would push them outside the camera
+	// range. Only the direction of the position is changed here.
+	D3DXVECTOR3 oldT(mWorld._41, mWorld._42, mWorld._43);
+	double oldTlen = sqrt((double)oldT.x * (double)oldT.x
+	                    + (double)oldT.y * (double)oldT.y
+	                    + (double)oldT.z * (double)oldT.z);
+	double tscale = (oldTlen > 1e-3 && cdist > 1e-3) ? oldTlen / cdist : 1.0;
+
+	cpos = newCpos;
+	cdist = length(cpos);
+	relScale = scale;
+
+	// double precision world matrix keeps the true camera relative position
+	dmWorld.m41 = cpos.x;
+	dmWorld.m42 = cpos.y;
+	dmWorld.m43 = cpos.z;
+
+	// single precision world matrix keeps the visual distance scaling
+	VECTOR3 mt = cpos * tscale;
+	D3DMAT_SetTranslation(&mWorld, &mt);
+
+	// Apply the apparent size scaling (relativistic aberration) to the
+	// rotation/scale part of the world matrix.
+	if (scale != 1.0) {
+		float s = (float)scale;
+		mWorld._11 *= s; mWorld._12 *= s; mWorld._13 *= s;
+		mWorld._21 *= s; mWorld._22 *= s; mWorld._23 *= s;
+		mWorld._31 *= s; mWorld._32 *= s; mWorld._33 *= s;
+	}
+}
+
 
 // ===========================================================================================
 //
@@ -176,6 +213,7 @@ bool vObject::Update(bool bMainScene)
 	axis   = mul(grot, _V(0, 1, 0));
 	cpos   = gpos - cgpo;
 	cdist  = length(cpos);
+	relScale = 1.0;		// reset; relativistic aberration sets it after Update()
 
 	// Create double precision world matrix
 	//
@@ -314,8 +352,11 @@ void vObject::RenderDot(LPDIRECT3DDEVICE9 dev)
 	VECTOR3 spos;
 	oapiGetGlobalPos(oapiGetGbodyByIndex(0), &spos);
 	oapiGetGlobalPos(hObj, &gpos);
-	cpos = gpos - scn->GetCameraGPos();
-	cdist = length(cpos);
+	// NOTE: do NOT recompute cpos/cdist here. They are set by vObject::Update()
+	// and may have been shifted by the relativistic aberration code
+	// (Scene::ApplyRelativityToBodies). Recomputing the true camera-relative
+	// position would discard the aberration displacement of the body in the
+	// point rendering path (used for distant planets/stars).
 
 	double alt = max(1.0, cdist - size);
 	double apr = size * scn->ViewH()*0.5 / (alt * tan(scn->GetCameraAperture()));

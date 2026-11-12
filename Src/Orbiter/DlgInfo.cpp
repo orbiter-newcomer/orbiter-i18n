@@ -680,11 +680,14 @@ void DlgInfo::DrawInfoCelestialBody(CelestialBody *cbody) {
         }
         ImGui::EndAnimatedCollapsingHeader();
     }
-    if(strcmp(cbody->Name(), "Earth") && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Geocentric Celestial Position"), ImGuiTreeNodeFlags_DefaultOpen)) {
+    // The geocentric position requires Earth as reference. Custom systems (for
+    // example the black hole test system) may not contain Earth, in which case
+    // GetPlanet() returns NULL: skip the section instead of dereferencing it.
+    Planet *earth = g_psys->GetPlanet ("Earth");
+    if(earth && strcmp(cbody->Name(), "Earth") && ImGui::BeginAnimatedCollapsingHeader(orbiter::Tr("Geocentric Celestial Position"), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::BeginTable("table celbody Geocentric Celestial Position", 2, flags))
         {
             char cbuf[128];
-            Planet *earth = g_psys->GetPlanet ("Earth");
 			Vector p (cbody->GPos() - earth->GPos());
 			double r   = p.length();
 			double lng = atan2 (p.z, p.x);

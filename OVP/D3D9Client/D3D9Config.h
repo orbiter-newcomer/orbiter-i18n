@@ -80,6 +80,15 @@ public:
 	int TileDebug;					///< Enable tile debugger
 	int TextureMips;				///< Texture mipmap auto-gen policy
 	int PostProcess;				///< Enable post processing effects
+	int RelDoppler;					///< Relativistic Doppler shift (red/blue) visual effect (0=off, 1=on)
+	int RelAberration;				///< Relativistic aberration visual effect (0=off, 1=on)
+	int RelLensing;					///< Relativistic gravitational lensing visual effect (0=off, 1=on)
+	int RelGravityMethod;			///< Relativity gravity solver from the physics engine (0=1PN, 1=Kerr)
+	int RelInternalMode;			///< Relativistic geometric effects in cockpit view (0=full, 1=doppler only, 2=off)
+	double RelExposureWhite;		///< Doppler observer exposure adaptation white point (0=disabled, default 2.0)
+	double RelNearGuard;			///< near-field protection distance [m] (0=disabled, default 500)
+	int LensCubemapSize;			///< star field cubemap resolution for gravitational lensing (512/1024/2048)
+	bool RelLensWireframe;			///< debug: render the lensing source field as a tile wireframe
 	int MicroMode;					///< Surface micro textures enable flag (0=disabled, 1=enabled)
 	int MicroFilter;				///< Surface micro texture filter mode (0=Point, 1=Linear ,2=Anisotropic 2x ,3=Anisotropic 4x, 4=Anisotropic 8x, Anisotropic 16x)
 	int BlendMode;					///< Surface micro texture light blend mode (0=Soft, 1=Normal, 2=Hard)

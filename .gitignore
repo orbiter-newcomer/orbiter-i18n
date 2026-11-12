@@ -32,3 +32,9 @@ Sound/XRSound/**/Release-with-OrbiterRelease/
 Doc/**/*.log
 Doc/**/*.pdf
 Doc/**/*.gz
+
+# build/install outputs (generated, not tracked)
+build64/
+build32/
+install64/
+install32/
