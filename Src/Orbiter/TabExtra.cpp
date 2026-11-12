@@ -19,6 +19,7 @@
 #include "resource.h"
 #include "Localization.h"
 #include "resource2.h"
+#include "RelativityUi.h"
 
 using std::max;
 
@@ -543,70 +544,6 @@ INT_PTR CALLBACK ExtraDynamics::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		case IDOK:
 			if (((ExtraDynamics*)GetWindowLongPtr (hWnd, DWLP_USER))->StoreParams (hWnd))
 				EndDialog (hWnd, 0);
-			break;
-		}
-		break;
-	}
-	return BuiltinLaunchpadItem::DlgProc (hWnd, uMsg, wParam, lParam);
-}
-
-//-----------------------------------------------------------------------------
-// Physics engine: Relativistic gravity field solver
-//-----------------------------------------------------------------------------
-
-char *ExtraRelativity::Name ()
-{
-	return (char*)orbiter::Tr ("Relativity");
-}
-
-char *ExtraRelativity::Description ()
-{
-	return (char*)orbiter::Tr ("Select the gravity field solver used for relativistic effects. Relativistic effects themselves are enabled in the Physics settings.");
-}
-
-bool ExtraRelativity::clbkOpen (HWND hParent)
-{
-	OpenDialog (hParent, IDD_EXTRA_RELATIVITY, DlgProc);
-	return true;
-}
-
-void ExtraRelativity::InitDialog (HWND hWnd)
-{
-	SetDialog (hWnd);
-}
-
-void ExtraRelativity::SetDialog (HWND hWnd)
-{
-	bool kerr = (pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 1);
-	SendDlgItemMessage (hWnd, kerr ? IDC_REL_METHOD_KERR : IDC_REL_METHOD_1PN, BM_SETCHECK, BST_CHECKED, 0);
-	SendDlgItemMessage (hWnd, IDC_REL_LENS_WIREFRAME, BM_SETCHECK,
-		pTab->Cfg()->CfgVisualPrm.bRelLensWireframe ? BST_CHECKED : BST_UNCHECKED, 0);
-}
-
-bool ExtraRelativity::StoreParams (HWND hWnd)
-{
-	bool kerr = (SendDlgItemMessage (hWnd, IDC_REL_METHOD_KERR, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod = kerr ? 1 : 0;
-	pTab->Cfg()->CfgVisualPrm.bRelLensWireframe =
-		(SendDlgItemMessage (hWnd, IDC_REL_LENS_WIREFRAME, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	return true;
-}
-
-INT_PTR CALLBACK ExtraRelativity::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg) {
-	case WM_INITDIALOG:
-		((ExtraRelativity*)lParam)->InitDialog (hWnd);
-		orbiter::LocalizeWindowTree (hWnd);
-		break;
-	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
-		case IDOK:
-			if (((ExtraRelativity*)GetWindowLongPtr (hWnd, DWLP_USER))->StoreParams (hWnd))
-				EndDialog (hWnd, 0);
-			break;
-		case IDCANCEL:
-			EndDialog (hWnd, 0);
 			break;
 		}
 		break;
@@ -1355,19 +1292,20 @@ bool ExtraRenderingOptions::clbkOpen (HWND hParent)
 
 void ExtraRenderingOptions::InitDialog (HWND hWnd)
 {
-	SetDialog (hWnd, pTab->Cfg()->CfgDebugPrm);
+	SetDialog (hWnd, pTab->Cfg()->CfgDebugPrm, pTab->Cfg()->CfgVisualPrm.bRelLensWireframe);
 }
 
 void ExtraRenderingOptions::ResetDialog (HWND hWnd)
 {
 	extern CFG_DEBUGPRM CfgDebugPrm_default;
-	SetDialog (hWnd, CfgDebugPrm_default);
+	SetDialog (hWnd, CfgDebugPrm_default, false);
 }
 
-void ExtraRenderingOptions::SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm)
+void ExtraRenderingOptions::SetDialog (HWND hWnd, const CFG_DEBUGPRM &prm, bool bLensWireframe)
 {
 	SendDlgItemMessage (hWnd, IDC_CHECK1, BM_SETCHECK, prm.bWireframeMode ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage (hWnd, IDC_CHECK2, BM_SETCHECK, prm.bNormaliseNormals ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage (hWnd, IDC_CHECK3, BM_SETCHECK, bLensWireframe ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool ExtraRenderingOptions::StoreParams (HWND hWnd)
@@ -1375,6 +1313,7 @@ bool ExtraRenderingOptions::StoreParams (HWND hWnd)
 	Config *cfg = pTab->Cfg();
 	cfg->CfgDebugPrm.bWireframeMode = (SendDlgItemMessage (hWnd, IDC_CHECK1, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	cfg->CfgDebugPrm.bNormaliseNormals = (SendDlgItemMessage (hWnd, IDC_CHECK2, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	cfg->CfgVisualPrm.bRelLensWireframe = (SendDlgItemMessage (hWnd, IDC_CHECK3, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	return true;
 }
 

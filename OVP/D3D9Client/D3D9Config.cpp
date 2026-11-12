@@ -16,6 +16,9 @@ static const char* cfgfile = "D3D9Client.cfg";
 
 class D3D9Config *Config;				// configuration manager
 
+// Relativity extension configuration (implementation)
+#include "RelativityConfig.inc"
+
 // ==============================================================
 
 D3D9Config::D3D9Config()
@@ -80,15 +83,7 @@ void D3D9Config::Reset ()
 	BlendMode			= 1;
 	MicroBias			= 3;
 	PostProcess			= 0;
-	RelDoppler			= 0;
-	RelAberration		= 0;
-	RelLensing			= 0;
-	RelGravityMethod	= 0;
-	RelInternalMode		= 0;
-	RelExposureWhite	= 2.0;
-	RelNearGuard		= 500.0;
-	LensCubemapSize		= 1024;
-	RelLensWireframe	= false;
+	RelD3D9ConfigReset (this);
 	ShaderDebug			= 0;
 	PresentLocation		= 1;
 	PlanetTileLoadFlags	= 0x3;
@@ -194,15 +189,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"MicroBias", i))						MicroBias = max(0, min(10, i));
 	if (oapiReadItem_int   (hFile, (char*)"CloudMicro", i))					CloudMicro = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"PostProcess", i))					PostProcess = max(0, min(2, i));
-	if (oapiReadItem_int   (hFile, (char*)"RelInternalMode", i))				RelInternalMode = max(0, min(2, i));
-	if (oapiReadItem_float (hFile, (char*)"RelNearGuard", d))				RelNearGuard = max(0.0, min(1e6, d));
-	if (oapiReadItem_int   (hFile, (char*)"LensCubemapSize", i)) {
-		// 512, 1024 or 2048 pixels per cubemap face (higher = smoother lensing
-		// boundaries, higher memory and render cost)
-		if (i <= 512) LensCubemapSize = 512;
-		else if (i >= 2048) LensCubemapSize = 2048;
-		else LensCubemapSize = 1024;
-	}
+	RelD3D9ConfigRead (hFile, this);
 	if (oapiReadItem_int   (hFile, (char*)"ShaderDebug", i))					ShaderDebug = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"PresentLocation", i))				PresentLocation = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"PlanetTileLoadFlags", i))			PlanetTileLoadFlags = max(1, min(3, i));
@@ -296,9 +283,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"MicroBias", MicroBias);
 	oapiWriteItem_int	(hFile, (char*)"CloudMicro", CloudMicro);
 	oapiWriteItem_int   (hFile, (char*)"PostProcess", PostProcess);
-	oapiWriteItem_int   (hFile, (char*)"RelInternalMode", RelInternalMode);
-	oapiWriteItem_float (hFile, (char*)"RelNearGuard", RelNearGuard);
-	oapiWriteItem_int   (hFile, (char*)"LensCubemapSize", LensCubemapSize);
+	RelD3D9ConfigWrite (hFile, this);
 	oapiWriteItem_int   (hFile, (char*)"ShaderDebug", ShaderDebug);
 	oapiWriteItem_int   (hFile, (char*)"PresentLocation", PresentLocation);
 	oapiWriteItem_int   (hFile, (char*)"PlanetTileLoadFlags", PlanetTileLoadFlags);

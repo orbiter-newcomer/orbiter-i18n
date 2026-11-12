@@ -247,8 +247,8 @@
 #define IDC_SHOW_BASE_COL                       4084
 #define IDC_SHOW_VESSEL_COL                     4085
 
+
 #define IDC_REL_DOPPLER                         4086
 #define IDC_REL_ABERRATION                      4087
-
 #define IDC_REL_EXPOSURE                        4088
 #define IDC_REL_EXP_DSP                         4089

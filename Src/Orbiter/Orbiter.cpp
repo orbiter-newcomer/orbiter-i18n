@@ -1432,56 +1432,9 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Name: RelWarpScale()
-// Desc: Lorentz factor used to scale the player-selected time acceleration.
-//       Returns 1 when relativistic physics is disabled (the acceleration is
-//       then used as-is). The scaling is a simulation-internal detail: the
-//       player still selects and sees the unscaled factor.
-//-----------------------------------------------------------------------------
-double Orbiter::RelWarpScale () const
-{
-	if (!pConfig->CfgPhysicsPrm.bRelativity) return 1.0;
-	if (!g_focusobj) return 1.0;
-	double v2 = g_focusobj->GVel().length2();
-	double c2 = c_light*c_light;
-	if (v2 >= c2*0.999999) return 1.0; // guard (velocity clamp is applied elsewhere)
-	return 1.0/sqrt (1.0 - v2/c2);
-}
-
-//-----------------------------------------------------------------------------
-// Name: UpdateRelativityWarp()
-// Desc: Relativistic time acceleration: when relativistic physics is enabled
-//       and the camera focus is a vessel, scale the global time acceleration
-//       by the vessel Lorentz factor gamma. This is applied "under water":
-//       the effective warp used by the simulation differs from the factor the
-//       player selects and sees (m_relUserWarp).
-//-----------------------------------------------------------------------------
-void Orbiter::UpdateRelativityWarp ()
-{
-	double gamma = RelWarpScale();
-	double target = m_relUserWarp * gamma;
-	if      (target < MinWarpLimit) target = MinWarpLimit;
-	else if (target > MaxWarpLimit) target = MaxWarpLimit;
-	if (fabs (target - td.Warp()) > 1e-6) {
-		td.SetWarp (target, 0);
-		if (td.WarpChanged()) ApplyWarpFactor();
-	}
-	m_relWarpActive = (gamma != 1.0);
-}
-
-//-----------------------------------------------------------------------------
-// Name: DisplayWarp()
-// Desc: Return the time acceleration value to display to the user. The player
-//       only controls the unscaled warp factor: the automatic relativistic
-//       scaling stays invisible.
-//-----------------------------------------------------------------------------
-double Orbiter::DisplayWarp () const
-{
-	if (pConfig->CfgPhysicsPrm.bRelativity) return m_relUserWarp;
-	return td.Warp();
-}
-
+#define REL_PHYS_WARP
+#include "RelativityPhysics.inc"
+#undef REL_PHYS_WARP
 //-----------------------------------------------------------------------------
 // Name: IncWarpFactor()
 // Desc: Increment time acceleration factor to next power of 10

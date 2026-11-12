@@ -34,7 +34,7 @@ static const struct { const wchar_t *en; const wchar_t *zh; } scnMap[] = {
     { L"Vessel type:", L"载具类型：" },
     { L"Set input focus", L"设置输入焦点" },
     { L"Set camera", L"设置相机" },
-    { L"<< Done", L"<< 完成" },
+    { L"<< Done", L"<< 退出" },
     { L"Vessel", L"载具" },
     { L"Class", L"类型" },
     { L"Status", L"状态" },

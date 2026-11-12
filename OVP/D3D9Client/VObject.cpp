@@ -149,42 +149,9 @@ void vObject::ReOrigin(VECTOR3 global_pos)
 	D3DMAT_SetTranslation(&mWorld, &cpos);
 }
 
-void vObject::RepositionFromCamera(const VECTOR3 &newCpos, double scale)
-{
-	// Preserve the distance scaling that a derived visual may have applied to
-	// the single precision world matrix. vPlanet, for example, scales distant
-	// bodies towards the camera for rendering (dist_scale), so overwriting the
-	// translation with the true distance would push them outside the camera
-	// range. Only the direction of the position is changed here.
-	D3DXVECTOR3 oldT(mWorld._41, mWorld._42, mWorld._43);
-	double oldTlen = sqrt((double)oldT.x * (double)oldT.x
-	                    + (double)oldT.y * (double)oldT.y
-	                    + (double)oldT.z * (double)oldT.z);
-	double tscale = (oldTlen > 1e-3 && cdist > 1e-3) ? oldTlen / cdist : 1.0;
-
-	cpos = newCpos;
-	cdist = length(cpos);
-	relScale = scale;
-
-	// double precision world matrix keeps the true camera relative position
-	dmWorld.m41 = cpos.x;
-	dmWorld.m42 = cpos.y;
-	dmWorld.m43 = cpos.z;
-
-	// single precision world matrix keeps the visual distance scaling
-	VECTOR3 mt = cpos * tscale;
-	D3DMAT_SetTranslation(&mWorld, &mt);
-
-	// Apply the apparent size scaling (relativistic aberration) to the
-	// rotation/scale part of the world matrix.
-	if (scale != 1.0) {
-		float s = (float)scale;
-		mWorld._11 *= s; mWorld._12 *= s; mWorld._13 *= s;
-		mWorld._21 *= s; mWorld._22 *= s; mWorld._23 *= s;
-		mWorld._31 *= s; mWorld._32 *= s; mWorld._33 *= s;
-	}
-}
-
+#define REL_INC_VOBJECT
+#include "Relativity.inc"
+#undef REL_INC_VOBJECT
 
 // ===========================================================================================
 //

@@ -560,7 +560,6 @@ namespace orbiter {
 		{ "hV", "横移率" },
 		{ "vV", "纵移率" },
 		{ "CVEL", "接近率" },
-		{ "Y", "偏航" },
 		{ "P", "俯仰" },
 		{ "B", "滚转" },
 		{ "Select docking port", "选择对接端口" },
@@ -1300,6 +1299,7 @@ namespace orbiter {
 		{ "ATT_CNC",  "取消" },
 			// ---- 相对论（物理设置）----
 			{ "Relativistic effects", "相对论效应" },
+
 			// ---- 相对论（Extra 页引力场求解器）----
 			{ "Relativity", "相对论" },
 			{ "Gravity field solver", "引力场求解方法" },

@@ -453,6 +453,9 @@ private:
 	void InitRelativityEffects();
 	void ExitRelativityEffects();
 	void SyncRelativityConfig();
+	void RelativityUpdateCameraVelocity();
+	VECTOR3 RelativityApparentSunDir(const VECTOR3 &trueDir) const;
+	void RelativityApplySunGlare(FVECTOR4 &clr, float &glare) const;
 	void ApplyRelativityToBodies();
 	void ComputeLensBodies();
 	void InitLensCubemap();

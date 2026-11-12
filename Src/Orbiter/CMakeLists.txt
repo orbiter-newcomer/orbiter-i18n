@@ -37,6 +37,7 @@ set(common_src
 	LpadTab.cpp
 	TabAbout.cpp
 	TabExtra.cpp
+	RelativityUi.cpp
 	TabModule.cpp
 	TabOptions.cpp
 	TabScenario.cpp

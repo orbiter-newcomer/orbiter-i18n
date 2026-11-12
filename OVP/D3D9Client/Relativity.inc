@@ -1,4 +1,20 @@
 // ==============================================================
+// Relativity visual effects (merged include).
+//
+// This file is included by four compilation units; each one enables its own
+// section via a REL_INC_* macro:
+//   Scene.cpp       : (default)      REL_INC_SCENE      (phase-1 effects)
+//   CelSphere.cpp   : REL_INC_CELSPHERE (source-frame star field)
+//   VObject.cpp     : REL_INC_VOBJECT   (apparent size / repositioning)
+//   CSphereMgr.cpp  : REL_INC_CSPHERE   (aberration culling + cel data)
+// ==============================================================
+
+#if !defined(REL_INC_CELSPHERE) && !defined(REL_INC_VOBJECT) && !defined(REL_INC_CSPHERE)
+#define REL_INC_SCENE
+#endif
+
+#ifdef REL_INC_SCENE
+// ==============================================================
 // Relativity visual effects, phase 1: Doppler shift + aberration.
 //
 // This file is #included at the end of Scene.cpp. It implements the Scene
@@ -515,7 +531,7 @@ void Scene::SyncRelativityConfig()
 	Config->RelLensing    = (bPhysRel && pL && *pL) ? 1 : 0;
 	Config->RelLensWireframe = (pW && *pW);
 	if (pE) Config->RelExposureWhite = *pE;
-	if (pM) Config->RelGravityMethod = *pM;
+	if (pM) Config->RelGravityMethod = (*pM == 2) ? 0 : *pM;   // Newtonian physics -> 1PN visual lens model
 }
 
 // --------------------------------------------------------------------------
@@ -779,3 +795,235 @@ LPDIRECT3DTEXTURE9 Scene::ApplyRelativityEffects(LPDIRECT3DTEXTURE9 pSrc)
 	}
 	return ptgBuffer[GBUF_REL];
 }
+
+// ============================================================================
+// Scene integration helpers (moved out of the official Scene.cpp).
+// ============================================================================
+
+void Scene::RelativityUpdateCameraVelocity ()
+{
+	// Camera velocity for the relativistic aberration (see Relativity.inc).
+	// Differentiate the global camera position over simulation time: a fixed
+	// free camera has zero velocity (no aberration), an attached camera gets
+	// approximately the focus object velocity. Note: this function is called
+	// several times per frame (e.g. once directly from the renderer and once
+	// from UpdateCamVis), so the velocity must only be updated when the
+	// simulation time has actually advanced - otherwise a same-frame call
+	// would reset it to zero and toggle the aberration off mid-frame.
+	{
+		double t = oapiGetSimTime();
+		if (camVelValid && t > camVelT + 1e-9) {
+			camVel = (Camera.pos - camVelPos) * (1.0 / (t - camVelT));
+			if (length(camVel) > 0.9999 * 299792458.0) camVel = _V(0,0,0); // camera jump/teleport
+			camVelPos = Camera.pos;
+			camVelT = t;
+		}
+		else if (!camVelValid) {
+			camVel = _V(0,0,0);
+			camVelPos = Camera.pos;
+			camVelT = t;
+			camVelValid = true;
+		}
+	}
+}
+
+// Relativistic aberration: evaluate the Sun glare visibility for the
+// apparent (aberration shifted) Sun direction. VisibilityPS suppresses the
+// glare when this direction is outside the screen, so using the true
+// direction makes the aberration-shifted glare disappear as soon as the
+// true Sun leaves the field of view.
+VECTOR3 Scene::RelativityApparentSunDir (const VECTOR3 &trueDir) const
+{
+	VECTOR3 usun = trueDir;
+	if (bRelSunValid) usun = relSunDirVis;
+	return usun;
+}
+
+void Scene::RelativityApplySunGlare (FVECTOR4 &clr, float &glare) const
+{
+	// Relativistic Doppler: colour tint and beaming of the Sun glare
+	if (bRelSunValid) {
+		clr.x *= relSunTint.x;
+		clr.y *= relSunTint.y;
+		clr.z *= relSunTint.z;
+		glare *= relSunBeam;
+	}
+}
+
+#endif // REL_INC_SCENE
+
+#ifdef REL_INC_CELSPHERE
+// -----------------------------------------------------------------------------
+// Relativity: source-frame star field rendering for the gravitational lensing.
+//
+// Implementation moved out of the official CelSphere.cpp (included at the
+// original location). Declaration lives in CelSphere.h.
+// -----------------------------------------------------------------------------
+
+// Render the complete star field into the lensing cubemap (source frame,
+// without any relativistic transformation): the background image (galaxy and
+// star chart layers) and the star dots.
+void D3D9CelestialSphere::RenderBackground(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, int level)
+{
+	// source frame render: no aberration, no lensing here (bNoRel = true);
+	// all relativistic mapping is done by the composite pass.
+	// The tile wireframe is a debug option (Launchpad Extra tab).
+	m_bkgImgMgr->Render(dev, level, GetSkyBrightness(), pVP, pCamDir, true, Config->RelLensWireframe);
+	dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+
+	HR(s_FX->SetTechnique(s_eStar));
+	HR(s_FX->SetMatrix(s_eWVP, pVP ? pVP : m_scene->GetProjectionViewMatrix()));
+	RenderStars(s_FX, true);
+}
+
+// Render the background image into the equirectangular panorama texture. The
+// panorama is the lensing source frame: the pixel (u,v) stores the sky
+// radiance seen towards longitude u and latitude v.
+
+// ==============================================================
+
+#endif // REL_INC_CELSPHERE
+
+#ifdef REL_INC_VOBJECT
+// -----------------------------------------------------------------------------
+// Relativity: camera-relative repositioning with apparent size scaling.
+//
+// Implementation moved out of the official VObject.cpp (included at the
+// original location). Declaration lives in vObject.h.
+// -----------------------------------------------------------------------------
+
+void vObject::RepositionFromCamera(const VECTOR3 &newCpos, double scale)
+{
+	// Preserve the distance scaling that a derived visual may have applied to
+	// the single precision world matrix. vPlanet, for example, scales distant
+	// bodies towards the camera for rendering (dist_scale), so overwriting the
+	// translation with the true distance would push them outside the camera
+	// range. Only the direction of the position is changed here.
+	D3DXVECTOR3 oldT(mWorld._41, mWorld._42, mWorld._43);
+	double oldTlen = sqrt((double)oldT.x * (double)oldT.x
+	                    + (double)oldT.y * (double)oldT.y
+	                    + (double)oldT.z * (double)oldT.z);
+	double tscale = (oldTlen > 1e-3 && cdist > 1e-3) ? oldTlen / cdist : 1.0;
+
+	cpos = newCpos;
+	cdist = length(cpos);
+	relScale = scale;
+
+	// double precision world matrix keeps the true camera relative position
+	dmWorld.m41 = cpos.x;
+	dmWorld.m42 = cpos.y;
+	dmWorld.m43 = cpos.z;
+
+	// single precision world matrix keeps the visual distance scaling
+	VECTOR3 mt = cpos * tscale;
+	D3DMAT_SetTranslation(&mWorld, &mt);
+
+	// Apply the apparent size scaling (relativistic aberration) to the
+	// rotation/scale part of the world matrix.
+	if (scale != 1.0) {
+		float s = (float)scale;
+		mWorld._11 *= s; mWorld._12 *= s; mWorld._13 *= s;
+		mWorld._21 *= s; mWorld._22 *= s; mWorld._23 *= s;
+		mWorld._31 *= s; mWorld._32 *= s; mWorld._33 *= s;
+	}
+}
+
+#endif // REL_INC_VOBJECT
+
+#ifdef REL_INC_CSPHERE
+// -----------------------------------------------------------------------------
+// Relativity: celestial-sphere rendering setup (aberration culling + cel data).
+//
+// Implementation moved out of the official CSphereMgr.cpp (included there).
+// Declarations live in CSphereMgr.h.
+// -----------------------------------------------------------------------------
+
+void CSphereManager::RelativitySetupCulling (const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, bool bNoRel)
+{
+	// A cubemap face (used for the lensing) has a 90 degree field of view and
+	// its own view direction instead of the camera.
+	RenderParam.viewap = (pCamDir ? atan(sqrt(2.0) * tan(PI / 4.0)) : atan(diagscale * tan(scn->GetCameraAperture())));
+
+	// When rendering a cubemap face (pVP != NULL) the tile visibility must not
+	// be tested against the main camera frustum: the cubemap covers the whole
+	// sky while the camera only sees a small part of it. Tiles outside the
+	// camera frustum would be rejected and the cubemap would be incomplete.
+	m_bNoCull = (pVP != NULL);
+
+	// Relativistic aberration of the celestial sphere background image.
+	// When active, the tiles must not be culled by the (un-shifted) view cone:
+	// aberration moves sky directions from the rest frame into the observer
+	// frame, so tiles that are outside the nominal view cone can end up inside
+	// the rendered image.  Expand the culling cone to the rest-frame angle that
+	// maps onto the visible field of view.
+	if (!bNoRel) {
+		float relBeta = 0.0f;
+		D3DXVECTOR3 relDir(0.0f, 0.0f, 1.0f);
+		m_aberrOn = scn->GetRelativityAberration(relBeta, relDir);
+		m_aberrBeta = relBeta;
+		m_aberrDir = relDir;
+		{
+			static int dbg = -1;		// diagnostic: log state changes only
+			if ((int)m_aberrOn != dbg) {
+				dbg = (int)m_aberrOn;
+				LogAlw("CelSphere: aberration=%d beta=%.4f", (int)m_aberrOn, m_aberrBeta);
+			}
+		}
+		if (m_aberrOn) {
+			double cb = cos(RenderParam.viewap);
+			double c2 = (cb - (double)relBeta) / max(1.0 - (double)relBeta * cb, 1e-9);
+			c2 = max(-1.0, min(1.0, c2));
+			RenderParam.viewap = acos(c2);
+		}
+	}
+	else {
+		m_aberrOn = false;
+		m_aberrBeta = 0.0f;
+		m_aberrDir = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
+	}
+}
+
+void CSphereManager::RelativitySetupCelData (LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, bool bNoRel, bool bWireframe, bool bPano)
+{
+	CelData.mViewProj = (pVP ? *pVP : *scn->GetProjectionViewMatrix());
+
+	// TEMP DIAGNOSTIC: flat white tiles rendered as wireframe to visualise the
+	// background tile boundaries inside the lensing cubemap.
+	CelData.fColorMode = bWireframe ? 1.0f : 0.0f;
+	CelData.fPanoMode = bPano ? 1.0f : 0.0f;
+	CelData.fPanoCenterU = 0.5f;
+	if (bWireframe) {
+		HR(dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME));
+	}
+
+	// Relativistic aberration of the celestial sphere background image
+	if (m_aberrOn) {
+		CelData.vAberr = D3DXVECTOR4(m_aberrDir.x, m_aberrDir.y, m_aberrDir.z, m_aberrBeta);
+		CelData.fAberrOn = 1.0f;
+	}
+	else {
+		CelData.vAberr = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+		CelData.fAberrOn = 0.0f;
+	}
+
+	// Gravitational lensing bodies (Relativity.inc)
+	{
+		const Scene::LENSBODY *bodies = NULL;
+		int n = bNoRel ? 0 : scn->GetLensBodies(&bodies);
+		if (n > 12) n = 12;
+		CelData.fLensCount = (float)n;
+		CelData.fLensModel = scn->GetLensModel();
+		for (int i = 0; i < 12; i++) {
+			if (i < n) {
+				CelData.vLens[i] = D3DXVECTOR4(bodies[i].dir[0], bodies[i].dir[1], bodies[i].dir[2], bodies[i].dist);
+				CelData.fLensMu[i] = bodies[i].mu;
+			}
+			else {
+				CelData.vLens[i] = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
+				CelData.fLensMu[i] = 0.0f;
+			}
+		}
+	}
+}
+
+#endif // REL_INC_CSPHERE

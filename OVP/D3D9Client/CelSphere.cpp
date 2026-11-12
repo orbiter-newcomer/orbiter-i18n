@@ -515,28 +515,9 @@ void D3D9CelestialSphere::RenderStars(ID3DXEffect *FX, bool bDisableRel)
 
 // ==============================================================
 
-// Render the complete star field into the lensing cubemap (source frame,
-// without any relativistic transformation): the background image (galaxy and
-// star chart layers) and the star dots.
-void D3D9CelestialSphere::RenderBackground(LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, int level)
-{
-	// source frame render: no aberration, no lensing here (bNoRel = true);
-	// all relativistic mapping is done by the composite pass.
-	// The tile wireframe is a debug option (Launchpad Extra tab).
-	m_bkgImgMgr->Render(dev, level, GetSkyBrightness(), pVP, pCamDir, true, Config->RelLensWireframe);
-	dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-
-	HR(s_FX->SetTechnique(s_eStar));
-	HR(s_FX->SetMatrix(s_eWVP, pVP ? pVP : m_scene->GetProjectionViewMatrix()));
-	RenderStars(s_FX, true);
-}
-
-// Render the background image into the equirectangular panorama texture. The
-// panorama is the lensing source frame: the pixel (u,v) stores the sky
-// radiance seen towards longitude u and latitude v.
-
-// ==============================================================
-
+#define REL_INC_CELSPHERE
+#include "Relativity.inc"
+#undef REL_INC_CELSPHERE
 void D3D9CelestialSphere::RenderConstellationLines(ID3DXEffect *FX)
 {
 	const FVECTOR4 baseCol(0.5f, 0.3f, 0.2f, 1.0f);

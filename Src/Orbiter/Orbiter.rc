@@ -385,7 +385,6 @@ BEGIN
     END
 
     IDD_EXTRA_DBGRENDER, DIALOG
-IDD_EXTRA_RELATIVITY, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 210
@@ -594,13 +593,9 @@ BEGIN
 	CONTROL			"Local light sources",IDC_OPT_VIS_LOCALLIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,132,154,75,10
 	LTEXT			"Ambient light level (0-255)",IDC_STATIC,12,173,82,8
 	EDITTEXT		IDC_OPT_VIS_AMBIENT,132,171,46,14,ES_AUTOHSCROLL | ES_NUMBER
-	GROUPBOX		"Relativistic effects",IDC_STATIC,6,196,208,74
-	CONTROL			"Doppler shift (red/blue)",IDC_OPT_VIS_RELDOPPLER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,208,120,10
-	CONTROL			"Aberration",IDC_OPT_VIS_RELABERRATION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,220,100,10
-	CONTROL			"Gravitational lensing",IDC_OPT_VIS_RELLENSING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,232,150,10
-	LTEXT			"Exposure adapt",IDC_STATIC,12,246,58,8
-	CONTROL			"",IDC_OPT_VIS_RELEXPOSURE,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,74,241,100,18
-	LTEXT			"K=2.0",IDC_OPT_VIS_RELEXP_DSP,180,246,30,8
+#define REL_RC_VISUAL
+#include "OrbiterRelativity.rc"
+#undef REL_RC_VISUAL
 	LTEXT			"Some graphics clients may ignore, override or extend some of these settings.",IDC_STATIC,6,276,208,30
 END
 
@@ -613,9 +608,9 @@ BEGIN
 	CONTROL			"Radiation pressure",IDC_OPT_PHYS_RPRESSURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,27,75,10
 	CONTROL			"Gravity-gradient torque",IDC_OPT_PHYS_DISTMASS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,40,87,10
     CONTROL			"Atmospheric wind effects",IDC_OPT_PHYS_WIND,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,53,95,10
-	CONTROL			"Relativistic effects",IDC_OPT_PHYS_RELATIVITY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,66,107,10
-	LTEXT			"FTL velocity:",IDC_STATIC,12,79,50,8
-	COMBOBOX		IDC_OPT_PHYS_RELFTL,64,77,95,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+#define REL_RC_PHYSICS
+#include "OrbiterRelativity.rc"
+#undef REL_RC_PHYSICS
 	GROUPBOX		"Collisions",IDC_STATIC,6,102,130,42
 	CONTROL			"Vessel-to-Base",IDC_OPT_PHYS_BASECOLLISION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,116,100,10
 	CONTROL			"Vessel-to-Vessel",IDC_OPT_PHYS_VESSELCOLLISION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,129,100,10
@@ -1644,18 +1639,19 @@ BEGIN
     LTEXT           "If activated, the screenshot is displayed in the description of the ""Current state"" scenario.",IDC_STATIC,14,125,191,28
 END
 
-IDD_EXTRA_DBGRENDER DIALOGEX 0, 0, 218, 78
+IDD_EXTRA_DBGRENDER DIALOGEX 0, 0, 218, 91
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Orbiter: Debug Rendering Options"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,7,57,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,58,57,50,14
-    PUSHBUTTON      "Reset",IDC_BUTTON1,109,57,50,14
-    PUSHBUTTON      "Help",IDC_BUTTON2,160,57,50,14
+    DEFPUSHBUTTON   "OK",IDOK,7,70,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,58,70,50,14
+    PUSHBUTTON      "Reset",IDC_BUTTON1,109,70,50,14
+    PUSHBUTTON      "Help",IDC_BUTTON2,160,70,50,14
     CONTROL         "Render objects as wire frames",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,111,10
     CONTROL         "Force normalisation of normals",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,20,111,10
+    CONTROL         "Gravitational lensing source field wireframe",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,33,200,10
 END
 
 IDD_EXTRA_LOGFILE DIALOGEX 0, 0, 225, 106
@@ -1756,18 +1752,5 @@ END
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
-IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 114
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_TOOLWINDOW
-CAPTION "Orbiter: Relativity"
-FONT 8, "MS Shell Dlg", 0, 0, 0x1
-BEGIN
-    GROUPBOX        "Gravity field solver",IDC_STATIC,7,7,212,58
-    CONTROL         "Weak field approximation (1PN)",IDC_REL_METHOD_1PN,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,20,150,10
-    CONTROL         "Exact solver (Kerr)",IDC_REL_METHOD_KERR,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,34,150,10
-    LTEXT           "Kerr solver is experimental; the 1PN solver is used for now.",IDC_STATIC,14,50,200,16
-    GROUPBOX        "Debug",IDC_STATIC,7,70,212,24
-    CONTROL         "Gravitational lensing source field wireframe",IDC_REL_LENS_WIREFRAME,"Button",BS_CHECKBOX | WS_TABSTOP,14,80,200,10
-    DEFPUSHBUTTON   "OK",IDOK,169,94,50,14
-END
+#include "OrbiterRelativity.rc"
 

@@ -8,7 +8,7 @@
 #include <windows.h>
 #include <array>
 #include "OptionsPages.h"
-#include "RelativityVisualUi.inc"   // relativistic visual UI helpers moved out of official source
+#include "RelativityUi.h"
 #include "Launchpad.h"
 #include "DlgCtrl.h"
 #include "Orbiter.h"
@@ -484,21 +484,7 @@ void OptionsPage_Visual::UpdateControls(HWND hPage)
 	sprintf(cbuf, "%d", Cfg()->CfgVisualPrm.AmbientLevel);
 	SetWindowText(GetDlgItem(hPage, IDC_OPT_VIS_AMBIENT), cbuf);
 
-	// relativistic visual effects
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELDOPPLER, BM_SETCHECK,
-		Cfg()->CfgVisualPrm.bRelDoppler ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_SETCHECK,
-		Cfg()->CfgVisualPrm.bRelAberration ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_SETCHECK,
-		Cfg()->CfgVisualPrm.bRelLensing ? BST_CHECKED : BST_UNCHECKED, 0);
-	{
-		double k = Cfg()->CfgVisualPrm.RelExposureWhite;
-		int pos = (k <= 0.0) ? 8 : (int)((k - 1.0) / 0.5 + 0.5) + 1;
-		if (pos < 1) pos = 1;
-		if (pos > 8) pos = 8;
-		SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETPOS, 1, pos);
-	}
-	UpdateRelExposureLabel(hPage);
+	RelativityVisualUpdateControls (hPage, Cfg());
 
 	VisualsChanged(hPage);
 }
@@ -536,14 +522,7 @@ void OptionsPage_Visual::UpdateConfig(HWND hPage)
 	if (!sscanf(cbuf, "%lu", &i)) i = 15; else if (i > 255) i = 255;
 	Cfg()->SetAmbientLevel(i);
 
-	// relativistic visual effects
-	Cfg()->CfgVisualPrm.bRelDoppler = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELDOPPLER, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	Cfg()->CfgVisualPrm.bRelAberration = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELABERRATION, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	Cfg()->CfgVisualPrm.bRelLensing = (SendDlgItemMessage(hPage, IDC_OPT_VIS_RELLENSING, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	{
-		int pos = (int)SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_GETPOS, 0, 0);
-		Cfg()->CfgVisualPrm.RelExposureWhite = (pos >= 8) ? 0.0 : (1.0 + (pos - 1) * 0.5);
-	}
+	RelativityVisualUpdateConfig (hPage, Cfg());
 }
 
 // ----------------------------------------------------------------------
@@ -555,11 +534,7 @@ BOOL OptionsPage_Visual::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("linear interpolation"));
 	orbiter::ComboAddStringUtf8(GetDlgItem(hPage, IDC_OPT_VIS_ELEVMODE), orbiter::Tr("cubic interpolation"));
 
-	// relativistic Doppler exposure adaptation slider range: tick 1..7 => K=1.0..4.0,
-	// rightmost tick (8) => exposure adaptation disabled
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETRANGEMAX, 1, 8);
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETRANGEMIN, 1, 1);
-	SendDlgItemMessage(hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_SETTICFREQ, 1, 0);
+	RelativityVisualInitSlider (hPage);
 	return TRUE;
 }
 
@@ -794,9 +769,7 @@ void OptionsPage_Physics::UpdateControls(HWND hPage)
 		Cfg()->CfgPhysicsPrm.bBaseCollision ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_PHYS_VESSELCOLLISION, BM_SETCHECK,
 		Cfg()->CfgPhysicsPrm.bVesselCollision ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_SETCHECK,
-		Cfg()->CfgPhysicsPrm.bRelativity ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_SETCURSEL, Cfg()->CfgPhysicsPrm.RelativityFTLMode, 0);
+	RelativityPhysicsUpdateControls (hPage, Cfg());
 }
 
 // ----------------------------------------------------------------------
@@ -809,9 +782,7 @@ void OptionsPage_Physics::UpdateConfig(HWND hPage)
 	Cfg()->CfgPhysicsPrm.bAtmWind = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_WIND, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgPhysicsPrm.bBaseCollision = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_BASECOLLISION, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgPhysicsPrm.bVesselCollision = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_VESSELCOLLISION, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	Cfg()->CfgPhysicsPrm.bRelativity = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_GETCHECK, 0, 0) == BST_CHECKED);
-	int iFTL = (int)SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_GETCURSEL, 0, 0);
-	if (iFTL >= 0 && iFTL <= 1) Cfg()->CfgPhysicsPrm.RelativityFTLMode = iFTL;
+	RelativityPhysicsUpdateConfig (hPage, Cfg());
 }
 
 // ----------------------------------------------------------------------
@@ -819,11 +790,11 @@ void OptionsPage_Physics::UpdateConfig(HWND hPage)
 BOOL OptionsPage_Physics::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 {
 	OptionsPage::OnInitDialog(hPage, wParam, lParam);
-	return TRUE;
 	// FTL velocity handling combo box
 	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Report error")).c_str());
 	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Clamp to 0.9c")).c_str());
 	SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_SETCURSEL, Cfg()->CfgPhysicsPrm.RelativityFTLMode, 0);
+	return TRUE;
 }
 
 // ----------------------------------------------------------------------
@@ -883,8 +854,7 @@ BOOL OptionsPage_Physics::OnCommand( HWND hPage, WORD ctrlId, WORD notification,
 		case IDC_OPT_PHYS_RELATIVITY:
 			if (notification == BN_CLICKED)
 			{
-				bool check = (SendDlgItemMessage(hPage, IDC_OPT_PHYS_RELATIVITY, BM_GETCHECK, 0, 0) == BST_CHECKED);
-				Cfg()->CfgPhysicsPrm.bRelativity = check;
+				RelativityPhysicsToggle (hPage, Cfg());
 				return FALSE;
 			}
 			break;

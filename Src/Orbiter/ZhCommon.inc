@@ -208,7 +208,23 @@ namespace ZhPanel {
 	//    未汉化的插件返回英文原文，同样按字体渲染流程显示
 	inline const char *MfdButtonText (const Instrument *instr, const char *label)
 	{
-		if (instr->ModeName()) return label;
+		if (instr->ModeName()) {
+			// 外部（Lua/插件）MFD：已由主程序汉化的脚本 MFD 按钮通过别名表映射
+			// （其余 MFD 的汉化由插件自治，标签保持插件返回值）
+			static const struct { const char *modeKey; const char *prefix; } zhExtMfd[] = {
+				{ "Attitude", "ATT_" },
+			};
+			const char *mode = instr->ModeName();
+			for (size_t i = 0; i < sizeof(zhExtMfd)/sizeof(zhExtMfd[0]); i++) {
+				if (!strstr (mode, zhExtMfd[i].modeKey)) continue;
+				char key[64];
+				snprintf (key, sizeof(key), "%s%s", zhExtMfd[i].prefix, label);
+				const char *txt = orbiter::Tr2 (key);
+				if (txt && *txt && strcmp (txt, key) != 0) return txt;
+				break;
+			}
+			return label;
+		}
 		// 内置 MFD：仅对语义冲突的个别标签改查别名键
 		for (size_t i = 0; i < sizeof(g_zhBuiltinBtnAliases)/sizeof(g_zhBuiltinBtnAliases[0]); i++)
 			if (g_zhBuiltinBtnAliases[i].type == instr->Type() && !strcmp (label, g_zhBuiltinBtnAliases[i].label))
@@ -332,13 +348,16 @@ void DefaultPanel::DrawZhMfdButtonLabels ()
 		// 注意：原按钮顶点每帧会被移到屏幕外，按钮位置必须提前缓存（否则从第二帧起读到
 		// -10000 的屏幕外坐标）。状态块背景顶点 Vtx[0] 不会被修改，用它的 x 变化检测面板重建。
 		static float zhRcsX[3], zhRcsY[3];
-		static float zhRcsRefX = -1.0e9f;
-		if (eg->Vtx[0].x != zhRcsRefX) {
+		static float zhRcsRefX = -1.0e9f, zhRcsRefY = -1.0e9f;
+		// 面板几何变化检测：x 和 y 都要比较（面板尺寸变化时 y 可能先变），
+		// 否则会在面板缩放后沿用旧的按钮位置（历史遗留的错位问题）。
+		if (eg->Vtx[0].x != zhRcsRefX || eg->Vtx[0].y != zhRcsRefY) {
 			for (int i = 0; i < 3; i++) {
 				zhRcsX[i] = eg->Vtx[4+i*4].x;
 				zhRcsY[i] = eg->Vtx[4+i*4].y;
 			}
 			zhRcsRefX = eg->Vtx[0].x;
+			zhRcsRefY = eg->Vtx[0].y;
 		}
 		int rcs = g_focusobj ? g_focusobj->AttMode() : -1;
 		for (int i = 0; i < 3; i++) {

@@ -1,6 +1,7 @@
 #include "TrackIR.h"
 #include "TrackIRconfig.h"
 #include "resource.h"
+#include "TrackIRZh.inc"   // 汉化扩展：界面中文文本（数据见 TrackIRZh.inc）
 #include <string.h>
 #include <stdio.h>
 #include <commctrl.h>
@@ -47,27 +48,44 @@ int TrackIRconfig::clbkWriteConfig ()
 
 void TrackIRconfig::InitDialog (HWND hDlg)
 {
-	char cbuf[256];
-	TC_ITEM tie;
-	tie.mask = TCIF_TEXT;
-	tie.iImage = -1;
-	tie.pszText = cbuf;
+	// 汉化扩展：主窗口标题 / 按钮文本（数据见 TrackIRZh.inc；英文模式无操作）
+	TrackIRZhLocalizeWindow (hDlg);
 
-	strcpy (cbuf, "Mode");
-	SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 0, (LPARAM)&tie);
+	// 页签标签：中文模式用中文（宽度不受影响），英文模式保持原版
+	static const wchar_t *zhTabLabel[4] = { L"模式", L"座舱", L"追踪", L"诊断" };
+	if (TrackIRZhActive()) {
+		TCITEMW tie;
+		tie.mask = TCIF_TEXT;
+		tie.iImage = -1;
+		for (int i = 0; i < 4; i++) {
+			tie.pszText = const_cast<LPWSTR>(zhTabLabel[i]);
+			SendDlgItemMessageW (hDlg, IDC_TAB1, TCM_INSERTITEMW, i, (LPARAM)&tie);
+		}
+	}
+	else {
+		char cbuf[256];
+		TC_ITEM tie;
+		tie.mask = TCIF_TEXT;
+		tie.iImage = -1;
+		tie.pszText = cbuf;
+
+		strcpy (cbuf, "Mode");
+		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 0, (LPARAM)&tie);
+		strcpy (cbuf, "VC");
+		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 1, (LPARAM)&tie);
+		strcpy (cbuf, "Track");
+		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 2, (LPARAM)&tie);
+		strcpy (cbuf, "Diagnostic");
+		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 3, (LPARAM)&tie);
+	}
+
 	hTab[0] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_MODE), hDlg, TabProc_mode);
-
-	strcpy (cbuf, "VC");
-	SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 1, (LPARAM)&tie);
 	hTab[1] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_VC), hDlg, TabProc_cfg);
-
-	strcpy (cbuf, "Track");
-	SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 2, (LPARAM)&tie);
 	hTab[2] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_TRACK), hDlg, TabProc_trk);
-
-	strcpy (cbuf, "Diagnostic");
-	SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 3, (LPARAM)&tie);
 	hTab[3] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_DIAGNOSTIC), hDlg, TabProc_diag);
+
+	// 汉化扩展：各页签对话框文本
+	for (int i = 0; i < NTAB; i++) TrackIRZhLocalizeWindow (hTab[i]);
 
 	SwitchTab (hDlg);
 }

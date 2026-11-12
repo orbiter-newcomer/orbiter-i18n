@@ -1181,13 +1181,7 @@ void Scene::ComputeLocalLightsVisibility()
 	VECTOR3 gsun;
 	oapiGetGlobalPos(oapiGetObjectByIndex(0), &gsun);
 
-	// Relativistic aberration: evaluate the Sun glare visibility for the
-	// apparent (aberration shifted) Sun direction. VisibilityPS suppresses the
-	// glare when this direction is outside the screen, so using the true
-	// direction makes the aberration-shifted glare disappear as soon as the
-	// true Sun leaves the field of view.
-	VECTOR3 usun = unit(gsun - Camera.pos);
-	if (bRelSunValid) usun = relSunDirVis;
+	VECTOR3 usun = RelativityApparentSunDir (unit(gsun - Camera.pos));
 
 	// Put the Sun on a top of the list
 	LLCBuf[0].index = 0.0f;
@@ -3448,29 +3442,7 @@ bool Scene::UpdateCameraFromOrbiter(DWORD dwPass)
 
 	oapiCameraGlobalDir(&Camera.dir);
 
-	// Camera velocity for the relativistic aberration (see Relativity.inc).
-	// Differentiate the global camera position over simulation time: a fixed
-	// free camera has zero velocity (no aberration), an attached camera gets
-	// approximately the focus object velocity. Note: this function is called
-	// several times per frame (e.g. once directly from the renderer and once
-	// from UpdateCamVis), so the velocity must only be updated when the
-	// simulation time has actually advanced - otherwise a same-frame call
-	// would reset it to zero and toggle the aberration off mid-frame.
-	{
-		double t = oapiGetSimTime();
-		if (camVelValid && t > camVelT + 1e-9) {
-			camVel = (Camera.pos - camVelPos) * (1.0 / (t - camVelT));
-			if (length(camVel) > 0.9999 * 299792458.0) camVel = _V(0,0,0); // camera jump/teleport
-			camVelPos = Camera.pos;
-			camVelT = t;
-		}
-		else if (!camVelValid) {
-			camVel = _V(0,0,0);
-			camVelPos = Camera.pos;
-			camVelT = t;
-			camVelValid = true;
-		}
-	}
+	RelativityUpdateCameraVelocity();
 
 	oapiCameraRotationMatrix(&grot);
 	D3DXMatrixIdentity(&Camera.mView);
@@ -3829,9 +3801,7 @@ void Scene::RenderGlares()
 			VECTOR3 gsun; oapiGetGlobalPos(oapiGetObjectByIndex(0), &gsun);
 			double sdst = length(gsun - Camera.pos);
 			VECTOR3 usun = (gsun - Camera.pos) / sdst;
-			// Relativistic effects: use the aberration-shifted apparent direction
-			// of the Sun so that the glare follows the displaced Sun disc.
-			if (bRelSunValid) usun = relSunDirVis;
+			usun = RelativityApparentSunDir (usun);
 			VECTOR3 pos = usun * 10e4;
 
 			// The glare is a large sprite: when its centre leaves the screen the
@@ -3866,13 +3836,7 @@ void Scene::RenderGlares()
 					glare *= pow(clr.MaxRGB(), 0.33f) * cis;				
 				}
 
-				// Relativistic Doppler: colour tint and beaming of the Sun glare
-				if (bRelSunValid) {
-					clr.x *= relSunTint.x;
-					clr.y *= relSunTint.y;
-					clr.z *= relSunTint.z;
-					glare *= relSunBeam;
-				}
+				RelativityApplySunGlare (clr, glare);
 							
 				float cd = length(pt - FVECTOR2(viewW, viewH) * 0.5f) / float(viewW); // Glare distance from a screen center
 				float alpha = 2.0f * glare * max(0.5f, 1.0f - cd);

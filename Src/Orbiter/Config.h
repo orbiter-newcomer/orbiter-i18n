@@ -463,6 +463,12 @@ private:
 	bool GetBool (std::istream &is, const char *category, bool &val);
 	bool GetVector (std::istream &is, const char *category, Vector &val);
 
+	// Relativity extension (implementation in RelativityConfig.inc)
+	void RelativityLoad (std::istream &is);
+	void RelativityWriteVisual (std::ostream &os, bool bEchoAll) const;
+	void RelativityWritePhysics (std::ostream &os, bool bEchoAll) const;
+	const void *GetRelativityParam (DWORD paramtype) const;
+
 	mutable char cfgpath[256];  // buffer for creating full path names
 	char mshpath[256];
 	char texpath[256];

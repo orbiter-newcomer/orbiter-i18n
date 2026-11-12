@@ -617,9 +617,7 @@ bool Config::Load(const char *fname)
 	GetBool (ifs, "BaseCollision", CfgPhysicsPrm.bBaseCollision);
 	GetBool (ifs, "VesselCollision", CfgPhysicsPrm.bVesselCollision);
 	GetBool (ifs, "StabiliseOrbits", CfgPhysicsPrm.bOrbitStabilise);
-	GetBool (ifs, "Relativity", CfgPhysicsPrm.bRelativity);
-	GetInt (ifs, "RelativityGravityMethod", CfgPhysicsPrm.RelativityGravityMethod);
-	GetInt (ifs, "RelativityFTLMode", CfgPhysicsPrm.RelativityFTLMode);
+	RelativityLoad (ifs);
 	GetReal (ifs, "StabilisePLimit", CfgPhysicsPrm.Stabilise_PLimit);
 	GetReal (ifs, "StabiliseSLimit", CfgPhysicsPrm.Stabilise_SLimit);
 	if (GetString (ifs, "PertPropSubsampling", cbuf, sizeof(cbuf)))
@@ -687,13 +685,6 @@ bool Config::Load(const char *fname)
 		CfgVisualPrm.LightBrightness = max (0.0, min (1.0, d));
 	if (GetInt (ifs, "ElevationMode", i) && i >= 0 && i <= 1)
 		CfgVisualPrm.ElevMode = i;
-	// relativistic visual effects
-	GetBool (ifs, "RelativityDoppler", CfgVisualPrm.bRelDoppler);
-	GetBool (ifs, "RelativityAberration", CfgVisualPrm.bRelAberration);
-	GetBool (ifs, "RelativityLensing", CfgVisualPrm.bRelLensing);
-	GetBool (ifs, "RelativityLensWireframe", CfgVisualPrm.bRelLensWireframe);
-	if (GetReal (ifs, "RelativityExposure", d))
-		CfgVisualPrm.RelExposureWhite = max (0.0, min (8.0, d));
 	GetBool(ifs, "EnableBackgroundStars", CfgVisualPrm.bUseStarDots);
 	if (GetString(ifs, "StarPrm", cbuf, sizeof(cbuf))) {
 		sscanf(cbuf, "%lf%lf%lf%d", &CfgVisualPrm.StarPrm.mag_hi, &CfgVisualPrm.StarPrm.mag_lo, &CfgVisualPrm.StarPrm.brt_min, &i);
@@ -911,6 +902,8 @@ void Config::SetDefaults_Capture ()
 
 const void *Config::GetParam (DWORD paramtype) const
 {
+	// Relativity extension parameters (implementation in RelativityConfig.inc)
+	if (const void *relparam = GetRelativityParam (paramtype)) return relparam;
 	switch (paramtype) {
 	case CFGPRM_SURFACEMAXLEVEL:
 		return (void*)&CfgVisualPrm.PlanetMaxLevel;
@@ -932,20 +925,6 @@ const void *Config::GetParam (DWORD paramtype) const
 		return (void*)&CfgVisualPrm.bCloudShadows;
 	case CFGPRM_PLANETARIUMFLAG:
 		return (void*)&CfgVisHelpPrm.flagPlanetarium;
-	case CFGPRM_RELDOPPLER:
-		return (void*)&CfgVisualPrm.bRelDoppler;
-	case CFGPRM_RELABERRATION:
-		return (void*)&CfgVisualPrm.bRelAberration;
-	case CFGPRM_RELLENSING:
-		return (void*)&CfgVisualPrm.bRelLensing;
-	case CFGPRM_RELLENSWIREFRAME:
-		return (void*)&CfgVisualPrm.bRelLensWireframe;
-	case CFGPRM_RELEXPOSURE:
-		return (void*)&CfgVisualPrm.RelExposureWhite;
-	case CFGPRM_PHYSRELATIVITY:
-		return (void*)&CfgPhysicsPrm.bRelativity;
-	case CFGPRM_RELGRAVMETHOD:
-		return (void*)&CfgPhysicsPrm.RelativityGravityMethod;
 	case CFGPRM_SURFMARKERFLAG:
 		return (void*)&CfgVisHelpPrm.flagMarkers;
 	case CFGPRM_STARRENDERPRM:
@@ -1122,16 +1101,7 @@ BOOL Config::Write (const char *fname) const
 			ofs << "CSphereBgIntensity = " << CfgVisualPrm.CSphereBgIntens << '\n';
 		if (CfgVisualPrm.ElevMode != CfgVisualPrm_default.ElevMode || bEchoAll)
 			ofs << "ElevationMode = " << CfgVisualPrm.ElevMode << '\n';
-		if (CfgVisualPrm.bRelDoppler != CfgVisualPrm_default.bRelDoppler || bEchoAll)
-			ofs << "RelativityDoppler = " << BoolStr (CfgVisualPrm.bRelDoppler) << '\n';
-		if (CfgVisualPrm.bRelAberration != CfgVisualPrm_default.bRelAberration || bEchoAll)
-			ofs << "RelativityAberration = " << BoolStr (CfgVisualPrm.bRelAberration) << '\n';
-		if (CfgVisualPrm.bRelLensing != CfgVisualPrm_default.bRelLensing || bEchoAll)
-			ofs << "RelativityLensing = " << BoolStr (CfgVisualPrm.bRelLensing) << '\n';
-		if (CfgVisualPrm.bRelLensWireframe != CfgVisualPrm_default.bRelLensWireframe || bEchoAll)
-			ofs << "RelativityLensWireframe = " << BoolStr (CfgVisualPrm.bRelLensWireframe) << '\n';
-		if (CfgVisualPrm.RelExposureWhite != CfgVisualPrm_default.RelExposureWhite || bEchoAll)
-			ofs << "RelativityExposure = " << CfgVisualPrm.RelExposureWhite << '\n';
+		RelativityWriteVisual (ofs, bEchoAll);
 	}
 
 	if (memcmp (&CfgCapturePrm, &CfgCapturePrm_default, sizeof(CFG_CAPTUREPRM)) || bEchoAll) {
@@ -1221,12 +1191,7 @@ BOOL Config::Write (const char *fname) const
 			ofs << "VesselCollision = " << BoolStr (CfgPhysicsPrm.bVesselCollision) << '\n';
 		if (CfgPhysicsPrm.bOrbitStabilise != CfgPhysicsPrm_default.bOrbitStabilise || bEchoAll)
 			ofs << "StabiliseOrbits = " << BoolStr (CfgPhysicsPrm.bOrbitStabilise) << '\n';
-		if (CfgPhysicsPrm.bRelativity != CfgPhysicsPrm_default.bRelativity || bEchoAll)
-			ofs << "Relativity = " << BoolStr (CfgPhysicsPrm.bRelativity) << '\n';
-		if (CfgPhysicsPrm.RelativityGravityMethod != CfgPhysicsPrm_default.RelativityGravityMethod || bEchoAll)
-			ofs << "RelativityGravityMethod = " << CfgPhysicsPrm.RelativityGravityMethod << '\n';
-		if (CfgPhysicsPrm.RelativityFTLMode != CfgPhysicsPrm_default.RelativityFTLMode || bEchoAll)
-			ofs << "RelativityFTLMode = " << CfgPhysicsPrm.RelativityFTLMode << '\n';
+		RelativityWritePhysics (ofs, bEchoAll);
 		if (CfgPhysicsPrm.Stabilise_PLimit != CfgPhysicsPrm_default.Stabilise_PLimit || bEchoAll)
 			ofs << "StabilisePLimit = " << CfgPhysicsPrm.Stabilise_PLimit << '\n';
 		if (CfgPhysicsPrm.Stabilise_SLimit != CfgPhysicsPrm_default.Stabilise_SLimit || bEchoAll)
@@ -1652,3 +1617,6 @@ bool Config::GetVector (const char *category, Vector &val)
 	if (!ifs) return false;
 	return GetVector (ifs, category, val);
 }
+
+// Relativity extension configuration handling (implementation)
+#include "RelativityConfig.inc"

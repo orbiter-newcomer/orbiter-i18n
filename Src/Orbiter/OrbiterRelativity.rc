@@ -1,0 +1,48 @@
+// ------------------------------------------------------------------------------
+// Relativity extension resources.
+//
+// This file is included from Orbiter.rc at three locations, selected by a macro:
+//   REL_RC_VISUAL  : controls of the Options -> Visual page
+//   REL_RC_PHYSICS : controls of the Options -> Physics page
+//   (none)         : the "Relativity" gravity solver dialog (launchpad Extra tab)
+// ------------------------------------------------------------------------------
+
+#ifdef REL_RC_VISUAL
+
+// Relativistic visual-effect controls for the IDD_OPTIONS_VISUAL page.
+	GROUPBOX		"Relativistic effects",IDC_STATIC,6,196,208,74
+	CONTROL			"Doppler shift (red/blue)",IDC_OPT_VIS_RELDOPPLER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,208,120,10
+	CONTROL			"Aberration",IDC_OPT_VIS_RELABERRATION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,220,100,10
+	CONTROL			"Gravitational lensing",IDC_OPT_VIS_RELLENSING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,232,150,10
+	LTEXT			"Exposure adapt",IDC_STATIC,12,246,58,8
+	CONTROL			"",IDC_OPT_VIS_RELEXPOSURE,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,74,241,100,18
+	LTEXT			"K=2.0",IDC_OPT_VIS_RELEXP_DSP,180,246,30,8
+
+#else
+#ifdef REL_RC_PHYSICS
+
+// Relativistic physics controls for the IDD_OPTIONS_PHYSICS page.
+	CONTROL			"Relativistic effects",IDC_OPT_PHYS_RELATIVITY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,66,107,10
+	LTEXT			"FTL velocity:",IDC_STATIC,12,79,50,8
+	COMBOBOX		IDC_OPT_PHYS_RELFTL,64,77,95,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+
+#else
+
+// Relativity effects dialog (launchpad Extra tab).
+
+IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 114
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Orbiter: Relativity effects"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "Gravity model",IDC_STATIC,7,7,212,74
+    CONTROL         "Newtonian model",IDC_REL_METHOD_NEWTON,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,20,150,10
+    CONTROL         "Weak field approximation (1PN)",IDC_REL_METHOD_1PN,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,34,150,10
+    CONTROL         "Exact solver (Kerr)",IDC_REL_METHOD_KERR,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,48,150,10
+    LTEXT           "Kerr solver is experimental; the 1PN solver is used for now.",IDC_STATIC,14,64,200,16
+    DEFPUSHBUTTON   "OK",IDOK,169,94,50,14
+END
+
+#endif
+#endif

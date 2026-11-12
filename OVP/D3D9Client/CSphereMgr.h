@@ -90,6 +90,10 @@ public:
 
 	void Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl, const D3DXMATRIX *pVP = NULL, const VECTOR3 *pCamDir = NULL, bool bNoRel = false, bool bWireframe = false, bool bPano = false);
 
+	// Relativity extension (implementation in RelativityCSphere.inc)
+	void RelativitySetupCulling (const D3DXMATRIX *pVP, const VECTOR3 *pCamDir, bool bNoRel);
+	void RelativitySetupCelData (LPDIRECT3DDEVICE9 dev, const D3DXMATRIX *pVP, bool bNoRel, bool bWireframe, bool bPano);
+
 protected:
 	bool LoadPatchData ();
 	bool LoadTileData ();

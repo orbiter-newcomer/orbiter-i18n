@@ -27,6 +27,10 @@ using namespace std;
 // Externals
 
 extern Orbiter *g_pOrbiter;
+
+#define REL_PHYS_RIGIDBODY
+#include "RelativityPhysics.inc"
+#undef REL_PHYS_RIGIDBODY
 extern TimeData td;
 extern PlanetarySystem *g_psys; // pointer to planetary system
 extern char DBG_MSG[256];
@@ -377,26 +381,8 @@ void RigidBody::GetIntermediateMoments_pert (Vector &acc, Vector &tau,
 #ifdef NO_GRAV_PERT
 	acc.Set (0,0,0);
 	tau.Set (0,0,0);
-	// Numerically stabilised (Encke) propagation normally ignores all
-	// gravitational perturbations to stay on the two-body reference orbit.
-	// Relativistic corrections, however, are small *secular* perturbations
-	// (they drive effects such as the Lense-Thirring node precession) and must
-	// not be dropped here. They are added as a perturbation: exact relativistic
-	// single-source acceleration minus the Newtonian two-body reference
-	// acceleration. The correction is O(v^2/c^2 or GM/(rc^2)) of the primary
-	// gravity, i.e. well within the range Encke's method is designed for.
-	if (cbody && g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) {
-		Vector rpos, rvel;
-		rpos.Set (-state_rel.pos.x, -state_rel.pos.y, -state_rel.pos.z); // central body -> vessel
-		rvel.Set (state_rel.vel.x, state_rel.vel.y, state_rel.vel.z);    // vessel velocity relative to central body
-		Vector a_newton = SingleGacc (rpos, cbody);
-		// SingleGacc_kerr now converts its coordinate acceleration to the global
-		// coordinate time (the Kerr-Schild time differs from the global time by
-		// a radial term), so the exact Kerr solution can be used here as well.
-		Vector a_rel = (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 1 ?
-			SingleGacc_kerr (rpos, rvel, cbody) : SingleGacc_pn (rpos, rvel, cbody));
-		acc.Set (a_rel.x - a_newton.x, a_rel.y - a_newton.y, a_rel.z - a_newton.z);
-	}
+	// Relativistic corrections as an Encke perturbation (implementation in RelativityRigidbody.inc)
+	RelativityEnckePerturbation (acc, cbody, state_rel);
 #else
 	Vector gpos = state_rel.pos + cbody->InterpolatePosition (tfrac);
 	// linear acceleration due to graviational field

@@ -269,58 +269,7 @@ typedef void *HDC;
   */
 #define CFGPRM_SURFMARKERFLAG 0x0026
 
-/**
- * Relativistic Doppler shift visual effect (graphics client extension)
- * \par Parameter type:
- *   bool
- */
-#define CFGPRM_RELDOPPLER 0x0027
-
-/**
- * Relativistic aberration visual effect (graphics client extension)
- * \par Parameter type:
- *   bool
- */
-#define CFGPRM_RELABERRATION 0x0028
-
-/**
- * Relativistic Doppler observer exposure adaptation white point.
- * 0 = exposure adaptation disabled (graphics client extension)
- * \par Parameter type:
- *   double
- */
-#define CFGPRM_RELEXPOSURE 0x0029
-
-/**
- * Relativistic gravitational lensing visual effect (graphics client extension)
- * \par Parameter type:
- *   bool
- */
-#define CFGPRM_RELLENSING 0x002A
-
-/**
- * Main physics engine relativity switch. When disabled, all relativistic
- * visual effects are disabled as well (graphics client extension).
- * \par Parameter type:
- *   bool
- */
-#define CFGPRM_PHYSRELATIVITY 0x002B
-
-/**
- * Relativity gravity solver: 0 = 1PN weak field, 1 = Kerr exact
- * (graphics client extension)
- * \par Parameter type:
- *   int
- */
-#define CFGPRM_RELGRAVMETHOD 0x002C
-/**
- * \brief Debug option: render the gravitational lensing source field (star
- *   field cubemap) as a tile wireframe.
- * \note Graphics client extension. Mainly used to inspect the lensing mapping.
- * \par Parameter type:
- *   bool
- */
-#define CFGPRM_RELLENSWIREFRAME 0x002D
+#include "RelativityAPI.h"
 /// @}
 
 /**

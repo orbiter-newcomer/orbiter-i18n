@@ -417,47 +417,7 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl, con
 	RenderParam.dev = dev;
 	RenderParam.tgtlvl = level;
 	RenderParam.wmat = trans;
-	// A cubemap face (used for the lensing) has a 90 degree field of view and
-	// its own view direction instead of the camera.
-	RenderParam.viewap = (pCamDir ? atan(sqrt(2.0) * tan(PI / 4.0)) : atan(diagscale * tan(scn->GetCameraAperture())));
-
-	// When rendering a cubemap face (pVP != NULL) the tile visibility must not
-	// be tested against the main camera frustum: the cubemap covers the whole
-	// sky while the camera only sees a small part of it. Tiles outside the
-	// camera frustum would be rejected and the cubemap would be incomplete.
-	m_bNoCull = (pVP != NULL);
-
-	// Relativistic aberration of the celestial sphere background image.
-	// When active, the tiles must not be culled by the (un-shifted) view cone:
-	// aberration moves sky directions from the rest frame into the observer
-	// frame, so tiles that are outside the nominal view cone can end up inside
-	// the rendered image.  Expand the culling cone to the rest-frame angle that
-	// maps onto the visible field of view.
-	if (!bNoRel) {
-		float relBeta = 0.0f;
-		D3DXVECTOR3 relDir(0.0f, 0.0f, 1.0f);
-		m_aberrOn = scn->GetRelativityAberration(relBeta, relDir);
-		m_aberrBeta = relBeta;
-		m_aberrDir = relDir;
-		{
-			static int dbg = -1;		// diagnostic: log state changes only
-			if ((int)m_aberrOn != dbg) {
-				dbg = (int)m_aberrOn;
-				LogAlw("CelSphere: aberration=%d beta=%.4f", (int)m_aberrOn, m_aberrBeta);
-			}
-		}
-		if (m_aberrOn) {
-			double cb = cos(RenderParam.viewap);
-			double c2 = (cb - (double)relBeta) / max(1.0 - (double)relBeta * cb, 1e-9);
-			c2 = max(-1.0, min(1.0, c2));
-			RenderParam.viewap = acos(c2);
-		}
-	}
-	else {
-		m_aberrOn = false;
-		m_aberrBeta = 0.0f;
-		m_aberrDir = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
-	}
+	RelativitySetupCulling (pVP, pCamDir, bNoRel);
 
 	int startlvl = min (level, 8);
 	int hemisp, ilat, ilng, idx;
@@ -486,45 +446,7 @@ void CSphereManager::Render (LPDIRECT3DDEVICE9 dev, int level, double bglvl, con
 	CelFlow.bBeta = m_bStarImg;
 	CelData.fAlpha = intens;
 	CelData.fBeta = bgscale;
-	CelData.mViewProj = (pVP ? *pVP : *scn->GetProjectionViewMatrix());
-
-	// TEMP DIAGNOSTIC: flat white tiles rendered as wireframe to visualise the
-	// background tile boundaries inside the lensing cubemap.
-	CelData.fColorMode = bWireframe ? 1.0f : 0.0f;
-	CelData.fPanoMode = bPano ? 1.0f : 0.0f;
-	CelData.fPanoCenterU = 0.5f;
-	if (bWireframe) {
-		HR(dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME));
-	}
-
-	// Relativistic aberration of the celestial sphere background image
-	if (m_aberrOn) {
-		CelData.vAberr = D3DXVECTOR4(m_aberrDir.x, m_aberrDir.y, m_aberrDir.z, m_aberrBeta);
-		CelData.fAberrOn = 1.0f;
-	}
-	else {
-		CelData.vAberr = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
-		CelData.fAberrOn = 0.0f;
-	}
-
-	// Gravitational lensing bodies (Relativity.inc)
-	{
-		const Scene::LENSBODY *bodies = NULL;
-		int n = bNoRel ? 0 : scn->GetLensBodies(&bodies);
-		if (n > 12) n = 12;
-		CelData.fLensCount = (float)n;
-		CelData.fLensModel = scn->GetLensModel();
-		for (int i = 0; i < 12; i++) {
-			if (i < n) {
-				CelData.vLens[i] = D3DXVECTOR4(bodies[i].dir[0], bodies[i].dir[1], bodies[i].dir[2], bodies[i].dist);
-				CelData.fLensMu[i] = bodies[i].mu;
-			}
-			else {
-				CelData.vLens[i] = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
-				CelData.fLensMu[i] = 0.0f;
-			}
-		}
-	}
+	RelativitySetupCelData (dev, pVP, bNoRel, bWireframe, bPano);
 
 	pShader->Setup(pPatchVertexDecl, false, 0);
 	pShader->ClearTextures();
@@ -671,5 +593,7 @@ bool CSphereManager::TileInView (int lvl, int ilat)
 	return gc->GetScene()->IsVisibleInCamera(&vP, mesh.bsRad);
 }
 
-
-
+// Relativity extension implementation (moved out of this file)
+#define REL_INC_CSPHERE
+#include "Relativity.inc"
+#undef REL_INC_CSPHERE
