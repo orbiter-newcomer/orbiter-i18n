@@ -78,25 +78,8 @@ sampler2D tTexB;
 // where alpha is measured from the outward radial direction.
 float3 FrameInverseInv(float3 d)
 {
-	float mu = Const.fFrame.x;
-	float r  = Const.fFrame.y;
-	if (mu <= 1e-6 || r <= 1.0) return d;
-	float rs = 2.0 * mu;
-	float f = 1.0 - rs / r;
-	if (f <= 1e-4) return d;			// inside/near the horizon: leave unchanged
-	float fs = sqrt(max(f, 1e-6));
-	float3 er = normalize(-Const.vFrameDir.xyz);	// outward radial
-	float cosA = dot(d, er);
-	float sin2 = max(0.0, 1.0 - cosA * cosA);
-	float sinA = sqrt(sin2);
-	float L = sqrt(max(cosA * cosA + sin2 * fs * fs, 1e-9));
-	float cosL = clamp(cosA / L, -1.0, 1.0);
-	float sinL = sqrt(max(0.0, 1.0 - cosL * cosL));
-	float3 eperp = d - er * cosA;
-	float pl = length(eperp);
-	if (pl > 1e-6) eperp = eperp / pl;
-	else eperp = float3(0.0, 0.0, 0.0);
-	return normalize(er * cosL + eperp * sinL);
+	// shared implementation: RelativityMapping.hlsl
+	return RelFrameMapInv(d, Const.vFrameDir.xyz, Const.fFrame.x, Const.fFrame.y);
 }
 
 CelSphereVS CelVS(TILEVERTEX vrt)
@@ -105,25 +88,42 @@ CelSphereVS CelVS(TILEVERTEX vrt)
 	CelSphereVS outVS = (CelSphereVS)0;
 	float3 posW = mul(float4(vrt.posL, 1.0f), Const.mWorld).xyz;
 
-	// Gravitational lensing (small deflections only): the plain star field must
-	// follow the same small deflection as the lensed cubemap near the "hole"
-	// boundary, otherwise the two images are offset there (visible seam). Only
-	// the first-order inverse of LensDirection() is applied and the shift is
-	// clamped to a few degrees: the strong-field part is rendered by the cubemap
-	// composite and large vertex displacements would tear the tile mesh.
+	// Gravitational lensing (exact inverse, stabilized): the plain star field
+	// must follow the same mapping as the lensed cubemap near the "hole"
+	// boundary. The cubemap composite uses LensInverseCompat(observed)->source;
+	// here the inverse problem is solved with the smooth first-order inverse as
+	// the initial guess and a few damped, displacement-limited refinement steps
+	// on the exact mapping. If the refinement does not converge (strong or
+	// folded field) the smooth first-order result is kept, so the tile mesh
+	// never tears; the strong-field part is fully covered by the cubemap.
 	if (Const.fLensCount > 0.5) {
 		float lenL = length(posW);
 		if (lenL > 1e-6) {
-			float3 dL = posW / lenL;
-			float3 dSrc = LensDirection(dL);		// observed -> source
-			float3 delta = dSrc - dL;
-			float dl = length(delta);
-			if (dl > 1e-6) {
-				const float maxA = 0.0873;			// clamp ~5 deg
-				if (dl > maxA) delta *= (maxA / dl);
-				// first-order inverse: observed ~= source - delta
-				posW = normalize(dL - delta) * lenL;
+			float3 dSrc = posW / lenL;
+			// smooth first-order inverse as the initial guess
+			float3 dFirst = LensDirection(dSrc);			// observed -> source
+			float3 delta0 = dFirst - dSrc;
+			float3 dGuess = normalize(dSrc - delta0);		// observed direction guess
+			float3 dObs = dGuess;
+			float3 dCheck = LensInverseCompat(dObs);		// observed -> source
+			[unroll] for (int itL = 0; itL < 2; itL++) {
+				float3 corr = dSrc - dCheck;
+				float cl = length(corr);
+				if (cl > 1e-6f) {
+					float lim = min(cl, 0.0175f);			// max ~1 deg correction step
+					dObs = normalize(dObs + corr * (lim / cl));
+					dCheck = LensInverseCompat(dObs);
+				}
 			}
+			// convergence guard: fall back to the smooth first-order result
+			float res = length(dSrc - dCheck);
+			if (!(res < 0.02f)) dObs = dGuess;
+			// final displacement limit (~5 deg); larger deflections are cubemap-only
+			float3 delta = dObs - dSrc;
+			float dl = length(delta);
+			const float maxA = 0.0873;
+			if (dl > maxA) dObs = normalize(dSrc + delta * (maxA / dl));
+			posW = dObs * lenL;
 		}
 	}
 

@@ -7,22 +7,15 @@
 // Requires: CelDataStruct Const (uniform) to be declared before inclusion.
 // ==============================================================
 
+#include "RelativityMapping.hlsl"
+
 // Relativistic aberration: shift a celestial-sphere direction from the rest
 // frame to the observer frame.  cos(theta') = (cos(theta)+beta)/(1+beta*cos(theta))
 // (all orders in beta; the transverse direction is preserved).
 float3 AberrateDir(float3 d)
 {
-	float beta = Const.vAberr.w;
-	float3 vdir = Const.vAberr.xyz;
-
-	float c  = dot(d, vdir);
-	float c2 = (c + beta) / max(1.0 + beta * c, 1e-6);
-	c2 = clamp(c2, -1.0, 1.0);
-
-	float3 perp = d - vdir * c;
-	float pl = length(perp);
-	perp = (pl > 1e-6) ? perp / pl : float3(0.0, 0.0, 0.0);
-	return normalize(vdir * c2 + perp * sqrt(max(0.0, 1.0 - c2 * c2)));
+	// shared implementation: RelativityMapping.hlsl
+	return RelAberrate(d, Const.vAberr.w, Const.vAberr.xyz);
 }
 
 // Gravitational lensing: bend the sampling direction near the celestial
@@ -70,4 +63,41 @@ float3 LensDirection(float3 d)
 		d = normalize(d - perp * alpha);
 	}
 	return d;
+}
+
+// ---------------------------------------------------------------------
+// Exact gravitational lensing (same math as the lensed cubemap composite):
+// Schwarzschild deflection with the strong/weak field blend, applied to all
+// significant bodies as a proper rotation. This is the observed -> source
+// mapping LensInverseCompat(); the plain star field vertex path inverts it
+// numerically, so both paths follow exactly the same mapping and stay
+// continuous at the "hole" boundary.
+// The Kerr spin correction of the composite version is omitted here (it is a
+// small term; the spin-drag rotation is applied separately).
+// ---------------------------------------------------------------------
+// (LensDeflectionSchw lives in RelativityMapping.hlsl)
+
+float3 LensInverseOnceCompat(float3 d, int n, bool bKerr)
+{
+	// shared single-body lensing step (RelativityMapping.hlsl). The spin-drag
+	// correction of the composite path is omitted for the vertex path (it is a
+	// small term and is applied separately as a frame rotation).
+	float3 noSpin = float3(0.0f, 1.0f, 0.0f);
+	[loop] for (int i = 0; i < 4; i++) {
+		if (i >= n) continue;
+		float4 ld = Const.vLens[i];
+		d = RelLensStep(d, ld.xyz, ld.w, Const.fLensMu[i], bKerr, noSpin, 0.0f);
+	}
+	return d;
+}
+
+// observed direction -> source direction (single damped mapping step)
+float3 LensInverseCompat(float3 d)
+{
+	int n = (int)Const.fLensCount;
+	bool bKerr = (Const.fLensModel > 0.5f);
+	float3 d0 = d;
+	d = normalize(lerp(d0, LensInverseOnceCompat(d0, n, bKerr), 0.75f));
+	if (!(dot(d, d) > 0.25f)) d = d0;
+	return normalize(d);
 }

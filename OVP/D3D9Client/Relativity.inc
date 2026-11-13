@@ -203,6 +203,8 @@ struct STARS_LENS_CONST {
 	D3DXVECTOR4 fFrame;			// x = GM/c^2 [m], y = observer distance [m], z = enable flag
 	D3DXVECTOR4 vFrameSpin;		// xyz = dominant source spin axis (world frame), w = Kerr a/M
 	D3DXVECTOR4 fBlend;			// x = blend start [rad], y = blend end [rad], z = brightness gain
+	D3DXVECTOR4 vHoleDisk;		// xyz = dominant lens body direction (world frame),
+								// w = disk radius [rad] (0 = disabled)
 };
 
 void Scene::InitLensCubemap()
@@ -375,12 +377,17 @@ void Scene::CompositeStarField()
 			c.vFrameDir = D3DXVECTOR4(bodies[dom].dir[0], bodies[dom].dir[1], bodies[dom].dir[2], 0.0f);
 			c.fFrame = D3DXVECTOR4(bodies[dom].mu, bodies[dom].dist, 1.0f, (float)dom);
 			c.vFrameSpin = D3DXVECTOR4(bodies[dom].axis[0], bodies[dom].axis[1], bodies[dom].axis[2], bodies[dom].aM);
+			// minimum-size circular hole: the lensed region always includes a disk
+			// of 2.5 deg radius around the dominant body's apparent direction, so
+			// the fully lensed core can never degenerate into a small isolated patch.
+			c.vHoleDisk = D3DXVECTOR4(bodies[dom].dir[0], bodies[dom].dir[1], bodies[dom].dir[2], 0.043633231f);	// 2.5 deg radius -> 5 deg diameter
 			RelLog("Frame: dom=%d mu=%.4e r=%.4e rs/r=%.4f", dom, bodies[dom].mu, bodies[dom].dist, 2.0*bodies[dom].mu/bodies[dom].dist);
 		}
 		else {
 			c.vFrameDir = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
 			c.fFrame = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 0.0f);
 			c.vFrameSpin = D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f);
+			c.vHoleDisk = D3DXVECTOR4(0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
