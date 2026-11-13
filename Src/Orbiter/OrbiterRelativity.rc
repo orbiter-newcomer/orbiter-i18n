@@ -31,7 +31,7 @@
 
 // Relativity effects dialog (launchpad Extra tab).
 
-IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 114
+IDD_EXTRA_RELATIVITY DIALOGEX 0, 0, 226, 138
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Orbiter: Relativity effects"
@@ -42,7 +42,9 @@ BEGIN
     CONTROL         "Weak field approximation (1PN)",IDC_REL_METHOD_1PN,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,34,150,10
     CONTROL         "Exact solver (Kerr)",IDC_REL_METHOD_KERR,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,14,48,150,10
     LTEXT           "Kerr solver is experimental; the 1PN solver is used for now.",IDC_STATIC,14,64,200,16
-    DEFPUSHBUTTON   "OK",IDOK,169,94,50,14
+    GROUPBOX        "Charge-induced gravity (compact bodies)",IDC_STATIC,7,86,212,30
+    CONTROL         "Enable charge effect (Reissner-Nordstrom)",IDC_REL_CHARGE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,99,190,10
+    DEFPUSHBUTTON   "OK",IDOK,169,118,50,14
 END
 
 #endif

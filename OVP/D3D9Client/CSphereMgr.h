@@ -50,6 +50,11 @@ public:
 		// gravitational aberration (static observer inside the potential well)
 		D3DXVECTOR4 vFrameDir;	// xyz = observer -> dominant body (world frame), w = enable flag
 		D3DXVECTOR4 fFrame;		// x = GM/c^2 [m], y = observer distance [m], z/w = unused
+		// charge-induced gravity (Reissner-Nordstrom) for compact bodies
+		D3DXVECTOR4 vCharge;	// x = effect on (0/1), y = q = r_Q/r_s
+		// vertex displacement limit of the plain star field lensing (rad), bound
+		// to the hole blend parameters: min(2 deg, LensBlendEnd)
+		D3DXVECTOR4 vVertex;
 	} CelData;
 
 	struct CelDataFlow

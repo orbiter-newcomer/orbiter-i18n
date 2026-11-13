@@ -86,6 +86,8 @@ public:
 	int RelGravRedshift;			///< Relativistic gravitational redshift visual effect (0=off, 1=on)
 	int RelBodyMarkers;				///< Debug: markers at relativity-shifted body positions (0=off, 1=on)
 	int RelGravityMethod;			///< Relativity gravity solver from the physics engine (0=1PN, 1=Kerr)
+	int RelCharge;					///< Charge-induced gravity (Reissner-Nordstrom) for compact bodies (0=off, 1=on)
+	double RelChargeRatio;			///< Charge ratio q = r_Q/r_s used by the visual effects
 	int RelInternalMode;			///< Relativistic geometric effects in cockpit view (0=full, 1=doppler only, 2=off)
 	double RelExposureWhite;		///< Doppler observer exposure adaptation white point (0=disabled, default 2.0)
 	double RelNearGuard;			///< near-field protection distance [m] (0=disabled, default 500)

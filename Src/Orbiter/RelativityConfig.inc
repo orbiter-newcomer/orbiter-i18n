@@ -10,6 +10,7 @@ void Config::RelativityLoad (std::istream &ifs)
 	GetBool (ifs, "Relativity", CfgPhysicsPrm.bRelativity);
 	GetInt (ifs, "RelativityGravityMethod", CfgPhysicsPrm.RelativityGravityMethod);
 	GetInt (ifs, "RelativityFTLMode", CfgPhysicsPrm.RelativityFTLMode);
+	GetBool (ifs, "RelativityCharge", CfgPhysicsPrm.bRelativisticCharge);
 	double d;
 	// relativistic visual effects
 	GetBool (ifs, "RelativityDoppler", CfgVisualPrm.bRelDoppler);
@@ -18,6 +19,8 @@ void Config::RelativityLoad (std::istream &ifs)
 	GetBool (ifs, "RelativityLensWireframe", CfgVisualPrm.bRelLensWireframe);
 	GetBool (ifs, "RelativityGravRedshift", CfgVisualPrm.bRelGravRedshift);
 	GetBool (ifs, "RelativityBodyMarkers", CfgVisualPrm.bRelBodyMarkers);
+	if (GetReal (ifs, "RelativityChargeRatio", d))
+		CfgPhysicsPrm.RelChargeRatio = max (0.0, min (1.0, d));
 	if (GetReal (ifs, "RelativityExposure", d))
 		CfgVisualPrm.RelExposureWhite = max (0.0, min (8.0, d));
 }
@@ -45,7 +48,11 @@ void Config::RelativityWritePhysics (std::ostream &ofs, bool bEchoAll) const
 			ofs << "Relativity = " << BoolStr (CfgPhysicsPrm.bRelativity) << '\n';
 		if (CfgPhysicsPrm.RelativityGravityMethod != CfgPhysicsPrm_default.RelativityGravityMethod || bEchoAll)
 			ofs << "RelativityGravityMethod = " << CfgPhysicsPrm.RelativityGravityMethod << '\n';
-		if (CfgPhysicsPrm.RelativityFTLMode != CfgPhysicsPrm_default.RelativityFTLMode || bEchoAll)
+		if (CfgPhysicsPrm.bRelativisticCharge != CfgPhysicsPrm_default.bRelativisticCharge || bEchoAll)
+		ofs << "RelativityCharge = " << BoolStr (CfgPhysicsPrm.bRelativisticCharge) << '\n';
+	if (CfgPhysicsPrm.RelChargeRatio != CfgPhysicsPrm_default.RelChargeRatio || bEchoAll)
+		ofs << "RelativityChargeRatio = " << CfgPhysicsPrm.RelChargeRatio << '\n';
+	if (CfgPhysicsPrm.RelativityFTLMode != CfgPhysicsPrm_default.RelativityFTLMode || bEchoAll)
 			ofs << "RelativityFTLMode = " << CfgPhysicsPrm.RelativityFTLMode << '\n';
 }
 
@@ -67,6 +74,10 @@ const void *Config::GetRelativityParam (DWORD paramtype) const
 		return (void*)&CfgVisualPrm.RelExposureWhite;
 	case CFGPRM_PHYSRELATIVITY:
 		return (void*)&CfgPhysicsPrm.bRelativity;
+	case CFGPRM_RELCHARGE:
+		return (void*)&CfgPhysicsPrm.bRelativisticCharge;
+	case CFGPRM_RELCHARGERATIO:
+		return (void*)&CfgPhysicsPrm.RelChargeRatio;
 	case CFGPRM_RELGRAVMETHOD:
 		return (void*)&CfgPhysicsPrm.RelativityGravityMethod;
 	}

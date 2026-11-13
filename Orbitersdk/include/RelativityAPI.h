@@ -73,6 +73,13 @@
 /** Debug: draw markers at the relativity-shifted apparent positions of the bodies (bool). */
 #define CFGPRM_RELBODYMARKERS 0x002F
 
+/** Charge-induced gravity (Reissner-Nordstrom) for compact relativistic bodies
+ *  (black holes / neutron stars). bool. */
+#define CFGPRM_RELCHARGE 0x0030
+
+/** Charge ratio q = r_Q/r_s for the compact bodies (double, 0..1). */
+#define CFGPRM_RELCHARGERATIO 0x0031
+
 // --- API functions -----------------------------------------------------
 
 /**

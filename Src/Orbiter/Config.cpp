@@ -66,7 +66,9 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	3600.0*RAD,	// APropTorqueLimit (angle step limit for torque suppression)
 	false,		// bRelativity (relativistic effects disabled by default)
 	0,			// RelativityGravityMethod (0=1PN weak field)
-	0			// RelativityFTLMode (0=report error, 1=clamp to 0.99c)
+	0,			// RelativityFTLMode (0=report error, 1=clamp to 0.99c)
+	false,		// bRelativisticCharge (charge-induced gravity disabled by default)
+	0.5			// RelChargeRatio (r_Q/r_s; 0.5 = clearly visible)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {

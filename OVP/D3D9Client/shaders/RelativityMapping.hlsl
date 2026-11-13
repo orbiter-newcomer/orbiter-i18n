@@ -83,14 +83,14 @@ float RelLensDeflectionSchw(float mu, float b)
 //   positive: local frame -> coordinate frame (shadow flag out)
 //   inverse : coordinate frame -> local frame
 // ---------------------------------------------------------------------
-float3 RelFrameMap(float3 d, float3 inwardDir, float mu, float r, bool bStrong, out float shadow)
+float3 RelFrameMap(float3 d, float3 inwardDir, float mu, float r, bool bStrong, float rQ2, out float shadow)
 {
 	shadow = 0.0f;
 	if (mu <= 1e-6f || r <= 1.0f) return d;
 
 	float3 er = -inwardDir;					// outward radial
 	float rs = 2.0f * mu;
-	float f = 1.0f - rs / r;
+	float f = 1.0f - rs / r + rQ2 / (r * r);	// Reissner-Nordstrom charge term
 
 	// Model tier: weak field (1PN) uses the first order frame factor far from
 	// the body, but near the horizon the first order expansion is invalid (it
@@ -134,11 +134,11 @@ float3 RelFrameMap(float3 d, float3 inwardDir, float mu, float r, bool bStrong, 
 	return normalize(er * cosG + eperp * sinG);
 }
 
-float3 RelFrameMapInv(float3 d, float3 inwardDir, float mu, float r)
+float3 RelFrameMapInv(float3 d, float3 inwardDir, float mu, float r, float rQ2)
 {
 	if (mu <= 1e-6f || r <= 1.0f) return d;
 	float rs = 2.0f * mu;
-	float f = 1.0f - rs / r;
+	float f = 1.0f - rs / r + rQ2 / (r * r);	// Reissner-Nordstrom charge term
 	if (f <= 1e-4f) return d;			// inside/near the horizon: leave unchanged
 	float fs = sqrt(max(f, 1e-6f));
 	float3 er = normalize(-inwardDir);	// outward radial
@@ -198,7 +198,7 @@ float3 RelDragRotate(float3 d, float3 spinAxis, float aM, float mu, float r, boo
 // asymmetric about the spin axis (spin-orbit coupling).
 // ---------------------------------------------------------------------
 float3 RelLensStep(float3 d, float3 bodyDir, float dist, float mu, bool bKerr,
-                   float3 spinAxis, float aM)
+                   float3 spinAxis, float aM, float q)
 {
 	if (dist < 1.0f || mu < 1e-6f) return d;
 	if (dot(d, bodyDir) <= 0.0f) return d;
@@ -218,6 +218,18 @@ float3 RelLensStep(float3 d, float3 bodyDir, float dist, float mu, bool bKerr,
 	else                alpha = 4.0f * mu / b;
 	if (!(alpha >= 0.0f)) alpha = 0.0f;		// NaN/negative guard
 	alpha = min(alpha, 1.2f);					// limiter (rad)
+
+	// Charge (Reissner-Nordstrom) correction: the charge adds a repulsive
+	// +r_Q^2/(2 r^2) potential term, which slightly reduces the deflection.
+	// First-order estimate: alpha_Q ~ -3 * r_Q^2 * mu / b^3  (r_Q^2 = (q rs)^2).
+	if (q > 0.0f) {
+		float rsQ = 2.0f * mu;
+		float rQ2 = q * q * rsQ * rsQ;
+		float dA = 3.0f * rQ2 * mu / (b * b * b);
+		dA = min(dA, alpha * 0.5f);		// cap: at most halve the deflection
+		alpha -= dA;
+		if (alpha < 0.0f) alpha = 0.0f;
+	}
 
 	// First order Kerr spin correction (weak field limit)
 	if (bKerr) {

@@ -29,6 +29,7 @@ struct StarsLensConst
 	float4   vFrameSpin;	// xyz = dominant source spin axis (world frame), w = Kerr a/M
 	float4   fBlend;		// x = blend start [rad], y = blend end [rad], z = brightness gain
 	float4   vHoleDisk;		// xyz = dominant lens body direction (world frame), w = disk radius [rad]
+	float4   vCharge;		// x = charge effect on, y = q = r_Q/r_s
 };
 
 uniform extern StarsLensConst Const;
@@ -96,8 +97,11 @@ float3 FrameInverse(float3 d, out float shadow)
 	shadow = 0.0f;
 	if (Const.fFrame.z < 0.5f) return d;
 	// shared implementation: RelativityMapping.hlsl
+	// charge (RN) term: r_Q^2 = q^2 * rs^2 = q^2 * (2 mu)^2
+	float rQ2 = (Const.vCharge.x > 0.5f) ?
+		(Const.vCharge.y * Const.vCharge.y * 4.0f * Const.fFrame.x * Const.fFrame.x) : 0.0f;
 	return RelFrameMap(d, Const.vFrameDir.xyz, Const.fFrame.x, Const.fFrame.y,
-	                   (Const.fParams.w > 0.5f), shadow);
+	                   (Const.fParams.w > 0.5f), rQ2, shadow);
 }
 
 // ---------------------------------------------------------------------
@@ -121,11 +125,12 @@ float3 DragRotate(float3 d)
 float3 LensInverseOnce(float3 d, int n, bool bKerr)
 {
 	// shared single-body lensing step (RelativityMapping.hlsl)
+	float qCharge = (Const.vCharge.x > 0.5f) ? Const.vCharge.y : 0.0f;
 	[loop] for (int i = 0; i < 4; i++) {
 		if (i >= n) continue;
 		float4 ld = Const.vLens[i];
 		float4 sp = Const.vLensSpin[i];
-		d = RelLensStep(d, ld.xyz, ld.w, GetLensMu(i), bKerr, sp.xyz, sp.w);
+		d = RelLensStep(d, ld.xyz, ld.w, GetLensMu(i), bKerr, sp.xyz, sp.w, qCharge);
 	}
 	return d;
 }
@@ -178,6 +183,29 @@ float3 SampleCubeSmooth(float3 s)
 	return col;
 }
 
+// Forward mapping of the plain star field vertex path (source -> observed).
+// The vertex shader (CelSphere.hlsl) solves LensInverse(observed) = source by
+// the same fixed-point iteration and limits the displacement to ~5 degrees;
+// repeating it here lets the hole criterion track the actual vertex
+// displacement of the background tiles. Regions where the vertex path
+// stretches/folds the tiles (visible as torn patches near the blend band)
+// are then covered by the lensed cubemap.
+float3 SourceToObservedVertex(float3 dSrc)
+{
+	float3 dObs = dSrc;
+	[unroll] for (int itV = 0; itV < 3; itV++) {
+		float3 dCheck = LensInverse(dObs);		// observed -> source
+		dObs = normalize(dObs + (dSrc - dCheck));
+	}
+	float3 delta = dObs - dSrc;
+	float dl = length(delta);
+	// same limit as the vertex path (bound to the hole blend parameters;
+	// fBlend.w = min(2 deg, LensBlendEnd), fallback 2 deg)
+	float maxA = (Const.fBlend.w > 1e-5f) ? Const.fBlend.w : 0.034906585f;
+	if (dl > maxA) dObs = normalize(dSrc + delta * (maxA / dl));
+	return dObs;
+}
+
 float4 PSMain(float2 uv : TEXCOORD0) : COLOR
 {
 	// camera frame direction for this screen position
@@ -225,6 +253,15 @@ float4 PSMain(float2 uv : TEXCOORD0) : COLOR
 	float3 s2n = normalize(s2);
 	float3 sn  = normalize(s);
 	float shift = acos(clamp(dot(s2n, sn), -1.0f, 1.0f));
+
+	// second criterion: the displacement the plain star field vertex path
+	// would apply to the background tiles at this direction. The blend band
+	// (hole boundary) is where the vertex mapping is most stressed; use the
+	// larger of the two criteria so that distorted tiles are always covered.
+	float3 dV = SourceToObservedVertex(sn);
+	float shiftV = acos(clamp(dot(dV, sn), -1.0f, 1.0f));
+	shift = max(shift, shiftV);
+
 	float w = smoothstep(max(Const.fBlend.x, 1e-5f), max(Const.fBlend.y, Const.fBlend.x + 1e-5f), shift);
 
 	// minimum-size circular hole: the lensed region always includes a disk of

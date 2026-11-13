@@ -134,6 +134,8 @@ void ExtraRelativity::SetDialog (HWND hWnd)
 	int method = pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod;
 	int id = (method == 2) ? IDC_REL_METHOD_NEWTON : (method == 1 ? IDC_REL_METHOD_KERR : IDC_REL_METHOD_1PN);
 	SendDlgItemMessage (hWnd, id, BM_SETCHECK, BST_CHECKED, 0);
+	SendDlgItemMessage (hWnd, IDC_REL_CHARGE, BM_SETCHECK,
+		pTab->Cfg()->CfgPhysicsPrm.bRelativisticCharge ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 bool ExtraRelativity::StoreParams (HWND hWnd)
@@ -142,6 +144,8 @@ bool ExtraRelativity::StoreParams (HWND hWnd)
 	if (SendDlgItemMessage (hWnd, IDC_REL_METHOD_NEWTON, BM_GETCHECK, 0, 0) == BST_CHECKED) method = 2;
 	else if (SendDlgItemMessage (hWnd, IDC_REL_METHOD_KERR, BM_GETCHECK, 0, 0) == BST_CHECKED) method = 1;
 	pTab->Cfg()->CfgPhysicsPrm.RelativityGravityMethod = method;
+	pTab->Cfg()->CfgPhysicsPrm.bRelativisticCharge =
+		(SendDlgItemMessage (hWnd, IDC_REL_CHARGE, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	return true;
 }
 

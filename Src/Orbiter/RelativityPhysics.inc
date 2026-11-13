@@ -386,6 +386,26 @@ static bool RelativityEnckePerturbation (Vector &acc, const CelestialBody *cbody
 	// a radial term), so the exact Kerr solution can be used here as well.
 	Vector a_rel = (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 1 ?
 		SingleGacc_kerr (rpos, rvel, cbody) : SingleGacc_pn (rpos, rvel, cbody));
+	// Charge-induced gravity (Reissner-Nordstrom), compact relativistic bodies
+	// only (black holes / neutron stars): the effective potential gains a
+	// repulsive +r_Q^2/(2 r^2) term (r_Q^2 = (q rs)^2), i.e. an outward
+	// acceleration correction of +c^2 r_Q^2 / r^3 along body -> vessel.
+	{
+		double q = g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativisticCharge ?
+			g_pOrbiter->Cfg()->CfgPhysicsPrm.RelChargeRatio : 0.0;
+		if (q > 0.0) {
+			double size = cbody->Size();
+			double rs = 2.0*Ggrav*cbody->Mass()/(c_light*c_light);
+			if (size > 0.0 && size < 1.0e6 && rs > 0.0) {	// compact body
+				double dQ = rpos.length();
+				if (dQ > 1.0) {
+					double rQ2 = q*q*rs*rs;
+					double kq = (c_light*c_light) * rQ2 / (dQ*dQ*dQ*dQ);
+					a_rel += rpos * kq;
+				}
+			}
+		}
+	}
 	acc.Set (a_rel.x - a_newton.x, a_rel.y - a_newton.y, a_rel.z - a_newton.z);
 	return true;
 }
@@ -562,6 +582,9 @@ double Orbiter::RelGravTimeFactor () const
 	const double c2 = c_light*c_light;
 	const Vector &pos = g_focusobj->GPos();
 	double phi = 0.0;  // positive magnitude of the (negative) gravitational potential
+	double fQ  = 0.0;  // charge (RN) correction: + r_Q^2 / r^2 for compact bodies
+	double qc  = pConfig->CfgPhysicsPrm.bRelativisticCharge ?
+		pConfig->CfgPhysicsPrm.RelChargeRatio : 0.0;
 	const size_t n = g_psys->nGrav();
 	for (size_t i = 0; i < n; i++) {
 		CelestialBody *cb = g_psys->GetGravObj ((int)i);
@@ -570,8 +593,16 @@ double Orbiter::RelGravTimeFactor () const
 		double r = dr.length();
 		if (r < 1.0) continue;	// numeric guard
 		phi += G * cb->Mass() / r;
+		if (qc > 0.0) {
+			double size = cb->Size();
+			double rs = 2.0*G*cb->Mass()/c2;
+			if (size > 0.0 && size < 1.0e6 && rs > 0.0) {
+				double rQ2 = qc*qc*rs*rs;
+				fQ += rQ2 / (r*r);
+			}
+		}
 	}
-	double f = 1.0 - 2.0*phi/c2;
+	double f = 1.0 - 2.0*phi/c2 + fQ;
 	if (f < 1e-6) f = 1e-6;		// guard near the horizon
 	return 1.0 / sqrt (f);
 }

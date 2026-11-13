@@ -14,6 +14,8 @@ static void RelD3D9ConfigReset (D3D9Config *cfg)
 	cfg->RelBodyMarkers		= 0;
 	cfg->RelGravityMethod	= 0;
 	cfg->RelInternalMode		= 0;
+	cfg->RelCharge			= 0;
+	cfg->RelChargeRatio		= 0.5;
 	cfg->RelExposureWhite	= 2.0;
 	cfg->RelNearGuard		= 500.0;
 	cfg->LensCubemapSize		= 1024;

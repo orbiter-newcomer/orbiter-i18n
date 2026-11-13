@@ -205,6 +205,7 @@ struct STARS_LENS_CONST {
 	D3DXVECTOR4 fBlend;			// x = blend start [rad], y = blend end [rad], z = brightness gain
 	D3DXVECTOR4 vHoleDisk;		// xyz = dominant lens body direction (world frame),
 								// w = disk radius [rad] (0 = disabled)
+	D3DXVECTOR4 vCharge;		// x = charge effect on, y = q = r_Q/r_s
 };
 
 void Scene::InitLensCubemap()
@@ -359,6 +360,11 @@ void Scene::CompositeStarField()
 		(float)(Config->LensBlendStart * D3DX_PI / 180.0),
 		(float)(Config->LensBlendEnd * D3DX_PI / 180.0),
 		(float)Config->LensBrightness, 0.0f);
+	c.vCharge = D3DXVECTOR4(Config->RelCharge ? 1.0f : 0.0f, (float)Config->RelChargeRatio, 0.0f, 0.0f);
+	// vertex displacement limit bound to the hole blend parameters: the plain
+	// star field is never moved farther than the blend band so the tiles cannot
+	// be stretched outside the area covered by the lensed cubemap
+	c.fBlend.w = (float)(min(2.0, Config->LensBlendEnd) * D3DX_PI / 180.0);
 
 	// ---- Gravitational aberration of the star field ----
 	// Observer inside the potential well: the local-frame direction is squeezed
@@ -727,6 +733,8 @@ void Scene::SyncRelativityConfig()
 	const bool *pB = (const bool *)gc->GetConfigParam(CFGPRM_RELBODYMARKERS);
 	const double *pE = (const double *)gc->GetConfigParam(CFGPRM_RELEXPOSURE);
 	const int *pM = (const int *)gc->GetConfigParam(CFGPRM_RELGRAVMETHOD);
+	const bool *pQ = (const bool *)gc->GetConfigParam(CFGPRM_RELCHARGE);
+	const double *pQR = (const double *)gc->GetConfigParam(CFGPRM_RELCHARGERATIO);
 
 	// The visual effects are bound to the main physics relativity switch:
 	// when relativity is disabled in the physics engine all visual effects are
@@ -741,6 +749,8 @@ void Scene::SyncRelativityConfig()
 	Config->RelBodyMarkers   = (pB && *pB) ? 1 : 0;   // debug markers (independent of the physics switch)
 	if (pE) Config->RelExposureWhite = *pE;
 	if (pM) Config->RelGravityMethod = *pM;   // 0 = 1PN (weak field), 1 = Kerr (strong field), 2 = Newtonian (no gravity visuals)
+	Config->RelCharge = (bPhysRel && pQ && *pQ) ? 1 : 0;   // charge-induced gravity (bound to the physics switch)
+	if (pQR) Config->RelChargeRatio = *pQR;
 }
 
 // --------------------------------------------------------------------------
@@ -1291,6 +1301,8 @@ void CSphereManager::RelativitySetupCelData (LPDIRECT3DDEVICE9 dev, const D3DXMA
 			if (dom >= 0 && domPot > 1e-12) {
 				CelData.vFrameDir = D3DXVECTOR4(bodies[dom].dir[0], bodies[dom].dir[1], bodies[dom].dir[2], 1.0f);
 				CelData.fFrame = D3DXVECTOR4(bodies[dom].mu, (float)bodies[dom].dist, 0.0f, 0.0f);
+				CelData.vCharge = D3DXVECTOR4(Config->RelCharge ? 1.0f : 0.0f, (float)Config->RelChargeRatio, 0.0f, 0.0f);
+				CelData.vVertex = D3DXVECTOR4((float)(min(2.0, Config->LensBlendEnd) * D3DX_PI / 180.0), 0.0f, 0.0f, 0.0f);
 			}
 		}
 		CelData.fLensCount = (float)n;

@@ -14,6 +14,7 @@
 #define IDC_OPT_PHYS_RELFTL            1408
 #define IDC_REL_LENS_WIREFRAME          1409
 #define IDC_OPT_DBG_RELBODYMARKERS      1411
+#define IDC_REL_CHARGE                  1412
 
 #define IDC_OPT_VIS_RELDOPPLER          1200
 #define IDC_OPT_VIS_RELABERRATION       1201

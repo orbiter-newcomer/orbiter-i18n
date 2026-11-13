@@ -83,10 +83,11 @@ float3 LensInverseOnceCompat(float3 d, int n, bool bKerr)
 	// correction of the composite path is omitted for the vertex path (it is a
 	// small term and is applied separately as a frame rotation).
 	float3 noSpin = float3(0.0f, 1.0f, 0.0f);
+	float qCharge = (Const.vCharge.x > 0.5f) ? Const.vCharge.y : 0.0f;
 	[loop] for (int i = 0; i < 4; i++) {
 		if (i >= n) continue;
 		float4 ld = Const.vLens[i];
-		d = RelLensStep(d, ld.xyz, ld.w, Const.fLensMu[i], bKerr, noSpin, 0.0f);
+		d = RelLensStep(d, ld.xyz, ld.w, Const.fLensMu[i], bKerr, noSpin, 0.0f, qCharge);
 	}
 	return d;
 }

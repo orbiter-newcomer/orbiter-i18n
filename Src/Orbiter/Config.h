@@ -83,6 +83,8 @@ struct CFG_PHYSICSPRM {
 	bool   bRelativity;		    // enable relativistic effects (default false)
 	int    RelativityGravityMethod; // gravity field solver: 0=1PN weak field, 1=Kerr exact
 	int    RelativityFTLMode;       // FTL velocity handling: 0=report error, 1=clamp to 0.99c
+	bool   bRelativisticCharge;     // charge-induced gravity (RN) for compact bodies
+	double RelChargeRatio;          // charge ratio q = r_Q/r_s (0..1)
 };
 
 struct CFG_LOGICPRM {

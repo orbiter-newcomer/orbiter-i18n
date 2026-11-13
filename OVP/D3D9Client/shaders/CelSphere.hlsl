@@ -39,6 +39,8 @@ struct CelDataStruct
 	// gravitational aberration (static observer inside the potential well)
 	float4	 vFrameDir;		// xyz = observer -> dominant body (world frame), w = enable flag
 	float4	 fFrame;		// x = GM/c^2 [m], y = observer distance [m]
+	float4	 vCharge;		// x = charge effect on, y = q = r_Q/r_s
+	float4	 vVertex;		// x = vertex displacement limit [rad] (bound to the hole blend params)
 };
 
 // Booleans go to sepatate structure. (not mixing different datatypes in a structure)
@@ -79,7 +81,10 @@ sampler2D tTexB;
 float3 FrameInverseInv(float3 d)
 {
 	// shared implementation: RelativityMapping.hlsl
-	return RelFrameMapInv(d, Const.vFrameDir.xyz, Const.fFrame.x, Const.fFrame.y);
+	// charge (RN) term: r_Q^2 = q^2 * rs^2 = q^2 * (2 mu)^2
+	float rQ2 = (Const.vCharge.x > 0.5f) ?
+		(Const.vCharge.y * Const.vCharge.y * 4.0f * Const.fFrame.x * Const.fFrame.x) : 0.0f;
+	return RelFrameMapInv(d, Const.vFrameDir.xyz, Const.fFrame.x, Const.fFrame.y, rQ2);
 }
 
 CelSphereVS CelVS(TILEVERTEX vrt)
@@ -118,10 +123,12 @@ CelSphereVS CelVS(TILEVERTEX vrt)
 			// convergence guard: fall back to the smooth first-order result
 			float res = length(dSrc - dCheck);
 			if (!(res < 0.02f)) dObs = dGuess;
-			// final displacement limit (~5 deg); larger deflections are cubemap-only
+			// final displacement limit bound to the hole blend parameters
 			float3 delta = dObs - dSrc;
 			float dl = length(delta);
-			const float maxA = 0.0873;
+			// displacement limit is bound to the hole blend parameters
+			// (min(2 deg, LensBlendEnd)); fallback 2 deg if not provided
+			float maxA = (Const.vVertex.x > 1e-5f) ? Const.vVertex.x : 0.034906585f;
 			if (dl > maxA) dObs = normalize(dSrc + delta * (maxA / dl));
 			posW = dObs * lenL;
 		}
