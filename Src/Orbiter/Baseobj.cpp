@@ -14,6 +14,7 @@
 #include "Log.h"
 #include "Shadow.h"
 #include "Util.h"
+#include "TerrainRender.inc"   // feature hook: terrain rendering (base placement etc.)
 
 using namespace std;
 
@@ -32,7 +33,6 @@ BaseObject::BaseObject (const Base *_base): base(_base)
 	rot = 0.0;
 	elev = yofs = 0.0;
 	bCollision = false;
-	bRestOnFootprint = false;
 }
 
 BaseObject *BaseObject::Create (const Base *_base, istream &is)
@@ -140,60 +140,12 @@ void BaseObject::Setup ()
 {
 	base->Rel_EquPos (relpos, equpos.x, equpos.y);
 	elev = base->RefPlanet()->Elevation (equpos.x, equpos.y);
-	if (bRestOnFootprint) {
-		// Base models were built for a flat ground plane. With a high-resolution
-		// (non-flat) terrain surface most buildings would float above the terrain
-		// on their downhill side, so rest each building on the LOWEST terrain point
-		// below its footprint. The uphill side may then be partially buried, which
-		// is far less noticeable than floating structures.
-		double elevMin = FootprintMinElevation ();
-		if (elevMin < elev) elev = elevMin;
-	}
+	elev = TerrainRender_FixBaseElevation (this, base, relpos, scale, rot, elev);	// feature hook
 	yofs = elev - base->Elevation();
 	if (base->MapObjectsToSphere())
 		yofs += ElevCorrection (relpos.x, relpos.z);
 	equpos.z = base->RefPlanet()->Size() + relpos.y + elev;
 	relpos.y += yofs;
-}
-
-void BaseObject::FootprintExtents (double &hx, double &hz) const
-{
-	hx = 0.5 * scale.x;
-	hz = 0.5 * scale.z;
-}
-
-double BaseObject::FootprintMinElevation () const
-{
-	double hx, hz;
-	FootprintExtents (hx, hz);
-	if (hx < 0.5 && hz < 0.5) return elev;   // point-like object: nothing to sample
-	double srot = sin (rot), crot = cos (rot);
-	// footprint corners (same rotation convention as the geometry generators)
-	double dx[4] = {  hx*crot + hz*srot, -hx*crot + hz*srot, -hx*crot - hz*srot,  hx*crot - hz*srot };
-	double dz[4] = {  hx*srot - hz*crot, -hx*srot - hz*crot, -hx*srot + hz*crot,  hx*srot + hz*crot };
-	// larger footprints get a denser sample grid so that local dips are not missed
-	int nsub = (max (hx, hz) > 20.0 ? 4 : 2);   // 4 -> 5x5 samples, 2 -> 3x3 samples
-	double cx = 0.25*(dx[0]+dx[1]+dx[2]+dx[3]);   // footprint centre
-	double cz = 0.25*(dz[0]+dz[1]+dz[2]+dz[3]);
-	double ux = 0.25*(dx[0]+dx[3]-dx[1]-dx[2]);   // half axis along local x
-	double uz = 0.25*(dz[0]+dz[3]-dz[1]-dz[2]);
-	double vx = 0.25*(dx[0]+dx[1]-dx[2]-dx[3]);   // half axis along local z
-	double vz = 0.25*(dz[0]+dz[1]-dz[2]-dz[3]);
-	const Planet *planet = base->RefPlanet();
-	double lo = elev;
-	for (int iy = 0; iy <= nsub; iy++) {
-		double fy = (double)iy / nsub * 2.0 - 1.0;   // -1 .. +1
-		for (int ix = 0; ix <= nsub; ix++) {
-			double fx = (double)ix / nsub * 2.0 - 1.0;
-			double px = cx + ux*fx + vx*fy;
-			double pz = cz + uz*fx + vz*fy;
-			double lng, lat;
-			base->Rel_EquPos (Vector (relpos.x + px, 0.0, relpos.z + pz), lng, lat);
-			double e = planet->Elevation (lng, lat);
-			if (e < lo) lo = e;
-		}
-	}
-	return lo;
 }
 
 D3DVALUE BaseObject::ElevCorrection (D3DVALUE px, D3DVALUE pz)
@@ -443,7 +395,6 @@ void MeshObject::RenderShadow (LPDIRECT3DDEVICE7 dev)
 Block::Block (const Base *_base): BaseObject (_base)
 {
 	ngrp = 3; // 3 mesh groups: x-walls, z-walls and roof
-	bRestOnFootprint = true;   // building: rest on the lowest terrain point below the footprint
 	for (int i = 0; i < 3; i++) {
 		texid[i] = 0;
 		tuscale[i] = tvscale[i] = 1.0f;
@@ -693,7 +644,6 @@ void Block::UpdateShadow (Vector &fromsun, double az)
 Hangar::Hangar (const Base *_base): BaseObject (_base)
 {
 	ngrp = 3;
-	bRestOnFootprint = true;
 	for (int i = 0; i < 3; i++) {
 		texid[i] = 0;
 		tuscale[i] = tvscale[i] = 1.0f;
@@ -937,7 +887,6 @@ void Hangar::UpdateShadow (Vector &fromsun, double az)
 Hangar2::Hangar2 (const Base *_base): BaseObject (_base)
 {
 	ngrp = 3;
-	bRestOnFootprint = true;
 	roofh = -1.0f; // use default
 	for (int i = 0; i < 3; i++) {
 		texid[i] = 0;
@@ -1150,7 +1099,6 @@ void Hangar2::Deactivate ()
 Hangar3::Hangar3 (const Base *_base): BaseObject (_base)
 {
 	ngrp = 3;
-	bRestOnFootprint = true;
 	for (int i = 0; i < 3; i++) {
 		texid[i] = 0;
 		tuscale[i] = tvscale[i] = 1.0f;
@@ -1390,20 +1338,12 @@ void Hangar3::Deactivate ()
 Tank::Tank (const Base *_base): BaseObject (_base)
 {
 	ngrp = 2; // 2 mesh groups: mantle and top
-	bRestOnFootprint = true;
 	for (int i = 0; i < 2; i++) {
 		texid[i] = 0;
 		tuscale[i] = tvscale[i] = 1.0f;
 	}
 	nstep = 12;
 	dyndata = 0;
-}
-
-void Tank::FootprintExtents (double &hx, double &hz) const
-{
-	// tank footprint: ellipse with half axes scale.x / scale.z
-	hx = scale.x;
-	hz = scale.z;
 }
 
 int Tank::ParseLine (const char *label, const char *value)

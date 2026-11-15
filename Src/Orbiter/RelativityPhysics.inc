@@ -600,9 +600,9 @@ static bool RelativityStrongFieldGuard (Vessel *vessel)
 #endif // REL_PHYS_VESSEL
 
 #ifdef REL_PHYS_WARP
-// ---- Orbiter.cpp: relativistic collision debris system ----------------------
-#include "WreckDebris.inc"
 // ---- Orbiter.cpp: relativistic time acceleration (Lorentz factor) ----------
+// (the wreck/debris system is included directly by Orbiter.cpp, independent of
+// this relativity extension)
 
 extern PlanetarySystem *g_psys;   // defined in Orbiter.cpp
 

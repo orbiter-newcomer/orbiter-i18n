@@ -453,27 +453,12 @@ public:
 	{ return TileManager2Base::FindNode<TileType> (tiletree, lvl, ilat, ilng); }
 	// Returns the node at the specified position, or 0 if it doesn't exist
 
-	Tile *SearchTile (double lng, double lat, int maxlvl, bool bOwntex) const;
+	// feature hook: read access to the tile quad-tree roots for terrain load
+	// inspection (used by TerrainLoadWait.inc)
+	inline const QuadTreeNode<TileType> *TileTree (int i) const
+	{ return (i >= 0 && i < 2) ? &tiletree[i] : NULL; }
 
-	/**
-	 * \brief Number of tiles currently queued or being loaded from storage.
-	 * \details Used by the graphics client to keep the simulation paused until
-	 * the initial terrain around the camera has been loaded, so that the
-	 * simulation does not start on a partially loaded surface.
-	 */
-	int PendingTileCount () const
-	{
-		return CountPendingNode (&tiletree[0]) + CountPendingNode (&tiletree[1]);
-	}
-	static int CountPendingNode (const QuadTreeNode<TileType> *node)
-	{
-		if (!node) return 0;
-		int n = 0;
-		const TileType *t = node->Entry ();
-		if (t && (t->state == Tile::InQueue || t->state == Tile::Loading)) n++;
-		for (int i = 0; i < 4; i++) n += CountPendingNode (node->Child (i));
-		return n;
-	}
+	Tile *SearchTile (double lng, double lat, int maxlvl, bool bOwntex) const;
 
 	inline TileType *GlobalTile (int lvl) const {	return (lvl >= -3 && lvl < 0 ? globtile[lvl + 3] : NULL); }
 //	{ return globtile[lvl]; } @todo: Is that ( above) OK for us?

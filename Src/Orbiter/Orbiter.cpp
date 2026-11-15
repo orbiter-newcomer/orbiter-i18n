@@ -1444,6 +1444,7 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 }
 
 #include "WreckDebris.h"
+#include "WreckDebris.inc"   // wreck/debris system (independent module, Src/Wreck)
 #define REL_PHYS_WARP
 #include "RelativityPhysics.inc"
 #undef REL_PHYS_WARP

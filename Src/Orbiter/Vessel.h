@@ -1214,6 +1214,10 @@ public:
 	inline FlightStatus GetStatus () const { return fstatus; }
 	// vessel's flight status
 
+	inline void SetShadowMode (int mode) { shadowMode = mode; }
+	inline int  GetShadowMode () const { return shadowMode; }
+	// shadow rendering mode (SHADOWMODE_*), used by graphics clients
+
 	bool isOrbitStabilised () const;
 	// true if vessel uses 2-body analytic update to stabilise orbit
 
@@ -1453,6 +1457,8 @@ protected:
 	TOUCHDOWN_VTX *HullvtxNext ();
 
 private:
+	int shadowMode;         // shadow rendering mode (SHADOWMODE_*)
+
 	void UpdateMass ();
 	// update vessel mass (empty + sum of all fuel resources)
 

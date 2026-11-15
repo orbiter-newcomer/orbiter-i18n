@@ -129,6 +129,7 @@ set(Orbiter_includes
 	${CMAKE_SOURCE_DIR}/i18n/core
 	${CMAKE_SOURCE_DIR}/Orbitersdk/include
 	${CMAKE_SOURCE_DIR}/OVP
+	${CMAKE_SOURCE_DIR}/Src/Wreck
 	${CMAKE_CURRENT_BINARY_DIR}
 	${HTMLHELP_INCLUDE_DIR}
 )

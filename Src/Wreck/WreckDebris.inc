@@ -1,7 +1,8 @@
 // ==============================================================
 // WreckDebris.inc
 // Wreck/debris system: spawn, Newtonian propagation, ground contact.
-// Included by RelativityPhysics.inc (REL_PHYS_WARP section -> Orbiter.cpp).
+// Included by Orbiter.cpp (independent wreck module, Src/Wreck; the wreck
+// system does not depend on the relativity extension).
 // ==============================================================
 
 #include <stdlib.h>
@@ -483,6 +484,9 @@ static void WreckProcessPending ()
 		}
 		OBJHANDLE h = oapiCreateVesselEx (name, "Wreck", &vs);
 		if (!h) { LOGOUT_ERR ("Wreck vessel creation failed: %s", name); continue; }
+		// feature tag: wreck debris is rendered into the shadow map (the terrain samples
+		// it), so the legacy projected ground shadow must be skipped for it.
+		oapiSetVesselShadowMode (h, SHADOWMODE_SHADOWMAP);
 		// initialise and commit the wreck state vectors once (the vessel is frozen
 		// afterwards, so without this GPos() would stay at zero)
 		{
@@ -756,7 +760,7 @@ void WreckDebrisUpdate ()
 
 void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *otherName, bool otherDestroyed)
 {
-	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return;
+	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bWrecks) return;
 	if (WreckIsObserver (vessel)) return;
 	if (vessel->KillPending()) return;
 	double dv = deltaV.length();
@@ -854,10 +858,10 @@ void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state)
 // high dynamic pressure (re-entry) burns up like a meteor.
 void WreckAtmosphericBurnup (Vessel *vessel)
 {
-	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return;
+	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bWrecks) return;
 	if (WreckIsObserver (vessel)) return;
 	if (vessel->KillPending()) return;
-	// RELATIVITY FRAMES:
+	// GROUND-relative velocity (the atmosphere co-rotates with the body).
 	//  - surface/atmosphere damage uses the GROUND-relative velocity (the atmosphere
 	//    co-rotates with the body): official groundspeed vector.
 	//  - orbital damage (FTL wall, strong field, collisions) uses the inertial/global

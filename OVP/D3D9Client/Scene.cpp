@@ -2558,6 +2558,7 @@ int Scene::RenderShadowMap(D3DXVECTOR3 &pos, D3DXVECTOR3 &ld, float rad, bool bI
 			if (pv->type != OBJTP_VESSEL) continue;
 			vVessel *vV = (vVessel *)pv->vobj;
 			if (!vV->IsActive()) continue;
+			if (oapiGetVesselShadowMode (vV->Object()) == SHADOWMODE_NONE) continue;	// no shadow casters
 			if (vV->IntersectShadowVolume()) {
 				SmapRenderList.push_back(vV);
 				vV->GetMinMaxLightDist(&mnd, &mxd);

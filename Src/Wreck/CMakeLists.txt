@@ -1,6 +1,9 @@
 # Copyright (c) 2026 orbiter-i18n contributors
 # Licensed under the MIT License
 
+# Vessel-style module output location (same as the other vessel modules)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ORBITER_BINARY_VESSEL_DIR})
+
 set(CONFIG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Config)
 
 add_library(Wreck SHARED

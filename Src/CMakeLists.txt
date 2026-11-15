@@ -6,6 +6,7 @@ add_subdirectory(Orbitersdk)
 add_subdirectory(DlgCtrl)
 add_subdirectory(Celbody)
 add_subdirectory(Vessel)
+add_subdirectory(Wreck)
 add_subdirectory(Module)
 add_subdirectory(Plugin)
 

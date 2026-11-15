@@ -64,6 +64,7 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	10, 		// PropSubMax (max number of subsampling steps)
 	30.0*RAD,	// APropCouplingLimit (angle step limit for cross term suppresion)
 	3600.0*RAD,	// APropTorqueLimit (angle step limit for torque suppression)
+	true,		// bWrecks (wreck/debris system enabled by default)
 	false,		// bRelativity (relativistic effects disabled by default)
 	0,			// RelativityGravityMethod (0=1PN weak field)
 	0,			// RelativityFTLMode (0=report error, 1=clamp to 0.99c)
@@ -624,6 +625,7 @@ bool Config::Load(const char *fname)
 	GetBool (ifs, "VesselCollision", CfgPhysicsPrm.bVesselCollision);
 	GetBool (ifs, "StabiliseOrbits", CfgPhysicsPrm.bOrbitStabilise);
 	RelativityLoad (ifs);
+	WreckLoad (ifs);
 	GetReal (ifs, "StabilisePLimit", CfgPhysicsPrm.Stabilise_PLimit);
 	GetReal (ifs, "StabiliseSLimit", CfgPhysicsPrm.Stabilise_SLimit);
 	if (GetString (ifs, "PertPropSubsampling", cbuf, sizeof(cbuf)))
@@ -910,6 +912,8 @@ const void *Config::GetParam (DWORD paramtype) const
 {
 	// Relativity extension parameters (implementation in RelativityConfig.inc)
 	if (const void *relparam = GetRelativityParam (paramtype)) return relparam;
+	// Wreck/debris system parameters (implementation in WreckConfig.inc)
+	if (const void *wreckparam = GetWreckParam (paramtype)) return wreckparam;
 	switch (paramtype) {
 	case CFGPRM_SURFACEMAXLEVEL:
 		return (void*)&CfgVisualPrm.PlanetMaxLevel;
@@ -1198,6 +1202,7 @@ BOOL Config::Write (const char *fname) const
 		if (CfgPhysicsPrm.bOrbitStabilise != CfgPhysicsPrm_default.bOrbitStabilise || bEchoAll)
 			ofs << "StabiliseOrbits = " << BoolStr (CfgPhysicsPrm.bOrbitStabilise) << '\n';
 		RelativityWritePhysics (ofs, bEchoAll);
+		WreckWritePhysics (ofs, bEchoAll);
 		if (CfgPhysicsPrm.Stabilise_PLimit != CfgPhysicsPrm_default.Stabilise_PLimit || bEchoAll)
 			ofs << "StabilisePLimit = " << CfgPhysicsPrm.Stabilise_PLimit << '\n';
 		if (CfgPhysicsPrm.Stabilise_SLimit != CfgPhysicsPrm_default.Stabilise_SLimit || bEchoAll)
@@ -1626,3 +1631,6 @@ bool Config::GetVector (const char *category, Vector &val)
 
 // Relativity extension configuration handling (implementation)
 #include "RelativityConfig.inc"
+
+// Wreck/debris system configuration handling (implementation, Src/Wreck)
+#include "WreckConfig.inc"

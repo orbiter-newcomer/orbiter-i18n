@@ -80,15 +80,9 @@
 /** Charge ratio q = r_Q/r_s for the compact bodies (double, 0..1). */
 #define CFGPRM_RELCHARGERATIO 0x0031
 
-/**
- * Collision impact delta-v tolerance [m/s]: impacts above this value
- * destroy the vessel and replace it with debris (extension).
- * \par Parameter type:
- *   double
- */
-#define CFGPRM_RELCOLLISIONDV 0x0032
-
-#define CFGPRM_RELGASGIANT 0x0033
+// Wreck/debris system parameter types (CFGPRM_RELCOLLISIONDV, CFGPRM_RELGASGIANT,
+// CFGPRM_WRECKS) and API functions moved to WreckAPI.h: the wreck system is
+// independent of the relativity extension.
 
 // --- API functions -----------------------------------------------------
 
@@ -123,21 +117,7 @@ OAPIFUNC double oapiGetRelativityGravTimeFactor ();
  */
 OAPIFUNC double oapiGetRelativityVelTimeFactor ();
 
-/** Number of active wreck debris particles (rendered by the graphics client). */
-OAPIFUNC int oapiGetWreckDebrisCount ();
-
-/**
- * \brief Retrieve a wreck debris particle for rendering.
- * \param idx debris index (0 .. oapiGetWreckDebrisCount()-1)
- * \param pos global position, axis/angle orientation, size radius, shape index
- * \return true if the entry is active.
- */
-OAPIFUNC bool oapiGetWreckDebris (int idx, VECTOR3 *pos, VECTOR3 *axis, double *angle, double *size, int *shape);
-
-/** Retrieve the current wreck message (UTF-8) and its age in milliseconds. */
-OAPIFUNC bool oapiGetWreckMessageEx (char *buf, int n, double *age_ms, int *isFocus, char *ship, int shipN);
-
-/** Handle of the invisible wreck anchor vessel (0 if none). */
-OAPIFUNC OBJHANDLE oapiGetWreckAnchorVessel ();
+/** Wreck/debris system API (oapiGetWreckDebrisCount, oapiGetWreckDebris,
+ *  oapiGetWreckMessageEx, oapiGetWreckAnchorVessel) moved to WreckAPI.h. */
 
 #endif // !__RELATIVITYAPI_H

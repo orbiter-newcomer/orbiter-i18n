@@ -80,6 +80,7 @@ struct CFG_PHYSICSPRM {
 	int    PropSubMax;			// max number of subsampling steps
 	double APropCouplingLimit;	// angle step limit for cross term suppresion
 	double APropTorqueLimit;	// angle step limit for torque suppression
+	bool   bWrecks;              // wreck/debris system enable flag (independent of relativity)
 	bool   bRelativity;		    // enable relativistic effects (default false)
 	int    RelativityGravityMethod; // gravity field solver: 0=1PN weak field, 1=Kerr exact
 	int    RelativityFTLMode;       // FTL velocity handling: 0=report error, 1=clamp to 0.99c
@@ -474,6 +475,11 @@ private:
 	void RelativityWriteVisual (std::ostream &os, bool bEchoAll) const;
 	void RelativityWritePhysics (std::ostream &os, bool bEchoAll) const;
 	const void *GetRelativityParam (DWORD paramtype) const;
+
+	// Wreck/debris system (implementation in WreckConfig.inc, Src/Wreck)
+	void WreckLoad (std::istream &is);
+	void WreckWritePhysics (std::ostream &os, bool bEchoAll) const;
+	const void *GetWreckParam (DWORD paramtype) const;
 
 	mutable char cfgpath[256];  // buffer for creating full path names
 	char mshpath[256];

@@ -120,6 +120,8 @@ DLLEXPORT int oapiZhActive ()
 }
 // Relativistic extension API implementations (RelativityApi.inc)
 #include "RelativityApi.inc"
+// Wreck/debris system API implementations (WreckApi.inc, Src/Wreck)
+#include "WreckApi.inc"
 
 DLLEXPORT const char *oapiGetCmdLine ()
 {
@@ -341,6 +343,19 @@ DLLEXPORT const char *oapiGetObjectFileName(OBJHANDLE hObj)
 DLLEXPORT OBJHANDLE oapiGetFocusObject ()
 {
 	return (OBJHANDLE)g_focusobj;
+}
+
+DLLEXPORT void oapiSetVesselShadowMode (OBJHANDLE hVessel, int mode)
+{
+	Body *body = (Body*)hVessel;
+	if (body && body->Type() == OBJTP_VESSEL) ((Vessel*)body)->SetShadowMode (mode);
+}
+
+DLLEXPORT int oapiGetVesselShadowMode (OBJHANDLE hVessel)
+{
+	Body *body = (Body*)hVessel;
+	if (body && body->Type() == OBJTP_VESSEL) return ((Vessel*)body)->GetShadowMode ();
+	return SHADOWMODE_DEFAULT;
 }
 
 DLLEXPORT OBJHANDLE oapiSetFocusObject (OBJHANDLE hVessel)
