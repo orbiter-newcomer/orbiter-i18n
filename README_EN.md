@@ -5,6 +5,7 @@
 This repository is a **64-bit branch** of [Orbiter](https://github.com/orbitersim/orbiter), the open-source space flight simulator. On top of the official code it provides:
 
 - **Full Chinese localization**: UI / MFDs / Scenario Editor / vessels / glass-cockpit HUD / help texts / scenarios and Lua tutorials; all translations live in external `.po` catalogs (`i18n/locales/zh_CN/*.po`) that can be edited without recompiling; English mode is identical to the official upstream behaviour
+- **Wreck/debris system**: impact destruction (ground/water contact and vessel-vessel collisions above a configurable delta-v threshold), random-polyhedron debris with Newtonian physics, wreck messages/cameras, atmospheric burn-up, base/terrain-aligned shadows and base buildings resting on the terrain footprint
 - **Relativistic physics and visual extension**: 1PN/Kerr gravity fields, frame dragging, relativistic mass, time dilation, Doppler shift, aberration, gravitational lensing (the "hole" method), gravitational redshift, black hole / neutron star rendering, FTL and strong-field protection, charge-induced gravity
 
 - Repository: https://github.com/orbiter-newcomer/orbiter-i18n
@@ -140,7 +141,7 @@ Debug modes (`LensBrightness`): `-1` raw cubemap, `-2` hole weight map, `-3` hol
 | v1.2.3 | Lensing "hole" composition, neutron star blue-white rendering, gravitational aberration / back-side deflection fixes |
 | v1.2.4 | Sky-box "hole" method refinements (seam fixes, hole debug tools) |
 | v1.2.5 | Charge-induced gravity (Reissner–Nordström), vertex limit bound to the hole parameters, vertex-displacement fallback criterion, synced with the latest official 2024 upstream |
-| v1.3.0 | All translations externalized to `.po` files (`i18n/locales/zh_CN/*.po`, editable without recompiling); Lua script localization (Challenges, Demos tutorials, Solar-system annotations); plugin-private wchar_t tables migrated to `oapiTr`; scenario descriptions / constellations / notifications / wreck messages completed; Chinese HTML help pages; dead-code cleanup and simplifications |
+| v1.3.0 | **Wreck/debris system** (impact destruction, random-polyhedron debris physics, wreck messages/cameras, atmospheric burn-up); **shadow reference-plane fix** (base pad / actual terrain instead of the mean sphere); **base buildings rest on their footprint minimum**; dynamic strong-field criterion; all translations externalized to `.po` files (`i18n/locales/zh_CN/*.po`, editable without recompiling); Lua script localization (Challenges, Demos tutorials, Solar-system annotations); plugin-private wchar_t tables migrated to `oapiTr`; scenario descriptions / constellations / notifications / wreck messages completed; Chinese HTML help pages; dead-code cleanup and simplifications |
 
 ---
 
