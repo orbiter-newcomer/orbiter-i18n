@@ -712,7 +712,7 @@ bool Instrument_Docking::ClbkSelection_Target (Select *menu, int item, char *str
 		if (vessel = g_psys->GetVessel (str, true)) {
 			for (i = 0; i < vessel->nDock(); i++) {
 				// Chinese UI: full-width comma; English UI: original format
-				const bool zhDock = (strcmp(orbiter::Tr("Build"), "Build") != 0);
+				const bool zhDock = (orbiter::IsChinese());
 				if (zhDock)
 					sprintf (cbuf, "%s，%s %d", orbiter::Tr(vessel->Name()), orbiter::Tr("dock"), i+1);
 				else

@@ -1797,6 +1797,24 @@ protected:
 	bool CheckVesselOverlap(Vessel *v, double margin = 0.0);
 
 public:
+	// Hull group accessors for debris generation (wreck decomposition)
+	DWORD GetHullGroupCount () const;
+	bool GetHullGroupBox (DWORD idx, Vector &center, Vector &extents) const;
+	// Convex-hull slice mesh for one wreck piece (vessel-local coordinates, centered)
+	struct HullSliceMesh {
+		std::vector<VECTOR3> verts;   // centered vertices
+		std::vector<VECTOR3> norms;   // per-vertex normals
+		std::vector<float>   uvs;     // 2 per vertex
+		std::vector<WORD> faces;      // triangle indices (3 per face)
+		Vector center;                // slice center in vessel-local coordinates
+		double radius;                // slice radius
+		char texName[128];            // source texture file (relative to Textures)
+	};
+	int BuildVoronoiSliceMeshes (std::vector<HullSliceMesh> &out, int maxCount) const;
+	int BuildHullSliceMeshes (std::vector<HullSliceMesh> &out, int maxCount) const;
+	// Real (non-hull) triangle geometry of one mesh group, centered at its AABB center
+	bool GetGroupTriangles (DWORD idx, std::vector<VECTOR3> &verts, std::vector<WORD> &idxs, Vector &center, double &radius) const;
+	DWORD GetGroupTriangleCount () const;
 	void RefreshCollisionOverlapState();
 	static DWORD GetDisabledCollisionPairCount();
 	static bool GetDisabledCollisionPair(DWORD index, OBJHANDLE *hVessel1, OBJHANDLE *hVessel2);

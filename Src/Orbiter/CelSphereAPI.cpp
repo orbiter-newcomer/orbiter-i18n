@@ -424,7 +424,9 @@ const std::vector<oapi::GraphicsClient::LABELSPEC> oapi::CelestialSphere::Conste
 	std::vector<GraphicsClient::LABELSPEC> renderRec;
 	renderRec.resize(clabelRec.size());
 	for (int i = 0; i < clabelRec.size(); i++) {
-		renderRec[i].label[0] = clabelRec[i].fullLabel;
+		// constellation names are looked up with the "constellation" context so that
+		// names shared with celestial bodies (e.g. Hydra) get the correct translation
+		renderRec[i].label[0] = orbiter::TrContext ("constellation", clabelRec[i].fullLabel.c_str());
 		renderRec[i].label[1] = clabelRec[i].abbrLabel;
 		double xz = cos(clabelRec[i].latCnt);
 		renderRec[i].pos.x = xz * cos(clabelRec[i].lngCnt);

@@ -213,9 +213,9 @@ void RefreshDialog (HWND hDlg)
 		SendMessage (GetDlgItem (hDlg, IDC_GROUPSPIN), UDM_SETPOS, 0, MAKELONG (g_igrp, 0));
 	}
 	sprintf (cbuf, oapiTr("(0 to %d)"), g_nmesh-1);
-	SetWindowTextW (GetDlgItem (hDlg, IDC_NMESH), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hDlg, IDC_NMESH), oapiUtf8ToWString(cbuf).c_str());
 	sprintf (cbuf, oapiTr("(0 to %d)"), g_ngrp-1);
-	SetWindowTextW (GetDlgItem (hDlg, IDC_NGRP), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hDlg, IDC_NGRP), oapiUtf8ToWString(cbuf).c_str());
 }
 
 // ==============================================================

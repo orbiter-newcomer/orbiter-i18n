@@ -28,13 +28,13 @@ end
 function hscore2str (hscore,mark)
     local str
     if #hscore > 0 then
-        str = 'High score list:\n\n'..string.format('%s . . . %s', 'Fuel used', 'Name')..'\n----------------------------------'
+        str = tr('High score list:\n\n')..string.format('%s . . . %s', tr('Fuel used'), tr('Name'))..'\n----------------------------------'
         for i=1,#hscore do
 			str = str..'\n'..string.format('%08.2f . . . %s', hscore[i][2], hscore[i][1])
             if mark==i then str = str..'   <====' end
         end
     else
-        str = 'No high scores yet!'
+        str = tr('No high scores yet!')
     end
     return str
 end
@@ -47,7 +47,7 @@ intro = 'Flight challenge:\n\
 Transfer to the moon and dock with orbiting\
 wheel, Luna-Ob1. Minimize fuel use.\n'
 
-term.out (intro)
+term.out (tr(intro))
 
 -- read highscore list
 slist = hscore_read (data_path, max_score)
@@ -55,10 +55,10 @@ slist = hscore_read (data_path, max_score)
 -- sanity checks
 v = vessel.get_interface('GL-1')
 if v == nil then
-    term.out ('Could not find GL-1. Aborting')
+    term.out (tr('Could not find GL-1. Aborting'))
     return
 elseif v:get_classname() ~= 'Deltaglider' then
-    term.out ('Wrong vessel class. Aborting')
+    term.out (tr('Wrong vessel class. Aborting'))
     return
 end
 
@@ -68,9 +68,9 @@ hp1 = v:get_propellanthandle (1)  -- RCS tank
 m0 = 13500
 m1 = v:get_propellantmass (hp0) + v:get_propellantmass (hp1)
 if m0 == m1 then
-    ptext = string.format ("Initial propellant mass: %.2f kg\n", m0)
+    ptext = string.format (tr("Initial propellant mass: %.2f kg\n"), m0)
 else
-    ptext = string.format ("Initial propellant mass: %.2f kg\nUsed so far: %.2f kg\n", m0, m0-m1)
+    ptext = string.format (tr("Initial propellant mass: %.2f kg\n"), m0)..string.format(tr("Used so far: %.2f kg\n"), m0-m1)
 end
 htext = hscore2str(slist)
 term.out(ptext..'\n'..htext..'\n')
@@ -78,7 +78,7 @@ term.out(ptext..'\n'..htext..'\n')
 note = oapi.create_annotation()
 note:set_pos (0.3,0.05,0.9,0.95)
 note:set_colour ({r=1,g=0.6,b=0.2})
-note:set_text (intro..'\n'..ptext..'\n'..htext)
+note:set_text (tr(intro)..'\n'..ptext..'\n'..htext)
 
 -- wait for engines
 while v:get_propellantmass (hp0) + v:get_propellantmass(hp1) == m1 do
@@ -95,7 +95,7 @@ note:set_size (1.2)
 mate = v:get_dockstatus (hd)
 while mate==nil do
     dm = m0 - (v:get_propellantmass (hp0) + v:get_propellantmass(hp1))
-    note:set_text (string.format("Fuel used: %.2f kg", dm))
+    note:set_text (string.format(tr("Fuel used: %.2f kg"), dm))
     proc.skip()
     mate = v:get_dockstatus (hd)
     if mate ~= nil then -- make sure we are docked to ISS
@@ -106,17 +106,17 @@ end
 
 -- write out the results
 dm = m0 - (v:get_propellantmass (hp0) + v:get_propellantmass(hp1))
-ptext = "Challenge completed successfully!\n"
-ptext = ptext..string.format ("Total fuel expenditure: %.2f kg", dm)
+ptext = tr("Challenge completed successfully!\n")
+ptext = ptext..string.format (tr("Total fuel expenditure: %.2f kg"), dm)
 note:set_pos (0.3,0.15,0.9,0.95)
 note:set_size (1)
 note:set_text (ptext)
 
 -- enter high score list!
 if #slist<max_score or dm < slist[#slist][2] then
-	ptext = ptext.."\n\nYou made it into the high score!"
+	ptext = ptext..tr("\n\nYou made it into the high score!")
 	note:set_text (ptext)
-    name = proc.wait_input ('High score: Enter your name:')
+    name = proc.wait_input (tr('High score: Enter your name:'))
     idx = #slist+1
     for i = 1,#slist do
         if slist[i][2] > dm then idx=i; break end

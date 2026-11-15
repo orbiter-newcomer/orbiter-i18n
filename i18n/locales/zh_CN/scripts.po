@@ -1,0 +1,381 @@
+# Orbiter 中文翻译（脚本显示文本）
+# 由内置 Lua 脚本（Challenges 等）通过 tr() 查询；英文模式返回原文。
+
+msgid "Flight challenge:\n\nLaunch the Delta-glider into orbit and dock\nwith the International Space Station.\nUse as little fuel as possible.\n"
+msgstr "飞行挑战：\n\n将三角滑翔机发射入轨并与国际空间站对接。\n尽可能少用燃料。\n"
+
+msgid "Flight challenge:\n\nTransfer to the moon and dock with orbiting\nwheel, Luna-Ob1. Minimize fuel use.\n"
+msgstr "飞行挑战：\n\n转移到月球并与环绕的轮形站 Luna-Ob1 对接。\n尽量少用燃料。\n"
+
+msgid "Flight challenge:\n\nAdvanced lunar transfer: Transfer to the moon\nand dock with orbiting wheel, Luna-Ob1. Minimize\nfuel use.\nThis time you need to consider plane alignments.\n"
+msgstr "飞行挑战：\n\n高级月球转移：转移到月球并与环绕的轮形站 Luna-Ob1 对接。\n尽量少用燃料。\n这次你需要考虑轨道面调整。\n"
+
+msgid "Flight challenge:\n\nThis sounds simple enough: Deorbit the glider and\nland at Kennedy Space Center, SLF Runway 33\n- without refuelling.\nTip: a direct approach is not the best strategy here.\n"
+msgstr "飞行挑战：\n\n听起来很简单：让滑翔机离轨并降落在肯尼迪航天中心的 SLF 33 号跑道——不补充燃料。\n提示：直接进近在这里不是最佳策略。\n"
+
+msgid "High score list:\n\n"
+msgstr "最高分列表：\n\n"
+
+msgid "Fuel used"
+msgstr "燃料消耗"
+
+msgid "Name"
+msgstr "姓名"
+
+msgid "No high scores yet!"
+msgstr "暂无最高分记录！"
+
+msgid "Initial propellant mass: %.2f kg\n"
+msgstr "初始推进剂质量：%.2f kg\n"
+
+msgid "Used so far: %.2f kg\n"
+msgstr "已消耗：%.2f kg\n"
+
+msgid "Fuel used: %.2f kg"
+msgstr "已用燃料：%.2f kg"
+
+msgid "Challenge completed successfully!\n"
+msgstr "挑战成功完成！\n"
+
+msgid "Total fuel expenditure: %.2f kg"
+msgstr "总燃料消耗：%.2f kg"
+
+msgid "\n\nYou made it into the high score!"
+msgstr "\n\n你进入了最高分榜！"
+
+msgid "High score: Enter your name:"
+msgstr "最高分：请输入你的名字："
+
+msgid "Could not find GL-01. Aborting"
+msgstr "找不到 GL-01，正在中止。"
+
+msgid "Could not find GL-1. Aborting"
+msgstr "找不到 GL-1，正在中止。"
+
+msgid "Wrong vessel class. Aborting"
+msgstr "飞船类型错误，正在中止。"
+
+msgid "Mission failed!"
+msgstr "任务失败！"
+
+msgid "Mission failure: hard surface impact!\n(%.2f m/s)"
+msgstr "任务失败：硬着陆！\n(%.2f m/s)"
+
+msgid "Fuel remaining:\n%.2f kg (Main) + %.2f (RCS)"
+msgstr "剩余燃料：\n%.2f kg（主） + %.2f（RCS）"
+
+msgid "\n\nDistance to target: %g km\n"
+msgstr "\n\n距目标距离：%g km\n"
+
+msgid "\n\nGround contact!"
+msgstr "\n\n已接触地面！"
+# ---- Solar system 场景注解（solsys2016.lua）----
+msgid "Mercury"
+msgstr "水星"
+
+msgid "Radius: 2,440km  Mass: 3.285×10^23kg  Mean orbital radius: 57.91×10^6km (0.387AU)  Orbital period: 7.601×10^6s (88.0 days)"
+msgstr "半径：2,440km  质量：3.285×10^23kg  平均轨道半径：57.91×10^6km (0.387AU)  轨道周期：7.601×10^6s (88.0 天)"
+
+msgid "Venus"
+msgstr "金星"
+
+msgid "Radius: 6,052km  Mass: 4.867×10^24kg  Mean orbital radius: 108.2×10^6km (0.723AU)  Orbital period: 1.941×10^7s (224.7 days)"
+msgstr "半径：6,052km  质量：4.867×10^24kg  平均轨道半径：108.2×10^6km (0.723AU)  轨道周期：1.941×10^7s (224.7 天)"
+
+msgid "Radius: 6,371km  Mass: 5.972×10^24kg  Mean orbital radius: 149.6×10^6km (1AU)  Orbital period: 3.156×10^7s (365.24 days)"
+msgstr "半径：6,371km  质量：5.972×10^24kg  平均轨道半径：149.6×10^6km (1AU)  轨道周期：3.156×10^7s (365.24 天)"
+
+msgid "Florida and Kennedy Space Center"
+msgstr "佛罗里达与肯尼迪航天中心"
+
+msgid "South America: Andes"
+msgstr "南美洲：安第斯山脉"
+
+msgid "Moon"
+msgstr "月球"
+
+msgid "Natural satellite of Earth  Radius: 1,737km  Mass: 7.348×10^22kg  Mean orbital radius: 3.8×10^5km  Orbital period: 2.317×10^6s (27.32 days)"
+msgstr "地球的天然卫星  半径：1,737km  质量：7.348×10^22kg  平均轨道半径：3.8×10^5km  轨道周期：2.317×10^6s (27.32 天)"
+
+msgid "Mare Crisium to Mare Australe"
+msgstr "危海至南海"
+
+msgid "Mare Moscoviense and Titov crater"
+msgstr "莫斯科海与季托夫环形山"
+
+msgid "Mars"
+msgstr "火星"
+
+msgid "Radius: 3,390km  Mass: 6.39×10^23kg  Mean orbital radius: 227.9×10^6km (1.52AU)  Orbital period: 5.94×10^7s (687.0 days)"
+msgstr "半径：3,390km  质量：6.39×10^23kg  平均轨道半径：227.9×10^6km (1.52AU)  轨道周期：5.94×10^7s (687.0 天)"
+
+msgid "Noctis Labyrinthus and Valles Marineris"
+msgstr "夜迷宫与水手号峡谷"
+
+msgid "Olympus Base and Olympus Mons"
+msgstr "奥林匹斯基地与奥林匹斯山"
+
+msgid "Phobos"
+msgstr "火卫一"
+
+msgid "Natural satellite of Mars    Mean radius: 11.27km  Mass: 1.066×10^16kg  Mean orbital radius: 9,374km  Orbital period: 2.755×10^4s (0.32 days)"
+msgstr "火星的天然卫星  平均半径：11.27km  质量：1.066×10^16kg  平均轨道半径：9,374km  轨道周期：2.755×10^4s (0.32 天)"
+
+msgid "Deimos"
+msgstr "火卫二"
+
+msgid "Natural satellite of Mars    Mean radius: 6.2km  Mass: 1.48×10^15kg  Mean orbital radius: 23,463km  Orbital period: 1.091×10^5s (1.263 days)"
+msgstr "火星的天然卫星  平均半径：6.2km  质量：1.48×10^15kg  平均轨道半径：23,463km  轨道周期：1.091×10^5s (1.263 天)"
+
+msgid "Vesta"
+msgstr "灶神星"
+
+msgid "Asteriod belt object  Mean radius: 262.5km  Mass: 2.589×10^20kg  Mean orbital radius: 3.533×10^8km (2.3618AU)  Orbital period: 1.145×10^8s (3.63 years)"
+msgstr "Asteriod belt object  平均半径：262.5km  质量：2.589×10^20kg  平均轨道半径：3.533×10^8km (2.3618AU)  轨道周期：1.145×10^8s (3.63 年)"
+
+msgid "Jupiter"
+msgstr "木星"
+
+msgid "Radius: 69,911km  Mass: 1.898×10^27kg  Mean orbital radius: 778.5×10^6km (5.20AU)  Orbital period: 3.743×10^8s (11.86 years)"
+msgstr "半径：69,911km  质量：1.898×10^27kg  平均轨道半径：778.5×10^6km (5.20AU)  轨道周期：3.743×10^8s (11.86 年)"
+
+msgid "Io"
+msgstr "木卫一"
+
+msgid "Natural satellite of Jupiter  Radius: 1,821.6km  Mass: 8.932×10^22kg  Mean orbital radius: 421,700km  Orbital period: 1.529×10^5s (1.769 days)"
+msgstr "木星的天然卫星  半径：1,821.6km  质量：8.932×10^22kg  平均轨道半径：421,700km  轨道周期：1.529×10^5s (1.769 天)"
+
+msgid "Europa"
+msgstr "木卫二（欧罗巴）"
+
+msgid "Natural satellite of Jupiter  Radius: 1,560.8km  Mass: 4.800×10^22kg  Mean orbital radius: 670,900km  Orbital period: 3.068×10^5s (3.551 days)"
+msgstr "木星的天然卫星  半径：1,560.8km  质量：4.800×10^22kg  平均轨道半径：670,900km  轨道周期：3.068×10^5s (3.551 天)"
+
+msgid "Ganymede"
+msgstr "木卫三（盖尼米德）"
+
+msgid "Natural satellite of Jupiter  Radius: 2,634.1km  Mass: 1.482×10^23kg  Mean orbital radius: 1.0703×10^6km  Orbital period: 6.182×10^5s (7.155 days)"
+msgstr "木星的天然卫星  半径：2,634.1km  质量：1.482×10^23kg  平均轨道半径：1.0703×10^6km  轨道周期：6.182×10^5s (7.155 天)"
+
+msgid "Callisto"
+msgstr "木卫四（卡利斯托）"
+
+msgid "Natural satellite of Jupiter  Radius: 2,410.3km  Mass: 1.076×10^23kg  Mean orbital radius: 1.883×10^6km  Orbital period: 1.442×10^6s (16.690 days)"
+msgstr "木星的天然卫星  半径：2,410.3km  质量：1.076×10^23kg  平均轨道半径：1.883×10^6km  轨道周期：1.442×10^6s (16.690 天)"
+
+msgid "Saturn"
+msgstr "土星"
+
+msgid "Radius: 58,232km  Mass:  5.683×10^26kg  Mean orbital radius: 1.433×10^9km (9.58AU)  Orbital period: 9.2960×10^8s (29.46 years)"
+msgstr "半径：58,232km  质量： 5.683×10^26kg  平均轨道半径：1.433×10^9km (9.58AU)  轨道周期：9.2960×10^8s (29.46 年)"
+
+msgid "Mimas"
+msgstr "土卫一"
+
+msgid "Natural satellite of Saturn  Radius: 198.2km  Mass:  3.7493×10^19kg  Mean orbital radius: 185,320km  Orbital period: 81389s (0.942 days)"
+msgstr "土星的天然卫星  半径：198.2km  质量： 3.7493×10^19kg  平均轨道半径：185,320km  轨道周期：81389s (0.942 天)"
+
+msgid "Enceladus"
+msgstr "土卫二"
+
+msgid "Natural satellite of Saturn  Radius: 252.1km  Mass: 1.0802×10^20kg  Mean orbital radius: 237,912km  Orbital period: 1.184×10^5s (1.370 days)"
+msgstr "土星的天然卫星  半径：252.1km  质量：1.0802×10^20kg  平均轨道半径：237,912km  轨道周期：1.184×10^5s (1.370 天)"
+
+msgid "Tethys"
+msgstr "土卫三"
+
+msgid "Natural satellite of Saturn  Radius: 531.1km  Mass: 6.1745×10^20kg  Mean orbital radius: 294,572km  Orbital period: 1.631×10^5s (1.888 days)"
+msgstr "土星的天然卫星  半径：531.1km  质量：6.1745×10^20kg  平均轨道半径：294,572km  轨道周期：1.631×10^5s (1.888 天)"
+
+msgid "Dione"
+msgstr "土卫四"
+
+msgid "Natural satellite of Saturn  Radius: 561.4km  Mass: 1.0955×10^21kg  Mean orbital radius: 377,336km  Orbital period: 2.365×10^5s (2.737 days)"
+msgstr "土星的天然卫星  半径：561.4km  质量：1.0955×10^21kg  平均轨道半径：377,336km  轨道周期：2.365×10^5s (2.737 天)"
+
+msgid "Rhea"
+msgstr "土卫五"
+
+msgid "Natural satellite of Saturn  Radius: 763.8km  Mass: 2.306518×10^21kg  Mean orbital radius: 527,067km  Orbital period: 3.904×10^5s (4.518 days)"
+msgstr "土星的天然卫星  半径：763.8km  质量：2.306518×10^21kg  平均轨道半径：527,067km  轨道周期：3.904×10^5s (4.518 天)"
+
+msgid "Titan"
+msgstr "土卫六（泰坦）"
+
+msgid "Natural satellite of Saturn  Radius: 2575.5km  Mass: 1.3452×10^23kg  Mean orbital radius: 1.2217×10^6km  Orbital period: 1.378×10^6s (15.945 days)"
+msgstr "土星的天然卫星  半径：2575.5km  质量：1.3452×10^23kg  平均轨道半径：1.2217×10^6km  轨道周期：1.378×10^6s (15.945 天)"
+
+msgid "Iapetus"
+msgstr "土卫八"
+
+msgid "Natural satellite of Saturn  Radius: 734.5km  Mass: 1.8056×10^21kg  Mean orbital radius: 3.5601×10^6km  Orbital period: 6.853×10^6s (79.322 days)"
+msgstr "土星的天然卫星  半径：734.5km  质量：1.8056×10^21kg  平均轨道半径：3.5601×10^6km  轨道周期：6.853×10^6s (79.322 天)"
+
+msgid "Uranus"
+msgstr "天王星"
+
+msgid "Radius: 25,362km  Mass: 8.681×10^25kg  Mean orbital radius: 2.877×10^9km (19.23AU)  Orbital period: 2.6515×10^9s (84.0205 years)"
+msgstr "半径：25,362km  质量：8.681×10^25kg  平均轨道半径：2.877×10^9km (19.23AU)  轨道周期：2.6515×10^9s (84.0205 年)"
+
+msgid "Miranda"
+msgstr "天卫五"
+
+msgid "Natural satellite of Uranus  Radius: 235.8km  Mass: 6.59×10^19kg  Mean orbital radius: 129,840km  Orbital period: 1.2212×10^5s (1.413 days)"
+msgstr "天王星的天然卫星  半径：235.8km  质量：6.59×10^19kg  平均轨道半径：129,840km  轨道周期：1.2212×10^5s (1.413 天)"
+
+msgid "Ariel"
+msgstr "天卫一"
+
+msgid "Natural satellite of Uranus  Radius: 578.9km  Mass: 1.353×10^21kg  Mean orbital radius: 190,900km  Orbital period: 2.17728×10^5s (2.520 days)"
+msgstr "天王星的天然卫星  半径：578.9km  质量：1.353×10^21kg  平均轨道半径：190,900km  轨道周期：2.17728×10^5s (2.520 天)"
+
+msgid "Umbriel"
+msgstr "天卫二"
+
+msgid "Natural satellite of Uranus  Radius: 584.7km  Mass: 1.172×10^21kg  Mean orbital radius: 265,967km  Orbital period: 3.5804×10^5s (4.144 days)"
+msgstr "天王星的天然卫星  半径：584.7km  质量：1.172×10^21kg  平均轨道半径：265,967km  轨道周期：3.5804×10^5s (4.144 天)"
+
+msgid "Titania"
+msgstr "天卫三"
+
+msgid "Natural satellite of Uranus  Radius: 788.4km  Mass: 3.527×10^21kg  Mean orbital radius: 436,282km  Orbital period: 7.522×10^5s (8.706 days)"
+msgstr "天王星的天然卫星  半径：788.4km  质量：3.527×10^21kg  平均轨道半径：436,282km  轨道周期：7.522×10^5s (8.706 天)"
+
+msgid "Oberon"
+msgstr "天卫四"
+
+msgid "Natural satellite of Uranus  Radius: 761.4km  Mass: 3.014×10^21kg  Mean orbital radius: 583,416km  Orbital period: 1.163×10^6s (13.463 days)"
+msgstr "天王星的天然卫星  半径：761.4km  质量：3.014×10^21kg  平均轨道半径：583,416km  轨道周期：1.163×10^6s (13.463 天)"
+
+msgid "Neptune"
+msgstr "海王星"
+
+msgid "Radius: 24,622km  Mass: 1.024×10^26kg  Mean orbital radius: 4.498×10^9km (30.07AU)  Orbital period: 5.1997×10^9s (164.8 years)"
+msgstr "半径：24,622km  质量：1.024×10^26kg  平均轨道半径：4.498×10^9km (30.07AU)  轨道周期：5.1997×10^9s (164.8 年)"
+
+msgid "Triton"
+msgstr "海卫一"
+
+msgid "Natural satellite of Neptune  Radius: 1353.4km  Mass: 2.14×10^22kg  Mean orbital radius: 354,757km  Orbital period: -5.0776×10^5s (-5.877 days) - retrograde"
+msgstr "海王星的天然卫星  半径：1353.4km  质量：2.14×10^22kg  平均轨道半径：354,757km  轨道周期：-5.0776×10^5s (-5.877 天) - 逆行"
+
+msgid "Proteus"
+msgstr "海卫八"
+
+msgid "Natural satellite of Neptune  Radius: 210km  Mass: 4.4×10^19kg  Mean orbital radius: 117,647km  Orbital period: 9.6968×10^4s (1.12231477 days)"
+msgstr "海王星的天然卫星  半径：210km  质量：4.4×10^19kg  平均轨道半径：117,647km  轨道周期：9.6968×10^4s (1.12231477 天)"
+
+msgid "Nereid"
+msgstr "海卫二"
+
+msgid "Natural satellite of Neptune  Radius: 170km  Mean orbital radius: 5.5141×10^6km  Orbital period: 3.1115×10^7s (360.1362 days)"
+msgstr "海王星的天然卫星  半径：170km  平均轨道半径：5.5141×10^6km  轨道周期：3.1115×10^7s (360.1362 天)"
+
+msgid "Earth"
+msgstr "地球"
+
+msgid "Earthrise"
+msgstr "地出"
+
+
+# ---- Demos 教程注解（atlantis_ascent.lua）----
+msgid "This scenario demonstrates the use of the Shuttle ascent autopilot in Orbiter."
+msgstr "本场景演示 Orbiter 中航天飞机上升自动驾驶仪的使用。"
+
+msgid "The autopilot is accessed via the AscentAP MFD mode, already activated in the left MFD."
+msgstr "自动驾驶仪通过 AscentAP MFD 模式访问，该模式已在左侧 MFD 中激活。"
+
+msgid "We first need to set the parameters of the orbit."
+msgstr "我们首先需要设置轨道参数。"
+
+msgid "Adjust the altitude of the target circular orbit with AL- and AL+."
+msgstr "用 AL- 和 AL+ 调整目标圆轨道的高度。"
+
+msgid "Adjust the launch azimuth (the initial heading) with AZ- and AZ+. The launch azimuth determines the inclination of the final orbit, which must be matched with the rendezvous target."
+msgstr "用 AZ- 和 AZ+ 调整发射方位角（初始航向）。发射方位角决定最终轨道的倾角，必须与交会目标匹配。"
+
+msgid "Wait for your launch window, then press L to initiate the launch sequence."
+msgstr "等待发射窗口，然后按 L 开始发射序列。"
+
+msgid "Watch the Shuttle make its way to orbit."
+msgstr "观看航天飞机飞向轨道。"
+
+# ---- Demos 教程注解（AtmAutopilot.lua）----
+msgid "This tutorial gives a brief hands-on demonstration of the Delta-glider's atmospheric autopilot."
+msgstr "本教程演示三角滑翔机大气自动驾驶仪的简要实操。"
+
+msgid "\n\nThe autopilot can be programmed via the Script MFD.\nYou should see the terminal in the display at the lower left of the window. If it doesn't show, terminate the simulation and make sure that the \"LuaMFD\" module is activated."
+msgstr "\n\n自动驾驶仪可通过脚本 MFD 编程。\n你应该能在窗口左下角显示器中看到终端。如果没有显示，请终止模拟并确认已激活 \"LuaMFD\" 模块。"
+
+msgid "First, we set the target airspeed. Press the MFD button labelled 'INP' and type the following text into the input box:\n\naap.spd(300)\n\n(aap.spd is the airspeed autopilot, and 300 is the target speed in m/s)\n\nPress Enter to submit the command."
+msgstr "首先设置目标空速。按标有 'INP' 的 MFD 按钮，并在输入框中输入以下文本：\n\naap.spd(300)\n\n（aap.spd 是空速自动驾驶仪，300 是目标速度，单位 m/s）\n\n按 Enter 提交命令。"
+
+msgid "Good. The glider now fires its main engines and starts to roll. At a ground speed of 100m/s, pull the stick to rotate."
+msgstr "很好。滑翔机现在点燃主发动机并开始滑跑。当对地速度达到 100m/s 时，拉杆抬头。"
+
+msgid "Excellent. Now raise the gear. Either simply press the \"G\" key, or enter the following into the MFD:\n\nV:Gear(UP)\n\n(note the capital 'V'. Terminal input is case-sensitive.)"
+msgstr "很好。现在收起起落架。可以直接按 \"G\" 键，或在 MFD 中输入：\n\nV:Gear(UP)\n\n（注意大写的 'V'。终端输入区分大小写。）"
+
+msgid "Now, let's set target altitude. Enter the following text in the MFD:\n\naap.alt(10e3)\n\n(This sets the target altitude to 10km.)\n\nMake sure you don't crash into the ground while programming the autopilot!"
+msgstr "现在设置目标高度。在 MFD 中输入以下文本：\n\naap.alt(10e3)\n\n（这会把目标高度设为 10km。）\n\n在编程自动驾驶仪时注意不要撞地！"
+
+msgid "As we approach the target altitude, the autopilot levels out the climb angle."
+msgstr "当我们接近目标高度时，自动驾驶仪会改平爬升角。"
+
+msgid "You can reset the target speed simply by entering a new value. Enter the following in the MFD:\n\naap.spd(600)"
+msgstr "只需输入新值即可重置目标速度。在 MFD 中输入：\n\naap.spd(600)"
+
+msgid "Reaching the new target speed. The same mechanism works for resetting the target altitude. Enter this in the MFD:\n\naap.alt(20e3)"
+msgstr "正在达到新的目标速度。同样的机制也适用于重置目标高度。在 MFD 中输入：\n\naap.alt(20e3)"
+
+msgid "The autopilot only controls the main engines. However, if you engage the glider's scram engines manually, the main engines will be throttled down automatically to maintain the target speed.\n\nTry it by setting the scram engines with [Alt]-[+] and [Alt]-[-] (The Alt key and the + and - keys on the numeric keypad)."
+msgstr "自动驾驶仪只控制主发动机。但如果你手动开启滑翔机的冲压发动机，主发动机会自动收油门以保持目标速度。\n\n试试用 [Alt]-[+] 和 [Alt]-[-] 设置冲压发动机（Alt 键和数字小键盘上的 + / - 键）。"
+
+msgid "You can manually override the autopilot settings.\nPull the stick to climb to 25km."
+msgstr "你可以手动覆盖自动驾驶仪的设置。\n拉杆爬升到 25km。"
+
+msgid "\nNow release the stick to allow the autopilot to return to its target altitude."
+msgstr "\n现在松开杆，让自动驾驶仪回到目标高度。"
+
+msgid "Certain combinations of speed and altitude cannot be sustained by the glider. Try resetting the target speed back to 250 m/s.\n(Turn off scram engines if still engaged)"
+msgstr "某些速度与高度的组合滑翔机无法维持。试着把目标速度重置回 250 m/s。\n（如果冲压发动机还开着，请关闭）"
+
+msgid "The autopilot pitches up in an attempt to maintain the target altitude."
+msgstr "自动驾驶仪会抬头以试图维持目标高度。"
+
+msgid "Eventually, even with fully extended elevator, the glider can't maintain an altitude of 20km at a speed of 250m/s.\nIt sinks until the denser air produces sufficient lift to balance the gravitational force."
+msgstr "最终，即使升降舵完全伸出，滑翔机也无法在 250m/s 下维持 20km 高度。\n它会下沉，直到更稠密的空气产生足够升力来平衡重力。"
+
+msgid "This concludes the tutorial. If you want, stay in the air and experiment with the autopilot settings."
+msgstr "本教程到此结束。如果你愿意，可以留在空中继续试验自动驾驶仪设置。"
+
+msgid "If you want to find out more details about the atmospheric autopilot, type:\n\nhelp(dg_aap)\n\ninto the MFD. This will bring up a help page."
+msgstr "如果想了解更多大气自动驾驶仪的细节，请在 MFD 中输入：\n\nhelp(dg_aap)\n\n这会打开帮助页。"
+
+# ---- Demos 教程注解（Spin_stabilisation.lua）----
+msgid "Space physics: Spin stabilisation"
+msgstr "空间物理：自旋稳定"
+
+msgid "\n\nThe attitude of an object can be stabilised by spinning\nit rapidly around one of its axes of symmetry. In this\nscenario, two rockets are placed in a low orbit. One is\nspinning around its longitudinal axis at 1Hz, the other\nis not."
+msgstr "\n\n让物体绕其某一对称轴快速自旋可以稳定其姿态。在本场景中，两枚火箭被送入低轨道：一枚以 1Hz 绕纵轴自旋，另一枚不自旋。"
+
+msgid "\n\nThe spinning rocket maintains its global orientation,\nwhile the other starts to rotate under the influence of\ngravity gradient torque."
+msgstr "\n\n自旋的火箭保持其全局指向，而另一枚则在重力梯度力矩作用下开始转动。"
+
+msgid "If the effect doesn't show, make sure that\nthe Gravity gradient torque option is ticked in the Parameters\ntab of the Orbiter Launchpad."
+msgstr "如果没有看到该效果，请确认在 Orbiter 启动器的参数页中勾选了\"重力梯度力矩\"选项。"
+
+msgid "Speeding up the simulation time ..."
+msgstr "正在加快模拟时间……"
+
+msgid "Note how the rocket in front starts to rotate\nunder the influence of the gravity gradient, while the\nspinning rocket behind maintains its attitude with\nrespect to the global (non-rotating) frame of reference."
+msgstr "注意前方的火箭如何在重力梯度影响下开始转动，而后方自旋的火箭相对全局（非旋转）参考系保持姿态。"
+
+msgid "(Dipping into Earth's shadow ...)"
+msgstr "（进入地球阴影……）"
+
+msgid "I am now going to stop the spinning rocket.\nWatch how it also slowly starts to rotate in the inhomogeneous\ngravity field."
+msgstr "现在我要停止自旋的火箭。\n观察它如何在非均匀引力场中缓慢开始转动。"
+
+msgid "Now I am spinning up the other rocket.\nAs a result, it will maintain the orientation of its\nlongitudinal axis."
+msgstr "现在我要让另一枚火箭自旋起来。\n结果它将保持其纵轴指向。"

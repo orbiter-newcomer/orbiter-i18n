@@ -16,8 +16,6 @@
 #include "Editor.h"
 #include "ScnEditorRelativity.inc"
 
-// Forward declaration: UTF-8 -> UTF-16 helper (defined later in this file)
-static std::wstring Utf8ToWideS(const char *s);
 #include <string>
 
 // Forward declaration: Chinese UI localization for scenario editor dialogs
@@ -152,8 +150,8 @@ void ScnEditor::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 		oapiGetObjectName (hBody, cbuf, 256);
 		if (hBody == hSelect) sel = n;
 		int item = -1;
-		if (strcmp(oapiTr("Build"), "Build") != 0) {
-			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)Utf8ToWideS(oapiTr(cbuf)).c_str());
+		if (oapiZhActive() != 0) {
+			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr(cbuf)).c_str());
 		} else {
 			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
 		}
@@ -1389,7 +1387,7 @@ void EditorTab_Edit::InitTab ()
 		}
 	}
 	SetWindowTextW (GetDlgItem (hTab, IDC_EDIT3),
-		Utf8ToWideS(oapiTr(vessel->GetFlightStatus() & 1 ? "Inactive (Landed)" : "Active (Flight)")).c_str());
+		oapiUtf8ToWString(oapiTr(vessel->GetFlightStatus() & 1 ? "Inactive (Landed)" : "Active (Flight)")).c_str());
 }
 
 char *EditorTab_Edit::HelpTopic ()
@@ -1401,7 +1399,7 @@ BOOL EditorTab_Edit::AddFuncButton (EditorFuncSpec *efs)
 {
 	if (nCustom == 6) return FALSE;
 	ShowWindow (GetDlgItem (hTab, IDC_STATIC1), SW_SHOW);
-	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), Utf8ToWideS(oapiTr(efs->btnlabel)).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), oapiUtf8ToWString(oapiTr(efs->btnlabel)).c_str());
 	ShowWindow (GetDlgItem (hTab, IDC_EXTRA1+nCustom), SW_SHOW);
 	funcCustom[nCustom++] = efs->func;
 	return TRUE;
@@ -1412,7 +1410,7 @@ BOOL EditorTab_Edit::AddPageButton (EditorPageSpec *eps)
 {
 	if (nCustom == 6) return FALSE;
 	ShowWindow (GetDlgItem (hTab, IDC_STATIC1), SW_SHOW);
-	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), Utf8ToWideS(oapiTr(eps->btnlabel)).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_EXTRA1+nCustom), oapiUtf8ToWString(oapiTr(eps->btnlabel)).c_str());
 	ShowWindow (GetDlgItem (hTab, IDC_EXTRA1+nCustom), SW_SHOW);
 	CustomPage[nCustom++] = ed->AddTab (new EditorTab_Custom (ed, eps->hDLL, eps->ResId, eps->TabProc));
 	return TRUE;
@@ -1643,10 +1641,10 @@ void EditorTab_Elements::RefreshSecondaryParams (const ELEMENTS &el, const ORBIT
 
 	sprintf (cbuf, "%g m", prm.PeD); SetWindowText (GetDlgItem (hTab, IDC_PERIAPSIS), cbuf);
 	sprintf (cbuf, "%g s", prm.PeT); SetWindowText (GetDlgItem (hTab, IDC_PET), cbuf);
-	sprintf (cbuf, "%0.3f °", prm.MnA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNANM), Utf8ToWideS(cbuf).c_str());
-	sprintf (cbuf, "%0.3f °", prm.TrA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRANM), Utf8ToWideS(cbuf).c_str());
-	sprintf (cbuf, "%0.3f °", prm.MnL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNLNG), Utf8ToWideS(cbuf).c_str());
-	sprintf (cbuf, "%0.3f °", prm.TrL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRLNG), Utf8ToWideS(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.MnA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNANM), oapiUtf8ToWString(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.TrA*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRANM), oapiUtf8ToWString(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.MnL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_MNLNG), oapiUtf8ToWString(cbuf).c_str());
+	sprintf (cbuf, "%0.3f °", prm.TrL*DEG); SetWindowTextW (GetDlgItem (hTab, IDC_TRLNG), oapiUtf8ToWString(cbuf).c_str());
 	if (closed) {
 		sprintf (cbuf, "%g s", prm.T);   SetWindowText (GetDlgItem (hTab, IDC_PERIOD), cbuf);
 		sprintf (cbuf, "%g m", prm.ApD); SetWindowText (GetDlgItem (hTab, IDC_APOAPSIS), cbuf);
@@ -1858,16 +1856,16 @@ char *EditorTab_Statevec::HelpTopic ()
 void EditorTab_Statevec::DlgLabels ()
 {
 	int crd = SendDlgItemMessage (hTab, IDC_CRD, CB_GETCURSEL, 0, 0);
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1A), Utf8ToWideS(oapiTr(crd ? "radius" : "x")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2A), Utf8ToWideS(oapiTr(crd ? "longitude" : "y")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3A), Utf8ToWideS(oapiTr(crd ? "latitude" : "z")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC4A), Utf8ToWideS(oapiTr(crd ? "d radius / dt" : "dx / dt")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5A), Utf8ToWideS(oapiTr(crd ? "d longitude / dt" : "dy / dt")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6A), Utf8ToWideS(oapiTr(crd ? "d latitude / dt" : "dz / dt")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr(crd ? "deg" : "m")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3), Utf8ToWideS(oapiTr(crd ? "deg" : "m")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5), Utf8ToWideS(oapiTr(crd ? "deg/s" : "m/s")).c_str());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6), Utf8ToWideS(oapiTr(crd ? "deg/s" : "m/s")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1A), oapiUtf8ToWString(oapiTr(crd ? "radius" : "x")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2A), oapiUtf8ToWString(oapiTr(crd ? "longitude" : "y")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3A), oapiUtf8ToWString(oapiTr(crd ? "latitude" : "z")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC4A), oapiUtf8ToWString(oapiTr(crd ? "d radius / dt" : "dx / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5A), oapiUtf8ToWString(oapiTr(crd ? "d longitude / dt" : "dy / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6A), oapiUtf8ToWString(oapiTr(crd ? "d latitude / dt" : "dz / dt")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), oapiUtf8ToWString(oapiTr(crd ? "deg" : "m")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC3), oapiUtf8ToWString(oapiTr(crd ? "deg" : "m")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC5), oapiUtf8ToWString(oapiTr(crd ? "deg/s" : "m/s")).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC6), oapiUtf8ToWString(oapiTr(crd ? "deg/s" : "m/s")).c_str());
 }
 
 INT_PTR EditorTab_Statevec::TabProc (HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -2083,6 +2081,9 @@ void EditorTab_Statevec::Apply ()
 		oapiGetGlobalVel (hRef, &refvel);     vel += refvel;
 		oapiGetGlobalPos (vs.rbody, &refpos); pos -= refpos;
 		oapiGetGlobalVel (vs.rbody, &refvel); vel -= refvel;
+
+		// Relativity: reject superluminal velocities (the input is not applied)
+		if (!ScnEditorCheckSuperluminal (vel)) return;
 		if (vs.status != 0) { // enforce freeflight mode
 			vs.status = 0;
 			vessel->GetRotationMatrix (rot);
@@ -2338,8 +2339,8 @@ void EditorTab_Landed::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 		oapiGetObjectName (hBody, cbuf, 256);
 		if (hBody == hSelect) sel = idx;
 		int item = -1;
-		if (strcmp(oapiTr("Build"), "Build") != 0) {
-			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)Utf8ToWideS(oapiTr(cbuf)).c_str());
+		if (oapiZhActive() != 0) {
+			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr(cbuf)).c_str());
 		} else {
 			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
 		}
@@ -2769,7 +2770,7 @@ void EditorTab_Propellant::Refresh ()
 	VESSEL *vessel = oapiGetVesselInterface (ed->hVessel);
 	ntank = vessel->GetPropellantCount();
 	sprintf (cbuf, oapiTr("of %d"), ntank);
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), oapiUtf8ToWString(cbuf).c_str());
 	GetWindowText (GetDlgItem (hTab, IDC_EDIT1), cbuf, 256);
 	i = sscanf (cbuf, "%d", &n);
 	if (i != 1 || n > ntank) {
@@ -2781,7 +2782,7 @@ void EditorTab_Propellant::Refresh ()
 	m0 = vessel->GetPropellantMaxMass (hP);
 	m  = vessel->GetPropellantMass (hP);
 	sprintf (cbuf, oapiTr("Mass (0-%0.2f kg)"), m0);
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), oapiUtf8ToWString(cbuf).c_str());
 	sprintf (cbuf, "%0.4f", m/m0);
 	SetWindowText (GetDlgItem (hTab, IDC_EDIT2), cbuf);
 	sprintf (cbuf, "%0.2f", m);
@@ -3052,7 +3053,7 @@ void EditorTab_Docking::Refresh ()
 	SetWindowText (GetDlgItem (hTab, IDC_ERRMSG), "");
 
 	sprintf (cbuf, oapiTr("of %d"), vessel->DockCount());
-	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_STATIC1), oapiUtf8ToWString(cbuf).c_str());
 
 	GetWindowText (GetDlgItem (hTab, IDC_EDIT1), cbuf, 256);
 	if (!sscanf (cbuf, "%d", &n)) n = 0;
@@ -3067,20 +3068,20 @@ void EditorTab_Docking::Refresh ()
 	NAVHANDLE hIDS = vessel->GetIDS (hDock);
 	if (hIDS) sprintf (cbuf, "%0.2f", oapiGetNavFreq (hIDS));
 	else      strcpy (cbuf, oapiTr("<none>"));
-	SetWindowTextW (GetDlgItem (hTab, IDC_EDIT2), Utf8ToWideS(cbuf).c_str());
+	SetWindowTextW (GetDlgItem (hTab, IDC_EDIT2), oapiUtf8ToWString(cbuf).c_str());
 	SendDlgItemMessage (hTab, IDC_IDS, BM_SETCHECK, hIDS ? BST_CHECKED : BST_UNCHECKED, 0);
 	EnableWindow (GetDlgItem (hTab, IDC_EDIT2), hIDS ? TRUE:FALSE);
 	EnableWindow (GetDlgItem (hTab, IDC_SPIN2), hIDS ? TRUE:FALSE);
 
 	OBJHANDLE hMate = vessel->GetDockStatus (hDock);
 	if (hMate) { // dock is engaged
-		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr("Currently docked to")).c_str());
+		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), oapiUtf8ToWString(oapiTr("Currently docked to")).c_str());
 		for (i = 0; i < 7; i++) ShowWindow (GetDlgItem (hTab, dockitem[i]), SW_HIDE);
 		for (i = 0; i < 2; i++) ShowWindow (GetDlgItem (hTab, undockitem[i]), SW_SHOW);
 		oapiGetObjectName (hMate, cbuf, 256);
 		SetWindowText (GetDlgItem (hTab, IDC_EDIT3), cbuf);
 	} else { // dock is free
-		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), Utf8ToWideS(oapiTr("Establish docking connection with")).c_str());
+		SetWindowTextW (GetDlgItem (hTab, IDC_STATIC2), oapiUtf8ToWString(oapiTr("Establish docking connection with")).c_str());
 		for (i = 0; i < 2; i++) ShowWindow (GetDlgItem (hTab, undockitem[i]), SW_HIDE);
 		for (i = 0; i < 7; i++) ShowWindow (GetDlgItem (hTab, dockitem[i]), SW_SHOW);
 	}

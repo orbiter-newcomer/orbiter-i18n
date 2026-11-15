@@ -60,7 +60,7 @@ set(common_src
 	htmlctrl.c
 	Select.cpp
 	OptionsPages.cpp
-	Localization.cpp
+	${CMAKE_SOURCE_DIR}/i18n/core/Localization.cpp
 # Body classes
 	Body.cpp
 	BodyIntegrator.cpp
@@ -126,6 +126,7 @@ set(common_src
 
 set(Orbiter_includes
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_SOURCE_DIR}/i18n/core
 	${CMAKE_SOURCE_DIR}/Orbitersdk/include
 	${CMAKE_SOURCE_DIR}/OVP
 	${CMAKE_CURRENT_BINARY_DIR}
@@ -189,5 +190,10 @@ add_custom_command(TARGET ${OrbiterTgt}	POST_BUILD
 )
 
 string(TIMESTAMP DATE "%d %b %Y")
-string(TIMESTAMP VERSION "%y%m%d")
+set(VERSION "1.3.0")
 configure_file(about.hpp.in about.hpp @ONLY)
+
+# Chinese localisation catalogs (external UTF-8 .po translation files)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/i18n/locales
+	DESTINATION ${ORBITER_INSTALL_ROOT_DIR}/i18n
+)

@@ -1830,36 +1830,31 @@ INT_PTR CALLBACK ViewProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 // Combo box item adder with Chinese UI support (no std::wstring dependency)
 static void AddComboItem(HWND hDlg, int id, const char *text)
 {
-	if (strcmp(oapiTr("Build"), "Build") == 0) {
+	if (oapiZhActive() == 0) {
 		SendDlgItemMessageA(hDlg, id, CB_ADDSTRING, 0, (LPARAM)text);   // English mode: original
 	} else {
-		wchar_t wbuf[512];
-		MultiByteToWideChar(CP_UTF8, 0, oapiTr(text), -1, wbuf, 512);
-		SendDlgItemMessageW(hDlg, id, CB_ADDSTRING, 0, (LPARAM)wbuf);
+		SendDlgItemMessageW(hDlg, id, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr(text)).c_str());
 	}
 }
 
 // Set dialog control text with Chinese UI support (UTF-8 -> UTF-16)
 static void SetDlgTextU(HWND hDlg, int id, const char *utf8)
 {
-	if (strcmp(oapiTr("Build"), "Build") == 0) {
+	if (oapiZhActive() == 0) {
 		SetWindowTextA(GetDlgItem(hDlg, id), utf8);
 	} else {
-		wchar_t wbuf[1024];
-		MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wbuf, 1024);
-		SetWindowTextW(GetDlgItem(hDlg, id), wbuf);
+		SetWindowTextW(GetDlgItem(hDlg, id), oapiUtf8ToWString(utf8).c_str());
 	}
 }
-
-#define ZH_D3D9_DEBUG
-#include "D3D9ClientZh.inc"
 
 static BOOL CALLBACK ZhDebugLocCb(HWND hWnd, LPARAM)
 {
     wchar_t txt[256];
     if (GetWindowTextW(hWnd, txt, 256) > 0) {
-        for (size_t i = 0; i < sizeof(dbgMap)/sizeof(dbgMap[0]); i++) {
-            if (!wcscmp(txt, dbgMap[i].en)) { SetWindowTextW(hWnd, dbgMap[i].zh); break; }
+        char utf8[1024];
+        if (oapiWideToUtf8(txt, utf8, sizeof(utf8)) > 0) {
+            const char *zh = oapiTr(utf8);
+            if (strcmp(zh, utf8) != 0) SetWindowTextW(hWnd, oapiUtf8ToWString(zh).c_str());
         }
     }
     return TRUE;
@@ -1867,10 +1862,15 @@ static BOOL CALLBACK ZhDebugLocCb(HWND hWnd, LPARAM)
 
 static void ZhLocalizeDebugDialog(HWND hDlg)
 {
-    if (strcmp(oapiTr("Build"), "Build") == 0) return;  // English mode: keep original
+    if (oapiZhActive() == 0) return;  // English mode: keep original
     wchar_t title[128];
-    if (GetWindowTextW(hDlg, title, 128) > 0 && !wcscmp(title, L"D3D9 Debug Controls"))
-        SetWindowTextW(hDlg, L"D3D9 调试控制");
+    if (GetWindowTextW(hDlg, title, 128) > 0) {
+        char utf8[512];
+        if (oapiWideToUtf8(title, utf8, sizeof(utf8)) > 0) {
+            const char *zh = oapiTr(utf8);
+            if (strcmp(zh, utf8) != 0) SetWindowTextW(hDlg, oapiUtf8ToWString(zh).c_str());
+        }
+    }
     EnumChildWindows(hDlg, ZhDebugLocCb, 0);
 }
 

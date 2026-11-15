@@ -1,0 +1,562 @@
+# Orbiter 中文翻译（UTF-8，.po 子集：msgid/msgstr/msgctxt）
+# D3D9Client 设置对话框文本
+# 由 i18n 数据生成；改翻译可直接编辑本文件，无需重新编译。
+
+msgid "Copy To Surface"
+msgstr "复制到表面"
+
+msgid "Copy to Low Orbit"
+msgstr "复制到低轨道"
+
+msgid "Copy to High Orbit"
+msgstr "复制到高轨道"
+
+msgid "Visualize Scatter Tables"
+msgstr "可视化散射表"
+
+msgid "Load Settings"
+msgstr "加载设置"
+
+msgid "Save Settings"
+msgstr "保存设置"
+
+msgid "Configuration"
+msgstr "配置"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "D3D9 Debug Controls"
+msgstr "D3D9 调试控制"
+
+msgid "Mesh Options"
+msgstr "网格选项"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Execute"
+msgstr "执行"
+
+msgid "Display"
+msgstr "显示"
+
+msgid "Camera"
+msgstr "相机"
+
+msgid "Group Idx"
+msgstr "组索引"
+
+msgid "Mesh Idx"
+msgstr "网格索引"
+
+msgid "Highlight selected group"
+msgstr "高亮所选组"
+
+msgid "Highlight selected mesh"
+msgstr "高亮所选网格"
+
+msgid "Boxes"
+msgstr "包围盒"
+
+msgid "Normalize"
+msgstr "归一化"
+
+msgid "Mipmap fade"
+msgstr "Mipmap 淡出"
+
+msgid "Reduce seams"
+msgstr "减少接缝"
+
+msgid "Spheres"
+msgstr "球体"
+
+msgid "Surface Tiles"
+msgstr "表面瓦片"
+
+msgid "Selected group only"
+msgstr "仅所选组"
+
+msgid "Bounding geometry"
+msgstr "包围几何"
+
+msgid "Visualize local light cones"
+msgstr "可视化局部光锥"
+
+msgid "Mesh debugger"
+msgstr "网格调试器"
+
+msgid "Misc."
+msgstr "杂项"
+
+msgid "Scene Debugger"
+msgstr "场景调试器"
+
+msgid "Texture Tools"
+msgstr "纹理工具"
+
+msgid "Selected mesh only"
+msgstr "仅所选网格"
+
+msgid "Dual sided"
+msgstr "双面"
+
+msgid "Selected visual only"
+msgstr "仅所选视觉体"
+
+msgid "Speed"
+msgstr "速度"
+
+msgid "Static"
+msgstr "静态"
+
+msgid "Add ambient light"
+msgstr "添加环境光"
+
+msgid "Wireframe"
+msgstr "线框"
+
+msgid "Material"
+msgstr "材质"
+
+msgid "Material property"
+msgstr "材质属性"
+
+msgid "Default Shader"
+msgstr "默认着色器"
+
+msgid "Debug Mode"
+msgstr "调试模式"
+
+msgid "Display special buffer"
+msgstr "显示特殊缓冲区"
+
+msgid "Resolution Bias"
+msgstr "分辨率偏置"
+
+msgid "Select Action"
+msgstr "选择操作"
+
+msgid "Target"
+msgstr "目标"
+
+msgid "Noise:"
+msgstr "噪声:"
+
+msgid "Save materials"
+msgstr "保存材质"
+
+msgid "Create kernel"
+msgstr "创建内核"
+
+msgid "Data window"
+msgstr "数据窗口"
+
+msgid "Save envmap"
+msgstr "保存环境贴图"
+
+msgid "Reload Shader"
+msgstr "重载着色器"
+
+msgid "Reload Textures"
+msgstr "重载纹理"
+
+msgid "Texture: None"
+msgstr "纹理：无"
+
+msgid "Pick"
+msgstr "拾取"
+
+msgid "Mesh: None"
+msgstr "网格：无"
+
+msgid "Group Status:"
+msgstr "组状态："
+
+msgid "Paste"
+msgstr "粘贴"
+
+msgid "Copy"
+msgstr "复制"
+
+msgid "Link channels"
+msgstr "链接通道"
+
+msgid "Use and Save the property"
+msgstr "使用并保存该属性"
+
+msgid "Extend material range"
+msgstr "扩展材质范围"
+
+msgid "FPS Limiter"
+msgstr "FPS 限制"
+
+msgid "Export textures"
+msgstr "导出纹理"
+
+msgid "-- Select a mesh group --"
+msgstr "-- 选择一个网格组 --"
+
+msgid "D3D9Client Advanced Setup"
+msgstr "D3D9Client 高级设置"
+
+msgid "Blend Mode"
+msgstr "混合模式"
+
+msgid "Surface micro textures"
+msgstr "地表微纹理"
+
+msgid "Load on demand (recommended)"
+msgstr "按需加载（推荐）"
+
+msgid "Pre-load at session start"
+msgstr "启动时预加载"
+
+msgid "Texture filter"
+msgstr "纹理过滤"
+
+msgid "Mipmap Bias"
+msgstr "Mipmap 偏置"
+
+msgid "Sharp"
+msgstr "锐利"
+
+msgid "Smooth"
+msgstr "平滑"
+
+msgid "Render Mode"
+msgstr "渲染模式"
+
+msgid "Pre-load base visuals at startup"
+msgstr "启动时预加载基地视觉"
+
+msgid "Enable cloud micro-textures"
+msgstr "启用云微纹理"
+
+msgid "Enable cloud normal maps"
+msgstr "启用云法线贴图"
+
+msgid "Enable GDI Overlay"
+msgstr "启用 GDI 叠加层"
+
+msgid "Enable absolute animation handling"
+msgstr "启用绝对动画处理"
+
+msgid "Enable terrain flattening"
+msgstr "启用地形平整"
+
+msgid "Enable advanced texture maps"
+msgstr "启用高级纹理贴图"
+
+msgid "Enable improved glass shading"
+msgstr "启用改进玻璃着色"
+
+msgid "Disable near clip plane compatibility mode"
+msgstr "禁用近裁剪面兼容模式"
+
+msgid "D3D9Client Credits"
+msgstr "D3D9Client 鸣谢"
+
+msgid "Enable Development Tools"
+msgstr "启用开发工具"
+
+msgid "OK"
+msgstr "确定"
+
+msgid "Surface texture load options"
+msgstr "地表纹理加载选项"
+
+msgid "SketchPad settings"
+msgstr "绘图板设置"
+
+msgid "Max. load frequency [Hz]:"
+msgstr "最大加载频率 [Hz]："
+
+msgid "Font rendering"
+msgstr "字体渲染"
+
+msgid "Graphics options"
+msgstr "图形选项"
+
+msgid "Generic configuration"
+msgstr "通用配置"
+
+msgid "Anti-aliasing"
+msgstr "抗锯齿"
+
+msgid "Tile Archive"
+msgstr "纹理存档"
+
+msgid "Debug level"
+msgstr "调试级别"
+
+msgid "Surface mipmaps"
+msgstr "地表 mipmap"
+
+msgid "Anisotropic filtering"
+msgstr "各向异性过滤"
+
+msgid "Planet glow"
+msgstr "行星辉光"
+
+msgid "Vessel mapping"
+msgstr "载具映射"
+
+msgid "Terrain mapping"
+msgstr "地形映射"
+
+msgid "Filter options"
+msgstr "过滤选项"
+
+msgid "Texture Mipmaps"
+msgstr "纹理 Mipmap"
+
+msgid "Post Processing"
+msgstr "后期处理"
+
+msgid "gcGUI Mode"
+msgstr "gcGUI 模式"
+
+msgid "StereoScopic 3D"
+msgstr "立体 3D"
+
+msgid "Convergence"
+msgstr "汇聚"
+
+msgid "Field Depth"
+msgstr "景深"
+
+msgid "Reflections and Custom camera settings"
+msgstr "反射与自定义相机设置"
+
+msgid "Reflection Mode"
+msgstr "反射模式"
+
+msgid "Custom Cameras"
+msgstr "自定义相机"
+
+msgid "Update Rate"
+msgstr "更新率"
+
+msgid "Terrain Resolution"
+msgstr "地形分辨率"
+
+msgid "Local lights"
+msgstr "局部光源"
+
+msgid "Self Shadows"
+msgstr "自阴影"
+
+msgid "Lower"
+msgstr "较低"
+
+msgid "Higher"
+msgstr "较高"
+
+msgid "Texture Bias"
+msgstr "纹理偏置"
+
+msgid "Mesh resolution"
+msgstr "网格分辨率"
+
+msgid "Enable debug break"
+msgstr "启用调试断点"
+
+msgid "Enable sun glare"
+msgstr "启用太阳眩光"
+
+msgid "Enable local lights glare"
+msgstr "启用局部光源眩光"
+
+msgid "Collider Visualization"
+msgstr "碰撞可视化"
+
+msgid "Show Base Colliders"
+msgstr "显示基地碰撞体"
+
+msgid "Show Vessel Colliders"
+msgstr "显示载具碰撞体"
+
+msgid "Enable dynamic ambient light"
+msgstr "启用动态环境光"
+
+msgid "Earth visual config"
+msgstr "地球视觉配置"
+
+msgid "Enable shader cache for faster startup"
+msgstr "启用着色器缓存（加快启动）"
+
+msgid "Enable increased atmosphere quality"
+msgstr "启用增强大气质量"
+
+msgid "Max tiles allocated"
+msgstr "最大图块分配"
+
+msgid "True Full Screen (no alt-tab)"
+msgstr "真全屏（不可 Alt-Tab）"
+
+msgid "Full Screen Window"
+msgstr "全屏窗口"
+
+msgid "Window with Taskbar"
+msgstr "带任务栏窗口"
+
+msgid "None"
+msgstr "无"
+
+msgid "0"
+msgstr "0（关闭日志）"
+
+msgid "1"
+msgstr "1（基础日志）"
+
+msgid "2"
+msgstr "2（详细日志）"
+
+msgid "3"
+msgstr "3（调试日志）"
+
+msgid "4"
+msgstr "4（全部日志）"
+
+msgid "Cleartype"
+msgstr "清晰字体"
+
+msgid "Disable (Debug)"
+msgstr "禁用（调试）"
+
+msgid "Planet Only"
+msgstr "仅行星"
+
+msgid "Full Scene"
+msgstr "全场景"
+
+msgid "Disable"
+msgstr "禁用"
+
+msgid "Enabled"
+msgstr "启用"
+
+msgid "Light"
+msgstr "快"
+
+msgid "Medimum"
+msgstr "中"
+
+msgid "Heavy"
+msgstr "慢"
+
+msgid "Load as defined"
+msgstr "按定义加载"
+
+msgid "Autogen missing"
+msgstr "自动生成缺失"
+
+msgid "Autogen all"
+msgstr "全部自动生成"
+
+msgid "Point (Fast/Good)"
+msgstr "点采样（快/好）"
+
+msgid "Linear (Fast/Bad)"
+msgstr "线性（快/差）"
+
+msgid "Anisotropic 2x"
+msgstr "各向异性 2x"
+
+msgid "Anisotropic 4x (Better)"
+msgstr "各向异性 4x（较好）"
+
+msgid "Anisotropic 8x"
+msgstr "各向异性 8x"
+
+msgid "Anisotropic 16x (Slow/Best)"
+msgstr "各向异性 16x（慢/最佳）"
+
+msgid "Soft light"
+msgstr "柔光"
+
+msgid "Normal light"
+msgstr "普通光照"
+
+msgid "Hard light"
+msgstr "硬光"
+
+msgid "Enabled (slow2load)"
+msgstr "启用（慢速加载）"
+
+msgid "Cache only"
+msgstr "仅缓存"
+
+msgid "Archive only"
+msgstr "仅存档"
+
+msgid "Cache & Archive"
+msgstr "缓存并存档"
+
+msgid "Light glow"
+msgstr "轻辉光"
+
+msgid "4x Partial"
+msgstr "4x 部分"
+
+msgid "4x Full"
+msgstr "4x 全"
+
+msgid "12x Partial"
+msgstr "12x 部分"
+
+msgid "12x Full"
+msgstr "12x 全"
+
+msgid "16x Partial"
+msgstr "16x 部分"
+
+msgid "16x Full"
+msgstr "16x 全"
+
+msgid "20x Partial"
+msgstr "20x 部分"
+
+msgid "20x Full"
+msgstr "20x 全"
+
+msgid "Focus + payload"
+msgstr "焦点 + 载荷"
+
+msgid "Near by objects"
+msgstr "附近物体"
+
+msgid "All visible objects"
+msgstr "所有可见物体"
+
+msgid "9 samples"
+msgstr "9 样本"
+
+msgid "27 samples"
+msgstr "27 样本"
+
+msgid "27s dither"
+msgstr "27s 抖动"
+
+msgid "40 samples"
+msgstr "40 样本"
+
+msgid "40s dither"
+msgstr "40s 抖动"
+
+msgid "Stencil"
+msgstr "模板"
+
+msgid "Projected"
+msgstr "投影"
+
+msgid "(unused)"
+msgstr "（未使用）"
+
+msgid "Windowed"
+msgstr "窗口模式"
+

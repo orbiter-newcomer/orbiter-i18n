@@ -122,6 +122,12 @@ protected:
 	void ParseError (const char *msg) const;
 	// Log a parse error
 
+	virtual void FootprintExtents (double &hx, double &hz) const;
+	// Returns the half-extents of the object's footprint in base-local x/z coords.
+
+	double FootprintMinElevation () const;
+	// Returns the lowest terrain elevation below the object's footprint.
+
 	const Base *base; // pointer to associated surface base
 	int ngrp;         // number of mesh groups used by the object
 	Vector relpos;    // object position relative to basis frame
@@ -131,6 +137,8 @@ protected:
 	double elev;      // elevation of reference point above mean radius [m]
 	double yofs;      // vertical translation of reference point against base reference
 	bool bCollision;  // object has collision
+	bool bRestOnFootprint; // building model assumed a flat ground: rest it on the
+	                       // lowest terrain point below its footprint
 };
 
 // ======================================================================================
@@ -301,6 +309,9 @@ public:
 	//void UpdateShadow (Vector &fromsun, double az);
 	void Activate ();
 	void Deactivate ();
+
+	void FootprintExtents (double &hx, double &hz) const;
+	// tank footprint: ellipse with radii scale.x/scale.z
 
 private:
 	LONGLONG  texid[2];   // texture ids

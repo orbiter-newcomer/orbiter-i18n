@@ -20,6 +20,7 @@ target_link_libraries(AscentMFD
 )
 
 target_include_directories(AscentMFD
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 )
 

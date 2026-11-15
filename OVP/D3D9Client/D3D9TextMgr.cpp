@@ -285,7 +285,7 @@ restart:
 	// In Chinese mode render Unicode (CJK) glyphs with the UI CJK sans font.
 	// The ASCII bitmap font above keeps the original face so that character
 	// metrics (cw/ch) - and therefore MFD layouts - remain unchanged.
-	bool zhMode = (strcmp(oapiTr("Build"), "Build") != 0);
+	bool zhMode = (oapiZhActive() != 0);
 	if (zhMode)
 		strcpy_s(lf.lfFaceName, "Noto Sans CJK SC");
 	// Use DEFAULT_CHARSET so GDI font linking can select the correct glyphs for
@@ -421,7 +421,7 @@ float D3D9Text::Length2(const char *_str, int l)
 
 	len -= spacing;
 	if (len<0) len=0;
-	if (strcmp(oapiTr("Build"), "Build") != 0) return len * scaling * 0.85f;   // match the ASCII glyph downscale in PrintSkp
+	if (oapiZhActive() != 0) return len * scaling * 0.85f;   // match the ASCII glyph downscale in PrintSkp
 	return len * scaling;
 }
 
@@ -473,7 +473,7 @@ float D3D9Text::PrintSkp(D3D9Pad *pSkp, float xpos, float ypos, const char *_str
 	// factor and centred vertically in their character cell.
 	// Chinese UI only: scale the ASCII glyphs down to match the CJK font size.
 	// English UI keeps the original glyph size and position (no adjustments).
-	const bool zhMode = (strcmp(oapiTr("Build"), "Build") != 0);
+	const bool zhMode = (oapiZhActive() != 0);
 	const float zscale = (zhMode ? 0.85f : 1.0f);
 	float h = FontData[0].h * zscale;
 	if (zhMode) ypos -= 2.0f;   // fine vertical alignment (scaled ASCII glyphs sit slightly low)

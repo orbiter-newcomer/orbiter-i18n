@@ -1173,7 +1173,7 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 
 	// '@' fonts render everything through the Unicode font (Chinese UI only)
 	const D3D9PadFont *puf = (cfont ? static_cast<const D3D9PadFont*>(cfont) : nullptr);
-	if (puf && puf->m_bUnicodeAll && strcmp(oapiTr("Build"), "Build") != 0) {
+	if (puf && puf->m_bUnicodeAll && oapiZhActive() != 0) {
 		std::wstring wall = UTF8ToUTF16(utf8, ulen);
 		int oxa = 0, oya = 0;
 		GetOrigin(&oxa, &oya);
@@ -1937,7 +1937,7 @@ D3D9PadFont::D3D9PadFont(int height, bool prop, const char *face, FontStyle styl
 
 	// Chinese UI: draw the ASCII bitmap glyphs with Arial, but keep the ORIGINAL
 	// face's metrics for layout (cw/ch), so MFD layouts stay put.
-	const bool zhMode = (strcmp(oapiTr("Build"), "Build") != 0);
+	const bool zhMode = (oapiZhActive() != 0);
 	char metricFace[64];
 	strcpy_s(metricFace, 64, face);
 	const char *drawFace = face;
@@ -2129,7 +2129,7 @@ HFONT D3D9PadFont::GetGDIFont () const
 //
 int D3D9PadFont::GetTextLength(const char *pText, int len) const
 {
-	if (m_bUnicodeAll && strcmp(oapiTr("Build"), "Build") != 0) {
+	if (m_bUnicodeAll && oapiZhActive() != 0) {
 		std::wstring w = UTF8ToUTF16(pText, len);
 		return int(pFont->Length2(w.c_str(), (int)w.length()));
 	}

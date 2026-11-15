@@ -182,7 +182,7 @@ namespace oapi {
 			ld.AddDataStream(oapiTr("L/D"),  ImAxis_Y2, lld,   oapiTr(" _____L/D"),  " %8.3f");
 
 			StreamGraph &mass = CreateGraph(oapiTr("Mass"), oapiTr("Mass (Ton)"));
-			mass.AddDataStream(oapiTr("Total"),      ImAxis_Y1, lmass, oapiTr(" _TOTMASS"), " %8.0f");
+			mass.AddDataStream(oapiTr("Total mass"), ImAxis_Y1, lmass, oapiTr(" _TOTMASS"), " %8.0f");
 			mass.AddDataStream(oapiTr("Propellant"), ImAxis_Y1, lprop, oapiTr(" _PRPMASS"), " %8.0f");
 
 			StreamGraph &aoa = CreateGraph(oapiTr("AoA"), oapiTr("Angle (°)"));
@@ -215,7 +215,7 @@ namespace oapi {
 			m_LogFile = fopen(m_sLogfile.c_str(), m_bResetLog ? "wt" : "at");
 			if(!m_LogFile) {
 				std::string error = std::string("Cannot open file ") + m_sLogfile + " for writing";
-				oapiAddNotification(OAPINOTIF_ERROR, "Flight data recording error", error.c_str());
+				oapiAddNotification(OAPINOTIF_ERROR, oapiTr("Flight data recording error"), error.c_str());
 				return;
 			}
 			if (m_bResetLog) { // write out header
@@ -247,7 +247,7 @@ namespace oapi {
 				}
 			}
 			fprintf(m_LogFile, "\n");
-			oapiAddNotification(OAPINOTIF_INFO, "Flight data recording enabled", m_vesselName.c_str());
+			oapiAddNotification(OAPINOTIF_INFO, oapiTr("Flight data recording enabled"), m_vesselName.c_str());
 		}
 
 		void StopRecording() {
@@ -255,7 +255,7 @@ namespace oapi {
 				fprintf(m_LogFile, "# Log stopped for %s\n", m_vesselName.c_str());
 				fclose(m_LogFile);
 				m_LogFile = NULL;
-				oapiAddNotification(OAPINOTIF_INFO, "Flight data recording disabled", m_vesselName.c_str());
+				oapiAddNotification(OAPINOTIF_INFO, oapiTr("Flight data recording disabled"), m_vesselName.c_str());
 			}
 		}
 

@@ -75,9 +75,7 @@ Vector SingleGacc_pn (const Vector &rpos, const Vector &rvel, const CelestialBod
 			double aN = GM/(d*d);
 			double Jlen = J.length();
 			double aM = Jlen*c_light/(Ggrav*body->Mass()*body->Mass());
-			LOGOUT ("RELPN: body=%s mass=%.4e axis=(%.4f,%.4f,%.4f) omega=%.4f inertia=%.3f J=%.4e aM=%.6f r=%.4e v=%.4e aN=%.4e aLT=%.4e |aLT|/aN=%.3e axisNdot=%.3f",
-				body->Name(), body->Mass(), axis.x, axis.y, axis.z, body->RotOmega(), body->InertiaFactor(),
-				Jlen, aM, d, rvel.length(), aN, a_lt.length(), a_lt.length()/aN, axisNdot);
+
 		}
 	}
 	return rpos * (GM/d3) + a_pn + a_lt + SingleGacc_perturbation (rpos, body);
@@ -319,9 +317,7 @@ Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialB
 			double axisNdot = (nlen > 0.0 ? fabs (dotp (axis, nrm/nlen)) : -1.0);
 			double rgeo = (reltime ? rks : sqrt (p[0]*p[0] + p[1]*p[1] + p[2]*p[2]));
 			double aN = GM/rpos.length2();
-			LOGOUT ("RELKERR: body=%s aM=%.6f axis=(%.4f,%.4f,%.4f) r_geom=%.3f r=%.4e v_c=%.5f |aK|/aN=%.6f axisNdot=%.3f",
-				body->Name(), aM, axis.x, axis.y, axis.z, rgeo, rpos.length(), rvel.length()/c,
-				acc.length()/aN, axisNdot);
+
 		}
 	}
 	return acc;
@@ -336,14 +332,23 @@ Vector SingleGacc_kerr (const Vector &rpos, const Vector &rvel, const CelestialB
 static bool RelativityGaccStrongField (const std::vector<CelestialBody*> &celestials,
 	const Vector &gpos, double n, const Body *exclude)
 {
-	const double rsFactor = 10.0;
+	// Dynamic strong-field criterion: instead of a fixed "r < 10 rs" rule,
+	// protect where the local gravitational field makes the 1PN correction
+	// significant. The relative size of the first post-Newtonian correction is
+	// of order 4 GM/(c^2 r); protect when it exceeds REL_STRONGFIELD_RATIO.
+	// This criterion scales with the local field (and therefore with the body
+	// mass and distance) instead of a hard-coded multiple of rs.
 	const double cc2 = c_light*c_light;
+	const double REL_STRONGFIELD_RATIO = 0.2;	// 1PN correction > 20%: fall back
 	for (size_t i = 0; i < celestials.size(); i++) {
 		if (exclude == celestials[i]) continue;
 		double rs = 2.0*Ggrav*celestials[i]->Mass()/cc2;
 		if (rs <= 0.0) continue;
 		Vector r = celestials[i]->InterpolatePosition (n) - gpos;
-		if (r.length() < rsFactor*rs) return true;
+		double rr = r.length();
+		if (rr <= 1.0) return true;
+		double pnRatio = 4.0*Ggrav*celestials[i]->Mass()/(cc2*rr);
+		if (pnRatio > REL_STRONGFIELD_RATIO) return true;
 	}
 	return false;
 }
@@ -374,8 +379,14 @@ static bool RelativityEnckePerturbation (Vector &acc, const CelestialBody *cbody
 	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 2) return false;
 	// Strong-field guard: no relativistic perturbation in the deep field
 	{
-		double rs = 2.0*Ggrav*cbody->Mass()/(c_light*c_light);
-		if (rs > 0.0 && state_rel.pos.length() < 10.0*rs) return false;
+		// dynamic strong-field test (same criterion as the acceleration solver):
+		// the 1PN correction must be small; otherwise fall back to Newtonian.
+		double cc2 = c_light*c_light;
+		double rs = 2.0*Ggrav*cbody->Mass()/cc2;
+		double rr = state_rel.pos.length();
+		if (rr <= 1.0) return false;
+		double pnRatio = 4.0*Ggrav*cbody->Mass()/(cc2*rr);
+		if (rs > 0.0 && pnRatio > 0.2) return false;
 	}
 	Vector rpos, rvel;
 	rpos.Set (-state_rel.pos.x, -state_rel.pos.y, -state_rel.pos.z); // central body -> vessel
@@ -440,29 +451,96 @@ static void RelativityNonGravAccel (Vector &a_ng, const Vector &vel)
 	}
 }
 
-// Returns true if the vessel update must be aborted (FTL error report mode).
-static bool RelativityFTLGuard (StateVectors &st0, StateVectors *st1)
+// First-entry superluminal check (after a scenario has been loaded): if any
+// vessel already moves faster than light, prompt the user before the
+// relativistic mode takes effect. This covers the two realistic cases:
+//   - a Newtonian scenario switched to relativistic mode, and
+//   - superluminal velocities set manually in the Scenario Editor.
+// (Numerical super-luminal states in the deep strong field are handled by the
+// strong-field guard.) Returns false when the user aborts the simulation.
+static bool RelativityFTLCheckOnLoad ()
+{
+	static bool bChecked = false;
+	if (bChecked) return true;
+	bChecked = true;
+	if (!g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return true;
+	if (!g_psys) return true;
+	// find the fastest vessel (velocity relative to its reference body)
+	double vmaxl = 0.0;
+	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
+		Vessel *v = g_psys->GetVessel(i);
+		if (!v) continue;
+		VESSELSTATUS vs;
+		v->GetState (vs);
+		double vl = sqrt (vs.rvel.x*vs.rvel.x + vs.rvel.y*vs.rvel.y + vs.rvel.z*vs.rvel.z);
+		if (vl > vmaxl) vmaxl = vl;
+	}
+	if (vmaxl <= c_light) return true;		// no superluminal velocity
+	// NOTE: a modal MessageBox here is invisible in fullscreen mode (it ends up
+	// behind the D3D surface and blocks the simulation). Clamp automatically and
+	// just log the event instead.
+	LOGOUT_ERR ("Relativistic mode: superluminal velocity detected (|v| = %.4e m/s), clamping to 0.9c.", vmaxl);
+	// clamp every superluminal vessel to 0.9c
+	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
+		Vessel *v = g_psys->GetVessel(i);
+		if (!v) continue;
+		VESSELSTATUS vs;
+		v->GetState (vs);
+		VECTOR3 vel = vs.rvel;
+		double vl = sqrt (vel.x*vel.x + vel.y*vel.y + vel.z*vel.z);
+		if (vl > c_light) {
+			double fac = 0.9*c_light/vl;
+			vs.rvel.x *= fac; vs.rvel.y *= fac; vs.rvel.z *= fac;
+			v->SetState (vs);
+		}
+	}
+	return true;
+}
+
+// Numeric guard: a non-finite vessel state (NaN/inf) means the relativistic
+// solver has failed numerically. The vessel is removed instead of letting the
+// invalid state propagate (fallback protection; the destruction will be
+// replaced by a "wreck" behaviour once that mechanism is implemented).
+// Returns true if the vessel update must be aborted.
+static bool RelativityNumericalGuard (Vessel *vessel)
+{
+	if (!vessel || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return false;
+	if (WreckIsObserver (vessel)) return false;
+	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 2) return false;
+	const Vector &pos = vessel->GPos();
+	const Vector &vel = vessel->GVel();
+	if (std::isfinite (pos.x) && std::isfinite (pos.y) && std::isfinite (pos.z) &&
+	    std::isfinite (vel.x) && std::isfinite (vel.y) && std::isfinite (vel.z))
+		return false;
+	LOGOUT_ERR ("Relativistic mode: non-finite vessel state (numerical failure). Vessel removed.");
+	WreckMessageVessel (REL_WRECK_NUMERIC, vessel, 0, 0, false);
+	WreckDestroyVessel (vessel);
+	return true;
+}
+
+// Superluminal protection during the update:
+//  - the first call after a scenario is loaded runs RelativityFTLCheckOnLoad()
+//    (prompt + clamp to 0.9c for scenarios starting superluminally),
+//  - a vessel that exceeds the speed of light at run time hits the "light-speed
+//    wall" and is destroyed (with debris).
+// Returns true if the vessel update must be aborted.
+static bool RelativityFTLGuard (Vessel *vessel, StateVectors &st0, StateVectors *st1)
 {
 	if (!g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return false;
+	if (WreckIsObserver (vessel)) return false;
+	if (!RelativityFTLCheckOnLoad()) return true;
 	double v2 = st0.vel.length2();
 	double c2 = c_light*c_light;
 	if (v2 < c2) return false;
-	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityFTLMode == 1) {
-		// clamp velocity to 0.9c along its current direction
-		double vl = sqrt (v2);
-		double fac = 0.9 * c_light / vl;
-		st0.vel *= fac;
-		if (st1) st1->vel *= fac;
-		return false;
+	// run-time superluminal velocity: hit the light-speed wall
+	char msg[512];
+	sprintf_s (msg, 512, "Relativistic FTL protection: |v| = %.4e m/s >= c. Vessel destroyed.", sqrt (v2));
+	LOGOUT_ERR (msg);
+	if (vessel) {
+		WreckDebrisSpawn (vessel->GPos(), vessel->GVel(), vessel->Size());
+	WreckDestroyVessel (vessel);
 	}
-	static bool bFTLReported = false;
-	if (!bFTLReported) {
-		bFTLReported = true;
-		g_pOrbiter->Pause (true);
-		char msg[512];
-		sprintf_s (msg, 512, "Relativistic mode: FTL velocity detected (|v| = %.4e m/s). Simulation paused.", sqrt (v2));
-		LOGOUT_ERR (msg);
-	}
+	WreckMessageVessel (REL_WRECK_FTL, vessel, 0, 0, false);
 	return true;
 }
 
@@ -478,15 +556,19 @@ static bool RelativityFTLGuard (StateVectors &st0, StateVectors *st1)
 static bool RelativityStrongFieldGuard (Vessel *vessel)
 {
 	if (!vessel || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) return false;
+	if (WreckIsObserver (vessel)) return false;
 	if (g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod == 2) return false; // Newtonian model: no relativistic solver
 	if (!g_psys) return false;
 
 	const Vector &pos = vessel->GPos();
-	const double rsFactor = 10.0;
 	const double cc2 = c_light*c_light;
+	// Dynamic strong-field criterion: protect where the local 1PN correction
+	// (order 4 GM/(c^2 r)) exceeds REL_STRONGFIELD_RATIO. This scales with the
+	// local gravitational field instead of a fixed multiple of rs.
+	const double REL_STRONGFIELD_RATIO = 0.2;
 
 	CelestialBody *dom = 0;
-	double domR = 0.0, domRs = 0.0, domRatio = 1e300;
+	double domR = 0.0, domRs = 0.0, domRatio = 1e300, domPn = 0.0;
 	for (size_t i = 0; i < g_psys->nGrav(); i++) {
 		CelestialBody *cb = g_psys->GetGravObj ((int)i);
 		if (!cb) continue;
@@ -494,27 +576,32 @@ static bool RelativityStrongFieldGuard (Vessel *vessel)
 		if (rs <= 0.0) continue;
 		Vector dr = cb->GPos() - pos;
 		double r = dr.length();
+		if (r <= 1.0) { dom = cb; domR = r; domRs = rs; domRatio = 0.0; domPn = 1e300; break; }
 		double ratio = r/rs;
-		if (ratio < domRatio) { domRatio = ratio; dom = cb; domR = r; domRs = rs; }
+		double pn = 4.0*Ggrav*cb->Mass()/(cc2*r);
+		if (pn > domPn) { domPn = pn; dom = cb; domR = r; domRs = rs; domRatio = ratio; }
 	}
 
 	// invalid state (e.g. NaN from a numerical failure): remove as well
 	bool invalid = (dom == 0);
-	if (!invalid && domRatio >= rsFactor) return false;
+	if (!invalid && domPn <= REL_STRONGFIELD_RATIO) return false;
 
 	char msg[512];
 	if (invalid)
 		sprintf_s (msg, 512, "Relativistic mode: vessel state is invalid (numerical failure). Vessel removed.");
 	else
-		sprintf_s (msg, 512, "Relativistic mode: vessel entered the strong-field region (r = %.4e m, rs = %.4e m, r/rs = %.2f). Vessel removed.", domR, domRs, domRatio);
+		sprintf_s (msg, 512, "Relativistic mode: vessel entered the strong-field region (r = %.4e m, rs = %.4e m, r/rs = %.2f, 1PN ratio = %.3f). Vessel removed.", domR, domRs, domRatio, domPn);
 	LOGOUT_ERR (msg);
-	vessel->RequestDestruct();
+	WreckDestroyVessel (vessel, REL_WRECK_STRONGFIELD, 0);
+	WreckMessageVessel (REL_WRECK_STRONGFIELD, vessel, dom ? dom->Name() : 0, 0, false);
 	return true;
 }
 
 #endif // REL_PHYS_VESSEL
 
 #ifdef REL_PHYS_WARP
+// ---- Orbiter.cpp: relativistic collision debris system ----------------------
+#include "WreckDebris.inc"
 // ---- Orbiter.cpp: relativistic time acceleration (Lorentz factor) ----------
 
 extern PlanetarySystem *g_psys;   // defined in Orbiter.cpp
@@ -632,15 +719,7 @@ void Orbiter::UpdateRelativityWarp ()
 	m_relWarpActive = (gamma != 1.0);
 
 	// Diagnostic (sampled, 1 s): confirm the velocity and gravitational
-	// proper-time factors actually used by the simulation.
-	{
-		static double dbgLastT = -1e100;
-		if (td.SimT0 - dbgLastT > 1.0) {
-			dbgLastT = td.SimT0;
-			LOGOUT ("RELTIME: velGamma=%.9f gravFactor=%.9f userWarp=%.3f effWarp=%.3f",
-				velgamma, gravgamma, m_relUserWarp, td.Warp());
-		}
-	}
+
 }
 
 //-----------------------------------------------------------------------------

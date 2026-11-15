@@ -9,6 +9,7 @@ add_library(DGConfigurator SHARED
 )
 
 target_include_directories(DGConfigurator
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/vessels
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 )
 

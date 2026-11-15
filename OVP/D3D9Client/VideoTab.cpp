@@ -472,8 +472,6 @@ void VideoTab::UpdateConfigData()
 
 
 
-static bool IsChineseUI();
-
 // ***************************************************************************************************
 // Advanced setup Dialog
 // ***************************************************************************************************
@@ -486,7 +484,7 @@ INT_PTR CALLBACK VideoTab::SetupDlgProcWrp(HWND hWnd, UINT uMsg, WPARAM wParam, 
 		case WM_INITDIALOG: 
 			VTab = (class VideoTab *)lParam;
 			VTab->InitSetupDialog(hWnd);
-			if (IsChineseUI()) VTab->LocalizeSetupDialogChinese(hWnd);
+			if (oapiZhActive() != 0) VTab->LocalizeSetupDialogChinese(hWnd);
 			return true;
 
 		case WM_COMMAND:
@@ -743,10 +741,8 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	SendDlgItemMessage(hWnd, IDC_EARTHVISCFG, CB_RESETCONTENT, 0, 0);
 	for (auto x : AtmoCfgs["Earth"]) {
 		const char *disp = oapiTr(x.cfg.c_str());
-		int n = MultiByteToWideChar(CP_UTF8, 0, disp, -1, nullptr, 0);
-		std::wstring wdisp(n ? n-1 : 0, L'\0');
-		if (n) MultiByteToWideChar(CP_UTF8, 0, disp, -1, &wdisp[0], n);
-		SendDlgItemMessageW(hWnd, IDC_EARTHVISCFG, CB_ADDSTRING, 0, (LPARAM)wdisp.c_str());
+		std::wstring wdisp = oapiUtf8ToWString(disp);
+SendDlgItemMessageW(hWnd, IDC_EARTHVISCFG, CB_ADDSTRING, 0, (LPARAM)wdisp.c_str());
 	}
 	for (int i = 0; i < AtmoCfgs["Earth"].size(); i++) {
 		if (Config->AtmoCfg["Earth"] == AtmoCfgs["Earth"][i].file) {
@@ -1011,7 +1007,7 @@ static DWORD CALLBACK RtfStreamCallback(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG 
 void VideoTab::InitCreditsDialog(HWND hWnd)
 {
 	LoadLibraryA("msftedit.dll");
-	const char *file = IsChineseUI() ? "Modules/D3D9Client/Credits_zh.rtf" : "Modules/D3D9Client/Credits.rtf";
+	const char *file = (oapiZhActive() != 0) ? "Modules/D3D9Client/Credits_zh.rtf" : "Modules/D3D9Client/Credits.rtf";
 	HANDLE hFile = CreateFileA(file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		LogErr("Failed to open a file %s", file);
@@ -1077,5 +1073,46 @@ void VideoTab::ScanAtmoCfgs()
 	}
 }
 
-#define ZH_D3D9_VIDEO
-#include "D3D9ClientZh.inc"
+// Chinese localisation of the setup dialog: control texts are looked up via the
+// core translation table (data registered at module load by D3D9ClientZh.inc).
+static BOOL CALLBACK LocalizeChildChinese(HWND hCtrl, LPARAM)
+{
+	wchar_t buf[512];
+	GetWindowTextW(hCtrl, buf, 512);
+	if (!buf[0]) return TRUE;
+	char utf8[2048];
+	if (oapiWideToUtf8(buf, utf8, sizeof(utf8)) > 0) {
+		const char *zh = oapiTr(utf8);
+		if (strcmp(zh, utf8) != 0) SetWindowTextW(hCtrl, oapiUtf8ToWString(zh).c_str());
+	}
+	return TRUE;
+}
+
+static BOOL CALLBACK LocalizeComboChinese(HWND hCtrl, LPARAM)
+{
+	wchar_t cls[64];
+	GetClassNameW(hCtrl, cls, 64);
+	if (_wcsicmp(cls, L"ComboBox") != 0) return TRUE;
+	int cnt = (int)SendMessageW(hCtrl, CB_GETCOUNT, 0, 0);
+	int sel = (int)SendMessageW(hCtrl, CB_GETCURSEL, 0, 0);
+	for (int i = 0; i < cnt; i++) {
+		wchar_t item[512];
+		item[0] = 0;
+		SendMessageW(hCtrl, CB_GETLBTEXT, i, (LPARAM)item);
+		char utf8[2048];
+		if (oapiWideToUtf8(item, utf8, sizeof(utf8)) <= 0) continue;
+		const char *zh = oapiTr(utf8);
+		if (strcmp(zh, utf8) != 0) {
+			SendMessageW(hCtrl, CB_DELETESTRING, i, 0);
+			SendMessageW(hCtrl, CB_INSERTSTRING, i, (LPARAM)oapiUtf8ToWString(zh).c_str());
+		}
+	}
+	SendMessageW(hCtrl, CB_SETCURSEL, sel, 0);
+	return TRUE;
+}
+
+void VideoTab::LocalizeSetupDialogChinese(HWND hWnd)
+{
+	EnumChildWindows(hWnd, LocalizeChildChinese, 0);
+	EnumChildWindows(hWnd, LocalizeComboChinese, 0);
+}

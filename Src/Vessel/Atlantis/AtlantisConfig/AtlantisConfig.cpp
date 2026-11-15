@@ -110,7 +110,7 @@ void AtlantisConfig::Apply (HWND hWnd)
 	MshEnableHires (mshhires);
 }
 
-#include "../AtlantisToolsZh.inc"
+#include "AtlantisToolsZh.inc"   // i18n/vessels（include 路径见 CMakeLists）
 INT_PTR CALLBACK AtlantisConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {

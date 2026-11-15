@@ -1,0 +1,499 @@
+# Orbiter 中文翻译（UTF-8，.po 子集：msgid/msgstr/msgctxt）
+# 插件/飞船模块界面文本
+# 由 i18n 数据生成；改翻译可直接编辑本文件，无需重新编译。
+
+msgid "Create >>"
+msgstr "创建 >>"
+
+msgid "Vessel name:"
+msgstr "载具名称："
+
+msgid "<< Cancel"
+msgstr "<< 取消"
+
+msgid "Vessel type:"
+msgstr "载具类型："
+
+msgid "Set input focus"
+msgstr "设置输入焦点"
+
+msgid "Set camera"
+msgstr "设置相机"
+
+msgid "<< Done"
+msgstr "<< 退出"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Free flight"
+msgstr "自由飞行"
+
+msgid "State vectors"
+msgstr "状态向量"
+
+msgid "Orientation"
+msgstr "姿态"
+
+msgid "Angular velocity"
+msgstr "角速度"
+
+msgid "On the ground"
+msgstr "在地面"
+
+msgid "Misc"
+msgstr "杂项"
+
+msgid "More"
+msgstr "更多"
+
+msgid "Extra 1"
+msgstr "额外 1"
+
+msgid "Extra 2"
+msgstr "额外 2"
+
+msgid "Extra 3"
+msgstr "额外 3"
+
+msgid "Extra 4"
+msgstr "额外 4"
+
+msgid "Extra 5"
+msgstr "额外 5"
+
+msgid "Extra 6"
+msgstr "额外 6"
+
+msgid "Surface position"
+msgstr "表面位置"
+
+msgid "Celestial body"
+msgstr "天体"
+
+msgid "Surface base"
+msgstr "地面基地"
+
+msgid "deg"
+msgstr "度"
+
+msgid "Landing pad"
+msgstr "着陆平台"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Copy state from"
+msgstr "复制状态来自"
+
+msgid "Frame"
+msgstr "坐标系"
+
+msgid "Coordinates"
+msgstr "坐标"
+
+msgid "m"
+msgstr "m"
+
+msgid "m/s"
+msgstr "m/s"
+
+msgid "New ..."
+msgstr "新建 ..."
+
+msgid "Edit ..."
+msgstr "编辑 ..."
+
+msgid "Vessels in current scenario:"
+msgstr "当前场景中的载具："
+
+msgid "Save ..."
+msgstr "保存 ..."
+
+msgid "Date ..."
+msgstr "日期 ..."
+
+msgid "Scenario file name"
+msgstr "场景文件名"
+
+msgid "Title"
+msgstr "标题"
+
+msgid "Text"
+msgstr "文本"
+
+msgid "Osculating elements"
+msgstr "密切根数"
+
+msgid "Semi-major axis [SMa]"
+msgstr "半长轴 [SMa]"
+
+msgid "Eccentricity [Ecc]"
+msgstr "偏心率 [Ecc]"
+
+msgid "Inclination [Inc]"
+msgstr "倾角 [Inc]"
+
+msgid "Longitude of ascending node [LAN]"
+msgstr "升交点经度 [LAN]"
+
+msgid "Longitude of periapsis [LPe]"
+msgstr "近点经度 [LPe]"
+
+msgid "Mean longitude at epoch [eps]"
+msgstr "历元平经度 [eps]"
+
+msgid "Epoch"
+msgstr "历元"
+
+msgid "Secondary parameters"
+msgstr "次要参数"
+
+msgid "Orbit period:"
+msgstr "轨道周期："
+
+msgid "Periapsis:"
+msgstr "近点距离："
+
+msgid "Apoapsis:"
+msgstr "远点距离："
+
+msgid "T. periapsis:"
+msgstr "近点时刻："
+
+msgid "T. apoapsis:"
+msgstr "远点时刻："
+
+msgid "Mn anomaly:"
+msgstr "平近点角："
+
+msgid "Tr anomaly:"
+msgstr "真近点角："
+
+msgid "Mn longitude:"
+msgstr "平经度："
+
+msgid "Tr longitude:"
+msgstr "真经度："
+
+msgid "Orientation: Euler angles"
+msgstr "姿态：欧拉角"
+
+msgid "Yaw"
+msgstr "偏航"
+
+msgid "deg/s"
+msgstr "度/秒"
+
+msgid "pitch (omega x)"
+msgstr "俯仰 (ωx)"
+
+msgid "yaw (omega y)"
+msgstr "偏航 (ωy)"
+
+msgid "bank (omega z)"
+msgstr "滚转 (ωz)"
+
+msgid "Kill"
+msgstr "消除"
+
+msgid "Propellant levels"
+msgstr "推进剂液位"
+
+msgid "Tank no."
+msgstr "储箱号"
+
+msgid "of 1"
+msgstr "/ 1"
+
+msgid "Fill level (0-1)"
+msgstr "填充水平 (0-1)"
+
+msgid "Empty"
+msgstr "空"
+
+msgid "Empty all"
+msgstr "全部排空"
+
+msgid "Fill all"
+msgstr "全部加注"
+
+msgid "Total propellant mass:"
+msgstr "推进剂总质量："
+
+msgid "Total vessel mass:"
+msgstr "载具总质量："
+
+msgid "Undock"
+msgstr "解除对接"
+
+msgid "Docking status"
+msgstr "对接状态"
+
+msgid "Dock no."
+msgstr "接口号"
+
+msgid "Currently docked to"
+msgstr "当前对接于"
+
+msgid "IDS frequency"
+msgstr "IDS 频率"
+
+msgid "Dock"
+msgstr "对接"
+
+msgid "using dock"
+msgstr "使用接口"
+
+msgid "Bring target to my current position"
+msgstr "将目标移动到我的当前位置"
+
+msgid "Move me to current target position"
+msgstr "将我移动到目标当前位置"
+
+msgid "Date and time"
+msgstr "日期与时间"
+
+msgid "Modified Julian Date (MJD)"
+msgstr "简化儒略日 (MJD)"
+
+msgid "Julian Date (JD)"
+msgstr "儒略日 (JD)"
+
+msgid "Julian Century (JC2000)"
+msgstr "儒略世纪 (JC2000)"
+
+msgid "Vessel state propagation"
+msgstr "载具状态传播"
+
+msgid "alpha"
+msgstr "α"
+
+msgid "beta"
+msgstr "β"
+
+msgid "gamma"
+msgstr "γ"
+
+msgid "x"
+msgstr "x"
+
+msgid "y"
+msgstr "y"
+
+msgid "z"
+msgstr "z"
+
+msgid "dx / dt"
+msgstr "dx / dt"
+
+msgid "dy / dt"
+msgstr "dy / dt"
+
+msgid "dz / dt"
+msgstr "dz / dt"
+
+msgid "[None]"
+msgstr "[无]"
+
+msgid "Atmospheric parameter configuration"
+msgstr "大气参数配置"
+
+msgid "Atmosphere model"
+msgstr "大气模型"
+
+msgid "Orbiter: TrackIR Configuration"
+msgstr "Orbiter：TrackIR 配置"
+
+msgid "TrackIR Module"
+msgstr "TrackIR 模块"
+
+msgid "TrackIR Module Version"
+msgstr "TrackIR 模块版本"
+
+msgid "Not found"
+msgstr "未找到"
+
+msgid "Not active"
+msgstr "未激活"
+
+msgid "Activate TrackIR"
+msgstr "启用 TrackIR"
+
+msgid "Cockpit views"
+msgstr "座舱视角"
+
+msgid "Virtual cockpit view"
+msgstr "虚拟座舱视角"
+
+msgid "2-D instrument panel view"
+msgstr "2D 仪表面板视角"
+
+msgid "Generic glass-cockpit view"
+msgstr "通用玻璃座舱视角"
+
+msgid "External views"
+msgstr "外部视角"
+
+msgid "Track view"
+msgstr "追踪视角"
+
+msgid "Ground view"
+msgstr "地面视角"
+
+msgid "VC mouse interaction"
+msgstr "座舱鼠标交互"
+
+msgid "Tracking mode"
+msgstr "追踪模式"
+
+msgid "Track rotation"
+msgstr "追踪旋转"
+
+msgid "Track position"
+msgstr "追踪位置"
+
+msgid "Freeze camera after mouse move for"
+msgstr "鼠标移动后冻结相机"
+
+msgid "Default range: ?"
+msgstr "默认范围：?"
+
+msgid "seconds"
+msgstr "秒"
+
+msgid "deg."
+msgstr "度"
+
+msgid "Track zoom"
+msgstr "追踪缩放"
+
+msgid "by head orientation"
+msgstr "按头部朝向"
+
+msgid "by head position"
+msgstr "按头部位置"
+
+msgid "Dead zone (0-100) :"
+msgstr "死区（0-100）："
+
+msgid "Speed (1-100) :"
+msgstr "速度（1-100）："
+
+msgid "Delta-glider animation settings"
+msgstr "Delta-glider 动画设置"
+
+msgid "Landing gear"
+msgstr "起落架"
+
+msgid "Retro doors"
+msgstr "反推门"
+
+msgid "Closed"
+msgstr "关闭"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Outer airlock"
+msgstr "外气闸"
+
+msgid "Inner airlock"
+msgstr "内气闸"
+
+msgid "Nose cone"
+msgstr "机头锥"
+
+msgid "Escape ladder"
+msgstr "逃生梯"
+
+msgid "Stowed"
+msgstr "收起"
+
+msgid "Extended"
+msgstr "展开"
+
+msgid "Radiator"
+msgstr "散热器"
+
+msgid "Top hatch"
+msgstr "顶部舱门"
+
+msgid "Delta-glider passengers"
+msgstr "Delta-glider 乘客"
+
+msgid "Front left"
+msgstr "左前"
+
+msgid "Rear left"
+msgstr "左后"
+
+msgid "Front right"
+msgstr "右前"
+
+msgid "Rear right"
+msgstr "右后"
+
+msgid "Damage"
+msgstr "损伤"
+
+msgid "Airframe"
+msgstr "机体"
+
+msgid "left wing"
+msgstr "左翼"
+
+msgid "right wing"
+msgstr "右翼"
+
+msgid "fail"
+msgstr "失效"
+
+msgid "operate"
+msgstr "正常"
+
+msgid "Repair all"
+msgstr "全部修复"
+
+msgid "Texture resolution"
+msgstr "纹理分辨率"
+
+msgid "High (1024x1024)"
+msgstr "高（1024x1024）"
+
+msgid "Low (512x512)"
+msgstr "低（512x512）"
+
+msgid "Shuttle-A animation settings"
+msgstr "Shuttle-A 动画设置"
+
+msgid "Docking port"
+msgstr "对接口"
+
+msgid "Airlock"
+msgstr "气闸"
+
+msgid "Auxiliary pods"
+msgstr "辅助吊舱"
+
+msgid "Fwd"
+msgstr "前向"
+
+msgid "Sync"
+msgstr "同步"
+
+msgid "Atlantis orbiter: Texture resolution"
+msgstr "亚特兰蒂斯轨道器：纹理分辨率"
+
+msgid "Atlantis orbiter: Mesh resolution"
+msgstr "亚特兰蒂斯轨道器：网格分辨率"
+
+msgid "High"
+msgstr "高"
+
+msgid "Low"
+msgstr "低"
+
+msgid "High resolution textures and meshes provide a better visual appearance, but can reduce the performance of the simulator, in particular on less powerful computers.\r\nIf you experience problems, try switching to the low resolution options."
+msgstr "高分辨率纹理和网格能提供更好的视觉效果，但会降低模拟器性能，尤其是在性能较弱的计算机上。\r\n如果遇到问题，请尝试切换到低分辨率选项。"
+

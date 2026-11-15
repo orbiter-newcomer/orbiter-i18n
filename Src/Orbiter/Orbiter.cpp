@@ -1253,6 +1253,8 @@ void Orbiter::Freeze (bool bFreeze)
 // Desc: Select a new user-controlled vessel
 //       Return value is the previous focus object
 //-----------------------------------------------------------------------------
+void WreckOnFocusChanged (class Vessel *newFocus);   // forward declaration (WreckDebris.inc)
+
 Vessel *Orbiter::SetFocusObject (Vessel *vessel, bool setview)
 {
 	if (vessel == g_focusobj) return 0; // nothing to do
@@ -1265,6 +1267,8 @@ Vessel *Orbiter::SetFocusObject (Vessel *vessel, bool setview)
 
 	// switch camera
 	if (setview) SetView (g_focusobj, 2);
+	// Relativity: if the wreck camera is active, restore the cockpit view
+	WreckOnFocusChanged (vessel);
 
 	// vessel and plugin callback
 	if (g_pfocusobj) g_pfocusobj->FocusChanged (false, g_focusobj, g_pfocusobj);
@@ -1439,6 +1443,7 @@ void Orbiter::SetWarpFactor (double warp, bool force, double delay)
 	}
 }
 
+#include "WreckDebris.h"
 #define REL_PHYS_WARP
 #include "RelativityPhysics.inc"
 #undef REL_PHYS_WARP
@@ -1547,9 +1552,9 @@ VOID Orbiter::Quicksave ()
 		if (ScenarioName[i-1] == '\\') break;
 	sprintf (fname, "Quicksave\\%s %04d", ScenarioName+i, ++g_qsaveid);
 	if(SaveScenario (fname, desc, 0))
-		oapiAddNotification(OAPINOTIF_SUCCESS, "Scenario saved successfully", fname);
+		oapiAddNotification(OAPINOTIF_SUCCESS, oapiTr("Scenario saved successfully"), fname);
 	else
-		oapiAddNotification(OAPINOTIF_ERROR, "Failed to save scenario", fname);
+		oapiAddNotification(OAPINOTIF_ERROR, oapiTr("Failed to save scenario"), fname);
 }
 
 //-----------------------------------------------------------------------------
@@ -2017,6 +2022,8 @@ VOID Orbiter::UpdateWorld ()
 	if (bRunning && td.SimDT) {
 		if (bPlayback) FRecorder_Play();
 		g_psys->Update (g_bForceUpdate);           // logical objects
+		// relativistic collision debris update (implementation in RelativityPhysics.inc)
+		WreckDebrisUpdate ();
 	}
 	if (pDlgMgr) pDlgMgr->UpdateDialogs(); // SHOULD BE DONE BY GRAPHICS CLIENT!
 
@@ -2024,6 +2031,10 @@ VOID Orbiter::UpdateWorld ()
 	if (bRunning) ModulePostStep ();
 
 	g_bStateUpdate = false;
+
+	// create queued wreck vessels outside the state-update phase (creating a
+	// vessel during the update phase is not valid and loses its state)
+	WreckProcessPendingSafe ();
 
 	if (!KillVessels())  // kill any vessels marked for deletion
 		if (hRenderWnd) DestroyWindow (hRenderWnd);

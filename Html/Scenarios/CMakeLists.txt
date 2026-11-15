@@ -1,16 +1,18 @@
 add_custom_command(
-	OUTPUT CurrentState.htm CurrentState_img.htm
+	OUTPUT CurrentState.htm CurrentState_img.htm CurrentState_zh.htm CurrentState_img_zh.htm
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CurrentState.htm .
 	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CurrentState_img.htm .
+	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CurrentState_zh.htm .
+	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/CurrentState_img_zh.htm .
 )
 add_custom_target(CurrentState_htm
-	DEPENDS CurrentState.htm CurrentState_img.htm
+	DEPENDS CurrentState.htm CurrentState_img.htm CurrentState_zh.htm CurrentState_img_zh.htm
 )
 add_dependencies(${OrbiterTgt}
 	CurrentState_htm
 )
 
-install(FILES CurrentState.htm CurrentState_img.htm
+install(FILES CurrentState.htm CurrentState_img.htm CurrentState_zh.htm CurrentState_img_zh.htm
 	DESTINATION ${ORBITER_INSTALL_HTML_DIR}/Scenarios
 )
 

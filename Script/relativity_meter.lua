@@ -16,7 +16,7 @@ local note = oapi.create_annotation()
 note:set_pos(0.02, 0.90, 0.5, 1.0)
 note:set_size(1.2)
 note:set_colour({r=1, g=1, b=0.9})
-note:set_text("TIME DILATION: waiting for focus vessel...")
+note:set_text(tr("TIME DILATION: waiting for focus vessel..."))
 
 print("TIME DILATION meter started. Output shown on screen (top-left).")
 print("Set time acceleration to 1x for a clean relativistic measurement.")

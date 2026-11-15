@@ -15,6 +15,7 @@ if(ORBITER_BUILD_XRSOUND)
 endif()
 
 target_include_directories(LuaInterpreter
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/luainterpreter
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${ORBITER_BINARY_SDK_DIR}/include
 	PUBLIC ${ORBITER_BINARY_SDK_DIR}/XRSound/

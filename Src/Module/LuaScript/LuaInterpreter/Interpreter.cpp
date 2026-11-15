@@ -103,7 +103,7 @@ int Interpreter::LuaCall(lua_State *L, int narg, int nres)
 		// strstr may be heavy but it's only an error path
 		if(strstr(msg, "Lua thread terminated") == NULL) {
 			oapiWriteLogError("%s", msg);
-			oapiAddNotification(OAPINOTIF_ERROR, "Lua error", msg);
+			oapiAddNotification(OAPINOTIF_ERROR, oapiTr("Lua error"), msg);
 		}
 	}
 	return res;
@@ -769,11 +769,23 @@ void Interpreter::term_out(lua_State *L, bool iserr)
         term_strout(line.c_str(), iserr);
     }
 }
+// Translate a UI string through the core localisation table; English mode
+// returns the source string unchanged. Bundled Lua scripts (e.g. the flight
+// challenges) use this to localise their annotations and terminal output.
+static int lua_tr (lua_State *L)
+{
+	const char *s = luaL_checkstring (L, 1);
+	if (!s) { lua_pushstring (L, ""); return 1; }
+	lua_pushstring (L, oapiTr (s));
+	return 1;
+}
+
 void Interpreter::LoadAPI ()
 {
 	// Load global functions
 	static const struct luaL_reg glob[] = {
 		{"help", help},
+		{"tr", lua_tr},
 		//{"api", help_api},
 		{NULL, NULL}
 	};

@@ -53,6 +53,7 @@
 
 using namespace std;
 
+#include "WreckDebris.h"
 extern Orbiter *g_pOrbiter;
 
 #define REL_PHYS_VESSEL
@@ -951,6 +952,10 @@ void Vessel::GetIntermediateMoments (Vector &acc, Vector &tau, const StateVector
 	Vector M(Amom_add); // angular momentum excluding gravity gradient torque and ground contact torques
 	collision_during_update |=
 		AddSurfaceForces (&F, &M, &state, tfrac, dt, update_with_collision); // add ground contact forces and moments
+	if (collision_during_update) {
+		// Relativity extension: ground-contact impact destruction
+		WreckSurfaceImpact (this, state);
+	}
 	// note: we may want to remove aerodynamic forces from Flin_add/Amom_add and calculate
 	// intermediate states here instead
 	RigidBody::GetIntermediateMoments (acc, tau, state, tfrac, dt);  // get gravitational component
@@ -972,6 +977,10 @@ void Vessel::GetIntermediateMoments_pert (Vector &acc, Vector &tau,
 	Vector M(Amom_add); // angular momentum excluding gravity gradient torque and ground contact torques
 	collision_during_update |=
 		AddSurfaceForces (&F, &M, &state, tfrac, dt, update_with_collision); // add ground contact forces and moments
+	if (collision_during_update) {
+		// Relativity extension: ground-contact impact destruction
+		WreckSurfaceImpact (this, state);
+	}
 	// note: we may want to remove aerodynamic forces from Flin_add/Amom_add and calculate
 	// intermediate states here instead
 	RigidBody::GetIntermediateMoments_pert (acc, tau, state_rel, tfrac, dt, cbody);  // get gravitational component
@@ -1191,6 +1200,22 @@ bool Vessel::SetTouchdownPoints (const TOUCHDOWNVTX *tdvtx, DWORD ntp)
 		touchdown_vtx[i].damping   = tdvtx[i].damping;
 		touchdown_vtx[i].mu        = tdvtx[i].mu;
 		touchdown_vtx[i].mu_lng    = tdvtx[i].mu_lng;
+	}
+
+	// Unified hull contact parameters for ALL vessels (mass-independent behaviour):
+	// hull points (index >= 3) always use the same stiffness and friction, and the
+	// damping is scaled with sqrt(m_eff) so the damping ratio stays constant
+	// regardless of the vessel mass. A crashed vessel always stops immediately.
+	if (ntouchdown_vtx > 3 && !WreckIsObserver (this)) {   // wrecks keep their own contact parameters
+		double m_eff = (mass > 0.0 ? mass : 10000.0) / (double)ntouchdown_vtx;
+		if (m_eff < 100.0) m_eff = 100.0;
+		double hull_k = 5e5;
+		double hull_c = 2.0 * 1.2 * sqrt (hull_k * m_eff);   // damping ratio zeta = 1.2
+		for (DWORD ih = 3; ih < ntouchdown_vtx; ih++) {
+			touchdown_vtx[ih].stiffness = hull_k;
+			touchdown_vtx[ih].damping   = hull_c;
+			touchdown_vtx[ih].mu        = 100.0;
+		}
 	}
 
 	// The rest of this function refers to the first 3 (primary) touchdown points
@@ -4554,14 +4579,14 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 					mu = touchdown_vtx[i].mu;
 				}
 				flng[i] = mu * maxpress;												// horizon-longitudinal force component: surface friction
-				if (fabs(gv_lon) < 10.0) flng[i] *= sqrt(fabs(0.1*gv_lon));             // cancel horizontal forces at low speeds
+				// (low-speed friction attenuation removed: Coulomb friction is speed-independent)
 				//flng[i] = min (flng[i], fabs(gv_lon) * fn[i] * mu/dt);
 				if (gv_lon > 0.0) flng[i] = -flng[i];
 				flng_tot += flng[i];
 
 				mu = touchdown_vtx[i].mu;
 				flat[i] = mu * maxpress;									// horizon-lateral force component: surface friction
-				if (fabs(gv_lat) < 10.0) flat[i] *= sqrt(fabs(0.1*gv_lat));
+				// (low-speed friction attenuation removed)
 				//flat[i] = min (flat[i], fabs(gv_lat) * fn[i] * mu/dt);
 				if (gv_lat > 0.0) flat[i] = -flat[i];
 				flat_tot += flat[i];
@@ -6150,6 +6175,376 @@ bool Vessel::CheckVesselOverlap(Vessel *v, double margin) {
 // that covers scenario loading, scenario editing and addon-based teleportation
 // through oapiSetVesselState() / oapiSetVesselStateEx()
 
+DWORD Vessel::GetGroupTriangleCount () const
+{
+	DWORD n = 0;
+	for (UINT m = 0; m < nmesh; m++) {
+		if (!meshlist[m]->hMesh) continue;
+		Mesh *mesh = (Mesh*)meshlist[m]->hMesh;
+		n += mesh->nGroup ();
+	}
+	return n;
+}
+
+bool Vessel::GetGroupTriangles (DWORD idx, std::vector<VECTOR3> &verts, std::vector<WORD> &idxs, Vector &center, double &radius) const
+{
+	verts.clear (); idxs.clear (); center = Vector (0, 0, 0); radius = 0.0;
+	DWORD cur = 0;
+	for (UINT m = 0; m < nmesh; m++) {
+		if (!meshlist[m]->hMesh) continue;
+		Mesh *mesh = (Mesh*)meshlist[m]->hMesh;
+		for (DWORD g = 0; g < mesh->nGroup (); g++, cur++) {
+			if (cur != idx) continue;
+			GroupSpec *gs = mesh->GetGroup (g);
+			if (!gs || !gs->Vtx || !gs->Idx || gs->nVtx < 3 || gs->nIdx < 3) return false;
+			// AABB center
+			Vector mn (1e300, 1e300, 1e300), mx (-1e300, -1e300, -1e300);
+			for (DWORD v = 0; v < gs->nVtx; v++) {
+				const NTVERTEX &p = gs->Vtx[v];
+				if (p.x < mn.x) mn.x = p.x; if (p.y < mn.y) mn.y = p.y; if (p.z < mn.z) mn.z = p.z;
+				if (p.x > mx.x) mx.x = p.x; if (p.y > mx.y) mx.y = p.y; if (p.z > mx.z) mx.z = p.z;
+			}
+			if (mn.x > mx.x) return false;
+			center = (mn + mx) * 0.5;
+			double r2 = 0.0;
+			for (DWORD v = 0; v < gs->nVtx; v++) {
+				const NTVERTEX &p = gs->Vtx[v];
+				Vector q (p.x - center.x, p.y - center.y, p.z - center.z);
+				verts.push_back (_V (q.x, q.y, q.z));
+				double l2 = q.length2 ();
+				if (l2 > r2) r2 = l2;
+			}
+			for (DWORD k = 0; k + 2 < gs->nIdx; k += 3) {
+				idxs.push_back (gs->Idx[k]);
+				idxs.push_back (gs->Idx[k+1]);
+				idxs.push_back (gs->Idx[k+2]);
+			}
+			radius = sqrt (r2);
+			// sanity: indices must be within the vertex range (otherwise shift them)
+			WORD minIdx = 0;
+			for (size_t k = 0; k < idxs.size(); k++) if (idxs[k] < minIdx) minIdx = idxs[k];
+			if (idxs.size () && minIdx > 0 && minIdx >= (WORD)gs->nVtx) {
+				for (size_t k = 0; k < idxs.size(); k++) idxs[k] -= minIdx;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+// Voronoi-cut slices: assign the real vessel triangles to a few seeds (the cut
+// boundaries are planes), keep the original vertices/normals/UVs, close each piece
+// with a fan cross-section. The texture file name is taken from the source mesh.
+int Vessel::BuildVoronoiSliceMeshes (std::vector<HullSliceMesh> &out, int maxCount) const
+{
+	out.clear ();
+	if (!meshlist) return 0;
+	struct TRI { NTVERTEX v[3]; Vector c; int mesh; };
+	std::vector<TRI> tris;
+	Vector mn (1e300, 1e300, 1e300), mx (-1e300, -1e300, -1e300);
+	for (UINT m = 0; m < nmesh; m++) {
+		if (!meshlist[m] || !meshlist[m]->hMesh) continue;
+		Mesh *mesh = (Mesh*)meshlist[m]->hMesh;
+		for (DWORD g = 0; g < mesh->nGroup (); g++) {
+			GroupSpec *gs = mesh->GetGroup (g);
+			if (!gs || !gs->Vtx || !gs->Idx) continue;
+			for (DWORD k = 0; k + 2 < gs->nIdx; k += 3) {
+				WORD i0 = gs->Idx[k], i1 = gs->Idx[k+1], i2 = gs->Idx[k+2];
+				if (i0 >= gs->nVtx || i1 >= gs->nVtx || i2 >= gs->nVtx) continue;
+				TRI t;
+				t.v[0] = gs->Vtx[i0]; t.v[1] = gs->Vtx[i1]; t.v[2] = gs->Vtx[i2];
+				t.mesh = (int)m;
+				t.c = Vector ((t.v[0].x + t.v[1].x + t.v[2].x) / 3.0,
+				              (t.v[0].y + t.v[1].y + t.v[2].y) / 3.0,
+				              (t.v[0].z + t.v[1].z + t.v[2].z) / 3.0);
+				for (int j = 0; j < 3; j++) {
+					if (t.v[j].x < mn.x) mn.x = t.v[j].x; if (t.v[j].y < mn.y) mn.y = t.v[j].y; if (t.v[j].z < mn.z) mn.z = t.v[j].z;
+					if (t.v[j].x > mx.x) mx.x = t.v[j].x; if (t.v[j].y > mx.y) mx.y = t.v[j].y; if (t.v[j].z > mx.z) mx.z = t.v[j].z;
+				}
+				tris.push_back (t);
+			}
+		}
+	}
+	if (tris.empty ()) return 0;
+	// seeds: spread along the longest axis
+	Vector ext = mx - mn;
+	int axis = 0; double alen = ext.x;
+	if (ext.y > alen) { axis = 1; alen = ext.y; }
+	if (ext.z > alen) { axis = 2; alen = ext.z; }
+	int n = min (maxCount, 4);
+	if (n < 2) n = 2;
+	Vector c0 = (mn + mx) * 0.5;
+	std::vector<Vector> seeds (n);
+	for (int i = 0; i < n; i++) {
+		seeds[i] = c0;
+		double f = (n > 1) ? ((double)i / (double)(n - 1) - 0.5) * 0.8 : 0.0;
+		if (axis == 0) seeds[i].x += f * ext.x;
+		else if (axis == 1) seeds[i].y += f * ext.y;
+		else seeds[i].z += f * ext.z;
+	}
+	// assign triangles to the nearest seed
+	std::vector<int> assign (tris.size ());
+	for (size_t ti = 0; ti < tris.size (); ti++) {
+		int best = 0; double bd = 1e300;
+		for (int i = 0; i < n; i++) {
+			double d = (tris[ti].c - seeds[i]).length2 ();
+			if (d < bd) { bd = d; best = i; }
+		}
+		assign[ti] = best;
+	}
+	// build one mesh per block
+	for (int b = 0; b < n; b++) {
+		HullSliceMesh m;
+		memset (m.texName, 0, sizeof (m.texName));
+		std::vector<Vector> pos;
+		std::vector<Vector> nrm;
+		std::vector<float> uv;
+		std::map<uint64_t, int> edgeUse;
+		Vector bmn (1e300, 1e300, 1e300), bmx (-1e300, -1e300, -1e300);
+		int firstMesh = -1;
+		for (size_t ti = 0; ti < tris.size (); ti++) {
+			if (assign[ti] != b) continue;
+			TRI &t = tris[ti];
+			if (firstMesh < 0) firstMesh = t.mesh;
+			int i0 = (int)pos.size ();
+			for (int j = 0; j < 3; j++) {
+				pos.push_back (Vector (t.v[j].x, t.v[j].y, t.v[j].z));
+				Vector nn (t.v[j].nx, t.v[j].ny, t.v[j].nz);
+				if (nn.length2 () < 1e-9) nn = Vector (0, 1, 0);
+				nrm.push_back (nn.unit ());
+				uv.push_back (t.v[j].tu);
+				uv.push_back (t.v[j].tv);
+				if (t.v[j].x < bmn.x) bmn.x = t.v[j].x; if (t.v[j].y < bmn.y) bmn.y = t.v[j].y; if (t.v[j].z < bmn.z) bmn.z = t.v[j].z;
+				if (t.v[j].x > bmx.x) bmx.x = t.v[j].x; if (t.v[j].y > bmx.y) bmx.y = t.v[j].y; if (t.v[j].z > bmx.z) bmx.z = t.v[j].z;
+			}
+			m.faces.push_back ((WORD)(i0+0)); m.faces.push_back ((WORD)(i0+1)); m.faces.push_back ((WORD)(i0+2));
+			const int ev[3][2] = { {i0,i0+1}, {i0+1,i0+2}, {i0+2,i0} };
+			for (int e = 0; e < 3; e++) {
+				int a1 = ev[e][0], b1 = ev[e][1];
+				uint64_t key = ((uint64_t)(uint32_t)min (a1,b1) << 32) | (uint32_t)max (a1,b1);
+				edgeUse[key]++;
+			}
+		}
+		if (m.faces.empty ()) continue;
+		m.center = (bmn + bmx) * 0.5;
+		m.radius = (bmx - bmn).length () * 0.5;
+		// cross-section: boundary edges (used once) closed with a fan from the piece center
+		int ic = (int)pos.size ();
+		Vector cpt = Vector (0, 0, 0);
+		for (size_t k = 0; k < pos.size (); k++) cpt += pos[k];
+		cpt /= (double)pos.size ();
+		pos.push_back (cpt); nrm.push_back (Vector (0, 1, 0)); uv.push_back (0.5f); uv.push_back (0.5f);
+		for (std::map<uint64_t, int>::iterator it = edgeUse.begin (); it != edgeUse.end (); ++it) {
+			if (it->second != 1) continue;
+			int a1 = (int)(it->first >> 32);
+			int b1 = (int)(it->first & 0xFFFFFFFF);
+			// single-sided cross-section (coincident double faces cause shadow artifacts)
+			m.faces.push_back ((WORD)ic); m.faces.push_back ((WORD)a1); m.faces.push_back ((WORD)b1);
+		}
+		// center the vertices
+		for (size_t k = 0; k < pos.size (); k++) {
+			Vector q = pos[k] - m.center;
+			m.verts.push_back (_V (q.x, q.y, q.z));
+		}
+		m.norms.clear ();
+		for (size_t k = 0; k < nrm.size (); k++) m.norms.push_back (_V (nrm[k].x, nrm[k].y, nrm[k].z));
+		m.uvs = uv;
+		// source texture name: parse the first TEXTURES entry of the source mesh file
+		const char *mnm = 0;
+		if (firstMesh >= 0 && firstMesh < (int)nmesh && meshlist[firstMesh] && meshlist[firstMesh]->hMesh) {
+			mnm = ((Mesh*)meshlist[firstMesh]->hMesh)->GetName ();
+		}
+		if (!mnm || !mnm[0]) {
+			if (firstMesh >= 0 && firstMesh < (int)nmesh && meshlist[firstMesh]) mnm = meshlist[firstMesh]->meshname;
+		}
+		{
+			char bl[512];
+			sprintf_s (bl, 512, "VORONOI: meshname=[%s] firstMesh=%d nmesh=%d", mnm ? mnm : "(null)", firstMesh, (int)nmesh);
+			LOGOUT_ERR (bl);
+		}
+		if (mnm && mnm[0]) {
+			char fn[512];
+			FILE *fp = 0;
+			const char *cands[5] = { "Meshes\\\\%s.msh", "Meshes\\\\%s", "%s.msh", "%s", "Meshes\\\\DG\\\\%s.msh" };
+			for (int ci = 0; ci < 5 && !fp; ci++) {
+				sprintf_s (fn, 512, cands[ci], mnm);
+				if (fopen_s (&fp, fn, "r") != 0) fp = 0;
+			}
+			{
+				char bl[512];
+				sprintf_s (bl, 512, "VORONOI: meshname=%s file=%s opened=%d", mnm, fn, fp ? 1 : 0);
+				LOGOUT_ERR (bl);
+			}
+			if (fp) {
+				char line[512];
+				bool inTex = false;
+				while (fgets (line, 512, fp)) {
+					if (strncmp (line, "TEXTURES", 8) == 0) { inTex = true; continue; }
+					if (inTex) {
+						char *pp = line; while (*pp == 0x20 || *pp == 0x09) pp++;
+						size_t L = strlen (pp); while (L && (pp[L-1] == 0x0A || pp[L-1] == 0x0D || pp[L-1] == 0x20)) pp[--L] = 0;
+						if (L > 0) strncpy_s (m.texName, 128, pp, 127);
+						break;
+					}
+				}
+				fclose (fp);
+			}
+		}
+		out.push_back (m);
+	}
+	return (int)out.size ();
+}
+
+int Vessel::BuildHullSliceMeshes (std::vector<HullSliceMesh> &out, int maxCount) const
+{
+	out.clear ();
+	if (!m_hullStaticValid) const_cast<Vessel*>(this)->RebuildHullCache ();
+	if (m_hullGroupSlices.empty() || m_hullCacheStatic.empty()) return 0;
+	// choose the largest SPATIAL clusters (5 m BSP slices, contiguous regions)
+	struct SL { size_t a; size_t cnt; double vol; };
+	std::vector<SL> sls;
+	for (size_t si = 0; si < m_hullGroupSlices.size(); si++) {
+		const HullGroupSlice &s = m_hullGroupSlices[si];
+		if (s.count < 4) continue;
+		if (s.startIdx + s.count > m_hullCacheStatic.size()) continue;
+		Vector e = s.maxP - s.minP;
+		double vol = e.x * e.y * e.z;
+		SL g; g.a = s.startIdx; g.cnt = s.count; g.vol = vol;
+		sls.push_back (g);
+	}
+	if (sls.empty()) return 0;
+	std::stable_sort (sls.begin (), sls.end (), [](const SL &x, const SL &y) { return x.vol > y.vol; });
+	int n = (int)min ((size_t)maxCount, sls.size ());
+	for (int i = 0; i < n; i++) {
+		SL &g = sls[i];
+		std::vector<Vector> pts;
+		pts.reserve (g.cnt + 10);
+		Vector mn (1e300, 1e300, 1e300), mx (-1e300, -1e300, -1e300);
+		for (size_t k = 0; k < g.cnt; k++) {
+			const VECTOR3 &p = m_hullCacheStatic[g.a + k].pos;
+			Vector q (p.x, p.y, p.z);
+			pts.push_back (q);
+			if (q.x < mn.x) mn.x = q.x; if (q.y < mn.y) mn.y = q.y; if (q.z < mn.z) mn.z = q.z;
+			if (q.x > mx.x) mx.x = q.x; if (q.y > mx.y) mx.y = q.y; if (q.z > mx.z) mx.z = q.z;
+		}
+		if (mn.x > mx.x) continue;
+		Vector center = (mn + mx) * 0.5;
+		// the hull cache is a thin surface shell: make the point set VOLUMETRIC by
+		// adding the AABB corners and a few interior points, otherwise the convex hull
+		// degenerates into a single face
+		Vector ext = mx - mn;
+		for (int sx = -1; sx <= 1; sx += 2) for (int sy = -1; sy <= 1; sy += 2) for (int sz = -1; sz <= 1; sz += 2) {
+			pts.push_back (center + Vector (sx * ext.x * 0.5, sy * ext.y * 0.5, sz * ext.z * 0.5));
+		}
+		pts.push_back (center + Vector (ext.x * 0.15, ext.y * 0.15, ext.z * 0.15));
+		pts.push_back (center - Vector (ext.x * 0.15, ext.y * 0.15, ext.z * 0.15));
+		for (size_t k = 0; k < pts.size (); k++) {
+			pts[k].x += ((double)rand()/RAND_MAX - 0.5) * 1e-4;
+			pts[k].y += ((double)rand()/RAND_MAX - 0.5) * 1e-4;
+			pts[k].z += ((double)rand()/RAND_MAX - 0.5) * 1e-4;
+		}
+		// ---- gift-wrap (Jarvis 3D) convex hull ----
+		Vector n_fake (-1, 0, 0);
+		int A = 0;
+		for (size_t k = 1; k < pts.size(); k++) if (pts[k].x < pts[A].x) A = (int)k;
+		int B = -1; double max_dot = -1e9;
+		for (size_t k = 0; k < pts.size(); k++) {
+			if ((int)k == A) continue;
+			Vector d = (pts[k] - pts[A]).unit ();
+			double dd = dotp (d, n_fake);
+			if (dd > max_dot) { max_dot = dd; B = (int)k; }
+		}
+		if (B < 0) continue;
+		Vector e_dir = (pts[B] - pts[A]).unit ();
+		Vector n_old = (n_fake - e_dir * dotp (n_fake, e_dir)).unit ();
+		Vector Y_dir = crossp (e_dir, n_old).unit ();
+		int C = -1; double min_theta = 1e9;
+		for (size_t k = 0; k < pts.size(); k++) {
+			if ((int)k == A || (int)k == B) continue;
+			Vector N_raw = crossp (pts[A] - pts[B], pts[k] - pts[B]);
+			if (N_raw.length () < 1e-9) continue;
+			Vector N_new = N_raw.unit ();
+			double x = dotp (N_new, n_old), y = dotp (N_new, Y_dir);
+			double theta = atan2 (y, x);
+			if (theta < 0) theta += 2.0 * PI;
+			if (theta < min_theta) { min_theta = theta; C = (int)k; }
+		}
+		if (C < 0) continue;
+		Vector N_first = crossp (pts[B] - pts[A], pts[C] - pts[A]).unit ();
+		int positive_count = 0;
+		for (size_t k = 0; k < pts.size(); k++) if (dotp (N_first, pts[k] - pts[A]) > 1e-7) positive_count++;
+		if (positive_count > (int)pts.size() / 2) { std::swap (B, C); N_first = crossp (pts[B] - pts[A], pts[C] - pts[A]).unit (); }
+		struct Edge { int u, v; Vector n; };
+		std::vector<Edge> queue;
+		queue.push_back ({A, B, N_first});
+		queue.push_back ({B, C, N_first});
+		queue.push_back ({C, A, N_first});
+		std::unordered_set<uint64_t> visited;
+		std::vector<WORD> faces;
+		faces.push_back ((WORD)A); faces.push_back ((WORD)B); faces.push_back ((WORD)C);
+		while (!queue.empty ()) {
+			Edge edge = queue.back (); queue.pop_back ();
+			uint64_t eh = ((uint64_t)(uint32_t)edge.u << 32) | (uint32_t)edge.v;
+			if (visited.find (eh) != visited.end ()) continue;
+			visited.insert (eh);
+			int best = -1; double best_d = 1e-7;
+			for (size_t k = 0; k < pts.size(); k++) {
+				if ((int)k == edge.u || (int)k == edge.v) continue;
+				double d = dotp (edge.n, pts[k] - pts[edge.u]);
+				if (-d > best_d) { best_d = -d; best = (int)k; }   // farthest point on the OTHER side
+			}
+			if (best < 0) continue;
+			Vector nf = crossp (pts[edge.v] - pts[edge.u], pts[best] - pts[edge.u]).unit ();
+			// orient the new face outward (the point cloud center must be on the inner side)
+			Vector cref = Vector (0, 0, 0);
+			for (size_t k = 0; k < pts.size(); k++) cref += pts[k];
+			cref /= (double)pts.size ();
+			if (dotp (nf, cref - pts[edge.u]) > 0) nf = -nf;
+			faces.push_back ((WORD)edge.u); faces.push_back ((WORD)edge.v); faces.push_back ((WORD)best);
+			queue.push_back ({edge.u, best, nf});
+			queue.push_back ({best, edge.v, nf});
+		}
+		if (faces.size () < 3) continue;
+		HullSliceMesh m;
+		m.center = center;
+		m.radius = (mx - mn).length () * 0.5;
+		for (size_t k = 0; k < pts.size (); k++) {
+			Vector c = pts[k] - center;
+			m.verts.push_back (_V (c.x, c.y, c.z));
+		}
+		m.faces = faces;
+		out.push_back (m);
+	}
+	return (int)out.size ();
+}
+
+DWORD Vessel::GetHullGroupCount () const
+{
+	return (DWORD)m_hullGroupRanges.size();
+}
+
+bool Vessel::GetHullGroupBox (DWORD idx, Vector &center, Vector &extents) const
+{
+	if (idx >= m_hullGroupRanges.size()) return false;
+	if (!m_hullStaticValid) const_cast<Vessel*>(this)->RebuildHullCache ();
+	const HullGroupRange &r = m_hullGroupRanges[idx];
+	if (r.endIdx <= r.startIdx) return false;
+	Vector mn (1e300, 1e300, 1e300), mx (-1e300, -1e300, -1e300);
+	for (size_t k = r.startIdx; k < r.endIdx && k < m_hullCacheStatic.size(); k++) {
+		const VECTOR3 &p = m_hullCacheStatic[k].pos;
+		if (p.x < mn.x) mn.x = p.x;
+		if (p.y < mn.y) mn.y = p.y;
+		if (p.z < mn.z) mn.z = p.z;
+		if (p.x > mx.x) mx.x = p.x;
+		if (p.y > mx.y) mx.y = p.y;
+		if (p.z > mx.z) mx.z = p.z;
+	}
+	if (mn.x > mx.x) return false;
+	center = (mn + mx) * 0.5;
+	extents = (mx - mn) * 0.5;
+	return true;
+}
+
 void Vessel::RefreshCollisionOverlapState() {
 	m_overlapStateDirty = false;
 	if (!g_psys || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bVesselCollision) {
@@ -6180,6 +6575,7 @@ void Vessel::RefreshCollisionOverlapState() {
 
 
 void Vessel::ResolveCollisionWith(Vessel *v) {
+	if (WreckIsVessel (this) || WreckIsVessel (v) || WreckIsObserver (this) || WreckIsObserver (v)) return;
 	if (fstatus == FLIGHTSTATUS_LANDED && v->fstatus == FLIGHTSTATUS_LANDED) return;
 	if (!proxyplanet || proxyplanet != v->proxyplanet) return;
 
@@ -6677,6 +7073,15 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 #endif
 		}
 
+		// Relativity extension: collision impact delta-v check (vessel -> debris)
+		{
+			double relThresh = g_pOrbiter ? g_pOrbiter->Cfg()->CfgPhysicsPrm.RelCollisionDVThreshold : 10.0;
+			bool aBoom = (deltaVelA.length() > relThresh);
+			bool bBoom = (deltaVelB.length() > relThresh);
+			WreckCollisionImpact (my_root, deltaVelA, v_root->Name(), bBoom);
+			WreckCollisionImpact (v_root, deltaVelB, my_root->Name(), aBoom);
+		}
+
 		// Angular damping: only active during sustained/resting contact
 		// (low normal approach velocity), and only dampens the spin component
 		// around the contact normal to avoid killing a legit tumble
@@ -6863,11 +7268,19 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 }
 void Vessel::Update (bool force)
 {
+	// Relativity extension: the player vessel kept as a central wreck piece
+	// is frozen in place so the camera stays on the debris cloud.
+	// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
+	if (RelativityNumericalGuard (this)) return;
+
 	// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
 	if (RelativityStrongFieldGuard (this)) return;
 
-	// Relativistic FTL velocity protection (implementation in RelativityVessel.inc)
-	if (RelativityFTLGuard (*s0, s1)) return;
+	// Relativistic FTL velocity protection (implementation in RelativityPhysics.inc)
+	if (RelativityFTLGuard (this, *s0, s1)) return;
+
+	// Relativity extension: atmospheric dynamic-pressure burn-up check
+	WreckAtmosphericBurnup (this);
 
 	// if the vessel is part of a composite structure or passively attached
 	// to a parent vessel, its state is updated by the composite or parent
@@ -11314,4 +11727,3 @@ int VESSEL4::clbkNavProcess (int mode)
 {
 	return mode;
 }
-

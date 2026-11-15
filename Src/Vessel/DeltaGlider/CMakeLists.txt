@@ -47,6 +47,7 @@ set_target_properties(DeltaGlider
 )
 
 target_include_directories(DeltaGlider
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/vessels
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${VESSEL_COMMON_DIR}
 	PUBLIC ${ORBITER_SOURCE_MODULE_DIR}/ScnEditor      # for ScnEditorAPI.h

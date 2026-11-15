@@ -22,6 +22,7 @@ add_subdirectory(ScriptVessel)
 add_subdirectory(ShuttleA)
 add_subdirectory(ShuttlePB)
 add_subdirectory(Solarsail)
+add_subdirectory(Wreck)
 
 
 

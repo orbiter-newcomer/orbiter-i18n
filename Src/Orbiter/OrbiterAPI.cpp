@@ -66,6 +66,46 @@ DLLEXPORT const char *oapiTr (const char *english)
 	return orbiter::Tr(english);
 }
 
+DLLEXPORT const char *oapiTrContext (const char *context, const char *english)
+{
+	return orbiter::TrContext(context, english);
+}
+
+DLLEXPORT const char *oapiTrName (const char *english)
+{
+	return orbiter::Tr(english);
+}
+
+DLLEXPORT const char *oapiGetOriginalName (const char *localized)
+{
+	return orbiter::GetOriginalName(localized);
+}
+
+DLLEXPORT const char *oapiGetLocale ()
+{
+	return orbiter::GetLocaleName();
+}
+
+DLLEXPORT int oapiRegisterTranslation (const char *locale, const char *english, const char *translated)
+{
+	return orbiter::RegisterTranslation(locale, english, translated) ? 1 : 0;
+}
+
+DLLEXPORT int oapiRegisterTranslationCatalog (const char *path)
+{
+	return orbiter::RegisterTranslationCatalog(path) ? 1 : 0;
+}
+
+DLLEXPORT int oapiUtf8ToWide (const char *utf8, wchar_t *buf, int buflen)
+{
+	return orbiter::Utf8ToWideBuffer(utf8, buf, buflen);
+}
+
+DLLEXPORT int oapiWideToUtf8 (const wchar_t *wide, char *buf, int buflen)
+{
+	return orbiter::WideToUtf8Buffer(wide, buf, buflen);
+}
+
 // 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）
 extern void ZhHudAddText (int x, int y, int size, const char *utf8);
 

@@ -21,6 +21,9 @@ void Config::RelativityLoad (std::istream &ifs)
 	GetBool (ifs, "RelativityBodyMarkers", CfgVisualPrm.bRelBodyMarkers);
 	if (GetReal (ifs, "RelativityChargeRatio", d))
 		CfgPhysicsPrm.RelChargeRatio = max (0.0, min (1.0, d));
+	if (GetReal (ifs, "RelativityCollisionDVThreshold", d))
+		CfgPhysicsPrm.RelCollisionDVThreshold = max (1.0, min (1e6, d));
+	if (GetReal (ifs, "RelativityGasGiantFactor", d)) 		CfgPhysicsPrm.RelGasGiantFactor = max (0.1, min (1.0, d));
 	if (GetReal (ifs, "RelativityExposure", d))
 		CfgVisualPrm.RelExposureWhite = max (0.0, min (8.0, d));
 }
@@ -52,6 +55,9 @@ void Config::RelativityWritePhysics (std::ostream &ofs, bool bEchoAll) const
 		ofs << "RelativityCharge = " << BoolStr (CfgPhysicsPrm.bRelativisticCharge) << '\n';
 	if (CfgPhysicsPrm.RelChargeRatio != CfgPhysicsPrm_default.RelChargeRatio || bEchoAll)
 		ofs << "RelativityChargeRatio = " << CfgPhysicsPrm.RelChargeRatio << '\n';
+	if (CfgPhysicsPrm.RelCollisionDVThreshold != CfgPhysicsPrm_default.RelCollisionDVThreshold || bEchoAll)
+		ofs << "RelativityCollisionDVThreshold = " << CfgPhysicsPrm.RelCollisionDVThreshold << '\n';
+	if (CfgPhysicsPrm.RelGasGiantFactor != CfgPhysicsPrm_default.RelGasGiantFactor || bEchoAll) 		ofs << "RelativityGasGiantFactor = " << CfgPhysicsPrm.RelGasGiantFactor << '\n';
 	if (CfgPhysicsPrm.RelativityFTLMode != CfgPhysicsPrm_default.RelativityFTLMode || bEchoAll)
 			ofs << "RelativityFTLMode = " << CfgPhysicsPrm.RelativityFTLMode << '\n';
 }
@@ -80,6 +86,9 @@ const void *Config::GetRelativityParam (DWORD paramtype) const
 		return (void*)&CfgPhysicsPrm.RelChargeRatio;
 	case CFGPRM_RELGRAVMETHOD:
 		return (void*)&CfgPhysicsPrm.RelativityGravityMethod;
+	case CFGPRM_RELCOLLISIONDV:
+		return (void*)&CfgPhysicsPrm.RelCollisionDVThreshold;
+	case CFGPRM_RELGASGIANT: 		return (void*)&CfgPhysicsPrm.RelGasGiantFactor;
 	}
 	return 0;
 }

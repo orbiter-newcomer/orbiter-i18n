@@ -22,16 +22,6 @@
 #include "D3D9Frame.h"
 #include "D3D9Pad.h"
 
-// Convert a UTF-8 string to UTF-16 (loading screen text may contain CJK glyphs).
-static std::wstring Utf8ToWideStr(const char *s)
-{
-	if (!s || !*s) return std::wstring();
-	int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
-	if (n <= 0) return std::wstring();
-	std::wstring w(size_t(n - 1), L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, s, -1, &w[0], n);
-	return w;
-}
 
 #include "CSphereMgr.h"
 #include "Scene.h"
@@ -132,6 +122,9 @@ extern "C" {
 
 DLLCLBK void InitModule(HINSTANCE hDLL)
 {
+	// Register the Chinese UI translations before any dialog is created (external
+	// catalog file, so the texts can be edited without recompiling the module).
+	if (oapiZhActive() != 0) oapiRegisterTranslationCatalog("i18n\\locales\\zh_CN\\d3d9client.po");
 
 #ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -515,7 +508,7 @@ HWND D3D9Client::clbkCreateRenderWindow()
 	// (Noto Sans CJK SC Bold, SIL Open Font License) is registered privately from the
 	// Fonts directory; Chinese glyphs are slightly larger so that they match the
 	// visual height of the Latin strings.
-	const bool cjkText = (strcmp(oapiTr("Build"), "Build") != 0);
+	const bool cjkText = (oapiZhActive() != 0);
 	if (cjkText) {
 		AddFontResourceExA("Fonts/NotoSansCJKsc-Bold.ttf", FR_PRIVATE, 0);
 	}
@@ -1215,6 +1208,8 @@ void D3D9Client::clbkRenderScene()
 	if (mem<32) TileBuffer::HoldThread(true);
 
 	scene->RenderMainScene();		// Render the main scene
+
+	// Relativity: diagnostic screen brightness monitor (detects camera flashes)
 
 	VESSEL *hVes = oapiGetFocusInterface();
 
@@ -2912,8 +2907,8 @@ bool D3D9Client::OutputLoadStatus(const char *txt, int line)
 		SetTextAlign(hDC, TA_LEFT|TA_TOP);
 
 		// UTF-8 -> UTF-16 so that translated (CJK) status text renders correctly
-		std::wstring wlabel = Utf8ToWideStr(pLoadLabel);
-		std::wstring witem  = Utf8ToWideStr(pLoadItem);
+		std::wstring wlabel = oapiUtf8ToWString(pLoadLabel);
+		std::wstring witem  = oapiUtf8ToWString(pLoadItem);
 		TextOutW(hDC, 2, 2, wlabel.c_str(), (int)wlabel.length());
 
 		SelectObject(hDC, hLblFont2);
@@ -3030,7 +3025,7 @@ void D3D9Client::SplashScreen()
 	// Loading screen version block. In Chinese mode the strings are translated;
 	// CJK text needs a Unicode font and TextOutW. Debug builds are marked in
 	// the version bracket, the graphics engine line shows its plain name.
-	const bool chinese = (strcmp(oapiTr("Build"), "Build") != 0);
+	const bool chinese = (oapiZhActive() != 0);
 
 	LOGFONTA fnt; memset((void *)&fnt, 0, sizeof(LOGFONT));
 
@@ -3080,9 +3075,9 @@ void D3D9Client::SplashScreen()
 	int yc = viewH*545/800;
 
 	if (chinese) {
-		std::wstring wtitle = Utf8ToWideStr("ORBITER太空飞行模拟器");
-		std::wstring wdataB = Utf8ToWideStr(dataB);
-		std::wstring wdataA = Utf8ToWideStr(dataA);
+		std::wstring wtitle = oapiUtf8ToWString("ORBITER太空飞行模拟器");
+		std::wstring wdataB = oapiUtf8ToWString(dataB);
+		std::wstring wdataA = oapiUtf8ToWString(dataA);
 		TextOutW(hDC, xc, yc + 0*20, wtitle.c_str(), (int)wtitle.length());
 		TextOutW(hDC, xc, yc + 1*20, wdataB.c_str(), (int)wdataB.length());
 		TextOutW(hDC, xc, yc + 2*20, wdataA.c_str(), (int)wdataA.length());

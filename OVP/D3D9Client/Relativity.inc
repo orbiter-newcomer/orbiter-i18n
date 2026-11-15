@@ -745,7 +745,7 @@ void Scene::SyncRelativityConfig()
 	Config->RelAberration = (bPhysRel && pA && *pA) ? 1 : 0;
 	Config->RelLensing    = (bPhysRel && pL && *pL && (pM ? *pM : 0) != 2) ? 1 : 0;   // Newtonian model: no gravity visuals
 	Config->RelLensWireframe = (pW && *pW);
-	Config->RelGravRedshift  = (bPhysRel && pG && *pG && (pM ? *pM : 0) != 2) ? 1 : 0;   // Newtonian model: no gravitational redshift
+	Config->RelGravRedshift  = (bPhysRel && pD && *pD && (pM ? *pM : 0) != 2) ? 1 : 0;   // part of the Doppler/shift module (no separate switch)
 	Config->RelBodyMarkers   = (pB && *pB) ? 1 : 0;   // debug markers (independent of the physics switch)
 	if (pE) Config->RelExposureWhite = *pE;
 	if (pM) Config->RelGravityMethod = *pM;   // 0 = 1PN (weak field), 1 = Kerr (strong field), 2 = Newtonian (no gravity visuals)
@@ -1122,6 +1122,96 @@ void Scene::RenderLensedBodyMarkers (oapi::Sketchpad *pSkp, vObject *vo, const c
 	m_celSphere->EnsureMarkerDrawingContext((oapi::Sketchpad**)&pSkp, 0, m_celSphere->MarkerColor(1), m_celSphere->MarkerPen(1));
 	RenderObjectMarker (pSkp, appPos, lensLabel, std::string(), 0, scale);
 }
+// -----------------------------------------------------------------------------
+// Relativistic collision debris: black polyhedra rendered as screen-space
+// filled polygons on the 2D overlay sketchpad. The debris state (position,
+// rotation, size, shape) is maintained by the main program and retrieved via
+// the extension API (oapiGetWreckDebrisCount/Get).
+// -----------------------------------------------------------------------------
+void Scene::RenderWreckDebris (oapi::Sketchpad *pSkp)
+{
+	if (!pSkp) return;
+	int n = oapiGetWreckDebrisCount ();
+	if (n <= 0) return;
+
+	static oapi::Brush *s_brush = 0;
+	static oapi::Pen   *s_pen   = 0;
+	if (!s_pen)   s_pen   = gc->clbkCreatePen (1, 0, 0x1070FF);   // orange (BGR)
+	if (!s_brush) s_brush = gc->clbkCreateBrush (0x1070FF);
+	pSkp->SetPen (s_pen);
+	pSkp->SetBrush (s_brush);
+
+	// manual projection using the camera basis (the D3DX projection matrix is
+	// not reliable in the 2D overlay pass)
+	VECTOR3 cam;
+	oapiCameraGlobalPos (&cam);
+	MATRIX3 gm;
+	oapiCameraRotationMatrix (&gm);
+	const double ap = oapiCameraAperture ();
+	const double W = (double)ViewW (), H = (double)ViewH ();
+	const double f = 1.0 / tan (ap);
+
+	for (int i = 0; i < n; i++) {
+		VECTOR3 pos, axis;
+		double angle, size;
+		int shape;
+		if (!oapiGetWreckDebris (i, &pos, &axis, &angle, &size, &shape)) continue;
+		VECTOR3 d = pos - cam;
+		double dist = sqrt (d.x*d.x + d.y*d.y + d.z*d.z);
+		if (dist < 1.0 || dist > 5e6) continue;
+		// world -> camera coordinates (third row points backwards)
+		double cx = gm.m11*d.x + gm.m12*d.y + gm.m13*d.z;
+		double cy = gm.m21*d.x + gm.m22*d.y + gm.m23*d.z;
+		double cz = -(gm.m31*d.x + gm.m32*d.y + gm.m33*d.z);
+		if (cz <= 0.01) continue;
+		double sx = W*0.5 + (cx/cz) * (W*0.5) * f;
+		double sy = H*0.5 - (cy/cz) * (H*0.5) * f;
+		if (sx < 0 || sx > W || sy < 0 || sy > H) continue;
+		double rad = f * (size / (2.0*dist)) * (H * 0.5);
+		if (rad < 2.0) rad = 2.0;
+		if (rad > H) rad = H;
+		int r = (int)rad;
+		pSkp->Rectangle ((int)sx - r, (int)sy - r, (int)sx + r, (int)sy + r);
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Relativistic wreck message: large red text shown for a few seconds when the
+// player vessel is destroyed (message text comes from the main program).
+// -----------------------------------------------------------------------------
+void Scene::RenderWreckMessage (oapi::Sketchpad *pSkp)
+{
+	if (!pSkp) return;
+	char msg[1024];
+	char ship[64] = "";
+	double age = 0.0;
+	int isFocus = 1;
+	if (!oapiGetWreckMessageEx (msg, 1024, &age, &isFocus, ship, 64)) return;
+	if (age > 6000.0) return;
+	int W = (int)ViewW (), H = (int)ViewH ();
+	if (isFocus) {
+		// focus vessel: big centred text
+		static oapi::Font *s_bigFont = 0;
+		if (!s_bigFont) s_bigFont = oapiCreateFont (36, false, "Microsoft YaHei", FONT_BOLD, 0);
+		if (!s_bigFont) return;
+		pSkp->SetFont (s_bigFont);
+		pSkp->SetTextColor (0x0000FF);   // red (BGR)
+		pSkp->SetTextAlign (oapi::Sketchpad::CENTER, oapi::Sketchpad::TOP);
+		pSkp->Text (W/2, H/2, msg, (int)strlen (msg));
+	} else {
+		// other vessel: small text in the upper-left corner, prefixed with the ship name
+		static oapi::Font *s_smallFont = 0;
+		if (!s_smallFont) s_smallFont = oapiCreateFont (22, false, "Microsoft YaHei", FONT_BOLD, 0);
+		if (!s_smallFont) return;
+		pSkp->SetFont (s_smallFont);
+		pSkp->SetTextColor (0x00FFFF);   // yellow (BGR)
+		pSkp->SetTextAlign (oapi::Sketchpad::LEFT, oapi::Sketchpad::TOP);
+		pSkp->Text (12, 40, msg, (int)strlen (msg));   // the message already starts with the ship name
+	}
+}
+
+
+// -----------------------------------------------------------------------------
 #endif // REL_INC_SCENE
 
 #ifdef REL_INC_CELSPHERE

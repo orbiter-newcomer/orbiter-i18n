@@ -458,6 +458,14 @@ private:
 	void RelativityApplySunGlare(FVECTOR4 &clr, float &glare) const;
 	void ApplyRelativityToBodies();
 	void RenderLensedBodyMarkers (oapi::Sketchpad *pSkp, vObject *vo, const char *name, int scale);
+
+	// Relativistic collision debris (black polyhedra; data from the main program)
+	void RenderWreckDebris (oapi::Sketchpad *pSkp);
+
+	// Relativistic wreck message (large red text when the player vessel is destroyed)
+	void RenderWreckMessage (oapi::Sketchpad *pSkp);
+
+
 	void ComputeLensBodies();
 	void InitLensCubemap();
 	void ExitLensCubemap();
@@ -629,4 +637,3 @@ private:
 };
 
 #endif // !__SCENE_H
-

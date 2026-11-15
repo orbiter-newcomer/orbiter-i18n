@@ -1,0 +1,4508 @@
+# Orbiter 中文翻译（UTF-8，.po 子集：msgid/msgstr/msgctxt）
+# 核心 UI 文本（主程序/MFD/对话框/残骸消息）
+# 由 i18n 数据生成；改翻译可直接编辑本文件，无需重新编译。
+
+msgid "Al Anbar"
+msgstr "安巴尔"
+
+msgid "Alcantara"
+msgstr "阿尔坎塔拉"
+
+msgid "Baikonur"
+msgstr "拜科努尔"
+
+msgid "Barent Sea"
+msgstr "巴伦支海"
+
+msgid "Brighton Beach"
+msgstr "布莱顿海滩"
+
+msgid "Cape Canaveral"
+msgstr "卡纳维拉尔角"
+
+msgid "China Lake"
+msgstr "中国湖"
+
+msgid "Doberai"
+msgstr "多贝拉伊"
+
+msgid "Edwards"
+msgstr "爱德华兹"
+
+msgid "Gran Canaria"
+msgstr "大加那利"
+
+msgid "Habana"
+msgstr "哈瓦那"
+
+msgid "Hammaguira"
+msgstr "哈马基拉"
+
+msgid "Inyokern"
+msgstr "因约肯"
+
+msgid "Jingyu"
+msgstr "靖宇"
+
+msgid "Jiuquan"
+msgstr "酒泉"
+
+msgid "Kagoshima"
+msgstr "鹿儿岛"
+
+msgid "Kapustin Yar"
+msgstr "卡普斯京亚尔"
+
+msgid "Kourou"
+msgstr "库鲁"
+
+msgid "Matagorda"
+msgstr "马塔戈达"
+
+msgid "Mojave Spaceport"
+msgstr "莫哈维航天港"
+
+msgid "Musudan"
+msgstr "舞水端"
+
+msgid "Olympus"
+msgstr "奥林匹斯"
+
+msgid "Overberg"
+msgstr "奥弗贝格"
+
+msgid "Palmachim"
+msgstr "帕尔马希姆"
+
+msgid "Palmdale AF Plant 42"
+msgstr "帕姆代尔空军42厂"
+
+msgid "Peenemuende"
+msgstr "佩内明德"
+
+msgid "Peenemünde"
+msgstr "佩内明德"
+
+msgid "Plesetsk"
+msgstr "普列谢茨克"
+
+msgid "Salto di Quirra"
+msgstr "萨尔托迪基拉"
+
+msgid "San Marco"
+msgstr "圣马可"
+
+msgid "Sriharikota"
+msgstr "斯里哈里科塔"
+
+msgid "Svobodniy"
+msgstr "斯沃博德内"
+
+msgid "Taiyuan"
+msgstr "太原"
+
+msgid "Tanegashima"
+msgstr "种子岛"
+
+msgid "Vandenberg"
+msgstr "范登堡"
+
+msgid "Wallops Island"
+msgstr "沃洛普斯岛"
+
+msgid "White Sands"
+msgstr "白沙"
+
+msgid "Woomera"
+msgstr "伍默拉"
+
+msgid "Wuzhai"
+msgstr "五寨"
+
+msgid "Xichang"
+msgstr "西昌"
+
+msgid "radius"
+msgstr "半径"
+
+msgid "longitude"
+msgstr "经度"
+
+msgid "latitude"
+msgstr "纬度"
+
+msgid "d radius / dt"
+msgstr "d 半径 / dt"
+
+msgid "d longitude / dt"
+msgstr "d 经度 / dt"
+
+msgid "d latitude / dt"
+msgstr "d 纬度 / dt"
+
+msgid "Inactive (Landed)"
+msgstr "未激活 (已着陆)"
+
+msgid "Active (Flight)"
+msgstr "激活 (飞行中)"
+
+msgid "Animations"
+msgstr "动画"
+
+msgid "Passengers"
+msgstr "乘客"
+
+msgid "polar"
+msgstr "极坐标"
+
+msgid "TransX"
+msgstr "转移X"
+
+msgid "Ascent profile"
+msgstr "上升剖面"
+
+msgid "Attitude RCS"
+msgstr "姿态控制"
+
+msgid "Terminal MFD"
+msgstr "终端"
+
+msgid "MFD Template"
+msgstr "MFD模板"
+
+msgid "Script MFD API-Test"
+msgstr "脚本API测试"
+
+msgid "Generic Camera"
+msgstr "通用相机"
+
+msgid "Input command"
+msgstr "输入命令"
+
+msgid "Next attachment"
+msgstr "下一个附件"
+
+msgid "Time: s"
+msgstr "时间: s"
+
+msgid "Set attitude mode"
+msgstr "设置姿态模式"
+
+msgid "Pe Distance"
+msgstr "近点距离"
+
+msgid "Ej Orientation"
+msgstr "弹射方向"
+
+msgid "Equatorial view"
+msgstr "赤道视图"
+
+msgid "Draw Base"
+msgstr "绘制基地"
+
+msgid "View Orbit"
+msgstr "查看轨道"
+
+msgid "Velocity."
+msgstr "速度"
+
+msgid "Outward angle"
+msgstr "外推角"
+
+msgid "Inc. angle"
+msgstr "倾角"
+
+msgid "Inherit Vel."
+msgstr "继承速度"
+
+msgid "Eject date"
+msgstr "出发日期"
+
+msgid "Prograde vel."
+msgstr "顺行速增量"
+
+msgid "Outward vel."
+msgstr "离心速增量"
+
+msgid "Ch. plane vel."
+msgstr "法向速增量"
+
+msgid "Stage %i:%i"
+msgstr "阶段 %i:%i"
+
+msgid "Vars Stage %i"
+msgstr "变量阶段 %i"
+
+msgid "General Setup"
+msgstr "通用设置"
+
+msgid "Toggle Help"
+msgstr "切换帮助"
+
+msgid "Step Forward"
+msgstr "前进一阶段"
+
+msgid "Step Back"
+msgstr "后退一阶段"
+
+msgid "Select View"
+msgstr "选择视图"
+
+msgid "Next Variable"
+msgstr "下一个变量"
+
+msgid "Prev. Variable"
+msgstr "上一个变量"
+
+msgid "Set adjustment"
+msgstr "设置调整"
+
+msgid "method (+)"
+msgstr "方法 (+)"
+
+msgid "method (-)"
+msgstr "方法 (-)"
+
+msgid "Increment"
+msgstr "增加"
+
+msgid "variable"
+msgstr "变量"
+
+msgid "Decrement"
+msgstr "减少"
+
+msgid "Execute"
+msgstr "执行"
+
+msgid "Command"
+msgstr "命令"
+
+msgid "Enter value"
+msgstr "输入数值"
+
+msgid "Executed"
+msgstr "已执行"
+
+msgid "TransX MFD"
+msgstr "转移X MFD"
+
+msgid "Plan:Escape"
+msgstr "计划:逃逸"
+
+msgid "Select where you're going."
+msgstr "选择目标天体。"
+
+msgid "Choose object, or escape"
+msgstr "选择天体，或逃逸"
+
+msgid "Advanced:Select type of plan"
+msgstr "高级：选择计划类型"
+
+msgid "you want to follow."
+msgstr "你想执行的计划。"
+
+msgid "None for simple trips."
+msgstr "无：简单行程。"
+
+msgid "Escape when leaving SOI"
+msgstr "逃逸：离开影响球"
+
+msgid "Choose what to do at this"
+msgstr "选择在此天体的操作"
+
+msgid "planet"
+msgstr "天体"
+
+msgid "None for simple trips,"
+msgstr "无：简单行程，"
+
+msgid "Eject for leaving an SOI"
+msgstr "出发：离开影响球"
+
+msgid "Advanced:Set minor body"
+msgstr "高级：设置次天体"
+
+msgid "Enable manoeuvre settings"
+msgstr "启用机动设置"
+
+msgid "Enable advanced settings"
+msgstr "启用高级设置"
+
+msgid "Set to 'Target' to obtain better"
+msgstr "设为'目标'以获得更好的"
+
+msgid "view when target is small"
+msgstr "目标较小时的视图"
+
+msgid "Orbit on which manoeuvres"
+msgstr "机动所基于的轨道"
+
+msgid "are based. ++ sets to focus orbit"
+msgstr "++ 可设为焦点轨道"
+
+msgid "Positive numbers to outer planets."
+msgstr "正数：飞向外部行星。"
+
+msgid "Negative numbers to inner planets."
+msgstr "负数：飞向内部行星。"
+
+msgid "Your planned launch date/time"
+msgstr "计划的发射日期/时间"
+
+msgid "Alter to seek good launch windows"
+msgstr "调整以寻找良好发射窗口"
+
+msgid "Add velocity outwards/inwards."
+msgstr "向外/向内增加速度。"
+
+msgid "Allows launch date flexibility."
+msgstr "提供发射日期灵活性。"
+
+msgid "Use to swing grey plane intersection"
+msgstr "用于摆动灰色平面交线"
+
+msgid "line towards intercept point."
+msgstr "朝向交会点。"
+
+msgid "Adjusts the way MFD displays orbit"
+msgstr "调整 MFD 显示轨道的方式"
+
+msgid "Adjust to taste"
+msgstr "按喜好调整"
+
+msgid "Intercept info shown for whatever"
+msgstr "交会信息显示取决于"
+
+msgid "you select here."
+msgstr "交会信息。"
+
+msgid "The number of orbits ahead to"
+msgstr "向前搜索交会的"
+
+msgid "look for an intercept with target"
+msgstr "与目标交会的轨道圈数"
+
+msgid "This plan (None) is used largely for"
+msgstr "此计划(无)主要用于"
+
+msgid "simple cruise to a target."
+msgstr "简单巡航到目标。"
+
+msgid "Select an alternative plan for more"
+msgstr "选择其他计划以进行更"
+
+msgid "complex manoeuvres. Use FWD to"
+msgstr "复杂机动。用 FWD 创建"
+
+msgid "create next stage."
+msgstr "下一阶段。"
+
+msgid "Periapsis of planned orbit"
+msgstr "计划轨道的近点"
+
+msgid "(Distance from planet centre)"
+msgstr "(距行星中心距离)"
+
+msgid "Use to rotate planned orbit around"
+msgstr "用于绕出发方向轴"
+
+msgid "axis of departure direction."
+msgstr "旋转计划轨道。"
+
+msgid "Used to leave SOI of this planet/moon"
+msgstr "用于离开此行星/卫星的影响球"
+
+msgid "for another. eg Earth to"
+msgstr "前往另一个，例如地球到"
+
+msgid "Mars. Best to plan before you take"
+msgstr "火星。最好在起飞前规划。"
+
+msgid "off. Most efficient way to plan"
+msgstr "最有效的规划方式"
+
+msgid "Choose to not draw the base"
+msgstr "选择不绘制基地"
+
+msgid "Used to show information on the"
+msgstr "用于显示到达行星的信息。"
+
+msgid "arrival planet. No function other than"
+msgstr "除了显示行星及地面基地的"
+
+msgid "to show extra information on a planet"
+msgstr "额外信息外，无其他功能"
+
+msgid "including a surface base"
+msgstr "（包括地面基地）"
+
+msgid "Choose to view approach"
+msgstr "选择查看接近轨道"
+
+msgid "or departure orbit"
+msgstr "或离开轨道"
+
+msgid "Total velocity of escape"
+msgstr "逃逸总速度"
+
+msgid "Angle away from prograde direction"
+msgstr "偏离顺行方向的角度"
+
+msgid "(Direction of Minor body)"
+msgstr "(次天体方向)"
+
+msgid "Rotates around prograde vector"
+msgstr "绕顺行矢量旋转"
+
+msgid "Inherit velocity and date from"
+msgstr "从上一阶段计划继承"
+
+msgid "previous stage's plan."
+msgstr "速度和日期。"
+
+msgid "Date of periapsis of minor body."
+msgstr "次天体近点日期。"
+
+msgid "Normally leave as inherited."
+msgstr "通常保持继承值。"
+
+msgid "for another. Designed for use in"
+msgstr "前往另一个。设计用于与"
+
+msgid "combination with the slingshot plan"
+msgstr "上一阶段的弹弓计划"
+
+msgid "in the previous stage"
+msgstr "组合使用"
+
+msgid "Positive to move outward from MAJ"
+msgstr "正数：远离主天体"
+
+msgid "Negative to move inward toward MAJ"
+msgstr "负数：靠近主天体"
+
+msgid "Your planned launch date. Adjust to"
+msgstr "计划发射日期。调整以"
+
+msgid "find efficient launch window."
+msgstr "寻找高效发射窗口。"
+
+msgid "Adjust to give you launch date"
+msgstr "调整以提供发射日期"
+
+msgid "flexibility or fast flight."
+msgstr "灵活性或快速飞行。"
+
+msgid "Adjust grey target plane intersect"
+msgstr "调整灰色目标平面交线"
+
+msgid "line to coincide with intercept."
+msgstr "使其与交会点重合。"
+
+msgid "Used to set direction at exit of"
+msgstr "用于设置离开影响球时的"
+
+msgid "SOI to aim for another planet eg"
+msgstr "方向以瞄准另一行星，例如"
+
+msgid "Earth to Mars. MAJ is body all"
+msgstr "地球到火星。MAJ 为轨道"
+
+msgid "orbit. Best to plan before you"
+msgstr "中心。最好在起飞前规划。"
+
+msgid "take off."
+msgstr "起飞。"
+
+msgid "Select the ship from which"
+msgstr "选择要继承设置的飞船"
+
+msgid "you wish to inherit settings."
+msgstr "（选择载具）。"
+
+msgid "View:Escape Plan"
+msgstr "视图:逃逸计划"
+
+msgid "Plan:Eject"
+msgstr "计划:出发"
+
+msgid "View:Eject Plan"
+msgstr "视图:出发计划"
+
+msgid "Plan:Sling Direct"
+msgstr "计划:直接抛射"
+
+msgid "View:Sling Direct"
+msgstr "视图:直接抛射"
+
+msgid "Plan:Encounter"
+msgstr "计划:遭遇"
+
+msgid "View:Encounter"
+msgstr "视图:遭遇"
+
+msgid "Plan:Slingshot"
+msgstr "计划:弹弓"
+
+msgid "View:Slingshot"
+msgstr "视图:弹弓"
+
+msgid "Plan type"
+msgstr "计划类型"
+
+msgid "Plan"
+msgstr "计划"
+
+msgid "Intercept with"
+msgstr "交会对象"
+
+msgid "Orbits to Icept"
+msgstr "交会轨道圈数"
+
+msgid "Scale to view"
+msgstr "缩放视图"
+
+msgid "Autoplan"
+msgstr "自动规划"
+
+msgid "Manoeuvre mode"
+msgstr "机动模式"
+
+msgid "Base Orbit"
+msgstr "基准轨道"
+
+msgid "Select Minor"
+msgstr "选择次天体"
+
+msgid "Updating"
+msgstr "更新中"
+
+msgid "++ Updates"
+msgstr "++ 更新"
+
+msgid "On"
+msgstr "开"
+
+msgid "Off"
+msgstr "关"
+
+msgid "Coarse"
+msgstr "粗略"
+
+msgid "Inc:"
+msgstr "倾角:"
+
+msgid "Enc. MJD %.4f"
+msgstr "交会 MJD %.4f"
+
+msgid "LAN    :%.4g°"
+msgstr "升交点经度:%.4g°"
+
+msgid "Pe Lat/Long: %.4g, %.4g"
+msgstr "近点纬/经度: %.4g, %.4g"
+
+msgid "Medium"
+msgstr "中等"
+
+msgid "Rough"
+msgstr "粗糙"
+
+msgid "Super"
+msgstr "超精细"
+
+msgid "Ultra"
+msgstr "极精细"
+
+msgid "Hyper"
+msgstr "超高精"
+
+msgid "Micro"
+msgstr "微调"
+
+msgid "Auto-Min"
+msgstr "自动最小"
+
+msgid "Min Alt:"
+msgstr "最低高度:"
+
+msgid "Pe Vel:"
+msgstr "近点速度:"
+
+msgid "Capture Delta:"
+msgstr "捕获增量:"
+
+msgid "Circ. Delta:"
+msgstr "圆化增量:"
+
+msgid "Inclination:"
+msgstr "倾角:"
+
+msgid "Incl.  :%.4g°"
+msgstr "倾角:%.4g°"
+
+msgid "Heading:%.4g°"
+msgstr "航向:%.4g°"
+
+msgid "No solution"
+msgstr "无解"
+
+msgid "not available"
+msgstr "不可用"
+
+msgid "Heading:"
+msgstr "航向:"
+
+msgid "Heading: N/A"
+msgstr "航向:不可用"
+
+msgid "Delta V:"
+msgstr "速度增量:"
+
+msgid "T to Pe:"
+msgstr "至近点时间:"
+
+msgid "Begin Burn:"
+msgstr "开始点火:"
+
+msgid "Begin Burn"
+msgstr "开始点火"
+
+msgid "Ang. to Pe:"
+msgstr "至近点角度:"
+
+msgid "S.maj diff:"
+msgstr "半长轴差:"
+
+msgid "LAN "
+msgstr "升交点经度 "
+
+msgid "TOF (days):"
+msgstr "飞行时间(天):"
+
+msgid "Total DeltaV:"
+msgstr "总速度增量:"
+
+msgid "Rel Inc:"
+msgstr "相对倾角:"
+
+msgid "R. Inc:"
+msgstr "相对倾角:"
+
+msgid "New Plan"
+msgstr "新计划"
+
+msgid "Inherit from"
+msgstr "继承自"
+
+msgid "Man. date"
+msgstr "机动日期"
+
+msgid "Fine"
+msgstr "精细"
+
+msgid "Craft"
+msgstr "飞船"
+
+msgid "Graph projection"
+msgstr "图形投影"
+
+msgid "Initial"
+msgstr "初始"
+
+msgid "Through point"
+msgstr "通过点"
+
+msgid "TX_Through point"
+msgstr "飞掠"
+
+msgid "Cruise plan"
+msgstr "巡航"
+
+msgid "Slingshot"
+msgstr "弹弓"
+
+msgid "Encounter"
+msgstr "遭遇"
+
+msgid "Eject"
+msgstr "出发"
+
+msgid "Sling Direct"
+msgstr "直接抛射"
+
+msgid "Auto"
+msgstr "自动"
+
+msgid "Manoeuvre"
+msgstr "机动"
+
+msgid "Focus"
+msgstr "焦点"
+
+msgid "Ecliptic"
+msgstr "黄道"
+
+msgid "Edge On"
+msgstr "侧视"
+
+msgid "Pe MJD:"
+msgstr "近点 MJD:"
+
+msgid "H. Pe MJD"
+msgstr "双曲近点 MJD"
+
+msgid "On/Off"
+msgstr "开/关"
+
+msgid "/ Add Step"
+msgstr "/ 添加阶段"
+
+msgid "MAJ:"
+msgstr "主天体:"
+
+msgid "MIN:"
+msgstr "次天体:"
+
+msgid "TGT:"
+msgstr "目标:"
+
+msgid "View:Target"
+msgstr "视图:目标"
+
+msgid "View:Setup"
+msgstr "视图:设置"
+
+msgid "View:Manoeuvre"
+msgstr "视图:机动"
+
+msgid "Delta V: "
+msgstr "速度增量: "
+
+msgid "T to Mnvre: "
+msgstr "至机动: "
+
+msgid "Begin Burn: "
+msgstr "开始点火: "
+
+msgid "Cl. App.: "
+msgstr "最近接近: "
+
+msgid "Hohmann dv: "
+msgstr "霍曼增量: "
+
+msgid "Enc. V:"
+msgstr "交会速度:"
+
+msgid "Maj. Rad: "
+msgstr "主天体半径: "
+
+msgid "Focus PeD:"
+msgstr "主天体近点距:"
+
+msgid "Focus ApD:"
+msgstr "主天体远点距:"
+
+msgid "Hyp PeD "
+msgstr "双曲近点距 "
+
+msgid "Planets/Moons"
+msgstr "行星/卫星"
+
+msgid "Ships"
+msgstr "飞船"
+
+msgid "Pe MJD:   %.4f"
+msgstr "近点 MJD:   %.4f"
+
+msgid "H. Pe MJD %.2f"
+msgstr "双曲近点 MJD %.2f"
+
+msgid "Escape"
+msgstr "逃逸"
+
+msgid "No Command"
+msgstr "无命令"
+
+msgid "Dock sync mode"
+msgstr "对接同步模式"
+
+msgid "Suspend active mode"
+msgstr "挂起活动模式"
+
+msgid "Cancel active mode"
+msgstr "取消活动模式"
+
+msgid "Configure vessel"
+msgstr "配置载具"
+
+msgid "Add rotation"
+msgstr "添加旋转"
+
+msgid "Delete rotation"
+msgstr "删除旋转"
+
+msgid "Change rotation"
+msgstr "更改旋转"
+
+msgid "axis"
+msgstr "轴"
+
+msgid "Increase rotation"
+msgstr "增大旋转"
+
+msgid "angle"
+msgstr "角度"
+
+msgid "Decrease rotation"
+msgstr "减小旋转"
+
+msgid "Selection up"
+msgstr "向上选择"
+
+msgid "Selection down"
+msgstr "向下选择"
+
+msgid "Activate configuration"
+msgstr "激活配置"
+
+msgid "Return to"
+msgstr "返回"
+
+msgid "main page"
+msgstr "主页面"
+
+msgid "Next base mode"
+msgstr "下一个基准模式"
+
+msgid "Invert base mode"
+msgstr "反转基准模式"
+
+msgid "Keep current"
+msgstr "保持当前"
+
+msgid "attitude"
+msgstr "姿态"
+
+msgid "Activate mode"
+msgstr "激活模式"
+
+msgid "NAV receiver"
+msgstr "NAV 接收机"
+
+msgid "select"
+msgstr "选择"
+
+msgid "Activate dock"
+msgstr "激活对接"
+
+msgid "alignment mode"
+msgstr "对准模式"
+
+msgid "Alt: km"
+msgstr "高度: km"
+
+msgid "Pitch: deg"
+msgstr "俯仰: 度"
+
+msgid "Vel: km/s"
+msgstr "速度: km/s"
+
+msgid "V rad"
+msgstr "径向速度"
+
+msgid "V tan"
+msgstr "切向速度"
+
+msgid "Select page"
+msgstr "选择页面"
+
+msgid "Altitude range"
+msgstr "高度范围"
+
+msgid "Radial"
+msgstr "径向"
+
+msgid "Tangential"
+msgstr "切向"
+
+msgid "velocity range"
+msgstr "速度范围"
+
+msgid "Altitude range (km) [min max, or 'a' for auto]:"
+msgstr "高度范围 (km) [最小值 最大值，或 'a' 自动]："
+
+msgid "Vrad range (km/s) [min max, or 'a' for auto]:"
+msgstr "径向速度范围 (km/s) [最小值 最大值，或 'a' 自动]："
+
+msgid "Vtan range (km/s) [min max, or 'a' for auto]:"
+msgstr "切向速度范围 (km/s) [最小值 最大值，或 'a' 自动]："
+
+msgid "Prev attachment"
+msgstr "上一个附件"
+
+msgid "Next dockport"
+msgstr "下一个对接口"
+
+msgid "Prev dockport"
+msgstr "上一个对接口"
+
+msgid "Move Forward"
+msgstr "向前移动"
+
+msgid "Move Backwards"
+msgstr "向后移动"
+
+msgid "Select Vessel"
+msgstr "选择载具"
+
+msgid "Night Vision"
+msgstr "夜视"
+
+msgid "Zoom In"
+msgstr "放大"
+
+msgid "Zoom Out"
+msgstr "缩小"
+
+msgid "Parent Mode"
+msgstr "父级模式"
+
+msgid "Crosshairs"
+msgstr "十字准线"
+
+msgid "No Graphics API"
+msgstr "无图形 API"
+
+msgid "Custom Cameras Disabled"
+msgstr "自定义相机已禁用"
+
+msgid "No Dock/Attachment points"
+msgstr "无对接/挂载点"
+
+msgid "Attach("
+msgstr "挂载("
+
+msgid "Dock("
+msgstr "对接("
+
+msgid "Child"
+msgstr "子级"
+
+msgid "Parent"
+msgstr "父级"
+
+msgid "Viewing %s %s%d)%s"
+msgstr "查看 %s %s%d)%s"
+
+msgid "[%s] FOV=%0.0f° Ofs=%2.2f[m]"
+msgstr "[%s] 视场=%0.0f° 偏移=%2.2f[m]"
+
+msgid "Keyboard Input:"
+msgstr "键盘输入："
+
+msgid "Create new terminal"
+msgstr "新建终端"
+
+msgid "Delete terminal page"
+msgstr "删除终端页"
+
+msgid "Next page"
+msgstr "下一页"
+
+msgid "Previous page"
+msgstr "上一页"
+
+msgid "Input script command:"
+msgstr "输入脚本命令："
+
+msgid "Term %d/%d"
+msgstr "终端 %d/%d"
+
+msgid "busy"
+msgstr "忙"
+
+msgid "OK"
+msgstr "确定"
+
+msgid "Execution"
+msgstr "执行"
+
+msgid "Execute the command buffer"
+msgstr "执行命令缓冲"
+
+msgid "Single line"
+msgstr "单行"
+
+msgid "History"
+msgstr "历史"
+
+msgid "Previous command"
+msgstr "上一条命令"
+
+msgid "Next command"
+msgstr "下一条命令"
+
+msgid "Clear history"
+msgstr "清空历史"
+
+msgid "Maintain fixed state vectors"
+msgstr "保持固定状态向量"
+
+msgid "Maintain fixed surface position"
+msgstr "保持固定表面位置"
+
+msgid "Propagate along osculating elements"
+msgstr "沿密切根数传播"
+
+msgid "Destroy vessel"
+msgstr "销毁载具"
+
+msgid "ref. equator (fixed)"
+msgstr "参考赤道（固定）"
+
+msgid "ref. equator (rotating)"
+msgstr "参考赤道（旋转）"
+
+msgid "This dialog allows to visualize active sound instances"
+msgstr "此对话框用于显示当前激活的声音实例"
+
+msgid "rad"
+msgstr "弧度"
+
+msgid "Global configuration for the default Space Shuttle Atlantis."
+msgstr "默认航天飞机亚特兰蒂斯的全局配置。"
+
+msgid "Global configuration for the default Delta-glider."
+msgstr "默认三角翼的全局配置。"
+
+msgid "Configure atmospheric parameters for celestial bodies."
+msgstr "配置天体的大气参数。"
+
+msgid "Visible (DSS2/Wikisky)"
+msgstr "可见光（DSS2/Wikisky）"
+
+msgid "Far IR (IRAS)"
+msgstr "远红外（IRAS）"
+
+msgid "Microwave (Planck)"
+msgstr "微波（普朗克）"
+
+msgid "Radio"
+msgstr "射电"
+
+msgid "X-ray (RASS)"
+msgstr "X 射线（RASS）"
+
+msgid "Gamma (Fermi)"
+msgstr "伽马射线（费米）"
+
+msgid "Hydrogen Alpha"
+msgstr "氢阿尔法"
+
+msgid "Runge-Kutta, 5th order (RK5)"
+msgstr "龙格-库塔，五阶（RK5）"
+
+msgid "Runge-Kutta, 6th order (RK6)"
+msgstr "龙格-库塔，六阶（RK6）"
+
+msgid "Runge-Kutta, 7th order (RK7)"
+msgstr "龙格-库塔，七阶（RK7）"
+
+msgid "Runge-Kutta, 8th order (RK8)"
+msgstr "龙格-库塔，八阶（RK8）"
+
+msgid "Symplectic, 2nd order (SY2)"
+msgstr "辛方法，二阶（SY2）"
+
+msgid "Symplectic, 4th order (SY4)"
+msgstr "辛方法，四阶（SY4）"
+
+msgid "Symplectic, 6th order (SY6)"
+msgstr "辛方法，六阶（SY6）"
+
+msgid "Symplectic, 8th order (SY8)"
+msgstr "辛方法，八阶（SY8）"
+
+msgid "Select \"Simple text display\" if the inline HTML viewer causes problems. \"Auto-detect\" disables the inline viewer when running Orbiter in a Linux/WINE environment."
+msgstr "如果内嵌 HTML 查看器出现问题，请选择\"简易文本显示\"。\"自动检测\"会在 Linux/WINE 环境下运行 Orbiter 时禁用内嵌查看器。"
+
+msgid "If activated, the screenshot is displayed in the description of the \"Current state\" scenario."
+msgstr "如果启用，截图将显示在\"当前状态\"场景的说明中。"
+
+msgid "Simple text display (external HTML viewer)"
+msgstr "简易文本显示（外部 HTML 查看器）"
+
+msgid "Scenario screenshots"
+msgstr "场景截图"
+
+msgid "Save screenshot when closing simulation session"
+msgstr "关闭模拟会话时保存截图"
+
+msgid "Resume"
+msgstr "继续"
+
+msgid "(step 0.05)"
+msgstr "0.05 步进"
+
+msgid "(step 1.0)"
+msgstr "1.0 步进"
+
+msgid "IDS"
+msgstr "信标"
+
+msgid "XPDR"
+msgstr "应答机"
+
+msgid "XPDR Transmitter"
+msgstr "应答机发射机"
+
+msgid "NAV Receiver Stack"
+msgstr "接收机列表"
+
+msgid "Select receiver"
+msgstr "选择接收机"
+
+msgid "Dec frequency"
+msgstr "减小频率"
+
+msgid "Inc frequency"
+msgstr "增大频率"
+
+msgid "Scan down"
+msgstr "向下扫描"
+
+msgid "Scan up"
+msgstr "向上扫描"
+
+msgid "Select reference (Shift-R)"
+msgstr "选择参考（Shift-R）"
+
+msgid "Src"
+msgstr "源"
+
+msgid "[self]"
+msgstr "[自身]"
+
+msgid "TLi"
+msgstr "交点经度"
+
+msgid "DTi"
+msgstr "交会时间"
+
+msgid "HTO"
+msgstr "假设轨道"
+
+msgid "TLe"
+msgstr "出发经度"
+
+msgid "DTe"
+msgstr "出发时间"
+
+msgid "Dv"
+msgstr "Δv"
+
+msgid "Tgt "
+msgstr "目标 "
+
+msgid "Num orbit"
+msgstr "数值轨迹"
+
+msgid "Stp"
+msgstr "时步数"
+
+msgid "Enter orbit"
+msgstr "输入轨道参考"
+
+msgid "Enter source"
+msgstr "输入源"
+
+msgid "Enter target"
+msgstr "输入目标"
+
+msgid "Toggle transfer"
+msgstr "切换转移轨道"
+
+msgid "Toggle numerical"
+msgstr "切换数值轨迹"
+
+msgid "Update numerical"
+msgstr "更新数值轨迹"
+
+msgid "Adjust time steps"
+msgstr "调整时间步长"
+
+msgid "Decrease dV"
+msgstr "减小 Δv"
+
+msgid "Increase dV"
+msgstr "增大 Δv"
+
+msgid "Decrease step"
+msgstr "减小步长比例"
+
+msgid "Increase step"
+msgstr "增大步长比例"
+
+msgid "Sync Orbit: "
+msgstr "轨道同步："
+
+msgid "no target"
+msgstr "无目标"
+
+msgid "Cannot determine orbit"
+msgstr "无法确定轨道"
+
+msgid "Select target (Shift-T)"
+msgstr "选择目标（Shift-T）"
+
+msgid "Invalid target"
+msgstr "目标无效"
+
+msgid "Cannot determine target orbit"
+msgstr "无法确定目标轨道"
+
+msgid "Ref: "
+msgstr "参考："
+
+msgid "Intersect 1"
+msgstr "交点1"
+
+msgid "Intersect 2"
+msgstr "交点2"
+
+msgid "Sh periapsis"
+msgstr "飞船近点"
+
+msgid "Sh apoapsis"
+msgstr "船远点"
+
+msgid "Tg periapsis"
+msgstr "目标近点"
+
+msgid "Tg apoapsis"
+msgstr "目标远点"
+
+msgid "Manual axis"
+msgstr "手动轴"
+
+msgid "No intersection"
+msgstr "无交点"
+
+msgid "RAnm"
+msgstr "轴近角"
+
+msgid "DLng"
+msgstr "经度差"
+
+msgid "RVel"
+msgstr "相对速度"
+
+msgid "DTmin"
+msgstr "时间差"
+
+msgid "Ob"
+msgstr "序"
+
+msgid "Sh-ToR"
+msgstr "船-参考"
+
+msgid "Tg-ToR"
+msgstr "目标-参考"
+
+msgid "Toggle intersect"
+msgstr "切换相交模式"
+
+msgid "Select # transit"
+msgstr "设置绕行圈数"
+
+msgid "Rot. manual axis"
+msgstr "旋转手动轴"
+
+msgid "Current"
+msgstr "当前"
+
+msgid "Relative"
+msgstr "相对"
+
+msgid "dA[°]"
+msgstr "交点角[°]"
+
+msgid "TtN[s]"
+msgstr "到交点[s]"
+
+msgid "dV[m/s]"
+msgstr "ΔV[m/s]"
+
+msgid "BT[s]"
+msgstr "燃烧[s]"
+
+msgid "TtB[s]"
+msgstr "点火倒计时[s]"
+
+msgid "TtL[s]"
+msgstr "发射倒计时[s]"
+
+msgid "NML-"
+msgstr "法向-"
+
+msgid "NML+"
+msgstr "法向+"
+
+msgid "Align plane"
+msgstr "轨道面对齐"
+
+msgid "Orbit  "
+msgstr "轨道"
+
+msgid "Ballist"
+msgstr "弹道"
+
+msgid "[Custom]"
+msgstr "[自定义]"
+
+msgid "No reference body selected."
+msgstr "未选择参考天体。"
+
+msgid "No target orbit selected."
+msgstr "未选择目标轨道。"
+
+msgid "Use Shift-T to select a target"
+msgstr "按 Shift-T 选择目标"
+
+msgid "or Shift-E to define a custom"
+msgstr "或按 Shift-E 定义自定义"
+
+msgid "orbit."
+msgstr "轨道。"
+
+msgid "Current     Target      Relative"
+msgstr "当前          目标          相对"
+
+msgid "RInc"
+msgstr "相对倾角"
+
+msgid "R"
+msgstr "变化率"
+
+msgid "Node encounter"
+msgstr "交点相遇"
+
+msgid "dA[°] TtN[s]"
+msgstr "交点角[°] 到交点[s]"
+
+msgid "Dir   dV[m/s]  BT[s]   TtB[s]"
+msgstr "方向   ΔV[m/s]  燃烧[s]  点火倒计时[s]"
+
+msgid "[LAUNCH]"
+msgstr "[发射]"
+
+msgid " [BURN] "
+msgstr " [点火] "
+
+msgid "No intersection with target"
+msgstr "与目标轨道面无交点："
+
+msgid "plane at launch latitude."
+msgstr "发射纬度处。"
+
+msgid "Trajectory intersects surface"
+msgstr "轨迹与地面相交"
+
+msgid "Data may be inaccurate."
+msgstr "数据可能不准确。"
+
+msgid "AN"
+msgstr "升"
+
+msgid "DN"
+msgstr "降"
+
+msgid "Select elements"
+msgstr "输入参数"
+
+msgid "Cycle modes"
+msgstr "循环模式"
+
+msgid "Docking: "
+msgstr "对接："
+
+msgid "APPR/DOCK"
+msgstr "交会/对接"
+
+msgid "FINE"
+msgstr "精细"
+
+msgid "NO DATA"
+msgstr "无数据"
+
+msgid "Device not available"
+msgstr "设备不可用"
+
+msgid "NO SIGNAL"
+msgstr "无信号"
+
+msgid " DOCKED "
+msgstr " 已对接 "
+
+msgid " IDS "
+msgstr " 信标 "
+
+msgid " XPDR "
+msgstr " 应答机 "
+
+msgid " VIS "
+msgstr " 目视 "
+
+msgid "IDS "
+msgstr "信标 "
+
+msgid "XPDR "
+msgstr "应答机 "
+
+msgid "hD"
+msgstr "横距"
+
+msgid "vD"
+msgstr "纵距"
+
+msgid "hV"
+msgstr "横移率"
+
+msgid "vV"
+msgstr "纵移率"
+
+msgid "CVEL"
+msgstr "接近率"
+
+msgid "P"
+msgstr "俯仰"
+
+msgid "B"
+msgstr "滚转"
+
+msgid "Select docking port"
+msgstr "选择对接端口"
+
+msgid "Visual acquisition"
+msgstr "目视捕获"
+
+msgid "Toggle coarse/fine"
+msgstr "切换粗/精刻度"
+
+msgid "dock"
+msgstr "接口"
+
+msgid "DIR"
+msgstr "方向"
+
+msgid "HSPD"
+msgstr "平移率"
+
+msgid "VSPD"
+msgstr "升降率"
+
+msgid "DIST"
+msgstr "距离"
+
+msgid "ILS Rwy"
+msgstr "ILS 跑道"
+
+msgid "[no signal]"
+msgstr "[无信号]"
+
+msgid "TO"
+msgstr "向台"
+
+msgid "FROM"
+msgstr "背台"
+
+msgid "NAV"
+msgstr "接收机"
+
+msgid "DEV"
+msgstr "偏差"
+
+msgid "Switch HSI focus"
+msgstr "切换 HSI 焦点"
+
+msgid "NAV receiver"
+msgstr "NAV 接收机"
+
+msgid "OBS indicator left"
+msgstr "OBS 指示器 左"
+
+msgid "OBS indicator right"
+msgstr "OBS 指示器 右"
+
+msgid "Airport"
+msgstr "机场"
+
+msgid "City"
+msgstr "城市"
+
+msgid "Mountain"
+msgstr "山"
+
+msgid "Forest"
+msgstr "森林"
+
+msgid "Water body"
+msgstr "水体"
+
+msgid "City.mkr"
+msgstr "城市"
+
+msgid "Airport.mkr"
+msgstr "机场"
+
+msgid "Mountain.mkr"
+msgstr "山"
+
+msgid "Forest.mkr"
+msgstr "森林"
+
+msgid "Water body.mkr"
+msgstr "水体"
+
+msgid "By name ..."
+msgstr "按名称…"
+
+msgid "Spacecraft"
+msgstr "航天器"
+
+msgid "[none]"
+msgstr "[无]"
+
+msgid "Map: "
+msgstr "地图："
+
+msgid "Map: Display parameters"
+msgstr "地图：显示参数"
+
+msgid "TRK"
+msgstr "轨迹"
+
+msgid "ZM %d"
+msgstr "缩放 %d"
+
+msgid "TGT:"
+msgstr "目标:"
+
+msgid "BSE:"
+msgstr "基地："
+
+msgid "SHP:"
+msgstr "飞船："
+
+msgid "Brg"
+msgstr "方位"
+
+msgid "Crs"
+msgstr "航向"
+
+msgid "Orbit lines"
+msgstr "轨道线"
+
+msgid "Groundtrack"
+msgstr "地面轨迹"
+
+msgid "Horizon lines"
+msgstr "地平线"
+
+msgid "Shading"
+msgstr "阴影"
+
+msgid "Line+shading"
+msgstr "线+阴影"
+
+msgid "Grid lines"
+msgstr "网格线"
+
+msgid "Base markers"
+msgstr "基地标记"
+
+msgid "Navaid markers"
+msgstr "导航台标记"
+
+msgid "ON "
+msgstr "开"
+
+msgid "OFF"
+msgstr "关"
+
+msgid "Map reference"
+msgstr "地图参考天体"
+
+msgid "Zoom out"
+msgstr "缩小"
+
+msgid "Zoom in"
+msgstr "放大"
+
+msgid "Track mode on/off"
+msgstr "跟踪模式开关"
+
+msgid "Display parameters"
+msgstr "显示参数"
+
+msgid "Scroll up"
+msgstr "向上滚动"
+
+msgid "Scroll down"
+msgstr "向下滚动"
+
+msgid "Scroll left"
+msgstr "向左滚动"
+
+msgid "Scroll right"
+msgstr "向右滚动"
+
+msgid "Move selection up"
+msgstr "选择上移"
+
+msgid "Move selection down"
+msgstr "选择下移"
+
+msgid "Modify selected"
+msgstr "修改选中"
+
+msgid "Return to map"
+msgstr "返回地图"
+
+msgid "ECL/EQU"
+msgstr "黄道/赤道"
+
+msgid "Radius/Altitude"
+msgstr "半径/高度"
+
+msgid "MODE SELECT"
+msgstr "模式选择"
+
+msgid "MODE SELECT [Page %d]"
+msgstr "模式选择[第 %d 页]"
+
+msgid "MFD MENU"
+msgstr "菜单"
+
+msgid "Orbit"
+msgstr "轨道"
+
+msgid "Surface"
+msgstr "表面"
+
+msgid "HSI"
+msgstr "导航方位仪"
+
+msgid "VOR/VTOL"
+msgstr "垂直起降"
+
+msgid "Docking"
+msgstr "对接"
+
+msgid "Align Planes"
+msgstr "轨道面对齐"
+
+msgid "Sync Orbit"
+msgstr "轨道同步"
+
+msgid "Transfer"
+msgstr "轨道转移"
+
+msgid "COM/NAV"
+msgstr "通讯/导航"
+
+msgid "SURF_Title"
+msgstr "地表："
+
+msgid "SURF_ATM"
+msgstr "大气数据"
+
+msgid "SURF_OAT"
+msgstr "外温"
+
+msgid "SURF_M"
+msgstr "马赫"
+
+msgid "SURF_DNS"
+msgstr "密度"
+
+msgid "SURF_STP"
+msgstr "静压"
+
+msgid "SURF_DNP"
+msgstr "动压"
+
+msgid "SURF_EQP"
+msgstr "位置"
+
+msgid "SURF_RATE"
+msgstr "变化率"
+
+msgid "SURF_BNK"
+msgstr "滚转"
+
+msgid "SURF_PTCH"
+msgstr "俯仰"
+
+msgid "SURF_L"
+msgstr "左"
+
+msgid "SURF_R"
+msgstr "右"
+
+msgid "SURF_ALTR"
+msgstr "对地高"
+
+msgid "SURF_ALT"
+msgstr "海拔高"
+
+msgid "SURF_VS"
+msgstr "垂速"
+
+msgid "SURF_VACC"
+msgstr "垂直加速"
+
+msgid "SURF_AOA"
+msgstr "攻角"
+
+msgid "SURF_ACC"
+msgstr "加速度"
+
+msgid "SURF_GS"
+msgstr "地速"
+
+msgid "SURF_TAS"
+msgstr "真速"
+
+msgid "SURF_IAS"
+msgstr "表速"
+
+msgid "SURF_OS"
+msgstr "轨速"
+
+msgid "Surface: "
+msgstr "地表："
+
+msgid "ATM DATA"
+msgstr "大气数据"
+
+msgid "Indicated airspeed"
+msgstr "表显空速"
+
+msgid "Ground-relative"
+msgstr "地面速度"
+
+msgid "Orbital speed"
+msgstr "轨道速度"
+
+msgid "ORBIT_PRJ_ECL"
+msgstr "黄道"
+
+msgid "ORBIT_PRJ_SHIP"
+msgstr "自身"
+
+msgid "ORBIT_PRJ_TGT"
+msgstr "目标"
+
+msgid "Orbit: "
+msgstr "轨道："
+
+msgid "Proj: "
+msgstr "投影："
+
+msgid "Frm     Prj"
+msgstr "参考  投影"
+
+msgid "Frm"
+msgstr "参考"
+
+msgid "Prj"
+msgstr "投影"
+
+msgid "ECL"
+msgstr "黄道"
+
+msgid "TGT"
+msgstr "目标"
+
+msgid "EQU"
+msgstr "赤道"
+
+msgid "SHP"
+msgstr "自身"
+
+msgid "SMa"
+msgstr "半长轴"
+
+msgid "SMi"
+msgstr "半短轴"
+
+msgid "PeR"
+msgstr "近点径"
+
+msgid "ApR"
+msgstr "远点径"
+
+msgid "Rad"
+msgstr "半径　"
+
+msgid "PeA"
+msgstr "近点高"
+
+msgid "ApA"
+msgstr "远点高"
+
+msgid "ALT"
+msgstr "高度"
+
+msgid "Alt"
+msgstr "高度"
+
+msgid "Ecc"
+msgstr "偏心率"
+
+msgid "T"
+msgstr "周期　"
+
+msgid "PeT"
+msgstr "近点时"
+
+msgid "ApT"
+msgstr "远点时"
+
+msgid "Vel"
+msgstr "速度　"
+
+msgid "Inc"
+msgstr "倾角　"
+
+msgid "LAN"
+msgstr "升交经"
+
+msgid "LPe"
+msgstr "近点经"
+
+msgid "AgP"
+msgstr "近点幅"
+
+msgid "TrA"
+msgstr "真近角"
+
+msgid "TrL"
+msgstr "真经度"
+
+msgid "MnA"
+msgstr "平近角"
+
+msgid "MnL"
+msgstr "平经度"
+
+msgid "--OSC.EL.--"
+msgstr "--密切根数--"
+
+msgid "Orbital elements"
+msgstr "轨道根数"
+
+msgid "not available"
+msgstr "不可用"
+
+msgid "not"
+msgstr "不"
+
+msgid "available"
+msgstr "可用"
+
+msgid "Orbit reference"
+msgstr "参考天体"
+
+msgid "Auto reference"
+msgstr "自动参考"
+
+msgid "Select target"
+msgstr "选择目标"
+
+msgid "Unselect target"
+msgstr "取消目标"
+
+msgid "Display mode"
+msgstr "显示模式"
+
+msgid "Reference frame"
+msgstr "选择坐标系"
+
+msgid "Projection plane"
+msgstr "投影面"
+
+msgid "Distance display"
+msgstr "半径/高度切换"
+
+msgid "Copy data to HUD"
+msgstr "复制数据到 HUD"
+
+msgid "REF"
+msgstr "参考"
+
+msgid "AR"
+msgstr "自动"
+
+msgid "NT"
+msgstr "清除"
+
+msgid "MOD"
+msgstr "模式"
+
+msgid "PRJ"
+msgstr "投影"
+
+msgid "Ecliptic"
+msgstr "黄道"
+
+msgid "Main"
+msgstr "主发动机"
+
+msgid "Retro"
+msgstr "制动发动机"
+
+msgid "Hover"
+msgstr "悬停发动机"
+
+msgid "Aux"
+msgstr "辅助发动机"
+
+msgid "reserved"
+msgstr "已预留"
+
+msgid "stabilised"
+msgstr "稳定"
+
+msgid "Runge-Kutta, 2nd order (RK2)"
+msgstr "龙格-库塔，二阶（RK2）"
+
+msgid "Runge-Kutta, 4th order (RK4)"
+msgstr "龙格-库塔，四阶（RK4）"
+
+msgid "Runge-Kutta, 1st order (RK1)"
+msgstr "龙格-库塔，一阶（RK1）"
+
+msgid "Euler"
+msgstr "欧拉"
+
+msgid "Symplectic"
+msgstr "辛积分"
+
+msgid "Select..."
+msgstr "请选择…"
+
+msgid "DeltaGlider"
+msgstr "三角翼"
+
+msgid "DG-S"
+msgstr "三角翼-S"
+
+msgid "ShuttleA"
+msgstr "航天飞机 A"
+
+msgid "ShuttlePB"
+msgstr "航天飞机 PB"
+
+msgid "ProjectAlpha_ISS"
+msgstr "阿尔法计划空间站"
+
+msgid "MaterialTestSphere"
+msgstr "材质测试球"
+
+msgid "Module1"
+msgstr "模块 1"
+
+msgid "Module2"
+msgstr "模块 2"
+
+msgid "mplm"
+msgstr "多用途后勤舱"
+
+msgid "Wheel"
+msgstr "轮"
+
+msgid "Atlantis"
+msgstr "亚特兰蒂斯"
+
+msgid "ScriptPB"
+msgstr "脚本航天飞机"
+
+msgid "Tilt"
+msgstr "倾斜"
+
+msgid "External view"
+msgstr "外部视角"
+
+msgid "Vesta"
+msgstr "灶神星"
+
+msgid "Ceres"
+msgstr "谷神星"
+
+msgid "Hyperion"
+msgstr "土卫七（海伯利安）"
+
+msgid "Phoebe"
+msgstr "土卫九（福柏）"
+
+msgid "Miranda"
+msgstr "天卫五（米兰达）"
+
+msgid "Ariel"
+msgstr "天卫一（艾瑞尔）"
+
+msgid "Umbriel"
+msgstr "天卫二（乌姆柏里厄尔）"
+
+msgid "Titania"
+msgstr "天卫三（泰坦妮亚）"
+
+msgid "Oberon"
+msgstr "天卫四（奥伯龙）"
+
+msgid "Triton"
+msgstr "海卫一（特里同）"
+
+msgid "Proteus"
+msgstr "海卫八（普罗透斯）"
+
+msgid "Nereid"
+msgstr "海卫二（涅瑞伊得）"
+
+msgid "Nix"
+msgstr "冥卫二（尼克斯）"
+
+msgid "Hydra"
+msgstr "冥卫三（许德拉）"
+
+msgid "Luna-OB1"
+msgstr "玉盘1"
+
+msgid "Al Anbar"
+msgstr "安巴尔"
+
+msgid "Alcantara"
+msgstr "阿尔坎塔拉"
+
+msgid "Baikonur"
+msgstr "拜科努尔"
+
+msgid "Barent Sea"
+msgstr "巴伦支海"
+
+msgid "China Lake"
+msgstr "中国湖"
+
+msgid "Doberai"
+msgstr "多贝拉伊"
+
+msgid "Edwards"
+msgstr "爱德华兹"
+
+msgid "Gran Canaria"
+msgstr "大加那利"
+
+msgid "Habana"
+msgstr "哈瓦那"
+
+msgid "Hammaguira"
+msgstr "哈马基拉"
+
+msgid "Inyokern"
+msgstr "因约肯"
+
+msgid "Jingyu"
+msgstr "靖宇"
+
+msgid "Jiuquan"
+msgstr "酒泉"
+
+msgid "Kagoshima"
+msgstr "鹿儿岛"
+
+msgid "Kapustin Yar"
+msgstr "卡普斯京亚尔"
+
+msgid "Kourou"
+msgstr "库鲁"
+
+msgid "Matagorda"
+msgstr "马塔戈达"
+
+msgid "Mojave Spaceport"
+msgstr "莫哈维航天港"
+
+msgid "Musudan"
+msgstr "舞水端"
+
+msgid "Olympus"
+msgstr "奥林匹斯"
+
+msgid "Overberg"
+msgstr "奥弗贝格"
+
+msgid "Palmachim"
+msgstr "帕尔马希姆"
+
+msgid "Palmdale AF Plant 42"
+msgstr "帕姆代尔空军42厂"
+
+msgid "Peenemuende"
+msgstr "佩内明德"
+
+msgid "Peenemünde"
+msgstr "佩内明德"
+
+msgid "Plesetsk"
+msgstr "普列谢茨克"
+
+msgid "Salto di Quirra"
+msgstr "萨尔托迪基拉"
+
+msgid "San Marco"
+msgstr "圣马可"
+
+msgid "Sriharikota"
+msgstr "斯里哈里科塔"
+
+msgid "Svobodniy"
+msgstr "斯沃博德内"
+
+msgid "Taiyuan"
+msgstr "太原"
+
+msgid "Tanegashima"
+msgstr "种子岛"
+
+msgid "Vandenberg"
+msgstr "范登堡"
+
+msgid "Wallops Island"
+msgstr "沃洛普斯岛"
+
+msgid "White Sands"
+msgstr "白沙"
+
+msgid "Woomera"
+msgstr "伍默拉"
+
+msgid "Wuzhai"
+msgstr "五寨"
+
+msgid "Xichang"
+msgstr "西昌"
+
+msgid "Control"
+msgstr "控制"
+
+msgid "Preset"
+msgstr "预设"
+
+msgid "Glass cockpit"
+msgstr "玻璃座舱"
+
+msgid "Panel view"
+msgstr "面板视图"
+
+msgid "Virtual cockpit"
+msgstr "虚拟座舱"
+
+msgid "Nearby"
+msgstr "附近"
+
+msgid "Counter start"
+msgstr "起始计数器"
+
+msgid "Skip frames"
+msgstr "跳过帧"
+
+msgid "File format"
+msgstr "文件格式"
+
+msgid "D3D9 Debug Controls"
+msgstr "D3D9 调试控制"
+
+msgid "This dialog allows to control various debug and development features"
+msgstr "此对话框用于控制各种调试与开发功能"
+
+msgid "D3D9 Graphics Controls"
+msgstr "D3D9 图形控制"
+
+msgid "This dialog allows to control various graphics options"
+msgstr "此对话框用于控制各种图形选项"
+
+msgid "D3D9 Collider Visuals"
+msgstr "D3D9 碰撞体可视化"
+
+msgid "This dialog allows toggling physics collider visualizations"
+msgstr "此对话框用于切换物理碰撞体的可视化"
+
+msgid "D3D9 Atmospheric Controls"
+msgstr "D3D9 大气控制"
+
+msgid "This dialog allows to control various atmospheric parameters and effects"
+msgstr "此对话框用于控制各种大气参数与效果"
+
+msgid "Mercury"
+msgstr "水星"
+
+msgid "Venus"
+msgstr "金星"
+
+msgid "Earth"
+msgstr "地球"
+
+msgid "Moon"
+msgstr "月球"
+
+msgid "Mars"
+msgstr "火星"
+
+msgid "Jupiter"
+msgstr "木星"
+
+msgid "Saturn"
+msgstr "土星"
+
+msgid "Uranus"
+msgstr "天王星"
+
+msgid "Neptune"
+msgstr "海王星"
+
+msgid "Pluto"
+msgstr "冥王星"
+
+msgid "Sol"
+msgstr "太阳系"
+
+msgid "Io"
+msgstr "木卫一（伊奥）"
+
+msgid "Europa"
+msgstr "木卫二（欧罗巴）"
+
+msgid "Ganymede"
+msgstr "木卫三（盖尼米德）"
+
+msgid "Callisto"
+msgstr "木卫四（卡利斯托）"
+
+msgid "Amalthea"
+msgstr "木卫五（阿马尔忒亚）"
+
+msgid "Himalia"
+msgstr "木卫六（希马利亚）"
+
+msgid "Mimas"
+msgstr "土卫一（弥玛斯）"
+
+msgid "Enceladus"
+msgstr "土卫二（恩克拉多斯）"
+
+msgid "Tethys"
+msgstr "土卫三（忒堤斯）"
+
+msgid "Dione"
+msgstr "土卫四（狄俄涅）"
+
+msgid "Rhea"
+msgstr "土卫五（瑞亚）"
+
+msgid "Titan"
+msgstr "土卫六（泰坦）"
+
+msgid "Iapetus"
+msgstr "土卫八（伊阿珀托斯）"
+
+msgid "Phobos"
+msgstr "火卫一（福波斯）"
+
+msgid "Deimos"
+msgstr "火卫二（得摩斯）"
+
+msgid "Charon"
+msgstr "冥卫一（卡戎）"
+
+msgid "ISS"
+msgstr "国际空间站"
+
+msgid "Mir"
+msgstr "和平号空间站"
+
+msgid "LUNA-OB"
+msgstr "玉盘"
+
+msgid "Cape Canaveral"
+msgstr "卡纳维拉尔角"
+
+msgid "Brighton Beach"
+msgstr "布莱顿海滩"
+
+msgid "Graphs"
+msgstr "图表"
+
+msgid "Fixed:"
+msgstr "固定："
+
+msgid "Movable:"
+msgstr "可移动："
+
+msgid "G"
+msgstr "相对引力"
+
+msgid "Orbiter: Time acceleration"
+msgstr "Orbiter：时间加速"
+
+msgid "Orbiter: Camera"
+msgstr "Orbiter：相机"
+
+msgid "Orbiter: Object info"
+msgstr "Orbiter：物体信息"
+
+msgid "Orbiter: Configure menu bars"
+msgstr "Orbiter：配置菜单栏"
+
+msgid "Orbiter: Custom functions"
+msgstr "Orbiter：自定义功能"
+
+msgid "Orbiter Remote Vessel Control"
+msgstr "Orbiter 远程载具控制"
+
+msgid "Save to file"
+msgstr "保存到文件"
+
+msgid "Audio debug"
+msgstr "音频调试"
+
+msgid "of %d"
+msgstr "/ %d"
+
+msgid "planet rad."
+msgstr "行星半径"
+
+msgid "current"
+msgstr "当前"
+
+msgid "ecliptic"
+msgstr "黄道"
+
+msgid "ref. equator"
+msgstr "参考赤道"
+
+msgid "cartesian"
+msgstr "直角坐标"
+
+msgid "Orbital"
+msgstr "轨道"
+
+msgid "Suborbital"
+msgstr "亚轨道"
+
+msgid "Now"
+msgstr "现在"
+
+msgid "<none>"
+msgstr "<无>"
+
+msgid "Mass (0-%0.2f kg)"
+msgstr "质量 (0-%0.2f kg)"
+
+msgid "Establish docking connection with"
+msgstr "建立对接连接对象"
+
+msgid "Graphs"
+msgstr "图表"
+
+msgid "Temperature (K)"
+msgstr "温度 (K)"
+
+msgid "Pressure (kPa)"
+msgstr "压强 (kPa)"
+
+msgid "Static"
+msgstr "静压"
+
+msgid "Dynamic"
+msgstr "动压"
+
+msgid " ___TEMP"
+msgstr " ___温度"
+
+msgid " _______STP"
+msgstr " _______静压"
+
+msgid " _______DNP"
+msgstr " _______动压"
+
+msgid "Lift & Drag"
+msgstr "升力与阻力"
+
+msgid "Force (kN)"
+msgstr "力 (kN)"
+
+msgid "L/D"
+msgstr "升阻比"
+
+msgid " _____LIFT"
+msgstr " _____升力"
+
+msgid " _____DRAG"
+msgstr " _____阻力"
+
+msgid " _____L/D"
+msgstr " _____升阻比"
+
+msgid "Mass (Ton)"
+msgstr "质量 (吨)"
+
+msgid "Propellant"
+msgstr "推进剂"
+
+msgid " _TOTMASS"
+msgstr " _总质量"
+
+msgid " _PRPMASS"
+msgstr " _推进剂"
+
+msgid "AoA"
+msgstr "攻角"
+
+msgid "Angle (°)"
+msgstr "角度 (°)"
+
+msgid "AOA"
+msgstr "攻角"
+
+msgid "Slip"
+msgstr "侧滑"
+
+msgid " ____AOA"
+msgstr " ____攻角"
+
+msgid " ___SLIP"
+msgstr " ___侧滑"
+
+msgid "Vertical speed"
+msgstr "垂直速度"
+
+msgid "Airspeed"
+msgstr "空速"
+
+msgid " ___VSPEED"
+msgstr " ___垂直速度"
+
+msgid " _AIRSPEED"
+msgstr " _空速"
+
+msgid "This dialog allows to visualize active sounds"
+msgstr "此对话框用于显示当前激活的声音"
+
+msgid "PLAYING"
+msgstr "播放中"
+
+msgid "PAUSED"
+msgstr "已暂停"
+
+msgid "STOPPED"
+msgstr "已停止"
+
+msgid "Looping"
+msgstr "循环"
+
+msgid "One shot"
+msgstr "单次"
+
+msgid "Orbiter Performance Meter"
+msgstr "Orbiter 性能计量器"
+
+msgid "Lua Console"
+msgstr "Lua 控制台"
+
+msgid "Mesh Debugger"
+msgstr "网格调试器"
+
+msgid "Visual:"
+msgstr "视觉体:"
+
+msgid "Mesh:"
+msgstr "网格:"
+
+msgid "Group:"
+msgstr "组:"
+
+msgid "(0 to %d)"
+msgstr "(0 到 %d)"
+
+msgid "Altitude (km)"
+msgstr "高度 (km)"
+
+msgid "Speed (km/s)"
+msgstr "速度 (km/s)"
+
+msgid "Mach number"
+msgstr "马赫数"
+
+msgid " _______ALT"
+msgstr " _______高度"
+
+msgid " __MACH"
+msgstr " __马赫"
+
+msgid "Sampling period"
+msgstr "采样周期"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Mach"
+msgstr "马赫"
+
+msgid "Vessel"
+msgstr "载具"
+
+msgid "Engines"
+msgstr "引擎"
+
+msgid "RCS Rotation"
+msgstr "RCS 旋转"
+
+msgid "RCS Translation"
+msgstr "RCS 平移"
+
+msgid "Nav mode"
+msgstr "导航模式"
+
+msgid "Set focus"
+msgstr "设置焦点"
+
+msgid "Killrot"
+msgstr "消除自转"
+
+msgid "Prograde"
+msgstr "顺行"
+
+msgid "Normal"
+msgstr "法向"
+
+msgid "HLevel"
+msgstr "水平"
+
+msgid "Retrograde"
+msgstr "逆行"
+
+msgid "Anti Normal"
+msgstr "反法向"
+
+msgid "Retro"
+msgstr "制动发动机"
+
+msgid "Main"
+msgstr "主发动机"
+
+msgid "Hover"
+msgstr "悬停发动机"
+
+msgid "RCS level"
+msgstr "RCS 等级"
+
+msgid "Post Processing Configuration"
+msgstr "后期处理配置"
+
+msgid "Glow threshold"
+msgstr "光晕阈值"
+
+msgid "Graphics Controls"
+msgstr "图形控制"
+
+msgid "Diffuse"
+msgstr "漫反射"
+
+msgid "Mesh: %s"
+msgstr "网格: %s"
+
+msgid "Emission"
+msgstr "自发光"
+
+msgid "Smoothness"
+msgstr "平滑度"
+
+msgid "Emissive2"
+msgstr "自发光2"
+
+msgid "Metalness"
+msgstr "金属度"
+
+msgid "SpecialFX"
+msgstr "特殊效果"
+
+msgid "Selected Visual"
+msgstr "所选视觉体"
+
+msgid "Selected Mesh"
+msgstr "所选网格"
+
+msgid "Selected Group"
+msgstr "所选组"
+
+msgid "Wheel Fly/Pan Cam"
+msgstr "滚轮飞行/平移相机"
+
+msgid "PBR (Old)"
+msgstr "PBR（旧）"
+
+msgid "Normals Global"
+msgstr "法线全局"
+
+msgid "Normals Tangent"
+msgstr "法线切线"
+
+msgid "Height"
+msgstr "高度"
+
+msgid "Height Mk2"
+msgstr "高度 Mk2"
+
+msgid "Tile Level"
+msgstr "瓦片层级"
+
+msgid "Convert to DXT5"
+msgstr "转换为 DXT5"
+
+msgid "Convert to RGB8"
+msgstr "转换为 RGB8"
+
+msgid "Convert to RGB4"
+msgstr "转换为 RGB4"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Assign to slot 0"
+msgstr "分配到槽 0"
+
+msgid "Assign to slot 1"
+msgstr "分配到槽 1"
+
+msgid "Assign to slot 2"
+msgstr "分配到槽 2"
+
+msgid "Mirror"
+msgstr "镜面"
+
+msgid "Blur 1"
+msgstr "模糊 1"
+
+msgid "Blur 2"
+msgstr "模糊 2"
+
+msgid "Blur 3"
+msgstr "模糊 3"
+
+msgid "Blur 4"
+msgstr "模糊 4"
+
+msgid "Irrad.Probe"
+msgstr "辐照探针"
+
+msgid "IrdPreItg"
+msgstr "预积分辐照"
+
+msgid "ShadowMap"
+msgstr "阴影贴图"
+
+msgid "Irradiance"
+msgstr "辐照度"
+
+msgid "GlowMask"
+msgstr "光晕遮罩"
+
+msgid "ScreenDepth"
+msgstr "屏幕深度"
+
+msgid "Normals"
+msgstr "法线"
+
+msgid "LightVisbil."
+msgstr "光照可见性"
+
+msgid "EclipseTbl"
+msgstr "日食表"
+
+msgid "Gamma"
+msgstr "伽马"
+
+msgid "Everything"
+msgstr "全部"
+
+msgid "Center on visual"
+msgstr "以视觉体为中心"
+
+msgid "Metalness PBR"
+msgstr "金属度 PBR"
+
+msgid "Opens a test dialog box which doesn't do much."
+msgstr "打开一个测试对话框，主要用于演示。"
+
+msgid "Visual: "
+msgstr "视觉体: "
+
+msgid "Material %u:"
+msgstr "材质 %u:"
+
+msgid "Material %u: [Skin %s]"
+msgstr "材质 %u: [皮肤 %s]"
+
+msgid "Texture: None"
+msgstr "纹理：无"
+
+msgid "Texture: %s [%u]"
+msgstr "纹理: %s [%u]"
+
+msgid "Visual: %s"
+msgstr "视觉体: %s"
+
+msgid "Mesh: None"
+msgstr "网格：无"
+
+msgid "Texture: "
+msgstr "纹理: "
+
+msgid "Mesh: "
+msgstr "网格: "
+
+msgid "Group Status:"
+msgstr "组状态："
+
+msgid "Light glow intensity"
+msgstr "光晕强度"
+
+msgid "Light glow distance"
+msgstr "光晕距离"
+
+msgid "Light Configuration"
+msgstr "光照配置"
+
+msgid "Sunlight Intensity"
+msgstr "阳光强度"
+
+msgid "Indirect Lighting"
+msgstr "间接光照"
+
+msgid "Local Lights Max"
+msgstr "局部光源上限"
+
+msgid "Sun Glare Intensity"
+msgstr "太阳眩光强度"
+
+msgid "Recrete Sun/Glares"
+msgstr "重建太阳/眩光"
+
+msgid "Collider Visualization"
+msgstr "碰撞体可视化"
+
+msgid "Physics Colliders"
+msgstr "物理碰撞体"
+
+msgid "Show Base Colliders"
+msgstr "显示基地碰撞体"
+
+msgid "Show Vessel Colliders"
+msgstr "显示载具碰撞体"
+
+msgid "D3D9 Atmospheric Controls"
+msgstr "D3D9 大气控制"
+
+msgid "This dialog allows to control various atmospheric parameters and effects"
+msgstr "此对话框用于控制各种大气参数与效果"
+
+msgid "Atmospheric Controls"
+msgstr "大气控制"
+
+msgid "Water and Sun-glare"
+msgstr "水面与眩光"
+
+msgid "Auto"
+msgstr "自动"
+
+msgid "Surface"
+msgstr "表面"
+
+msgid "Low Orbit"
+msgstr "低轨道"
+
+msgid "High Orbit"
+msgstr "高轨道"
+
+msgid "Twilight and Ambient settings"
+msgstr "暮光与环境设置"
+
+msgid "Wavelenght and Scale height settings"
+msgstr "波长与标高设置"
+
+msgid "Rayleigh settings"
+msgstr "瑞利设置"
+
+msgid "Mie settings"
+msgstr "米氏设置"
+
+msgid "Custom settings"
+msgstr "自定义设置"
+
+msgid "Water Rendering"
+msgstr "水面渲染"
+
+msgid "Distance"
+msgstr "距离"
+
+msgid "Terrain"
+msgstr "地形"
+
+msgid "Building"
+msgstr "建筑"
+
+msgid "Green"
+msgstr "绿色"
+
+msgid "R-Pow"
+msgstr "R 幂"
+
+msgid "M-Pow"
+msgstr "M 幂"
+
+msgid "R-Height"
+msgstr "R 高度"
+
+msgid "M-Height"
+msgstr "M 高度"
+
+msgid "Gamma"
+msgstr "伽马"
+
+msgid "Light/Shad"
+msgstr "光照/阴影"
+
+msgid "Ratio"
+msgstr "比例"
+
+msgid "Phase-A"
+msgstr "相位 A"
+
+msgid "Phase-B"
+msgstr "相位 B"
+
+msgid "CloudAlt"
+msgstr "云高"
+
+msgid "HDR"
+msgstr "HDR"
+
+msgid "Intensity"
+msgstr "强度"
+
+msgid "Normals"
+msgstr "法线"
+
+msgid "Spec"
+msgstr "高光"
+
+msgid "Color"
+msgstr "颜色"
+
+msgid "Light travel distance behind terminator"
+msgstr "晨昏线后的光线传播距离"
+
+msgid "Green wave lenght. (Green balance)"
+msgstr "绿色波长（绿色平衡）"
+
+msgid "Terrain brightness during twilight"
+msgstr "暮光期间的地形亮度"
+
+msgid "Main control for atmospheric rayleigh color composition (4.0 for the Earth)"
+msgstr "大气瑞利颜色组成主控（地球为 4.0）"
+
+msgid "Main control for atmospheric mie color composition"
+msgstr "大气米氏颜色组成主控"
+
+msgid "Atmosphere Ray scale height (7km - 9km for the Earth)"
+msgstr "大气瑞利标高（地球 7-9km）"
+
+msgid "Atmosphere Mie scale height (0.6km - 2km for the Earth)"
+msgstr "大气米氏标高（地球 0.6-2km）"
+
+msgid "Terrain/Ocean brightness control (default 1.0)"
+msgstr "地形/海洋亮度控制（默认 1.0）"
+
+msgid "Terrain/Ocean gamma control value (default 1.0)"
+msgstr "地形/海洋伽马控制值（默认 1.0）"
+
+msgid "Terrain light and shadow boost"
+msgstr "地形光影增强"
+
+msgid "Overall control for rayleigh scattering (i.e. Haze stickness, atmosphere transparency, optical depth"
+msgstr "瑞利散射总体控制（雾霾浓度、大气透明度、光学厚度）"
+
+msgid "Rayleigh in-scatter out-scatter ratio (1.0 nominal)"
+msgstr "瑞利内外散射比（标称 1.0）"
+
+msgid "Building lighting level"
+msgstr "建筑照明等级"
+
+msgid "Overall scale factor for mie scattering. (Mie-particle density)"
+msgstr "米氏散射总缩放系数（米氏粒子密度）"
+
+msgid "Directional strength of Henyey-Greenstein phase function"
+msgstr "Henyey-Greenstein 相位函数方向强度"
+
+msgid "Mie in-scatter out-scatter ratio (1.0 nominal)"
+msgstr "米氏内外散射比（标称 1.0）"
+
+msgid "Altitude for cloud lighting calculations"
+msgstr "云层光照计算高度"
+
+msgid "'HDR' Exposure factor"
+msgstr "HDR 曝光系数"
+
+msgid "Omnidirectional mie scattering scale factor"
+msgstr "全向米氏散射缩放系数"
+
+msgid "[Dual purpose] Clouds intensity [on surface]. Multiscatter light level [on orbit]"
+msgstr "[双用途] 云层强度[表面]，多次散射光强[轨道]"
+
+msgid "Water normal map strength"
+msgstr "水面法线贴图强度"
+
+msgid "Water reflectivity"
+msgstr "水面反射率"
+
+msgid "Water color / transparency"
+msgstr "水面颜色/透明度"
+
+msgid "Unused"
+msgstr "未使用"
+
+msgid "External MFD"
+msgstr "外部 MFD"
+
+msgid "Flight Data Monitor"
+msgstr "飞行数据监视器"
+
+msgid "Performance Meter"
+msgstr "性能计量器"
+
+msgid "Lua console window"
+msgstr "Lua 控制台窗口"
+
+msgid "Mesh debugger"
+msgstr "网格调试器"
+
+msgid "Notes"
+msgstr "笔记"
+
+msgid "Remote Vessel Control"
+msgstr "远程载具控制"
+
+msgid "Scenario Editor"
+msgstr "场景编辑器"
+
+msgid "TerrainToolKit"
+msgstr "地形工具包"
+
+msgid "DX9 External MFD"
+msgstr "DX9 外部 MFD"
+
+msgid "My dialog"
+msgstr "我的对话框"
+
+msgid "Orbiter: Capture frames"
+msgstr "Orbiter：捕获帧"
+
+msgid "Orbiter: Map"
+msgstr "Orbiter：地图"
+
+msgid "Orbiter: Select spacecraft"
+msgstr "Orbiter：选择载具"
+
+msgid "Ship"
+msgstr "载具"
+
+msgid "Remove from menu"
+msgstr "从菜单移除"
+
+msgid "Camera"
+msgstr "相机"
+
+msgid "Pause"
+msgstr "暂停"
+
+msgid "Function"
+msgstr "功能"
+
+msgid "Info"
+msgstr "信息"
+
+msgid "Map"
+msgstr "地图"
+
+msgid "Record"
+msgstr "录制"
+
+msgid "Help"
+msgstr "帮助"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Exit"
+msgstr "退出"
+
+msgid "Tgt"
+msgstr "目标"
+
+msgid "Cam Cockpit"
+msgstr "座舱视角"
+
+msgid "FoV"
+msgstr "视场"
+
+msgid "Dst"
+msgstr "距离"
+
+msgid "Sim"
+msgstr "模拟时间"
+
+msgid "Pause"
+msgstr "暂停"
+
+msgid "Cam track (rel-pos)"
+msgstr "相机跟踪（相对位置）"
+
+msgid "Cam track (abs-dir)"
+msgstr "相机跟踪（绝对方向）"
+
+msgid "Cam track (global frame)"
+msgstr "相机跟踪（全局坐标系）"
+
+msgid "Cam target to"
+msgstr "相机目标至"
+
+msgid "Cam target from"
+msgstr "相机目标自"
+
+msgid "Cam ground"
+msgstr "相机地面"
+
+msgid "(tgt-lock)"
+msgstr "（目标锁定）"
+
+msgid "(free)"
+msgstr "（自由）"
+
+msgid "Sun"
+msgstr "太阳"
+
+msgid "Mon"
+msgstr "周一"
+
+msgid "Tue"
+msgstr "周二"
+
+msgid "Wed"
+msgstr "周三"
+
+msgid "Thu"
+msgstr "周四"
+
+msgid "Fri"
+msgstr "周五"
+
+msgid "Sat"
+msgstr "周六"
+
+msgid "Jan"
+msgstr "1月"
+
+msgid "Feb"
+msgstr "2月"
+
+msgid "Mar"
+msgstr "3月"
+
+msgid "Apr"
+msgstr "4月"
+
+msgid "May"
+msgstr "5月"
+
+msgid "Jun"
+msgstr "6月"
+
+msgid "Jul"
+msgstr "7月"
+
+msgid "Aug"
+msgstr "8月"
+
+msgid "Sep"
+msgstr "9月"
+
+msgid "Oct"
+msgstr "10月"
+
+msgid "Nov"
+msgstr "11月"
+
+msgid "Dec"
+msgstr "12月"
+
+msgid "AIRBRK"
+msgstr "减速板"
+
+msgid "FRM"
+msgstr "坐标"
+
+msgid "HUD"
+msgstr "平显"
+
+msgid "IAS"
+msgstr "表速"
+
+msgid "TAS"
+msgstr "真速"
+
+msgid "GS"
+msgstr "地速"
+
+msgid "OS"
+msgstr "轨速"
+
+msgid "DCK"
+msgstr "对接"
+
+msgid "VIS"
+msgstr "目视"
+
+msgid "SCL"
+msgstr "刻度"
+
+msgid "ZM-"
+msgstr "缩小"
+
+msgid "ZM+"
+msgstr "放大"
+
+msgid "DSP"
+msgstr "参数"
+
+msgid "<"
+msgstr "左"
+
+msgid ">"
+msgstr "右"
+
+msgid "UP"
+msgstr "上"
+
+msgid "DST"
+msgstr "距离"
+
+msgid "SRC"
+msgstr "源"
+
+msgid "NUM"
+msgstr "仿真"
+
+msgid "UPD"
+msgstr "更新"
+
+msgid "STP"
+msgstr "步长"
+
+msgid "EJ-"
+msgstr "射向-"
+
+msgid "EJ+"
+msgstr "射向+"
+
+msgid "DV-"
+msgstr "ΔV-"
+
+msgid "DV+"
+msgstr "ΔV+"
+
+msgid "ST-"
+msgstr "步长-"
+
+msgid "ST+"
+msgstr "步长+"
+
+msgid "LEN"
+msgstr "圈数"
+
+msgid "R-"
+msgstr "逆转"
+
+msgid "R+"
+msgstr "顺转"
+
+msgid "L/R"
+msgstr "左右"
+
+msgid "OB-"
+msgstr "左转"
+
+msgid "OB+"
+msgstr "右转"
+
+msgid "ELS"
+msgstr "手动"
+
+msgid "SL-"
+msgstr "选机-"
+
+msgid "SL+"
+msgstr "选机+"
+
+msgid " < "
+msgstr "微减"
+
+msgid " > "
+msgstr "微增"
+
+msgid "<<"
+msgstr "粗减"
+
+msgid ">>"
+msgstr "粗增"
+
+msgid "SC<"
+msgstr "搜台-"
+
+msgid "SC>"
+msgstr "搜台+"
+
+msgid "MFD_MAP_DN"
+msgstr "下"
+
+msgid "MFD_MAPOLD_LEFT"
+msgstr "左移"
+
+msgid "MFD_MAPOLD_RIGHT"
+msgstr "右移"
+
+msgid "MFD_MAPOLD_ZOOM"
+msgstr "缩放"
+
+msgid "MFD_MAP_TRK"
+msgstr "跟踪"
+
+msgid "MFD_SYNC_MOD"
+msgstr "参考"
+
+msgid "MFD_TRANS_HTO"
+msgstr "规划"
+
+msgid "PANEL_PWR"
+msgstr "电源"
+
+msgid "PANEL_SEL"
+msgstr "选择"
+
+msgid "PANEL_MNU"
+msgstr "说明"
+
+msgid "TRX_HLP"
+msgstr "帮助"
+
+msgid "TRX_FWD"
+msgstr "前进"
+
+msgid "TRX_BCK"
+msgstr "后退"
+
+msgid "TRX_VW"
+msgstr "视图"
+
+msgid "TRX_VAR"
+msgstr "下项"
+
+msgid "TRX_PRV"
+msgstr "上项"
+
+msgid "TRX_ADJ"
+msgstr "调整+"
+
+msgid "TRX_ADM"
+msgstr "调整-"
+
+msgid "TRX_INC"
+msgstr "增加"
+
+msgid "TRX_DEC"
+msgstr "减少"
+
+msgid "TRX_EXE"
+msgstr "执行"
+
+msgid "TRX_ENT"
+msgstr "输入"
+
+msgid "TERM_INP"
+msgstr "输入"
+
+msgid "TERM_NEW"
+msgstr "新建"
+
+msgid "TERM_DEL"
+msgstr "删除"
+
+msgid "TERM_PGUP"
+msgstr "上页"
+
+msgid "TERM_PGDN"
+msgstr "下页"
+
+msgid "ASC_PG"
+msgstr "翻页"
+
+msgid "ASC_AR"
+msgstr "高度范围"
+
+msgid "ASC_VRR"
+msgstr "径向速度"
+
+msgid "ASC_VTR"
+msgstr "切向速度"
+
+msgid "GCAM_NA"
+msgstr "附件+"
+
+msgid "GCAM_PA"
+msgstr "附件-"
+
+msgid "GCAM_ND"
+msgstr "接口+"
+
+msgid "GCAM_PD"
+msgstr "接口-"
+
+msgid "GCAM_FWD"
+msgstr "前进"
+
+msgid "GCAM_BCK"
+msgstr "后退"
+
+msgid "GCAM_VES"
+msgstr "选船"
+
+msgid "GCAM_NV"
+msgstr "夜视"
+
+msgid "GCAM_ZIN"
+msgstr "放大"
+
+msgid "GCAM_ZOUT"
+msgstr "缩小"
+
+msgid "GCAM_PAR"
+msgstr "父级"
+
+msgid "GCAM_CRS"
+msgstr "准星"
+
+msgid "APA_LAUNCH"
+msgstr "发射"
+
+msgid "APA_ENGAGE"
+msgstr "接通"
+
+msgid "APA_DISENGAGE"
+msgstr "断开"
+
+msgid "APA_PGUP"
+msgstr "上页"
+
+msgid "APA_PGDN"
+msgstr "下页"
+
+msgid "APA_AZM"
+msgstr "方位-"
+
+msgid "APA_AZP"
+msgstr "方位+"
+
+msgid "APA_ALM"
+msgstr "高度-"
+
+msgid "APA_ALP"
+msgstr "高度+"
+
+msgid "APA_OMS2"
+msgstr "圆化"
+
+msgid "ATT_SET"
+msgstr "设置"
+
+msgid "ATT_DCK"
+msgstr "对接"
+
+msgid "ATT_SUS"
+msgstr "挂起"
+
+msgid "ATT_END"
+msgstr "取消"
+
+msgid "ATT_CFG"
+msgstr "配置"
+
+msgid "ATT_ADDR"
+msgstr "加旋转"
+
+msgid "ATT_DELR"
+msgstr "删旋转"
+
+msgid "ATT_AXIS"
+msgstr "旋转轴"
+
+msgid "ATT_INC"
+msgstr "加角度"
+
+msgid "ATT_DEC"
+msgstr "减角度"
+
+msgid "ATT_UP"
+msgstr "上移"
+
+msgid "ATT_DN"
+msgstr "下移"
+
+msgid "ATT_GO"
+msgstr "启动"
+
+msgid "ATT_RTN"
+msgstr "返回"
+
+msgid "ATT_BAS"
+msgstr "基准"
+
+msgid "ATT_INV"
+msgstr "反向"
+
+msgid "ATT_CUR"
+msgstr "保持"
+
+msgid "ATT_NAV"
+msgstr "接收机"
+
+msgid "ATT_ACT"
+msgstr "激活"
+
+msgid "ATT_CNC"
+msgstr "取消"
+
+msgid "Relativistic effects"
+msgstr "相对论效应"
+
+msgid "Relativity"
+msgstr "相对论"
+
+msgid "Gravity field solver"
+msgstr "引力场求解方法"
+
+msgid "Weak field approximation (1PN)"
+msgstr "弱场近似（1PN）"
+
+msgid "Exact solver (Kerr)"
+msgstr "精确求解（Kerr）"
+
+msgid "Kerr solver is experimental; the 1PN solver is used for now."
+msgstr "Kerr 求解器为实验性；目前使用 1PN 求解器。"
+
+msgid "Select the gravity field solver used for relativistic effects. Relativistic effects themselves are enabled in the Physics settings."
+msgstr "选择相对论引力的计算方式。相对论效应本身在“选项 → 物理模拟”中启用。"
+
+msgid "Report error"
+msgstr "报错"
+
+msgid "Clamp to 0.9c"
+msgstr "限制到 0.9c"
+
+msgid "Relativistic mode"
+msgstr "相对论模式"
+
+msgid "FTL velocity detected in relativistic mode. The simulation has been paused."
+msgstr "检测到超光速速度（相对论模式），模拟已暂停。"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "All"
+msgstr "全部"
+
+msgid "Target"
+msgstr "目标"
+
+msgid "None"
+msgstr "无"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "%06.2f, range %sm"
+msgstr "%06.2f，范围 %sm"
+
+msgid "Linear"
+msgstr "线性"
+
+msgid "Advanced"
+msgstr "高级"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Apply"
+msgstr "应用"
+
+msgid "Multi-functional displays"
+msgstr "多功能显示器 (MFD)"
+
+msgid "Transparent glass cockpit MFD"
+msgstr "玻璃座舱 MFD 透明"
+
+msgid "Instrument panels"
+msgstr "仪表面板"
+
+msgid "Vessel settings"
+msgstr "载具设置"
+
+msgid "Limited fuel"
+msgstr "有限燃料"
+
+msgid "Auto-refuel on pad"
+msgstr "发射台上自动加注"
+
+msgid "Focus requires click"
+msgstr "需要点击才获得焦点"
+
+msgid "Hybrid: Click required only for child windows"
+msgstr "混合：仅子窗口需要点击"
+
+msgid "Focus follows mouse"
+msgstr "焦点跟随鼠标"
+
+msgid "Joystick device"
+msgstr "摇杆设备"
+
+msgid "Main engine control"
+msgstr "主发动机控制"
+
+msgid "Ignore throttle setting on launch"
+msgstr "启动时忽略油门设置"
+
+msgid "Calibration"
+msgstr "校准"
+
+msgid "Deadzone"
+msgstr "死区"
+
+msgid "<Disabled>"
+msgstr "<已禁用>"
+
+msgid "Celestial sphere"
+msgstr "天球"
+
+msgid "Background stars: show as pixels"
+msgstr "背景恒星：以像素显示"
+
+msgid "Background stars: show as image"
+msgstr "背景恒星：以图像显示"
+
+msgid "Background map"
+msgstr "背景星图"
+
+msgid "Visual helpers"
+msgstr "视觉辅助"
+
+msgid "Planetarium mode (F9)"
+msgstr "天象仪模式 (F9)"
+
+msgid "Surface/object labels (Alt-F9)"
+msgstr "表面/物体标签 (Alt-F9)"
+
+msgid "Body force vectors"
+msgstr "天体受力矢量"
+
+msgid "Grids and circles"
+msgstr "网格与圆圈"
+
+msgid "Local horizon grid"
+msgstr "本地地平网格"
+
+msgid "Celestial grid"
+msgstr "天球网格"
+
+msgid "Ecliptic grid"
+msgstr "黄道网格"
+
+msgid "Galactic grid"
+msgstr "银河网格"
+
+msgid "Target Equator"
+msgstr "目标赤道"
+
+msgid "Constellations"
+msgstr "星座"
+
+msgid "Labels"
+msgstr "标签"
+
+msgid "Boundaries"
+msgstr "边界"
+
+msgid "Patterns"
+msgstr "图案"
+
+msgid "Show markers"
+msgstr "显示标记"
+
+msgid "Object markers"
+msgstr "物体标记"
+
+msgid "Vessels"
+msgstr "载具"
+
+msgid "Celestial bodies"
+msgstr "天体"
+
+msgid "Surface bases"
+msgstr "地面基地"
+
+msgid "VOR transmitters"
+msgstr "VOR 导航台"
+
+msgid "Surface features"
+msgstr "表面特征"
+
+msgid "Features"
+msgstr "特征"
+
+msgid "Linear forces"
+msgstr "线性力"
+
+msgid "Weight"
+msgstr "重力"
+
+msgid "Thrust"
+msgstr "推力"
+
+msgid "Lift"
+msgstr "升力"
+
+msgid "Drag"
+msgstr "阻力"
+
+msgid "Side"
+msgstr "侧向力"
+
+msgid "Total"
+msgstr "合力"
+
+msgid "Angular moments"
+msgstr "角动量"
+
+msgid "Torque"
+msgstr "力矩"
+
+msgid "Display"
+msgstr "显示"
+
+msgid "Log"
+msgstr "对数"
+
+msgid "Objects"
+msgstr "物体"
+
+msgid "No"
+msgstr "否"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "A flight record under this name already exists!"
+msgstr "该名称的飞行记录已存在！"
+
+msgid "Attitude Data"
+msgstr "姿态数据"
+
+msgid "Editor"
+msgstr "编辑器"
+
+msgid "Equatorial Frame"
+msgstr "赤道坐标系"
+
+msgid "Local Horizon Frame"
+msgstr "本地地平坐标系"
+
+msgid "Overwrite"
+msgstr "覆盖"
+
+msgid "Play at Recording Speed"
+msgstr "按录制速度播放"
+
+msgid "Position / Velocity Data"
+msgstr "位置/速度数据"
+
+msgid "REC"
+msgstr "录制"
+
+msgid "Record Focus Events"
+msgstr "记录焦点事件"
+
+msgid "Record Time Acceleration"
+msgstr "记录时间加速"
+
+msgid "Replay Options"
+msgstr "回放选项"
+
+msgid "Sampling in System Time Steps"
+msgstr "按系统时间步长采样"
+
+msgid "Show Inflight Notes"
+msgstr "显示飞行中注释"
+
+msgid "STOP"
+msgstr "停止"
+
+msgid "Use Recorded Camera Settings"
+msgstr "使用录制的相机设置"
+
+msgid "Use Recorded Focus Events"
+msgstr "使用录制的焦点事件"
+
+msgid "Reset map"
+msgstr "重置地图"
+
+msgid "All"
+msgstr "全部"
+
+msgid "Focus Only"
+msgstr "仅焦点"
+
+msgid "None"
+msgstr "无"
+
+msgid "Orbit Display"
+msgstr "轨道显示"
+
+msgid "Focus Vessel"
+msgstr "焦点载具"
+
+msgid "Target"
+msgstr "目标"
+
+msgid "Orbit Plane"
+msgstr "轨道面"
+
+msgid "Ground Track"
+msgstr "地面轨迹"
+
+msgid "Horizon Line"
+msgstr "地平线"
+
+msgid "Terminator"
+msgstr "晨昏线"
+
+msgid "Line"
+msgstr "线"
+
+msgid "Shaded"
+msgstr "阴影"
+
+msgid "Surface Markers"
+msgstr "地表标记"
+
+msgid "Grid Line"
+msgstr "网格线"
+
+msgid "Surface Bases"
+msgstr "地表基地"
+
+msgid "Coastlines"
+msgstr "海岸线"
+
+msgid "VOR Transmitters"
+msgstr "VOR 发射台"
+
+msgid "Contour Lines"
+msgstr "等高线"
+
+msgid "Landmarks"
+msgstr "地标"
+
+msgid "Other"
+msgstr "其他"
+
+msgid "Natural Satellites"
+msgstr "天然卫星"
+
+msgid "Moons"
+msgstr "卫星"
+
+msgid "Search filter"
+msgstr "搜索过滤"
+
+msgid "Search object"
+msgstr "搜索物体"
+
+msgid "Open info dialog for object"
+msgstr "打开物体信息对话框"
+
+msgid "Bases"
+msgstr "基地"
+
+msgid "VOR"
+msgstr "信标"
+
+msgid "free"
+msgstr "空闲"
+
+msgid "Docked to"
+msgstr "已对接至"
+
+msgid "Scenario"
+msgstr "场景"
+
+msgid "X"
+msgstr "X"
+
+msgid "2D panel scale"
+msgstr "2D 面板比例"
+
+msgid "Saturation"
+msgstr "饱和度"
+
+msgid "Max magnitude threshold"
+msgstr "最大星等阈值"
+
+msgid "Min magnitude threshold"
+msgstr "最小星等阈值"
+
+msgid "Min brightness"
+msgstr "最小亮度"
+
+msgid "Brightness"
+msgstr "亮度"
+
+msgid "Scale"
+msgstr "缩放"
+
+msgid "Simple"
+msgstr "简单"
+
+msgid "Realistic"
+msgstr "真实"
+
+msgid "No damage"
+msgstr "无损伤"
+
+msgid "Allow damage"
+msgstr "允许损伤"
+
+msgid "Field of view [%s]"
+msgstr "视场角 [%s]"
+
+msgid "External"
+msgstr "外部"
+
+msgid "Available targets"
+msgstr "可用目标"
+
+msgid "Selected target"
+msgstr "已选目标"
+
+msgid "Select"
+msgstr "选择"
+
+msgid "Previous"
+msgstr "上一个"
+
+msgid "Save snapshots"
+msgstr "保存快照"
+
+msgid "To the clipboard"
+msgstr "到剪贴板"
+
+msgid "To file"
+msgstr "到文件"
+
+msgid "Take snapshot"
+msgstr "拍摄快照"
+
+msgid "Save frame sequence"
+msgstr "保存帧序列"
+
+msgid "To directory"
+msgstr "到目录"
+
+msgid "Stop recording"
+msgstr "停止录制"
+
+msgid "Start recording"
+msgstr "开始录制"
+
+msgid "File settings"
+msgstr "文件设置"
+
+msgid "Image quality"
+msgstr "图像质量"
+
+msgid "Appearance"
+msgstr "外观"
+
+msgid "Menu bar"
+msgstr "菜单栏"
+
+msgid "Show"
+msgstr "显示"
+
+msgid "Hide"
+msgstr "隐藏"
+
+msgid "Auto-hide"
+msgstr "自动隐藏"
+
+msgid "Always show labels"
+msgstr "始终显示标签"
+
+msgid "Opacity"
+msgstr "不透明度"
+
+msgid "Animation speed"
+msgstr "动画速度"
+
+msgid "Button size"
+msgstr "按钮尺寸"
+
+msgid "Hovered size"
+msgstr "悬停尺寸"
+
+msgid "Spacing"
+msgstr "间距"
+
+msgid "Info bars"
+msgstr "信息栏"
+
+msgid "Always show warp factor"
+msgstr "始终显示加速倍率"
+
+msgid "FPS info bar"
+msgstr "FPS 信息栏"
+
+msgid "Menu items"
+msgstr "菜单项"
+
+msgid "from module"
+msgstr "来自模块"
+
+msgid "2-body"
+msgstr "二体"
+
+msgid "Spaceports"
+msgstr "航天港"
+
+msgid "Add"
+msgstr "添加"
+
+msgid "ACTIVE (dynamic)"
+msgstr "活动（动态）"
+
+msgid "Aerodynamic Parameters"
+msgstr "气动参数"
+
+msgid "Altitude"
+msgstr "高度"
+
+msgid "Altitude [m]"
+msgstr "高度 [m]"
+
+msgid "Analytic (%s)"
+msgstr "解析（%s）"
+
+msgid "Angle of Attack"
+msgstr "攻角"
+
+msgid "Atmosphere"
+msgstr "大气"
+
+msgid "Atmosphere Model"
+msgstr "大气模型"
+
+msgid "Atmospheric Parameters"
+msgstr "大气参数"
+
+msgid "axis and force vectors"
+msgstr "轴与力矢量"
+
+msgid "Bank"
+msgstr "滚转角"
+
+msgid "Camera mode"
+msgstr "相机模式"
+
+msgid "Camera reference frame"
+msgstr "相机参考系"
+
+msgid "Camera Target"
+msgstr "相机目标"
+
+msgid "Celestical markers"
+msgstr "天体标记"
+
+msgid "Class"
+msgstr "类别"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "Cockpit"
+msgstr "座舱"
+
+msgid "Cockpit view"
+msgstr "座舱视角"
+
+msgid "Damage model"
+msgstr "损伤模型"
+
+msgid "Declination (Dec)"
+msgstr "赤纬（Dec）"
+
+msgid "Default"
+msgstr "默认"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Density"
+msgstr "密度"
+
+msgid "Designation"
+msgstr "标识"
+
+msgid "Docking Ports"
+msgstr "对接端口"
+
+msgid "Down"
+msgstr "下"
+
+msgid "Dry mass"
+msgstr "干质量"
+
+msgid "Dynamic Pressure"
+msgstr "动压"
+
+msgid "Eccentricity (e)"
+msgstr "偏心率（e）"
+
+msgid "Ecliptic position from primary"
+msgstr "相对主天体的黄道位置"
+
+msgid "Excentricity (e)"
+msgstr "偏心率（e）"
+
+msgid "Flight model"
+msgstr "飞行模型"
+
+msgid "Forward"
+msgstr "前进"
+
+msgid "Geocentric Celestial Position"
+msgstr "地心天球位置"
+
+msgid "Glass cockpit MFD size"
+msgstr "玻璃座舱 MFD 尺寸"
+
+msgid "Gravitational Moments"
+msgstr "引力矩"
+
+msgid "Gravity Sources"
+msgstr "引力源"
+
+msgid "Ground"
+msgstr "地面"
+
+msgid "Ground Speed"
+msgstr "地速"
+
+msgid "Heading"
+msgstr "航向"
+
+msgid "IDLE (landed)"
+msgstr "空闲（已着陆）"
+
+msgid "Inclination (i)"
+msgstr "倾角（i）"
+
+msgid "Inclination (igg)"
+msgstr "倾角（igg）"
+
+msgid "Landing Pads"
+msgstr "着陆平台"
+
+msgid "Latitude"
+msgstr "纬度"
+
+msgid "Latitude [°]"
+msgstr "纬度 [°]"
+
+msgid "Left"
+msgstr "左"
+
+msgid "Lift/Drag Ratio"
+msgstr "升阻比"
+
+msgid "Located on"
+msgstr "位于"
+
+msgid "Location"
+msgstr "位置"
+
+msgid "Lock view on target"
+msgstr "锁定视角到目标"
+
+msgid "Long labels"
+msgstr "长标签"
+
+msgid "Longitude"
+msgstr "经度"
+
+msgid "Longitude [°]"
+msgstr "经度 [°]"
+
+msgid "Longitude of Ascending Node"
+msgstr "升交点经度"
+
+msgid "Longitude of Periapsis"
+msgstr "近点经度"
+
+msgid "MFD refresh interval [s]"
+msgstr "MFD 刷新间隔 [s]"
+
+msgid "Mach Number"
+msgstr "马赫数"
+
+msgid "Mass"
+msgstr "质量"
+
+msgid "Mean longitude"
+msgstr "平经度"
+
+msgid "Mean radius"
+msgstr "平均半径"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Mouse focus behavior"
+msgstr "鼠标焦点行为"
+
+msgid "Move"
+msgstr "移动"
+
+msgid "N/A"
+msgstr "不适用"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Numerical"
+msgstr "数值"
+
+msgid "Object frame axis"
+msgstr "物体坐标系轴"
+
+msgid "Object: %s"
+msgstr "物体：%s"
+
+msgid "Obliquity of Ecliptic"
+msgstr "黄赤交角"
+
+msgid "Orbit Period"
+msgstr "轨道周期"
+
+msgid "Options for displaying markers and gridlines on the celestial"
+msgstr "在天球上显示标记与网格线、"
+
+msgid "Osculating Elements (Ecliptic Frame)"
+msgstr "密切轨道根数（黄道坐标系）"
+
+msgid "P. moments of inertia"
+msgstr "主惯性矩"
+
+msgid "PASSIVE (attached)"
+msgstr "被动（已连接）"
+
+msgid "Pad %d"
+msgstr "停机坪 %d"
+
+msgid "Panel scroll speed"
+msgstr "面板滚动速度"
+
+msgid "Physical Parameters"
+msgstr "物理参数"
+
+msgid "Pitch"
+msgstr "俯仰角"
+
+msgid "Port %d"
+msgstr "接口 %d"
+
+msgid "Position"
+msgstr "位置"
+
+msgid "Posture"
+msgstr "姿态"
+
+msgid "Pressure"
+msgstr "压力"
+
+msgid "Primary"
+msgstr "主天体"
+
+msgid "Propellant mass"
+msgstr "推进剂质量"
+
+msgid "Radial Distance"
+msgstr "径向距离"
+
+msgid "Reference"
+msgstr "参考"
+
+msgid "Reference body"
+msgstr "参考天体"
+
+msgid "Right"
+msgstr "右"
+
+msgid "Right Ascension (RA)"
+msgstr "赤经（RA）"
+
+msgid "Runway %02d/%02d"
+msgstr "跑道 %02d/%02d"
+
+msgid "Runways"
+msgstr "跑道"
+
+msgid "Scroll panel"
+msgstr "滚动面板"
+
+msgid "Select an object on the left panel"
+msgstr "在左侧面板选择一个物体"
+
+msgid "Semi-major Axis (a)"
+msgstr "半长轴（a）"
+
+msgid "Show negative axis"
+msgstr "显示负轴"
+
+msgid "Siderial day"
+msgstr "恒星日"
+
+msgid "Solar System"
+msgstr "太阳系"
+
+msgid "Specific Gas Constant"
+msgstr "气体常数"
+
+msgid "Specific Heat Ratio"
+msgstr "比热比"
+
+msgid "sphere, labels for planetary surface features, as weel as coordinate"
+msgstr "行星表面特征标签，以及坐标"
+
+msgid "State Propagation"
+msgstr "状态推进"
+
+msgid "State Propagator"
+msgstr "状态推进器"
+
+msgid "Subsamples"
+msgstr "子采样"
+
+msgid "Surface and object labels (Alt-F9)"
+msgstr "地表与物体标签（Alt-F9）"
+
+msgid "Surface density"
+msgstr "表面密度"
+
+msgid "Surface Pressure"
+msgstr "表面压力"
+
+msgid "Surface-relative Parameters"
+msgstr "相对地表参数"
+
+msgid "Switch panel"
+msgstr "开关面板"
+
+msgid "Target distance [m]:"
+msgstr "目标距离 [m]："
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "Thrusters Group Ratings (vacuum)"
+msgstr "推进器组推力（真空）"
+
+msgid "Total mass"
+msgstr "总质量"
+
+msgid "Track"
+msgstr "跟踪"
+
+msgid "Tracking target"
+msgstr "跟踪目标"
+
+msgid "Transponder Frequency"
+msgstr "应答机频率"
+
+msgid "True Airspeed"
+msgstr "真空速"
+
+msgid "Up"
+msgstr "上"
+
+msgid "Update mode"
+msgstr "更新模式"
+
+msgid "Vertical Speed"
+msgstr "垂直速度"
+
+msgid "View target"
+msgstr "视角目标"
+
+msgid "Virtual cockpit MFD texture size"
+msgstr "虚拟座舱 MFD 纹理尺寸"
+
+msgid "Orbiter: Help"
+msgstr "Orbiter：帮助"
+
+msgid "Atmosphere"
+msgstr "大气"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "Lift"
+msgstr "升力"
+
+msgid "Drag"
+msgstr "阻力"
+
+msgid "Mass"
+msgstr "质量"
+
+msgid "Total mass"
+msgstr "总质量"
+
+msgid "Altitude"
+msgstr "高度"
+
+msgid "Speed"
+msgstr "速度"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "None"
+msgstr "无"
+
+msgid "Brightness"
+msgstr "亮度"
+
+msgid "Density"
+msgstr "密度"
+
+msgid "Speed"
+msgstr "速度"
+
+msgid "Options"
+msgstr "选项"
+
+msgid "was destroyed by a collision with %s."
+msgstr "因为撞击%s坠毁了。"
+
+msgid " The other vessel was destroyed as well."
+msgstr " 顺便摧毁了它。"
+
+msgid "crashed into the surface of %s."
+msgstr "因为撞击%s地面坠毁了。"
+
+msgid "was torn apart by the gravity field of %s."
+msgstr "被%s的引力场撕碎了。"
+
+msgid "disintegrated after hitting the light-speed wall."
+msgstr "因为撞到光速墙解体了。"
+
+msgid "was destroyed by the hand of God."
+msgstr "被天意的大手摧毁了。"
+
+msgid "melted inside %s."
+msgstr "被%s融化了。"
+
+msgid "was crushed by the atmosphere of %s."
+msgstr "被%s的大气压碎了。"
+
+msgid "became a meteor."
+msgstr "变成了一颗流星。"
+
+msgid "was destroyed."
+msgstr "坠毁了。"
+
+msgid "Your vessel "
+msgstr "你的飞船"
+
+msgid "A vessel"
+msgstr "某艘飞船"
+
+
+# ---- 游戏内通知消息 / 脚本 ----
+msgid "Lua error"
+msgstr "Lua 错误"
+
+msgid "Failed to open help"
+msgstr "无法打开帮助"
+
+msgid "Cannot find menu item texture"
+msgstr "找不到菜单项纹理"
+
+msgid "Scenario saved successfully"
+msgstr "场景保存成功"
+
+msgid "Failed to save scenario"
+msgstr "场景保存失败"
+
+msgid "Flight data recording error"
+msgstr "飞行数据记录错误"
+
+msgid "Flight data recording enabled"
+msgstr "飞行数据记录已启用"
+
+msgid "Flight data recording disabled"
+msgstr "飞行数据记录已停用"
+
+msgid "Lua MFD error"
+msgstr "Lua MFD 错误"
+
+msgid "Lua vessel error"
+msgstr "Lua 飞船错误"
+
+msgid "TIME DILATION: waiting for focus vessel..."
+msgstr "时间膨胀：等待焦点飞船..."

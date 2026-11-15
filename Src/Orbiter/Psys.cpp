@@ -77,7 +77,17 @@ void PlanetarySystem::InitState (const char *fname)
 			if (!ifs.getline (cbuf, 256)) break;
 			pc = trim_string (cbuf);
 			if (!_stricmp (pc, "END_SHIPS")) break;
-			for (pd = pc; *pd != '\0' && *pd != ':'; pd++);
+			// wreck debris is transient and must never be restored from a scenario:
+			// skip the whole block (would otherwise crash on SetState2 during loading)
+			if (!_strnicmp (pc, "WRECK-", 6)) {
+				char dummy[256];
+				while (ifs.getline (dummy, 256)) {
+					if (!_stricmp (trim_string (dummy), "END")) break;
+				}
+				continue;
+			}
+			pd = pc;
+			for (; *pd != '\0' && *pd != ':'; pd++);
 			if (*pd) *pd++ = '\0';
 			else pd = 0;
 			AddVessel (new Vessel (this, pc, pd, ifs)); TRACENEW
@@ -95,8 +105,11 @@ void PlanetarySystem::PostCreation ()
 void PlanetarySystem::Write (ostream &os)
 {
 	os << "BEGIN_SHIPS" << endl;
-	for (size_t i = 0; i < vessels.size(); ++i)
+	for (size_t i = 0; i < vessels.size(); ++i) {
+		const char *nm = vessels[i]->Name ();
+		if (nm && !_strnicmp (nm, "WRECK-", 6)) continue;   // skip transient wreck debris
 		vessels[i]->Write (os);
+	}
 	os << "END_SHIPS" << endl;
 }
 
@@ -724,16 +737,7 @@ Vector PlanetarySystem::Gacc_intermediate (const Vector &gpos, double n, const B
 	}
 
 	if (gfd) { // use body''s source list
-		// Diagnostic (sampled): confirm which relativity path is used and which
-		// body has been selected as the dominant Kerr source.
-		{
-			static double dbgLastT = -1e100;
-			if (td.SimT0 - dbgLastT > 0.5) {
-				dbgLastT = td.SimT0;
-				LOGOUT ("RELROUTE: rel=%d kerr=%d method=%d domIdx=%d ncelestials=%d ngfd=%d",
-					(int)rel, (int)kerr, relMethod, domIdx, (int)celestials.size(), (int)gfd->ngrav);
-			}
-		}
+
 		for (j = 0; j < gfd->ngrav; j++) {
 			i = gfd->gravidx[j];
 			if (exclude == celestials[i]) continue;

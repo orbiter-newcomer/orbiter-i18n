@@ -8,6 +8,7 @@ add_library(LuaMFD SHARED
 )
 
 target_include_directories(LuaMFD
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${MODULE_COMMON_DIR}
 	PUBLIC ${ORBITER_SOURCE_ROOT_DIR}/Src/Module/LuaScript/LuaInterpreter

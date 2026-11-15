@@ -76,7 +76,7 @@ void DGConfig::Apply (HWND hWnd)
 }
 
 #define DG_ZH_CONFIG
-#include "../DeltaGliderToolsZh.inc"
+#include "DeltaGliderToolsZh.inc"   // i18n/vessels（include 路径见 CMakeLists）
 INT_PTR CALLBACK DGConfig::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {

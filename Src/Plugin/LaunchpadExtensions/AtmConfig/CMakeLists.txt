@@ -9,6 +9,7 @@ add_library(AtmConfig SHARED
 )
 
 target_include_directories(AtmConfig
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${MODULE_COMMON_DIR}
 )

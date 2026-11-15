@@ -68,7 +68,9 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	0,			// RelativityGravityMethod (0=1PN weak field)
 	0,			// RelativityFTLMode (0=report error, 1=clamp to 0.99c)
 	false,		// bRelativisticCharge (charge-induced gravity disabled by default)
-	0.5			// RelChargeRatio (r_Q/r_s; 0.5 = clearly visible)
+	0.5,		// RelChargeRatio (r_Q/r_s; 0.5 = clearly visible)
+	10.0,		// RelCollisionDVThreshold (m/s; collision impact tolerance)
+	0.8			// RelGasGiantFactor (gas-giant crushing radius factor)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {

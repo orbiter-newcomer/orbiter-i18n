@@ -73,7 +73,7 @@ public:
 		bool enabled;
 		MenuItem(const char *label_, const char *path, int id_, CustomFunc func_, void *context_):label(label_),func(func_),context(context_),id(id_) {
 			texture = oapiLoadTexture(path);
-			if(!texture) oapiAddNotification(OAPINOTIF_ERROR, "Cannot find menu item texture", path);
+			if(!texture) oapiAddNotification(OAPINOTIF_ERROR, oapiTr("Cannot find menu item texture"), path);
 			texId = ImGui::GetImTextureID(texture);
 			lastItemSize = g_pOrbiter->Cfg()->CfgUIPrm.MenuButtonSize;
 			dragging = false;

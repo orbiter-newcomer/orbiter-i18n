@@ -18,17 +18,6 @@
 
 using namespace oapi;
 
-// UTF-8 -> UTF-16 for the W (Unicode) Win32 API calls (Chinese UI text)
-static std::wstring Utf8ToWide(const char *s)
-{
-	if (!s) return L"";
-	int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
-	if (n <= 0) return L"";
-	std::wstring w(n - 1, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, s, -1, &w[0], n);
-	return w;
-}
-
 extern HINSTANCE g_hInst;
 extern D3D9Client *g_client;
 
@@ -265,15 +254,15 @@ void OpenDlgClbk(void *context)
 	else      param = &defs;
 
 	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Auto")).c_str());
-	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Surface")).c_str());
-	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Low Orbit")).c_str());
-	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("High Orbit")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("Auto")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("Surface")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("Low Orbit")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("High Orbit")).c_str());
 	SendDlgItemMessageW(hDlg, IDC_ATM_MODE, CB_SETCURSEL, atmmode, 0);
 
 	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Atmospheric Controls")).c_str());
-	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)Utf8ToWide(oapiTr("Water and Sun-glare")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("Atmospheric Controls")).c_str());
+	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr("Water and Sun-glare")).c_str());
 	SendDlgItemMessageW(hDlg, IDC_ATM_PAGE, CB_SETCURSEL, atmpage, 0);
 
 	for (auto& s : Slider)
@@ -307,17 +296,17 @@ void InitPage(int p)
 	}
 
 	for (auto& s : Slider) {
-		if (s.val) SetWindowTextW(GetDlgItem(hDlg, s.lbl), Utf8ToWide(oapiTr(s.val->lbl.c_str())).c_str());
+		if (s.val) SetWindowTextW(GetDlgItem(hDlg, s.lbl), oapiUtf8ToWString(oapiTr(s.val->lbl.c_str())).c_str());
 		else SetWindowTextW(GetDlgItem(hDlg, s.lbl), L" ");
 	}
 
 	if (p == 0) {
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG1), Utf8ToWide(oapiTr("Twilight and Ambient settings")).c_str());
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG2), Utf8ToWide(oapiTr("Wavelenght and Scale height settings")).c_str());
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG3), Utf8ToWide(oapiTr("Terrain")).c_str());
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG4), Utf8ToWide(oapiTr("Rayleigh settings")).c_str());
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), Utf8ToWide(oapiTr("Mie settings")).c_str());
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG6), Utf8ToWide(oapiTr("Custom settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG1), oapiUtf8ToWString(oapiTr("Twilight and Ambient settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG2), oapiUtf8ToWString(oapiTr("Wavelenght and Scale height settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG3), oapiUtf8ToWString(oapiTr("Terrain")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG4), oapiUtf8ToWString(oapiTr("Rayleigh settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), oapiUtf8ToWString(oapiTr("Mie settings")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG6), oapiUtf8ToWString(oapiTr("Custom settings")).c_str());
 	}
 
 	if (p == 1) {
@@ -325,7 +314,7 @@ void InitPage(int p)
 		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG2), L" ");
 		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG3), L" ");
 		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG4), L" ");
-		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), Utf8ToWide(oapiTr("Water Rendering")).c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG5), oapiUtf8ToWString(oapiTr("Water Rendering")).c_str());
 		SetWindowTextW(GetDlgItem(hDlg, IDC_ATG6), L" ");
 	}
 
@@ -477,15 +466,16 @@ void SetVisual(vObject *vo)
 }
 
 
-#define ZH_D3D9_ATMO
-#include "D3D9ClientZh.inc"
-
+// Localize the dialog: the English control texts are used as translation keys
+// (the translations are registered at module load by D3D9ClientZh.inc).
 static BOOL CALLBACK ZhAtmLocCb(HWND hWnd, LPARAM)
 {
     wchar_t txt[256];
     if (GetWindowTextW(hWnd, txt, 256) > 0) {
-        for (size_t i = 0; i < sizeof(atmMap)/sizeof(atmMap[0]); i++) {
-            if (!wcscmp(txt, atmMap[i].en)) { SetWindowTextW(hWnd, atmMap[i].zh); break; }
+        char utf8[1024];
+        if (oapiWideToUtf8(txt, utf8, sizeof(utf8)) > 0) {
+            const char *zh = oapiTr(utf8);
+            if (strcmp(zh, utf8) != 0) SetWindowTextW(hWnd, oapiUtf8ToWString(zh).c_str());
         }
     }
     return TRUE;
@@ -493,7 +483,7 @@ static BOOL CALLBACK ZhAtmLocCb(HWND hWnd, LPARAM)
 
 static void ZhLocalizeAtmDialog(HWND hDlg)
 {
-    if (strcmp(oapiTr("Build"), "Build") == 0) return;  // English mode: keep original
+    if (oapiZhActive() == 0) return;  // English mode: keep original
     EnumChildWindows(hDlg, ZhAtmLocCb, 0);
 }
 INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -528,7 +518,7 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			if (vObj->GetAtmoMode() == 2) sprintf_s(title, 256, "%s [%s][%s] [%s] (%3.1f%%)", oapiTr("Atmospheric Controls"), file.c_str(), vObj->GetName(), oapiTr("Low Orbit"), vd * 100.0);
 			if (vObj->GetAtmoMode() == 3) sprintf_s(title, 256, "%s [%s][%s] [%s] (%3.1f%%)", oapiTr("Atmospheric Controls"), file.c_str(), vObj->GetName(), oapiTr("High Orbit"), (1.0 - vd) * 100.0);
 		
-			SetWindowTextW(hDlg, Utf8ToWide(title).c_str());
+			SetWindowTextW(hDlg, oapiUtf8ToWString(title).c_str());
 			UpdateSliders();
 		}
 		break;	

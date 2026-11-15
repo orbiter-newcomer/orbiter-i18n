@@ -18,6 +18,7 @@
 #include "DebugControls.h"
 #include "D3D9Util.h"
 #include "MaterialMgr.h"
+#include "RelativityAPI.h"
 
 using namespace oapi;
 
@@ -58,6 +59,9 @@ vVessel::vVessel(OBJHANDLE _hObj, const Scene *scene): vObject (_hObj, scene)
 	eFace = 0;
 	sunLight = *scene->GetSun();
 	tCheckLight = oapiGetSimTime()-1.0;
+	shd_plane_valid = false;
+	shd_plane_t = 0.0;
+	shd_plane_elev = 0.0;
 	vClass = 0;
 	pIrrad = NULL;
 	pIrdEnv = NULL;
@@ -646,6 +650,7 @@ void vVessel::GetMinMaxLightDist(float *mind, float *maxd)
 bool vVessel::Render(LPDIRECT3DDEVICE9 dev)
 {
 	_TRACE;
+	if (Object() == oapiGetWreckAnchorVessel ()) return false;   // invisible wreck anchor
 	if (!active) return false;
 	pCurrentVisual = this; // Set current visual for mesh debugger
 	UpdateBoundingBox();
@@ -1165,44 +1170,131 @@ void vVessel::RenderGroundShadow(LPDIRECT3DDEVICE9 dev, OBJHANDLE hPlanet, float
 	if (!bStencilShadow && scn->GetRenderPass() == RENDERPASS_MAINSCENE) return;
 	if (Config->TerrainShadowing == 0) return;
 
+	// the hidden wreck anchor (the player vessel kept as a visual reference while a
+	// wreck is the focus object) must not cast a ground shadow
+	if (Object() == oapiGetWreckAnchorVessel ()) return;
+
+	// Wreck debris is covered by the shadow-map path (it is rendered into the shadow
+	// map and the terrain samples it), which projects the shadows onto the actually
+	// rendered terrain/base surfaces. The legacy projected ground shadow below uses a
+	// mean-sphere tangent plane and produces floating black polygons for the open,
+	// irregular slice meshes, so it is skipped for wrecks.
+	if (Config->ShadowMapMode >= 1 && Config->TerrainShadowing == 2) {
+		const char *nm = GetName();
+		if (nm && !_strnicmp(nm, "WRECK-", 6)) return;
+	}
+
 	static const double eps = 1e-2;
 	static const double shadow_elev_limit = 0.07;
 	double d, alt, R;
-	VECTOR3 pp, sd, pvr;
+	VECTOR3 pp, sd, pvr, vpos;
 	oapiGetGlobalPos(hPlanet, &pp); // planet global pos
-	vessel->GetGlobalPos(sd);       // vessel global pos
-	pvr = sd - pp;                     // planet-relative vessel position
-	d = length(pvr);                 // vessel-planet distance
-	R = oapiGetSize(hPlanet);       // planet mean radius
-	R += vessel->GetSurfaceElevation();
-	alt = d - R;                       // altitude above surface
+	vessel->GetGlobalPos(vpos);     // vessel global pos
+	pvr = vpos - pp;                // planet-relative vessel position
+	d = length(pvr);                // vessel-planet distance
+	double prad = oapiGetSize(hPlanet);   // planet mean radius
+	VECTOR3 vdir = pvr / d;         // radial direction at the vessel (global frame)
+
+	// ---------------------------------------------------------------------------------
+	// Determine the reference plane for the shadow projection from the surface that is
+	// ACTUALLY rendered: the flat surface of a base (runway/pad) if the vessel is over
+	// a base, otherwise the terrain surface (elevation taken from the renderer's own
+	// terrain data). The result is cached in the global frame and only recomputed when
+	// the vessel has moved or the cache has expired, so that a parked vessel does not
+	// trigger terrain queries in every frame.
+	if (!shd_plane_valid || (oapiGetSimTime() - shd_plane_t) > 2.0 ||
+		dist(vpos, shd_plane_pos) > 1.0) {
+
+		double surfElev = vessel->GetSurfaceElevation();
+		VECTOR3 nrm, pnt;
+		bool bBaseSurf = false;
+		double vlng, vlat, vrad;
+		oapiGlobalToEqu(hPlanet, vpos, &vlng, &vlat, &vrad);
+		MATRIX3 Rpl;
+		oapiGetRotationMatrix(hPlanet, &Rpl);
+		for (DWORD i = 0, n = oapiGetBaseCount(hPlanet); i < n; i++) {
+			OBJHANDLE hb = oapiGetBaseByIndex(hPlanet, i);
+			if (!hb) continue;
+			// ground distance to the base centre: official great-circle distance
+			double blng, blat;
+			oapiGetBaseEquPos(hb, &blng, &blat);
+			double bdist = oapiOrthodome(vlng, vlat, blng, blat) * prad;
+			if (bdist < oapiGetSize(hb)) {
+				// flat base surface plane (runway/pad): normal is the base's local vertical
+				VECTOR3 bp;
+				oapiGetGlobalPos(hb, &bp);
+				VECTOR3 brel = bp - pp;
+				double br = length(brel);
+				if (br < 1.0) continue;
+				bBaseSurf = true;
+				surfElev = max(surfElev, br - prad);
+				oapiEquToGlobal(hPlanet, vlng, vlat, prad + surfElev, &pnt);
+				nrm = brel / br;
+				break;
+			}
+		}
+		if (!bBaseSurf) {
+			// terrain surface: elevation from the renderer's terrain data, normal from
+			// the official surface-elevation API (returned in the local horizon frame)
+			double el0 = surfElev, e;
+			bool bOk = false;
+			vPlanet *vP = static_cast<vPlanet*>(scn->GetVisObject(hPlanet));
+			if (vP) {
+				int r0 = vP->GetElevation(vlng, vlat, &e);
+				if (r0 > 0) { el0 = e; bOk = true; }
+			}
+			if (!bOk) el0 = oapiSurfaceElevation(hPlanet, vlng, vlat);
+			surfElev = el0;
+			VECTOR3 nml;
+			nml.x = nml.y = nml.z = 0.0;
+			oapiSurfaceElevationEx(hPlanet, vlng, vlat, 0, 0, &nml);
+			double slng = sin(vlng), clng = cos(vlng);
+			double slat = sin(vlat), clat = cos(vlat);
+			VECTOR3 n_pf;
+			n_pf.x = -slng*nml.x + clat*clng*nml.y - slat*clng*nml.z;
+			n_pf.y =            + slat*nml.y        + clat*nml.z;
+			n_pf.z =  clng*nml.x + clat*slng*nml.y - slat*slng*nml.z;
+			nrm = mul(Rpl, n_pf);
+			if (dotp(nrm, vdir) < 0.0) nrm = -nrm;   // plane normal must point upwards
+			oapiEquToGlobal(hPlanet, vlng, vlat, prad + el0, &pnt);
+		}
+		shd_plane_valid = true;
+		shd_plane_t = oapiGetSimTime();
+		shd_plane_pos = vpos;
+		shd_plane_nrm = nrm;
+		shd_plane_pnt = pnt;
+		shd_plane_elev = surfElev;
+	}
+
+	R = prad + shd_plane_elev;
+	alt = d - R;                       // altitude above the reference surface
 	if (alt*eps > vessel->GetSize()) return; // too high to cast a shadow
 
-	normalise(sd);                  // shadow projection direction
+	sd = vpos;                      // shadow projection direction = local solar direction
+	normalise(sd);                  // (unit vector from the planet towards the sun is approx.
+	                                //  the planet's global position direction)
 
 									// calculate the intersection of the vessel's shadow with the planet surface
 	double fac1 = dotp(sd, pvr);
 	if (fac1 > 0.0) return;          // shadow doesn't intersect planet surface
 	double csun = -fac1 / d;           // sun elevation above horizon
 	if (csun < shadow_elev_limit) return;   // sun too low to cast shadow
-	double arg = fac1*fac1 - (dotp(pvr, pvr) - R*R);
-	if (arg <= 0.0) return;                 // shadow doesn't intersect with planet surface
-	double a = -fac1 - sqrt(arg);
 
 	MATRIX3 vR;
 	vessel->GetRotationMatrix(vR);
 	VECTOR3 sdv = tmul(vR, sd);     // projection direction in vessel frame
-	VECTOR3 shp = sdv*a;             // projection point
-	VECTOR3 hn, hnp = vessel->GetSurfaceNormal();
-	vessel->HorizonInvRot(hnp, hn);
 
-	// perform projections
-	//double nr0 = dotp(hn, shp);
-	float nr0 = float(-alt);
+	// ---- build the shadow projection reference plane (in vessel frame) ----
+	VECTOR3 hn = tmul(vR, shd_plane_nrm);             // plane normal
+	VECTOR3 pnt = shd_plane_pnt, l0;
+	vessel->Global2Local(pnt, l0);                    // plane reference point
+	float nr0 = float(dotp(hn, l0));                  // plane offset: dot(hn, x) = nr0
+
 	double nd = dotp(hn, sdv);
+	if (nd > -0.01) return;         // sun too low relative to the local reference plane
 	VECTOR3 sdvs = sdv / nd;
 
-	D3DXVECTOR4 nrml = D3DXVECTOR4(float(hn.x), float(hn.y), float(hn.z), float(alt));
+	D3DXVECTOR4 nrml = D3DXVECTOR4(float(hn.x), float(hn.y), float(hn.z), -nr0);
 	
 	// build shadow projection matrix
 	D3DXMATRIX mProj, mProjWorld, mProjWorldShift;

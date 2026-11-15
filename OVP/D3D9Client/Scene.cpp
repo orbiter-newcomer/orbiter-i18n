@@ -1553,6 +1553,16 @@ void Scene::RenderMainScene()
 	int shadow_lod = -1;
 	float bouble_rad = 10.0f;		// Terrain shadow mapping coverage
 
+	// wreck debris as focus object: the pieces are scattered and their open slice
+	// meshes are not suitable for the legacy projected ground shadow (it projects
+	// onto a mean-sphere tangent plane, not onto the rendered terrain), so they are
+	// rendered into the shadow map instead and the terrain receives the shadows.
+	bool bFocusIsWreck = false;
+	if (vFocus) {
+		const char *fn = vFocus->GetName();
+		if (fn && !_strnicmp(fn, "WRECK-", 6)) bFocusIsWreck = true;
+	}
+
 	if (Config->ShadowMapMode >= 1 && Config->TerrainShadowing == 2) {
 
 		SmapRenderList.clear();
@@ -1562,6 +1572,14 @@ void Scene::RenderMainScene()
 		D3DXVECTOR3 pos = vFocus->GetBoundingSpherePosDX();
 		float rad = vFocus->GetBoundingSphereRadius();
 		float frad = rad;
+
+		// widen the coverage for wreck debris so the pieces cast shadows onto the
+		// terrain around the impact site (they can be scattered over tens of metres)
+		if (bFocusIsWreck) {
+			rad = max(rad, 60.0f);
+			frad = rad;
+			bouble_rad = 200.0f;		// Terrain shadow mapping coverage (wreck debris)
+		}
 
 		vFocus->bStencilShadow = false;
 
@@ -1959,6 +1977,7 @@ void Scene::RenderMainScene()
 	for (DWORD n = 0; n < nstream; n++) pstream[n]->Render(pDevice);
 
 
+
 	// -------------------------------------------------------------------------------------------------------
 	// Render vessel axis vectors
 	// -------------------------------------------------------------------------------------------------------
@@ -2159,8 +2178,14 @@ void Scene::RenderMainScene()
 
 	if (pSketch) {
 		gc->MakeRenderProcCall(pSketch, RENDERPROC_HUD_1ST, NULL, NULL);
+		// Relativistic collision debris + wreck message (drawn with the same
+		// sketchpad; a second GetPooledSketchpad call can return NULL)
+		RenderWreckDebris (pSketch);
+		RenderWreckMessage (pSketch);
+
 		pSketch->EndDrawing(); // SKETCHPAD_2D_OVERLAY
 	}
+
 	gc->Render2DOverlay();
 	pSketch = GetPooledSketchpad(SKETCHPAD_2D_OVERLAY);
 	if (pSketch) {
@@ -2687,6 +2712,7 @@ void Scene::RenderSecondaryScene(std::set<vVessel*> &RndList, std::set<vVessel*>
 	// render exhaust particle system ----------------------------
 	if (flags & 0x10) {
 		for (DWORD n = 0; n < nstream; n++) pstream[n]->Render(pDevice);
+
 	}
 
 	// Flags 0x20 = BaseStructures
@@ -3458,6 +3484,8 @@ bool Scene::UpdateCameraFromOrbiter(DWORD dwPass)
 	D3DXMatrixIdentity(&Camera.mView);
 	D3DMAT_SetRotation(&Camera.mView, &grot);
 
+
+
 	// note: in render space, the camera is always placed at the origin,
 	// so that render coordinates are precise in the vicinity of the
 	// observer (before they are translated into D3D single-precision
@@ -3545,9 +3573,10 @@ bool Scene::SetupInternalCamera(D3DXMATRIX *mNew, VECTOR3 *gpos, double apr, dou
 	Camera.vGravRef = GetVisObject(Camera.hGravRef);
 
 	
-	// Something is very wrong... abort...
+	// A missing camera reference must not abort the simulation (this can happen
+	// transiently, e.g. when the camera is attached to a small wreck object).
 	if (Camera.hGravRef == NULL || Camera.hObj_proxy == NULL || Camera.hNear == NULL) {
-		assert(false); return false;
+		return false;
 	}
 	if (Camera.vGravRef == NULL || Camera.vProxy == NULL || Camera.vNear == NULL) {
 		return false;

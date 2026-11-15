@@ -53,7 +53,7 @@ void TrackIRconfig::InitDialog (HWND hDlg)
 
 	// 页签标签：中文模式用中文（宽度不受影响），英文模式保持原版
 	static const wchar_t *zhTabLabel[4] = { L"模式", L"座舱", L"追踪", L"诊断" };
-	if (TrackIRZhActive()) {
+	if (oapiZhActive() != 0) {
 		TCITEMW tie;
 		tie.mask = TCIF_TEXT;
 		tie.iImage = -1;

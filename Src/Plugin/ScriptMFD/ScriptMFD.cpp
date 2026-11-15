@@ -72,7 +72,7 @@ int LuaCall(lua_State *L, int narg, int nres)
 	lua_remove(L, base);
 	if(res != 0) {
 		oapiWriteLogError("%s", lua_tostring(L, -1));
-		oapiAddNotification(OAPINOTIF_ERROR, "Lua MFD error", lua_tostring(L, -1));
+		oapiAddNotification(OAPINOTIF_ERROR, oapiTr("Lua MFD error"), lua_tostring(L, -1));
 	}
 	return res;
 }

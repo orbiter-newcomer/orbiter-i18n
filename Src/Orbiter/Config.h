@@ -85,6 +85,8 @@ struct CFG_PHYSICSPRM {
 	int    RelativityFTLMode;       // FTL velocity handling: 0=report error, 1=clamp to 0.99c
 	bool   bRelativisticCharge;     // charge-induced gravity (RN) for compact bodies
 	double RelChargeRatio;          // charge ratio q = r_Q/r_s (0..1)
+	double RelCollisionDVThreshold; // collision impact delta-v [m/s] above which a vessel explodes
+	double RelGasGiantFactor;       // radius factor R for gas-giant crushing (r < factor*R)
 };
 
 struct CFG_LOGICPRM {

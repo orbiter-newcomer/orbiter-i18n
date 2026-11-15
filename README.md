@@ -10,7 +10,7 @@
 - **相对论物理与视觉扩展**：1PN/Kerr 引力场、参考系拖曳、相对论质量、时间膨胀、多普勒红蓝移、光行差、引力透镜（挖洞法）、引力红移、黑洞/中子星渲染、超光速与强场保护、电荷引力效应
 
 - 仓库：https://github.com/orbiter-newcomer/orbiter-i18n
-- 当前版本：**v1.2.5**（与官方 Orbiter 2024 最新上游版本同步）
+- 当前版本：**v1.3.0**（与官方 Orbiter 2024 最新上游版本同步）
 - English readme: [README_EN.md](./README_EN.md)
 
 ---
@@ -93,6 +93,8 @@ Language=en   ; 英文模式（默认）
 - **2D 玻璃座舱面板与 HUD**：MFD 按钮、面板按钮（电源/选择/说明）、导航按钮、RCS 按钮、HUD 读数标签与中文标注
 - **天文与标签**：88 星座中文名、天体名、39 个发射基地名、地物标签保持英文
 - **字体**：Noto Sans CJK SC；运行时语言切换字体自动重建
+- **翻译文件外置**：全部译文位于安装目录 `i18n/locales/zh_CN/*.po`（UTF-8），可直接编辑修正翻译或扩展，无需重新编译
+- **场景与脚本**：场景文件夹/单个 `.scn` 描述、星座名、Challenge 挑战场景、Demos 教程注解、Solar system 科普注解
 
 ### 4. 调试与开发者工具
 
@@ -142,6 +144,7 @@ Language=en   ; 英文模式（默认）
 | v1.2.3 | 引力透镜"挖洞"混合、中子星蓝白渲染、引力光行差/背向偏折修复 |
 | v1.2.4 | 天空盒挖洞法完善（边界接缝修复 + 挖洞调试工具） |
 | v1.2.5 | 电荷引力效应（Reissner-Nordström）、顶点限幅与挖洞参数绑定、顶点位移兜底判据、与官方 2024 最新版本同步 |
+| v1.3.0 | 翻译数据全部外置为 `.po` 文件（安装目录 `i18n/locales/zh_CN/*.po`，可直接编辑无需编译）；Lua 脚本本地化（Challenge 挑战、Demos 教程、Solar system 科普注解）；插件私有 wchar_t 表迁移到 `oapiTr` 体系；场景描述/星座/通知/残骸消息翻译补全；中文 HTML 帮助页；代码清理与简化 |
 
 ---
 
@@ -174,7 +177,7 @@ cmake --install build64 --config Release
   - 相对论配置：`Src/Orbiter/RelativityConfig.inc`（主程序）、`OVP/D3D9Client/RelativityConfig.inc`（渲染器）
   - 相对论渲染：`OVP/D3D9Client/Relativity.inc`
   - 相对论 UI：`Src/Orbiter/RelativityUi.cpp` / `RelativityUi.h` / `OrbiterRelativity.rc` / `RelativityResources.h`
-  - 汉化逻辑：`Src/Orbiter/ZhCommon.inc`；数据：`MfdZh.inc` / `InstrumentZh.inc` / `DialogZh.inc` / `LaunchpadZh.inc` 等
+  - 汉化数据与逻辑：`i18n/core/`（Localization 实现、MfdZh/InstrumentZh/ZhCommon 布局算法）；`i18n/locales/zh_CN/*.po`（全部翻译数据，运行时加载）；`i18n/d3d9client/`、`i18n/scneditor/`、`i18n/vessels/`、`i18n/plugins/`（各模块本地化逻辑）
 - **共享物理库**：`OVP/D3D9Client/shaders/RelativityMapping.hlsl`——光行差、引力光行差、参考系拖曳、引力透镜偏折的单一实现来源；顶点路径与 cubemap 合成路径都调用它，改物理只改这一个文件
 - **渲染设置**：相对论视觉开关通过 `CFGPRM_REL*`（`Orbitersdk/include/RelativityAPI.h`）由主程序传给渲染器；物理与视觉共用同一开关和数据
 
@@ -189,7 +192,7 @@ cmake --install build64 --config Release
 | `double oapiGetRelativityTimeDilation()` | 焦点船处的相对论时间膨胀（总/引力/速度） |
 | `oapiGetRelativityGravTimeFactor()` / `oapiGetRelativityVelTimeFactor()` | 引力/速度时间膨胀因子 |
 
-- **外部 MFD 汉化**：中文模式下按钮统一由主程序字体渲染，插件只需在中文模式返回中文标签（`ButtonLabel()` 中用 `oapiZhActive()` 判断），参考 `Src/Plugin/TransX/TransXZh.inc` 等；
+- **外部 MFD 汉化**：中文模式下按钮统一由主程序字体渲染，插件只需在中文模式返回中文标签（`ButtonLabel()` 中用 `oapiZhActive()` 判断），参考 `i18n/plugins/TransXZh.inc` 等；
 - **Lua**：`oapi.get_time_dilation()` 等相对论接口；
 - **验证流程**：构建 → 安装 → 启动游戏验证 中文模式各界面 → 切换到 English 回归 → 再切回中文（设备重建）确认无崩溃。
 

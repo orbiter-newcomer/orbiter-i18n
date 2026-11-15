@@ -420,7 +420,7 @@ transxstate::~transxstate()
 static void DrawHelpLine(oapi::Sketchpad *skp, int x, int &yl, int linespacing, int tw, const char *h)
 {
 	if (!h || !*h) return;
-	const bool zh = (strcmp(oapiTr("Build"), "Build") != 0);
+	const bool zh = (oapiZhActive() != 0);
 	if (!zh) { skp->Text(x, yl*linespacing, h, (int)strlen(h)); yl++; return; }
 	const int maxw = tw - 8;
 	char line[512];

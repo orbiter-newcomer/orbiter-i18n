@@ -9,6 +9,7 @@ add_library(ScnEditor SHARED
 )
 
 target_include_directories(ScnEditor
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/scneditor
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 )
 

@@ -18,6 +18,7 @@ target_link_libraries(GenericCamera
 )
 
 target_include_directories(GenericCamera
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${INCLUDE_TARGET_DIR}
 )
 

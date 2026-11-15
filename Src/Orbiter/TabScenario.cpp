@@ -14,6 +14,7 @@
 //#include "Log.h"
 #include "Help.h"
 #include "htmlctrl.h"
+#include "Localization.h"
 #include "resource.h"
 
 using namespace std;
@@ -467,6 +468,20 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 	if (ifs) {
 		if (!have_info) {
 			char *buf;
+			// Description texts are data-file strings (Description.txt / .scn
+			// BEGIN_DESC blocks), not source-code literals, so they are translated
+			// through the context "scenario.description". The English text is the
+			// lookup key; if a translation exists, the buffer is replaced by a
+			// copy of the translated text (memory ownership stays with the buffer).
+			auto tr = [](char *b) -> char * {
+				if (!b) return b;
+				const char *t = orbiter::TrContext("scenario.description", b);
+				if (!t || t == b) return b;
+				delete[] b;
+				char *r = new char[strlen(t) + 1];
+				strcpy(r, t);
+				return r;
+			};
 			if (htmldesc) {
 				buf = ScanFileDesc(ifs, "URLDESC");
 				if (buf) {
@@ -476,15 +491,25 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 					topic = strtok(NULL, "\n");
 					if (topic)
 						sprintf(url, "its:Html\\Scenarios\\%s.chm::%s.htm", path, topic);
-					else
-						sprintf(url, "%s\\Html\\Scenarios\\%s.htm", _getcwd(url, 256), path);
+					else {
+						// Chinese mode: use the _zh variant of the HTML page if it exists
+						char cwd[256];
+						_getcwd(cwd, 256);
+						sprintf(url, "%s\\Html\\Scenarios\\%s.htm", cwd, path);
+						if (orbiter::IsChinese()) {
+							char zhurl[256];
+							sprintf(zhurl, "%s\\Html\\Scenarios\\%s_zh.htm", cwd, path);
+							if (GetFileAttributesA(zhurl) != INVALID_FILE_ATTRIBUTES)
+								strcpy(url, zhurl);
+						}
+					}
 					DisplayHTMLPage(GetDlgItem(hTab, IDC_SCN_HTML), url);
 					have_info = true;
 				}
 				else {
-					buf = ScanFileDesc(ifs, "HYPERDESC");
+					buf = tr(ScanFileDesc(ifs, "HYPERDESC"));
 					if (!buf) {
-						buf = ScanFileDesc(ifs, "DESC");
+						buf = tr(ScanFileDesc(ifs, "DESC"));
 						if (buf) {
 							std::string str(buf);
 							Text2Html(str);
@@ -494,8 +519,11 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 						}
 					}
 					if (buf) { // prepend style preamble
-						char* buf2 = new char[strlen(htmlstyle) + strlen(buf) + 1];
-						strcpy(buf2, htmlstyle); strcat(buf2, buf);
+						// DisplayHTMLStr expects an ANSI string: convert the UTF-8
+						// description to the system code page first.
+						std::string ansi = orbiter::Utf8ToAnsiString(buf);
+						char* buf2 = new char[strlen(htmlstyle) + ansi.size() + 1];
+						strcpy(buf2, htmlstyle); strcat(buf2, ansi.c_str());
 						delete[]buf;
 						buf = buf2;
 						DisplayHTMLStr(GetDlgItem(hTab, IDC_SCN_HTML), buf);
@@ -503,13 +531,13 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 					}
 				}
 			} else {
-				if (buf = ScanFileDesc (ifs, "DESC")) {
-					SetWindowText(GetDlgItem(hTab, IDC_SCN_DESC), buf);
+				if (buf = tr(ScanFileDesc (ifs, "DESC"))) {
+					orbiter::SetWindowTextUtf8(GetDlgItem(hTab, IDC_SCN_DESC), buf);
 					have_info = true;
-				} else if (buf = ScanFileDesc (ifs, "HYPERDESC")) {
+				} else if (buf = tr(ScanFileDesc (ifs, "HYPERDESC"))) {
 					std::string str(buf);
 					Html2Text(str);
-					SetWindowText(GetDlgItem(hTab, IDC_SCN_DESC), str.c_str());
+					orbiter::SetWindowTextUtf8(GetDlgItem(hTab, IDC_SCN_DESC), str.c_str());
 					have_info = true;
 				}
 			}

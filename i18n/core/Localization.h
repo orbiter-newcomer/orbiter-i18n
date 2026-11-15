@@ -46,6 +46,42 @@ namespace orbiter {
 	const char* Tr(const char* english);
 	const char* Tr2(const char* aliasKey);
 
+	// Context-aware translation: resolves cases where the same English word needs
+	// different translations depending on where it is used. Falls back to Tr() if
+	// no context-specific entry exists. The returned pointer stays valid for the
+	// lifetime of the process.
+	const char* TrContext(const char* context, const char* english);
+
+	// Reverse lookup: maps a localised name back to its English original (e.g. a
+	// Chinese planet or base name back to the name used in scenario/resource
+	// files). Returns the passed pointer if the name is not in the table.
+	const char* GetOriginalName(const char* localized);
+
+	// Active locale name: "en" or "zh_CN".
+	const char* GetLocaleName();
+
+	// Register a translation at run time (typically from a plugin during Open()).
+	// locale may be "zh"/"zh_CN" (or NULL/"" for the active language); "en" is a
+	// no-op. The strings are copied. Registration only adds entries, existing
+	// entries are not replaced. Returns false on invalid arguments.
+	bool RegisterTranslation(const char* locale, const char* english, const char* translated);
+
+	// Load translations from a .po-style catalog file (msgid/msgstr pairs).
+	// Comments (#) and multi-line strings are supported. Returns true if the file
+	// could be opened and parsed.
+	bool RegisterTranslationCatalog(const char* path);
+
+	// UTF-8 <-> UTF-16 conversions with caller-provided buffers. Both return the
+	// required buffer size in elements including the terminating null character,
+	// and fill the buffer only if it is large enough (buf may be NULL to query
+	// the required size).
+	int Utf8ToWideBuffer(const char* utf8, wchar_t* buf, int buflen);
+	int WideToUtf8Buffer(const wchar_t* wide, char* buf, int buflen);
+
+	// Convert a UTF-8 string to the system ANSI code page (for legacy ANSI APIs
+	// such as the inline HTML control). Unmappable characters become '?'.
+	std::string Utf8ToAnsiString(const char* utf8);
+
 	// Convert a UTF-8 string to UTF-16. The returned value must stay alive while
 	// it is used (e.g. for Unicode control messages such as TVM_INSERTITEMW).
 	std::wstring Utf8ToWideString(const char* utf8);

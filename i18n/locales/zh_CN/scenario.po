@@ -1,0 +1,568 @@
+# Orbiter 中文翻译（UTF-8，.po 子集：msgid/msgstr/msgctxt）
+# 场景/文件夹说明（context = scenario.description / constellation）
+# 由 i18n 数据生成；改翻译可直接编辑本文件，无需重新编译。
+
+msgctxt "constellation"
+msgid "Hydra"
+msgstr "长蛇座"
+
+msgctxt "scenario.description"
+msgid "<h1>Orbiter 2024 Edition</h1> <p>Orbiter 2024 is the latest edition of the popular space flight simulator.</p> <p>Here are a few scenarios highlighting some of the new features, including new textures for Earth and other planetary bodies, surface terrain support, new cockpit layout for various vessels, and more.</p> "
+msgstr "<h1>Orbiter 2024 版</h1> <p>Orbiter 2024 是这款广受欢迎的太空飞行模拟器的最新版本。</p> <p>这里有一些展示新特性的场景，包括地球及其他天体的新纹理、地表地形支持、多种飞船的新座舱布局等。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Antelope Valley scenery</h1> <p>A few scenarios showcasing the launch and landing sites supported by the Antelope Valley addon scenery pack.</p> "
+msgstr "<h1>羚羊谷地景</h1> <p>若干展示羚羊谷附加地景包所支持的发射场与着陆场的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Orbiter Challenges</h1> \n<p>A set of flight missions that will challenge your planning and navigation skills. You will receive a score depending on how well you completed the mission within the specified parameters.</p> \n<p>Beat yourself to the highscore, or compare your performance with other users!</p> "
+msgstr "<h1>轨道挑战</h1> \n<p>一组考验你的规划与导航能力的飞行任务。任务的完成参数越精确，得分越高。</p> \n<p>挑战自我、冲击最高分，或与其他玩家一较高下！</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Checklists</h1> <p>This folder contains starting situations for the checklist missions described in the manual.</p> "
+msgstr "<h1>检查单</h1> <p>本文件夹包含手册中所述检查单任务的初始场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider scenarios</h1> <p>The Delta-glider is a futuristic spaceplane design with aerodynamic control surfaces and powerful engines. The DG is a capable allround vessel ideally suited for novice pilots to practise orbital manoeuvres.</p> \n<p>This version has been re-designed and improved, and now includes a variant with air-breathing scramjet engines. The glider is also the first craft to support a full virtual cockpit implementation.</p> "
+msgstr "<h1>三角滑翔机场景</h1> <p>三角滑翔机（Delta-glider）是一种未来风格的航天飞机，拥有气动控制面和强劲引擎。DG 是一款全能型飞船，非常适合新手练习轨道机动。</p> \n<p>此版本经过重新设计和改进，现在还包含带吸气式超燃冲压发动机的型号。它也是第一艘支持完整虚拟座舱的飞船。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Demos</h1> <p>The scenarios in this folder are called up randomly in Demo mode.</p> \n<p>To start Orbiter in Demo mode, edit the Orbiter.cfg file and set the DemoMode entry to TRUE.</p> \n<p>You can also launch these scenarios manually in standard mode.</p> "
+msgstr "<h1>演示</h1> <p>本文件夹中的场景会在演示模式下随机调用。</p> \n<p>要以演示模式启动 Orbiter，请编辑 Orbiter.cfg 文件，将 DemoMode 项设为 TRUE。</p> \n<p>你也可以在标准模式下手动启动这些场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Dragonfly scenarios</h1> <p>The Dragonfly class is a small utility vessel designed for moving payload in orbit. It is controlled via the RCS engines located in the two side pods and aft pod.</p> \n<p>The Dragonfly has been jointly developed by Roger Long, Radu Poenaru and Martin Schweiger. The Operations Handbook is essential reading for all Dragonfly pilots!</p> "
+msgstr "<h1>蜻蜓号场景</h1> <p>蜻蜓号（Dragonfly）是一种小型通用飞船，用于在轨运送载荷。它通过位于两侧和尾部吊舱的 RCS 引擎进行控制。</p> \n<p>蜻蜓号由 Roger Long、Radu Poenaru 和 Martin Schweiger 联合开发。所有蜻蜓号飞行员都必读《操作手册》！</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Launch sites and spaceports</h1> <p>A list of scenarios introducing some of the Launch sites and landing facilities supported by the Orbiter default installation. More can be added with 3rd party addons.</p> "
+msgstr "<h1>发射场与航天港</h1> <p>一组介绍 Orbiter 默认安装所支持的部分发射场与着陆设施的场景。可通过第三方插件添加更多。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Navigation in space</h1> <p>Explore different types of orbits, some space physics demos and solve interplanetary navigation problems using the Transfer and TransX MFD instruments.</p> "
+msgstr "<h1>太空导航</h1> <p>探索不同类型的轨道，观看一些空间物理演示，并使用 Transfer 和 TransX MFD 仪表解决行星际导航问题。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Lunar transfer</h1> <p>Two scenarios representing snapshots of a lunar mission.</p> <p>The first scenario has a Shuttle-A in low Earth orbit, preparing for trans-lunar injection to set it on a transfer orbit to intercept the Moon.</p> <p>The second scenario shows the same vessel some time later, after the TLI burn has completed.</p> "
+msgstr "<h1>月球转移</h1> <p>两个展示月球任务节点的场景。</p> <p>第一个场景中，一艘 Shuttle-A 位于近地轨道，正准备执行地月转移点火，进入前往月球的转移轨道。</p> <p>第二个场景显示同一艘飞船在 TLI 点火完成一段时间之后的状态。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Space Physics</h1> <p>A few scenarios demonstrating interesting physics phenomena in orbit.</p> "
+msgstr "<h1>空间物理</h1> <p>几个演示轨道中有趣物理现象的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Special orbits</h1> <p>A collection of interesting orbits.</p> "
+msgstr "<h1>特殊轨道</h1> <p>一组有趣的轨道。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>TransX MFD mode</h1> <p>These scenarios demonstrate the use of the TransX interplanetary navigation MFD by Duncan Sharpe.</p> <p>Before launching one of these, make sure that the TransX plugin is activated under the Modules tab.</p> "
+msgstr "<h1>TransX MFD 模式</h1> <p>这些场景演示了 Duncan Sharpe 开发的 TransX 行星际导航 MFD 的使用方法。</p> <p>启动这些场景之前，请确保在“模块”选项卡中启用了 TransX 插件。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Replay recorded missions</h1> <p>This folder contains playbacks of missions you have recorded earlier.</p> "
+msgstr "<h1>回放已录制的任务</h1> <p>本文件夹包含你之前录制的任务回放。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Quadcopter scenarios</h1> <p>This folder contains scenarios with the Quadcopter vessel.</p> "
+msgstr "<h1>四轴飞行器场景</h1> <p>本文件夹包含使用四轴飞行器（Quadcopter）飞船的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Quicksave scenarios</h1> <p>This folder contains simulation states which have been saved with the Quicksave (Ctrl-S) command.</p> "
+msgstr "<h1>快速存档场景</h1> <p>本文件夹包含使用快速存档（Ctrl-S）命令保存的模拟状态。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Satellites and probes</h1> <p>A collection of Space Shuttle missions with the Hubble Space Telescope (HST) and Long Duration Exposure Facility (LDEF).</p> "
+msgstr "<h1>卫星与探测器</h1> <p>一组使用哈勃空间望远镜（HST）和长期暴露装置（LDEF）的航天飞机任务。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Hubble Space Telescope</h1> <p>The Hubble Space Telescope (HST) is the visible/ultraviolet/near-infrared element of the Great Observatories astronomical program. The spacecraft provides an order of magnitude better resolution than is capable from ground-based telescopes.</p> <p>During initial on-orbit checkout of the Hubble's systems, a flaw in the telescope's main reflective mirror was found that prevented perfect focus of the incoming light. This flaw was caused by the incorrect adjustment of a testing device used in building the mirror. Fortunately, however, Hubble was designed for regular on-orbit maintenance by Shuttle missions. The first servicing mission, STS-61 in December 1993, fully corrected the problem by installing a corrective optics package and upgraded instruments (as well as replacing other satellite components).</p> <p>David Sundstrom's HST model shows off the grappling capabilities of Atlantis' manipulator arm. The arm can be controlled via the control pad (Ctrl-Space).</p> "
+msgstr "<h1>哈勃空间望远镜</h1> <p>哈勃空间望远镜（HST）是“大天文台”天文计划中负责可见光/紫外/近红外波段的设备。它的分辨率比地面望远镜高一个数量级。</p> <p>在哈勃系统进行在轨初始检查期间，发现望远镜主反射镜存在缺陷，无法将入射光完美聚焦。该缺陷源于建造反射镜时所使用的一台测试设备校准不当。幸运的是，哈勃在设计上就支持由航天飞机任务进行定期在轨维护。1993 年 12 月的第一次维护任务 STS-61 通过安装校正光学组件和升级仪器（并更换其他卫星部件）彻底解决了问题。</p> <p>David Sundstrom 制作的 HST 模型展示了亚特兰蒂斯号机械臂的抓取能力。机械臂可通过控制面板（Ctrl-Space）操作。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Long Duration Exposure Facility (LDEF)</h1> <p>The LDEF was a large orbital material research platform containing multiple experiments to test the effect of the outer space environment on electronic systems, materials and spore survival.</p> <p>Deployed in orbit on April 7, 1984 by Shuttle Challenger and intended for retrieval after one year, the LDEF satellite was stranded in orbit for six years after the Challenger accident. The crew of STS-32 recovered the LDEF from its decaying orbit on January 11, 1990, two months before it would have re-entered the Earth's atmosphere and would have been  destroyed.</p> <p>LDEF mesh by Don Gallagher.</p> "
+msgstr "<h1>长期暴露装置（LDEF）</h1> <p>LDEF 是一个大型轨道材料研究平台，搭载了多项实验，用于测试外层空间环境对电子系统、材料和孢子存活的影响。</p> <p>LDEF 于 1984 年 4 月 7 日由“挑战者”号航天飞机部署入轨，原计划一年后回收；然而“挑战者”号事故后，这颗卫星在轨滞留了六年。1990 年 1 月 11 日，STS-32 的机组人员将其从衰减轨道上回收，此时距离它将再入地球大气并烧毁仅剩两个月。</p> <p>LDEF 网格模型由 Don Gallagher 制作。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle-A scenarios</h1> <p>This folder contains scenarios with Roger \"Frying Tiger\" Long's new version of the Shuttle-A transport vessel.</p> "
+msgstr "<h1>Shuttle-A 场景</h1> <p>本文件夹包含使用 Roger “Frying Tiger” Long 的新版 Shuttle-A 运输飞船的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Space Shuttle Atlantis</h1> <p>The new Space Shuttle Atlantis model. Mesh and textures contributed by Don Gallagher (donamy).</p> \n<p>The RMS arm can now be manipulated via a control dialog (Ctrl-Space).</p> \n<p>Atmospheric control surfaces are working in this version, so the final approach phase is a lot more realistic now!</p> "
+msgstr "<h1>航天飞机亚特兰蒂斯号</h1> <p>全新的航天飞机亚特兰蒂斯号模型。网格和纹理由 Don Gallagher（donamy）提供。</p> \n<p>现在可以通过控制对话框（Ctrl-Space）操作 RMS 机械臂。</p> \n<p>此版本中大气控制面已可工作，因此最终进近阶段更加真实！</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Space stations</h1> <p>A collection of space stations featured in the default Orbiter distribution.</p> "
+msgstr "<h1>空间站</h1> <p>一组收录于 Orbiter 默认发行版中的空间站。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Tests</h1> <p>Scenarios to test the integrity of the Orbiter application.</p> "
+msgstr "<h1>测试</h1> <p>用于测试 Orbiter 程序完整性的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>The Solar System</h1> <p>A tour of the solar system. Visit our home system's planets and moons.</p> "
+msgstr "<h1>太阳系</h1> <p>一次太阳系之旅。拜访我们家园系统的行星与卫星。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Earth views</h1> \n<p>A collection of scenarios with views, pre-recorded flyovers and orbits around the home planet.<p> <p>For best results even at low altitude, you should install the high-resolution Earth texture packs from the Orbiter texture repository.</p> "
+msgstr "<h1>地球景观</h1> \n<p>一组包含地球景观、预录飞越和环绕家园行星轨道的场景。<p> <p>为了在低空也能获得最佳效果，建议从 Orbiter 纹理库安装高分辨率地球纹理包。</p>"
+
+msgctxt "scenario.description"
+msgid "A few past and current solar and lunar eclipses.  "
+msgstr "若干过去和近期的日食与月食。"
+
+msgctxt "scenario.description"
+msgid "Orbiter uses improved solutions for its planetary position and velocity calculations. This folder shows a few examples. "
+msgstr "Orbiter 的行星位置与速度计算采用了改进的解法。本文件夹展示了一些示例。"
+
+msgctxt "scenario.description"
+msgid "A set of scenarios recreating historic flybys of Jupiter and its moons by the Voyager and Galileo space probes. They demonstrate the improved long-term accuracy of Orbiter's ephemeris calculation for the Jovian system using GALSAT perturbation code. \nYou will need to apply time compression for these scenarios. "
+msgstr "一组重现旅行者号与伽利略号探测器历史上飞越木星及其卫星的场景。它们展示了 Orbiter 使用 GALSAT 摄动代码对木星系星历计算在长期精度上的改进。\r\n你将需要为这些场景启用时间加速。"
+
+msgctxt "scenario.description"
+msgid "<h1>Tutorials</h1> <p>This folder contains a collection of pre-recorded scenarios demonstrating various procedures and techniques, from launch, rendezvous and docking to a complete lunar transfer.</p> "
+msgstr "<h1>教程</h1> <p>本文件夹包含一组预录场景，演示从发射、交会对接直到完整月球转移的各种流程与技术。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Views</h1> <p>A collection of the new visual features in the 2005 Edition.</p> "
+msgstr "<h1>景观</h1> <p>一组展示 2005 版新视觉特性的场景。</p>"
+
+msgctxt "scenario.description"
+msgid "<h1>Welcome to Orbiter 2024!</h1> "
+msgstr "<h1>欢迎来到 Orbiter 2024！</h1> "
+
+msgctxt "scenario.description"
+msgid "<h1>City lights at night</h1> <p>Improved rendering of city lights: Flying over Tampa/Florida at night.</p> <p>Make sure you have enabled the <i>Planet night lights</i> option in the Launchpad <i>Visual effects</i> tab.</p> "
+msgstr "<h1>夜晚的城市灯光</h1> <p>改进后的城市灯光渲染：夜间飞越佛罗里达州坦帕市。</p> <p>请确保已在启动器“视觉特效”选项卡中启用 <i>行星夜间灯光</i> 选项。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Cruising above Florida</h1> <p>A Glider in atmospheric flight across Florida, showing the new high resolution surface textures to their best advantage.</p> "
+msgstr "<h1>飞越佛罗里达</h1> <p>一架三角滑翔机在佛罗里达上空进行大气飞行，充分展示新的高分辨率地表纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>KSC Update</h1> <p>A Delta-Glider waits for takeoff at SLF Runway 33 of the new and improved Kennedy Space Center.</p> "
+msgstr "<h1>KSC 更新</h1> <p>一架三角滑翔机在全新改进的肯尼迪航天中心 SLF 33 号跑道等待起飞。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>The Solar System</h1> <p>Visit the celestial bodies of the solar system.</p> "
+msgstr "<h1>太阳系</h1> <p>造访太阳系的天体。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Space Shuttle to ISS</h1> <p>This is a pre-recorded tutorial launching Space Shuttle Atlantis on a mission to the International Space Station. It demonstrates the use of the launch autopilot, and techniques for aligning orbital planes, planning a rendezvous with an orbital station, and docking procedures.</p> "
+msgstr "<h1>航天飞机飞往国际空间站</h1> <p>这是一段预录教程，演示亚特兰蒂斯号航天飞机执行飞往国际空间站的任务。它展示了发射自动驾驶的使用，以及轨道面调整、空间站交会规划和对接程序等技巧。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Spotlights</h1> <p>A demonstration of spotlight support in Orbiter. A DeltaGlider with its docking lights is rotating in front of the ISS, as both enter Earth's shadow.</p> <p>Make sure that <i>Local light sources</i> is enabled under the <i>Visual effects</i> tab before running this scenario.</p> "
+msgstr "<h1>聚光灯</h1> <p>演示 Orbiter 的聚光灯支持。一架打开对接灯的三角滑翔机在国际空间站前方旋转，二者一同进入地球阴影。</p> <p>运行此场景前，请确保在“视觉特效”选项卡中启用了 <i>局部光源</i>。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Surface impact model</h1> <p>Orbiter 2016 adds a new dynamic impact model for vessel-surface interactions. Vessels define their impact volume as a convex hull, and, unlike previous versions, can now model surface collisions at any attitude.</p> <p>Docked assemblies can merge their impact volumes and compute their combined surface interaction, a feature missing in the previous Orbiter release.</p> <p>Watch a DG spaceplane crash onto the runway and perform a graceful ballet before coming to rest. Note that inelastic deformations and structural damage are currently not modelled in the default Orbiter vessels.</p> "
+msgstr "<h1>表面撞击模型</h1> <p>Orbiter 2016 为飞船与表面交互引入了新的动态撞击模型。飞船将其撞击体积定义为凸包，并且与旧版本不同，现在可以在任意姿态下模拟表面碰撞。</p> <p>对接组合体可以合并它们的撞击体积并计算组合表面交互，这是此前版本缺失的功能。</p> <p>观看一架 DG 航天飞机撞上跑道，在最终停下之前优雅地翻舞一番。请注意：默认 Orbiter 飞船目前尚未模拟非弹性形变和结构损伤。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>DG at Edwards AFB</h1> <p>A DG spaceplane is ready for takeoff on runway 04R at Edwards Airforce Base.</p> "
+msgstr "<h1>爱德华兹空军基地的 DG</h1> <p>一架 DG 航天飞机在爱德华兹空军基地 04R 号跑道准备起飞。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Mojave Spaceport</h1> <p>Ready for takeoff on runway 26 at Mojave Air and Spaceport.</p> "
+msgstr "<h1>莫哈维航天港</h1> <p>在莫哈维航空航天港 26 号跑道准备起飞。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Mojave to Edwards</h1> <p>A short recorded flight from Mojave Spaceport to Edwards Airforce base next door.</p> <p>To work correctly, this scenario requires the Antelope Valley addon texture pack to be installed. You can get it from the Download page at the <a href=\"http://orbit.medphys.ucl.ac.uk\">Orbiter</a> site.</p> "
+msgstr "<h1>莫哈维到爱德华兹</h1> <p>一段从莫哈维航天港飞往邻近爱德华兹空军基地的短程录像飞行。</p> <p>此场景需要安装羚羊谷附加纹理包才能正常工作。可从 <a href=\"http://orbit.medphys.ucl.ac.uk\">Orbiter</a> 网站的下载页面获取。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Palmdale launchpad</h1> <p>A (fictional) Delta-glider spaceplane ready for liftoff from the (fictional) VTOL launchpad at the (real) Palmdale USAF Plant 42 site.</p> "
+msgstr "<h1>帕姆代尔发射台</h1> <p>一架（虚构的）三角滑翔机航天飞机在（真实的）帕姆代尔美国空军 42 厂区（虚构的）垂直起飞发射台准备升空。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>STS-125 finals at Edwards</h1> <p>Space Shuttle Atlantis returning from the last Hubble servicing mission to runway 22 at Edwards Air Force Base.</p> <p>The approach is from the east over the dry Rogers lakebed. Runway 22 is the marked paved runway.</p> <p>Approach heading is 240 deg (true north).</p> <p>Align with the runway and maintain an initial descent angle of 20 deg.</p> <p>Extend airbrakes [Ctrl-b]. Lower landing gear [g] about 10 seconds before touchdown. Flare before touchdown (pull up the nose) to reduce rate of descent.</p> "
+msgstr "<h1>爱德华兹的 STS-125 最终进近</h1> <p>亚特兰蒂斯号航天飞机完成最后一次哈勃维护任务后，返航降落在爱德华兹空军基地 22 号跑道。</p> <p>进近方向为自东向西，越过干涸的罗杰斯湖床。22 号跑道是标有标线的铺面跑道。</p> <p>进近航向为 240 度（真北）。</p> <p>对准跑道，保持初始下降角 20 度。</p> <p>展开减速板 [Ctrl-b]。在触地前约 10 秒放下起落架 [g]。触地前拉平（抬起机头）以减小下降率。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Orbiter Challenges: 3</h1> <p>This is the same as Challenge 2, but this time you need to consider plane alignments. Minimise fuel use.</p> "
+msgstr "<h1>Orbiter 挑战：3</h1> <p>与挑战 2 相同，但这次需要考虑轨道面调整。尽量节省燃料。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Orbiter Challenges: 4</h1> <p>Land safely at Kennedy Space Center without refueling.</p> "
+msgstr "<h1>Orbiter 挑战：4</h1> <p>在不补充燃料的情况下安全降落在肯尼迪航天中心。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Control surfaces</h1> <p>Use the joystick or keyboard cursor controls to see the Glider's elevons and rudder at work.</p> <p>The airbrake can be deployed with B [+ B] and retracted with Ctrl-B [+ Ctrl-B].</p> "
+msgstr "<h1>三角滑翔机：控制面</h1> <p>使用摇杆或键盘光标键观察滑翔机的升降副翼和方向舵的动作。</p> <p>减速板可用 B [+ B] 展开，用 Ctrl-B [+ Ctrl-B] 收起。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Atmospheric autopilot</h1> <p>This scenario provides a guided tour of the Delta-glider atmospheric autopilot functions. Make sure that the \"Lua MFD\" module is activated under the \"Modules\" tab.</p> "
+msgstr "<h1>三角滑翔机：大气自动驾驶</h1> <p>本场景将引导你了解三角滑翔机的大气自动驾驶功能。请确保已在“模块”选项卡中启用 “Lua MFD” 模块。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Brighton Beach</h1> <p>Launch from the Moon: A Delta-glider ready for takeoff from a pad at Brighton Beach Lunar Spaceport.</p> "
+msgstr "<h1>三角滑翔机：布莱顿海滩</h1> <p>从月球发射：一架三角滑翔机在布莱顿海滩月球航天港的停机坪准备起飞。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Cape Canaveral</h1> <p>A Delta-glider, parked at the visitor parking lot of the Kennedy Space Center - ready for vertical takeoff.</p> <p>For this scenario we use hover engines for vertical liftoff from the pad.</p> <p>Note that the main tank is mostly empty. This ensures that the ship is light enough to be able to lift off on hover engines from Earth's surface. It is more efficient to launch the glider horizontally from a runway. When taking off from the Moon or Mars, this problem doesn't occur because of lower gravity.</p> <p>Before engaging hover engines, activate the automatic hover attitude stabilisation (HOVER ATT CTRL to Auto). This causes the hover engines to modulate their relative thrust to maintain a stable attitude.</p> <p>Now engage the hover engines at about 95% of max thrust, just enough to lift off. Do not push the throttle to 100%, because that leaves no reserves for the differential thrust modulation.</p> <p>At about 100 m altitude, raise the landing gear, engage main engines and pitch up. Disengage hover thrust.</p> \n"
+msgstr "<h1>三角滑翔机：卡纳维拉尔角</h1> <p>一架三角滑翔机停在肯尼迪航天中心访客停车场，准备垂直起飞。</p> <p>本场景使用悬停引擎从停机坪垂直升空。</p> <p>请注意主燃料箱几乎是空的。这能确保飞船足够轻，可以靠悬停引擎从地球表面升空。从跑道水平起飞滑翔机效率更高。从月球或火星起飞时不存在这个问题，因为重力较低。</p> <p>启动悬停引擎之前，请先开启自动悬停姿态稳定（将 HOVER ATT CTRL 设为 Auto）。这样悬停引擎会调节相对推力以保持姿态稳定。</p> <p>现在以约 95% 最大推力启动悬停引擎，刚好足以升空。不要把油门推到 100%，否则就没有余量用于差动推力调节。</p> <p>到达约 100 米高度后，收起起落架，启动主引擎并拉起机头。关闭悬停推力。</p> \n"
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: DG and DG-S</h1> <p>A standard DG Mk4 (left) and a scramjet DG-S (right) showing off their animations. Note the air intakes under the fuselage of the DG-S. Open the control panel (Ctrl-Space) to play with the various elements, or hop into the cockpit (F1) and use the mouse to operate the glider.</p> "
+msgstr "<h1>三角滑翔机：DG 与 DG-S</h1> <p>一架标准 DG Mk4（左）和一架带超燃冲压发动机的 DG-S（右）展示各自的动画效果。注意 DG-S 机身下方的进气道。打开控制面板（Ctrl-Space）操作各个部件，或按 F1 进入座舱，用鼠标操纵滑翔机。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: In orbit</h1> <p>Take control of the latest version of the Delta-glider in orbit.</p> <p>A good opportunity to get familiar with the new panel layout, in particular the revised engine gimbal controls.</p> <p>Also try out the new virtual cockpit mode by pressing F8.</p> <p>Note that this is the standard DG edition of the new Delta-glider, so the scramjet-specific controls of the DG-S version are missing here.</p> <p>Don't forget to have a look out of the cockpit to see the new and improved rendering of Earth's atmospheric haze.</p> "
+msgstr "<h1>三角滑翔机：在轨</h1> <p>在轨道上亲自掌控最新版本的三角滑翔机。</p> <p>这是个熟悉新面板布局的好机会，尤其是改进后的引擎万向节控制。</p> <p>还可以按 F8 体验新的虚拟座舱模式。</p> <p>请注意这是新三角滑翔机的标准 DG 版本，因此没有 DG-S 版本特有的超燃冲压发动机控制。</p> <p>别忘了朝座舱外看看，欣赏新改进的地球大气雾霾渲染效果。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Ready for takeoff</h1> <p>The Scramjet delta-glider (DG-S) is ready for takeoff from runway 33 of the Shuttle Landing Facility (SLF) at Kennedy Space Center.</p> <p>Take off using main engines and climb to 10km. Then try the air-breathing scramjet engines and test the performance for different speeds and altitudes.</p> "
+msgstr "<h1>三角滑翔机：准备起飞</h1> <p>超燃冲压三角滑翔机（DG-S）已在肯尼迪航天中心航天飞机着陆设施（SLF）33 号跑道准备起飞。</p> <p>用主引擎起飞并爬升至 10 公里。然后尝试吸气式超燃冲压发动机，测试不同速度和高度下的性能。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Docked at ISS</h1> <p>Start in a glider docked to the International Space Station.</p> <p>Undock with Ctrl-D. Use the RCS in linear mode to back away from the station.</p> <p>Get some docking practice by targeting a different docking port on the station and flying an approach to the dock.</p> <p>Plan a return to a surface base and deorbit with a retrograde burn.</p> <p>Current location: above central China.</p> "
+msgstr "<h1>三角滑翔机：对接于国际空间站</h1> <p>开始时滑翔机对接在国际空间站上。</p> <p>按 Ctrl-D 解除对接。使用线性模式下的 RCS 从空间站后退。</p> <p>通过瞄准空间站上的另一个对接口并演练进近对接，来练习对接技巧。</p> <p>规划返回地面基地的路线，并用逆行点火脱离轨道。</p> <p>当前位置：中国中部上空。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Glass cockpit</h1> <p>The generic \"glass cockpit\" view has been extended with mouse-activated buttons for MFD displays, RCS and nav modes.</p> "
+msgstr "<h1>三角滑翔机：玻璃座舱</h1> <p>通用的“玻璃座舱”视图新增了鼠标激活按钮，用于 MFD 显示、RCS 和导航模式。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Habana Spaceport</h1> <p>Launch the glider from Habana spaceport at dusk.</p> <p>The ship is too heavy for a vertical liftoff with its hover engines. (Try it!)</p> <p>Instead, taxi to the runway and use main engines for a horizontal takeoff.</p> <p>This DG-S is equipped with scramjet engines which can be operated at airspeeds between Mach 3-8.</p> "
+msgstr "<h1>三角滑翔机：哈瓦那航天港</h1> <p>黄昏时分从哈瓦那航天港发射滑翔机。</p> <p>这艘飞船太重，无法用悬停引擎垂直起飞。（试试看！）</p> <p>改为滑行到跑道，使用主引擎水平起飞。</p> <p>这架 DG-S 配备了超燃冲压发动机，可在 3-8 马赫空速下工作。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Smack!</h1> <p>Featuring the new vessel-vessel docking capabilities: Two delta-gliders about to make contact (rotating for added effect ;-)</p> "
+msgstr "<h1>三角滑翔机：啪！</h1> <p>展示新的飞船对飞船对接能力：两架三角滑翔机即将接触（为增强效果而旋转 ;-)</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Rotation model</h1> <p>Orbiter's rigid body model in action. Check how the angular momentum oscillates between the principal axes of the glider.</p> <p>Try the \"Killrot\" navmode sequence (Numpad-5) for a nice firework of attitude thrusters. Killrot is a very useful tool in many situations.</p> "
+msgstr "<h1>三角滑翔机：旋转模型</h1> <p>Orbiter 的刚体模型实际演示。观察角动量如何在滑翔机的主轴之间振荡。</p> <p>试试“Killrot”导航模式序列（小键盘 5），欣赏姿态推进器的精彩焰火。Killrot 在许多情况下都是非常有用的工具。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Venus descent</h1> <p>You are descending into the thick atmosphere of Venus.</p> <p>If you have selected the complex flight model, then the high atmospheric pressure at lower altitudes will render your engines ineffective, and below an altitude of about 40km they will stop producing thrust altogether. So if you want to keep airborne, you need to stabilise your orbit soon.</p> "
+msgstr "<h1>三角滑翔机：金星下降</h1> <p>你正在降入金星浓厚的太气层。</p> <p>如果选择了复杂飞行模型，低空的高气压会使你的引擎失效，在约 40 公里以下它们将完全停止产生推力。所以若想继续飞行，你需要尽快稳定轨道。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Venus takeoff</h1> <p>You have descended through the thick atmosphere of Venus, and set your glider down on the surface.</p> <p>Luckily, your ship is incredibly sturdy, and can withstand the atmospheric pressure.</p> <p>After admiring the view from the cockpit (an EVA would be unwise in this environment), you decide to take off again and head back.</p> <p>After igniting your engines, you discover a fatal flaw in your mission design: The enormous ambient atmospheric pressure overpowers your engines and prevents them from expelling any exhaust gases. You are stuck!</p> <p>Your only option at this point is to disable the complex flight model and cheat the laws of physics.</p> "
+msgstr "<h1>三角滑翔机：金星起飞</h1> <p>你已经穿过金星浓厚的太气层，将滑翔机降落在表面。</p> <p>幸运的是，你的飞船异常坚固，能够承受大气压力。</p> <p>在座舱里欣赏过景色之后（在这种环境里出舱行走可不明智），你决定再次起飞返航。</p> <p>点燃引擎后，你发现了任务设计中的一个致命缺陷：巨大的环境大气压力压制了引擎，使其无法排出任何废气。你被困住了！</p> <p>此时唯一的选择是关闭复杂飞行模型，作弊绕过物理定律。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Vessel-vessel</h1> <p>Two delta-gliders docked in orbit. The camera focus is on the PB shuttle in the background to provide an inertial frame of reference. Try the attitude controls on the glider to see how the body dynamics are affected by the \"super-structure\" assembly. For example, note how different roll and pitch moments behave. Or switch the camera focus to one of the gliders, then get the assembly to spin with a short hover thrust burst, and undock with Ctrl-D!</p> "
+msgstr "<h1>三角滑翔机：飞船对飞船</h1> <p>两架三角滑翔机对接在轨道上。相机焦点设在背景中的 PB 航天飞机上，以提供惯性参考系。试试滑翔机上的姿态控制，看看“超级结构”组合体如何影响体动力学。例如，注意不同的滚转和俯仰力矩表现。或者把相机焦点切换到其中一架滑翔机，用短暂的悬停推力让组合体旋转，然后按 Ctrl-D 解除对接！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Delta-glider: Virtual cockpit</h1> <p>After launching this scenario, click the right mouse button and drag the mouse to look around in the cockpit. Check out the various instruments, controls and the head-up display. Use F8 to switch to different cockpit modes. For more info on the Delta-glider, open help (Alt-F1) during the simulation, and click on the Vessel tab.</p> "
+msgstr "<h1>三角滑翔机：虚拟座舱</h1> <p>加载此场景后，点击鼠标右键并拖动鼠标，即可环顾座舱。观察各种仪表、控制器和抬头显示器。按 F8 切换不同的座舱模式。关于三角滑翔机的更多信息，可在模拟过程中打开帮助（Alt-F1），并点击 Vessel 选项卡。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Dragonfly</h1> <p>The Dragonfly, a versatile orbital payload pusher.</p> <p>To familiarise yourself with Radu Poenaru's panels and systems simulation, see the Dragonfly Operations Handbook.</p> "
+msgstr "<h1>蜻蜓号</h1> <p>蜻蜓号，一款多用途轨道载荷推进飞船。</p> <p>要熟悉 Radu Poenaru 的面板和系统模拟，请参阅《蜻蜓号操作手册》。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Dragonfly: Station building</h1> <p>Assembling the components of a custom space station with the new Dragonfly class tug.</p> "
+msgstr "<h1>蜻蜓号：空间站建造</h1> <p>使用新型蜻蜓号拖船组装一座自定义空间站的各个部件。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Dragonfly: Powered up</h1> <p>A fully powered-up and functional Dragonfly and a couple of docking modules for practice!</p> "
+msgstr "<h1>蜻蜓号：满功率</h1> <p>一艘完全上电并正常工作的蜻蜓号，以及几个用于练习的对接模块！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Launch into sunrise</h1> <p>Prepare for an early morning launch with Space Shuttle Atlantis. The sun has not yet risen at the Cape, but you will catch the first rays of the morning sun on your way to orbit!</p> "
+msgstr "<h1>发射迎接日出</h1> <p>准备与亚特兰蒂斯号航天飞机进行清晨发射。此时太阳尚未在卡纳维拉尔角升起，但你将在前往轨道的途中迎接到清晨的第一缕阳光！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>HST animation</h1> <p>David Sundstrom's Hubble Space telescope unfolds its solar arrays.</p> "
+msgstr "<h1>HST 动画</h1> <p>David Sundstrom 制作的哈勃空间望远镜展开其太阳能帆板。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Solar sail</h1> <p>Solar sail. Please enable solar radiation pressure to use this scenario</p> "
+msgstr "<h1>太阳帆</h1> <p>太阳帆。请启用太阳辐射压力以使用此场景。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Lunar tranfer - Stage 1</h1> <p>Before ejection from low Earth orbit using the Transfer MFD.</p> "
+msgstr "<h1>月球转移 - 阶段 1</h1> <p>使用 Transfer MFD 从低地球轨道脱离之前。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Lunar transfer - Stage 2</h1> <p>After ejection burn.</p> "
+msgstr "<h1>月球转移 - 阶段 2</h1> <p>脱离点火之后。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle tidal force example</h1> <p>Watch Space Shuttle Atlantis stabilise its attitude in orbit under the influence of gravity gradient torque.</p> <p>Make sure that \"gravity-gradient torque\" is enabled in the Launchpad dialog.</p> <p>Time-accelerate up to 100x. It takes about a day to reach equilibrium (tail-down or head-down attitude).</p> "
+msgstr "<h1>航天飞机潮汐力示例</h1> <p>观察亚特兰蒂斯号航天飞机在重力梯度力矩作用下在轨稳定姿态。</p> <p>请确保在启动器对话框中启用了“重力梯度力矩”。</p> <p>将时间加速到 100 倍。大约需要一天才能达到平衡（尾部朝下或头部朝下的姿态）。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>DG dumbbell</h1> <p>Two connected delta gliders demonstrate the effect of gravitational field gradients on distributed vessel masses. The system swings around its tidally locked equilibrium state. The camera is pointing towards the centre of the Earth to demonstrate the effect more clearly.</p> <p>Make sure that \"gravity-gradient torque\" is enabled in the Launchpad dialog. Speed up the simulation to 100x.</p> "
+msgstr "<h1>DG 哑铃</h1> <p>两架相连的三角滑翔机演示引力场梯度对分布式飞船质量的影响。系统围绕其潮汐锁定平衡态摆动。相机指向地球中心，以更清楚地演示该效应。</p> <p>请确保在启动器对话框中启用了“重力梯度力矩”。将模拟加速到 100 倍。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Solar sail</h1> <p>Initial test for a solar sail. Demonstrator for radiation pressure effects. Make sure to enable 'Radiation pressure' in the Launchpad Parameters tab.</p> "
+msgstr "<h1>太阳帆</h1> <p>太阳帆的初始测试。辐射压力效应的演示。请确保在启动器参数选项卡中启用了“辐射压力”。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Spin stabilisation</h1> <p>The attitude of an object can be stabilised by spinning it rapidly around one of its axes of symmetry. In this scenario, two rockets are placed in a low orbit. One is spinning around its axis at 1Hz, the other is not. The spinning rocket maintains its global orientation, while the other starts to rotate under the influence of gravity gradient torque.</p> <p>Speed up to 100x and watch the behaviour of both rockets.</p> <p>Try killing the angular velocity of the spinning rocket (using the Scenario Editor) and see what happens.</p> <p>This scenario requires gravity gradient torque enabled in the \"Parameters\" tab of the Orbiter Launchpad.</p> "
+msgstr "<h1>自旋稳定</h1> <p>将物体绕其对称轴快速旋转可以稳定其姿态。在本场景中，两枚火箭被置于低轨道。一枚以 1Hz 绕轴自旋，另一枚不自旋。自旋的火箭保持其全局朝向，而另一枚在重力梯度力矩作用下开始旋转。</p> <p>加速到 100 倍，观察两枚火箭的行为。</p> <p>试着消除自旋火箭的角速度（使用场景编辑器），看看会发生什么。</p> <p>此场景需要 Orbiter 启动器“参数”选项卡中启用重力梯度力矩。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Geostationary orbit</h1> <p>A geostationary orbit is a circular orbit above Earth's equator (inclination 0 degrees) whose orbital period is equal to the length of a sidereal day (23 hours, 56 minutes and 4 seconds). This corresponds to a semi-major axis of about 42160 km. A satellite placed in such an orbit remains stationary above the same point on the equator, which is quite useful for many applications, such as communication satellites.</p> <p>In this scenario, a glider is placed in a geostationary orbit above Africa's east coast. Note that the vessel indicator in the Map MFD does not move. Try opening a surface MFD and check the ground speed readout.</p> "
+msgstr "<h1>地球静止轨道</h1> <p>地球静止轨道是位于地球赤道上方的圆轨道（倾角 0 度），其轨道周期等于一个恒星日的长度（23 小时 56 分 4 秒）。这对应的半长轴约为 42160 公里。置于这种轨道上的卫星将静止在赤道上的同一点上方，这对许多应用（如通信卫星）非常有用。</p> <p>在本场景中，一架滑翔机被置于非洲东海岸上方的地球静止轨道上。注意 Map MFD 中的飞船指示器不会移动。试着打开 Surface MFD 并查看地面速度读数。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Lagrange point</h1> <p>Lagrange points are equilibrium points in the gravitational potential field generated by a two-body system. Two of these points (called \"L4\" and \"L5\") are stable if the orbits are circular and field perturbations can be neglected.</p> <p>This means that a spacecraft \"parked\" in one of these points (with the correct initial velocity) retains its relative position to the two bodies indefinitely. In real life, the craft would have to make regular course corrections to avoid being ejected from the Lagrange point.</p> <p>In this scenario, a Delta-glider is placed in the L4 point of the Earth-Moon system. It is orbiting Earth 60 degrees ahead of the Moon. Without correction burns, the glider will be ejected after a while.</p> "
+msgstr "<h1>拉格朗日点</h1> <p>拉格朗日点是二体系统产生的引力势场中的平衡点。其中两个点（称为“L4”和“L5”）在轨道为圆形且场摄动可忽略时是稳定的。</p> <p>这意味着“停泊”在这些点之一（具有正确的初始速度）的航天器将无限期保持其相对于两个天体的位置。在现实生活中，航天器必须定期进行航向修正，以避免被从拉格朗日点弹出。</p> <p>在本场景中，一架三角滑翔机被置于地月系统的 L4 点。它在地球轨道上位于月球前方 60 度。如果不进行修正点火，滑翔机过一段时间后将被弹出。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Molniya orbit</h1> <p>Molniya orbits are highly eccentric Earth orbits with periods of approximately 12 hours (2 revolutions per day). The orbital inclination is chosen so the rate of change of perigee is zero, thus both apogee and perigee can be maintained over fixed latitudes. This condition occurs at inclinations of 63.4 degrees and 116.6 degrees. For these orbits the argument of perigee is typically placed in the southern hemisphere, so the satellite remains above the northern hemisphere near apogee for approximately 11 hours per orbit. This orientation can provide good ground coverage at high northern latitudes. (from: Orbital Mechanics, http://www.braeunig.us/space/orbmech.htm)</p> <p>The orbit in this example places a Dragonfly once a day alternatingly above North America and above central Asia.</p> "
+msgstr "<h1>闪电轨道</h1> <p>闪电轨道是周期约 12 小时（每天 2 圈）的高偏心率地球轨道。轨道倾角的选择使得近地点变化率为零，因此远地点和近地点都能保持在固定的纬度上。这种情况出现在倾角 63.4 度和 116.6 度时。对于这些轨道，近地点幅角通常位于南半球，因此卫星在每次轨道运行中约有 11 小时停留在北半球远地点附近。这种朝向可以在高北纬地区提供良好的地面覆盖。（来源：Orbital Mechanics，http://www.braeunig.us/space/orbmech.htm）</p> <p>本示例中的轨道使蜻蜓号每天交替位于北美和中亚上方。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Orbiting Phobos</h1> <p>Entering a true orbit around the Mars moon Phobos is not possible even at low altitude, because its weak gravity is entirely dominated by the gravitational field of the much more massive Mars.</p> <p>This scenario demonstrates a Phobos 'pseudo-orbit' which is actually an orbit around Mars, with the same orbital period as Phobos, and slightly perturbed eccentricity.</p> <p>Try also time acceleration and the external preset view (Ctrl-F1, Preset).</p> "
+msgstr "<h1>环绕火卫一</h1> <p>即使在低空，也无法进入绕火星卫星火卫一的真正轨道，因为其微弱的引力完全被质量大得多的火星引力场主导。</p> <p>本场景演示一种火卫一“伪轨道”，它实际上是绕火星运行的轨道，具有与火卫一相同的轨道周期，以及轻微摄动的偏心率。</p> <p>还可以试试时间加速和外部预设视角（Ctrl-F1，Preset）。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Sun-synchronous orbit</h1> <p>A sun-synchronous orbit is a near-polar orbit with an inclination of slightly more than 90 degrees. At this inclination, the line of nodes moves at a rate of 360 degrees per year (nearly 1 degree per day), due to the nonspherical distortion of Earth's gravitational field. Thus, the orbital plane retains its relative orientation with respect to the sun.</p> <p>In this example, the orbit is set up to continuously move along the Earth's terminator.</p> <p>Note: You must activate \"nonspherical gravity sources\" in the Launchpad for this scenario to work!</p> "
+msgstr "<h1>太阳同步轨道</h1> <p>太阳同步轨道是倾角略大于 90 度的近极地轨道。由于地球引力场的非球形畸变，在这种倾角下，升交点线以每年 360 度（约每天 1 度）的速度移动。因此，轨道面保持其相对于太阳的朝向。</p> <p>在此示例中，轨道的设置使其持续沿地球晨昏线移动。</p> <p>注意：必须在启动器中激活“非球形引力源”，此场景才能工作！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Tundra orbit</h1> <p>This is a highly elliptic geosynchronous orbit with an orbital period of one sidereal day (23 hours, 56 minutes 4 seconds). This type of orbit allows to \"park\" a satellite at high latitudes for extended periods of time, when it moves through its apoapsis.</p> "
+msgstr "<h1>苔原轨道</h1> <p>这是一种高椭圆地球同步轨道，轨道周期为一个恒星日（23 小时 56 分 4 秒）。这种轨道允许卫星在通过远地点时在高纬度地区长时间“停泊”。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Playback: Atlantis undocking</h1> <p>Watch Space Shuttle Atlantis undocking from the International Space Station and preparing for a return to Earth.</p> "
+msgstr "<h1>回放：亚特兰蒂斯号解除对接</h1> <p>观看亚特兰蒂斯号航天飞机从国际空间站解除对接，并准备返回地球。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Playback: Glider in orbit 1</h1> <p>The Delta-glider performs some attitude maneuvers in orbit, using its Reaction Control System. Note how the rotation oscillates between different vessel axes due to its inertia properties.</p> "
+msgstr "<h1>回放：在轨滑翔机 1</h1> <p>三角滑翔机在轨道上使用反作用控制系统执行一些姿态机动。注意由于其惯性特性，旋转如何在不同飞船轴之间振荡。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Playback: Glider in orbit 2</h1> <p>Showcasing the Delta-glider animations:</p> <p>A DG opens its nosecone, airlocks and top hatch. The radiator is deployed, and for good measure, the landing gear lowered.</p> "
+msgstr "<h1>回放：在轨滑翔机 2</h1> <p>展示三角滑翔机的动画：</p> <p>一架 DG 打开机头锥、气闸和顶部舱门。散热器展开，并且为了更全面，还放下了起落架。</p> "
+
+msgctxt "scenario.description"
+msgid "Orbiter saved state at T = 80 "
+msgstr "Orbiter 在 T = 80 时的保存状态 "
+
+msgctxt "scenario.description"
+msgid "Orbiter saved state at T = 1 "
+msgstr "Orbiter 在 T = 1 时的保存状态 "
+
+msgctxt "scenario.description"
+msgid "Orbiter saved state at T = 21 "
+msgstr "Orbiter 在 T = 21 时的保存状态 "
+
+msgctxt "scenario.description"
+msgid "<h1>HST launch (Mission STS-31R)</h1> <p>Space Shuttle Atlantis is ready for launching the Hubble Space Telescope from Pad 39B at the Kennedy Space Center.</p> <p>Historically, mission STS-31R was flown by Space Shuttle Discovery, launched on 24 April 1990. In Orbiter, Atlantis is repurposed for the mission.</p> "
+msgstr "<h1>HST 发射（任务 STS-31R）</h1> <p>亚特兰蒂斯号航天飞机已在肯尼迪航天中心 39B 发射台准备发射哈勃空间望远镜。</p> <p>历史上，STS-31R 任务由发现号航天飞机执行，于 1990 年 4 月 24 日发射。在 Orbiter 中，该任务改由亚特兰蒂斯号执行。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>HST orbit deployment (Mission STS-31R)</h1> <p>The Hubble Space Telescope is being pulled out of the Shuttle Cargo Bay. Complete the deployment operation using the Manipulator Arm control pad (Ctrl-Space). After detaching the telescope, switch focus (F3) to the HST and unfold the solar arrays (Ctrl-3), deploy the high-gain antennae (Ctrl-1), and open the main telescope hatch (Ctrl-2).</p> "
+msgstr "<h1>HST 入轨部署（任务 STS-31R）</h1> <p>哈勃空间望远镜正从航天飞机货舱中被拉出。使用机械臂控制面板（Ctrl-Space）完成部署操作。将望远镜分离后，按 F3 将焦点切换到 HST，展开太阳能帆板（Ctrl-3），部署高增益天线（Ctrl-1），并打开主望远镜舱门（Ctrl-2）。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>HST servicing mission 1 (STS-61)</h1> <p>After discovering major problems with Hubble's primary mirror, mission STS-61 is scheduled to capture the telescope and install the COSTAR corrective optics package and the Wide Field and Planetary Camera 2 (WFPC2).</p> <p>In this scenario, the Shuttle orbiter has already been maneuvered close to Hubble's position. Move Atlantis into position using linear RCS thrusters, and grapple with the manipulator arm. Use the Manned Maneuvering Unit (MMU) for an EVA to perform the instrument replacements. (Keyboard: E)</p> <p>In a departure from the historic mission, you can also try to return Hubble to Earth. Switch focus to the HST to retract solar arrays, antennae and telescope hatch, then stow the telescope in the Shuttle cargo bay. Return your valuable payload back to KSC.</p> "
+msgstr "<h1>HST 第一次维护任务（STS-61）</h1> <p>在发现哈勃主反射镜存在重大问题后，STS-61 任务计划捕获望远镜并安装 COSTAR 校正光学组件和宽视场行星相机 2（WFPC2）。</p> <p>在本场景中，航天飞机轨道器已经机动到哈勃附近。使用线性 RCS 推进器将亚特兰蒂斯号移动到适当位置，并用机械臂抓取。使用载人机动单元（MMU）进行舱外活动以完成仪器更换。（键盘：E）</p> <p>与历史任务不同的是，你还可以尝试将哈勃带回地球。将焦点切换到 HST，收起太阳能帆板、天线和望远镜舱门，然后将望远镜收入航天飞机货舱。将你宝贵的载荷带回肯尼迪航天中心。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>LDEF deployment</h1> <p>Deploy the LDEF (Long Duration Exposure Facility) platform in orbit using the Shuttle's remote manipulator arm. Press Ctrl-Space and pick \"RMS operation\" to bring up the dialog for controlling the arm.</p> <p>After releasing the satellite, return the Shuttle back to Kennedy Space Center.</p> "
+msgstr "<h1>LDEF 部署</h1> <p>使用航天飞机的遥控机械臂在轨道上部署 LDEF（长期暴露装置）平台。按 Ctrl-Space 并选择“RMS operation”打开控制机械臂的对话框。</p> <p>释放卫星后，将航天飞机返回肯尼迪航天中心。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>LDEF retrieval</h1> <p>Originally, the retrieval of the LDEF (Long Duration Exposure Facility) from orbit was planned for March 19, 1985. However, the schedule slipped, also because of the Challenger disaster. It was finally returned from orbit by Shuttle mission STS-32 on January 12, 1990, shortly before it would have burned up in the atmosphere.</p> <p>Your mission: Launch the Space Shuttle from Kennedy Space Center pad L39A to retrieve the LDEF satellite from orbit.</p> <p>Use the ascent autopilot MFD mode to program launch azimuth 90 (due east) and orbit altitude 330 km. The LDEF passes over Cape Canaveral in its next orbit, so your launch window is open.</p> "
+msgstr "<h1>LDEF 回收</h1> <p>最初，LDEF（长期暴露装置）的轨道回收计划于 1985 年 3 月 19 日进行。然而由于挑战者号事故等原因，日程被推迟。最终，航天飞机 STS-32 任务于 1990 年 1 月 12 日将其从轨道回收，此时距离它在大气中烧毁仅剩很短时间。</p> <p>你的任务：从肯尼迪航天中心 L39A 发射台发射航天飞机，从轨道回收 LDEF 卫星。</p> <p>使用上升自动驾驶 MFD 模式，设定发射方位角 90（正东）和轨道高度 330 公里。LDEF 将在下一圈经过卡纳维拉尔角，因此你的发射窗口是开放的。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>ISS approach</h1> <p>Lined up for docking at the International Space Station.</p> <p>Watch the approach path indicator on your left MFD and the HUD approach markers while closing in on the ISS.</p> <p>Use your linear RCS (Reaction control system) thrusters to keep aligned with the approach path.</p> <p>Your final closing velocity should be less than 0.1 m/s.</p> "
+msgstr "<h1>接近国际空间站</h1> <p>已对准国际空间站准备对接。</p> <p>在接近国际空间站时，注意左侧 MFD 上的进近路径指示器和 HUD 进近标记。</p> <p>使用线性 RCS（反作用控制系统）推进器保持与进近路径对齐。</p> <p>你的最终接近速度应小于 0.1 米/秒。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Olympus Spaceport on Mars</h1> <p>Start in a Shuttle-A class transport from Olympus spaceport on Mars, located to the south of Olympus Mons.</p> "
+msgstr "<h1>火星奥林匹斯航天港</h1> <p>从火星奥林匹斯航天港出发，驾驶一艘 Shuttle-A 级运输飞船；该航天港位于奥林匹斯山南侧。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle-A: Docked at ISS</h1> <p>Begin this simulation in a Shuttle-A class vessel docked to the ISS.</p> "
+msgstr "<h1>Shuttle-A：对接于国际空间站</h1> <p>以一艘对接在国际空间站上的 Shuttle-A 级飞船开始此模拟。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle-A drop</h1> <p>Shortly after re-entry, ready to drop the cargo and return to LEO.</p> "
+msgstr "<h1>Shuttle-A 空投</h1> <p>再入之后不久，准备投下货物并返回低地球轨道。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle-A launch</h1> <p>A Shuttle-A class transport vessel is ready for take-off from Habana International Spaceport.</p> <p>This vessel class is primarily used for orbital operations and low-gravity low-atmosphere planet descents. Launching it from Earth can be a challenge.</p> <p>To take off, you need the auxiliary pods in hover configuration in addition to the standard hover thrusters.</p> <p>Once free of the pad, set a climb angle of 60 deg. and adjust hovers to maintain zero angle of attack.</p> <p>As you leave the lower atmosphere and gather speed, reduce your climb angle and slowly reduce hover thrust.</p> <p>You should just about be able to make LEO before running out of fuel.</p> "
+msgstr "<h1>Shuttle-A 发射</h1> <p>一艘 Shuttle-A 级运输飞船已在哈瓦那国际航天港准备起飞。</p> <p>该船级主要用于轨道操作以及低重力、低大气行星的下降。从地球发射它可能颇具挑战。</p> <p>要起飞，除了标准悬停推进器外，还需要辅助吊舱处于悬停配置。</p> <p>离开停机坪后，设定 60 度爬升角，并调整悬停推力以保持零攻角。</p> <p>随着你离开低层大气并加速，减小爬升角并逐渐减小悬停推力。</p> <p>你应该刚好能在燃料耗尽前进入低地球轨道。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Shuttle-A: On the Moon</h1> <p>Start a delivery trip from Brighton Beach. Drop the 120 tons into the Indian Ocean, then return to LEO and back to Brighton Beach for an 8 days trip. Needs accurate orbit planning as fuel is limited.</p> "
+msgstr "<h1>Shuttle-A：在月球上</h1> <p>从布莱顿海滩开始一次运输任务。将 120 吨货物投放到印度洋，然后返回低地球轨道并回到布莱顿海滩，全程 8 天。燃料有限，需要进行精确的轨道规划。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis cockpit</h1> <p>A virtual cockpit for Space Shuttle Atlantis with partial functionality.</p> <p>Have a look around the flight deck and enjoy the view of Earth through the windows.</p> <p>Commander, pilot and payload specialist positions can be switched with Ctrl-LeftArrow, Ctrl-RightArrow and Ctrl-DownArrow.</p> From the payload specialist position, you also have access to panel R13L which implements payload bay door operations.</p> "
+msgstr "<h1>亚特兰蒂斯号座舱</h1> <p>亚特兰蒂斯号航天飞机的虚拟座舱，具有部分功能。</p> <p>环顾驾驶舱，欣赏窗外地球的景色。</p> <p>指挥官、飞行员和载荷专家位置可通过 Ctrl-左方向键、Ctrl-右方向键和 Ctrl-下方向键切换。</p> 从载荷专家位置，你还可以操作 R13L 面板，执行货舱门操作。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis docked at ISS</h1> <p>Start in Space Shuttle Atlantis, docked at the International Space Station.</p> "
+msgstr "<h1>亚特兰蒂斯号对接于国际空间站</h1> <p>以对接在国际空间站的亚特兰蒂斯号航天飞机开始。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Space Shuttle final approach</h1> <p>Final approach to SLF runway 33 at the Kennedy Space Center.</p> <p>Initially pitch down to -15°. Use the PAPI indicators ahead of the runway for glideslope adjustment. Use the split rudder speed brake (Ctrl-B) to bleed off airspeed.</p> <p>On approach, slowly raise the nose to touch down with an AOA of approx. +10°. Lower your gear during the final flare-up, about 10 seconds before touchdown. Touchdown speed is approximately 100 m/s.</p> "
+msgstr "<h1>航天飞机最终进近</h1> <p>在肯尼迪航天中心 SLF 33 号跑道进行最终进近。</p> <p>开始时俯冲到 -15 度。使用跑道前方的 PAPI 指示器调整下滑道。使用分裂式方向舵减速板（Ctrl-B）降低空速。</p> <p>进近时缓慢抬起机头，以约 +10 度攻角触地。在最终拉平阶段、触地前约 10 秒放下起落架。触地速度约为 100 米/秒。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis ISS resupply</h1> <p>Start the Simulator with Atlantis docked to the ISS. The Leonardo MPLM is in the Atlantis cargo bay.</p> "
+msgstr "<h1>亚特兰蒂斯号国际空间站补给</h1> <p>以亚特兰蒂斯号对接在国际空间站的状态启动模拟器。莱昂纳多号 MPLM 位于亚特兰蒂斯号货舱中。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis landing preparation</h1> <p>Line up with SLF runway 33 and touch down with Atlantis.</p> <p>Remember to deploy the airbrake surfaces (Ctrl-B) and lower the landing gear (G) before the final flare.</p> "
+msgstr "<h1>亚特兰蒂斯号着陆准备</h1> <p>对准 SLF 33 号跑道并驾驶亚特兰蒂斯号触地。</p> <p>记住在最终拉平前展开减速板（Ctrl-B）并放下起落架（G）。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis MMU satellite repair</h1> <p>Fly to the Carina with the MMU (Manned Maneuvering Unit) to make Emergency Repairs!</p> <p>Press 'E' to start your EVA mission, followed by 'Ctrl-D' to push away from the airlock.</p> <p>Once you are free of the airlock, tilt backwards using 'Numpad2'. The satellite should soon come into view trailing the shuttle.</p> "
+msgstr "<h1>亚特兰蒂斯号 MMU 卫星维修</h1> <p>使用 MMU（载人机动单元）飞往卡琳娜号进行紧急维修！</p> <p>按“E”开始舱外活动任务，然后按“Ctrl-D”从气闸推出。</p> <p>一旦离开气闸，使用“小键盘 2”向后倾斜。卫星很快就会出现在航天飞机后方视野中。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis reentry scenario 1</h1> <p>Crossing the north American west coast line, 4500km to Cape Canaveral.</p> "
+msgstr "<h1>亚特兰蒂斯号再入场景 1</h1> <p>正在穿越北美西海岸线，距卡纳维拉尔角 4500 公里。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis reentry scenario 2</h1> <p>Preparing for final approach, 1500km to touchdown.</p> "
+msgstr "<h1>亚特兰蒂斯号再入场景 2</h1> <p>准备最终进近，距触地 1500 公里。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis launch</h1> <p>Start this scenario with Space Shuttle Atlantis on Launchpad 39B ready for liftoff</p> <p>The payload consists of a Carina crew rescue vehicle prototype. It can be used for orbital payload release and recapture exercises.</p> Contains the latest simulation state. "
+msgstr "<h1>亚特兰蒂斯号发射</h1> <p>以亚特兰蒂斯号航天飞机在 39B 发射台准备升空的状态开始此场景</p> <p>载荷包括一艘卡琳娜号乘员救援飞船原型。它可用于轨道载荷释放与回收练习。</p> 包含最新的模拟状态。 "
+
+msgctxt "scenario.description"
+msgid "<h1>Atlantis satellite release</h1> <p>Jettison a Satellite from the Atlantis payload bay.</p> "
+msgstr "<h1>亚特兰蒂斯号卫星释放</h1> <p>从亚特兰蒂斯号货舱中弹射一颗卫星。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Blue Danube</h1> <p>It is not quite the Station-V from 2001: Odyssee in Space (which is available as a 3rd party addon), but the principle is the same: Dock the Shuttle-A freighter at the docking port in the hub of the rotating station.</p> <p>The rotation has already been synchronised to make your life easier.</p> "
+msgstr "<h1>蓝色多瑙河</h1> <p>它并不完全是《2001 太空漫游》中的五号空间站（后者可作为第三方插件获得），但原理相同：将 Shuttle-A 货船停靠在旋转空间站中心的对接口上。</p> <p>旋转已经同步好，以方便你的操作。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>International Space Station</h1> \n<p>Start the Simulator with Atlantis docked to the ISS. The Leonardo MPLM is in the Atlantis cargo bay.</p> \n<p>ISS model by Andrew Farnaby (F-A-D).</p> "
+msgstr "<h1>国际空间站</h1> \n<p>以亚特兰蒂斯号对接在国际空间站的状态启动模拟器。莱昂纳多号 MPLM 位于亚特兰蒂斯号货舱中。</p> \n<p>国际空间站模型由 Andrew Farnaby（F-A-D）制作。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Light and darkness</h1> <p>Sunrise in space: See the International Space Station emerge from Earth's shadow.</p> <p>Orbiter now supports shadowing of vessels by planets.</p> "
+msgstr "<h1>光与暗</h1> <p>太空日出：观看国际空间站从地球阴影中驶出。</p> <p>Orbiter 现在支持行星对飞船的阴影遮挡。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Mir</h1> \n<p>Burn-up? What burn-up? Space station Mir is back in orbit. Mir's orbital plane has been rotated to make it an ideal platform for lunar transits.</p> \n<p>Mir model by Jason Benson (agent036).</p> "
+msgstr "<h1>和平号</h1> \n<p>烧毁？什么烧毁？和平号空间站已重返轨道。和平号的轨道面已被旋转，使其成为月球凌日观测的理想平台。</p> \n<p>和平号模型由 Jason Benson（agent036）制作。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Lua script unit tests</h1> A test suite for Orbiter's Lua script interface. "
+msgstr "<h1>Lua 脚本单元测试</h1> Orbiter Lua 脚本接口的测试套件。 "
+
+msgctxt "scenario.description"
+msgid "<h1>Dione</h1> <p>Dione with Saturn in the background and an edge-on view of the ring system. Red Titan is just visible above the plane of the rings.</p> "
+msgstr "<h1>土卫四</h1> <p>土卫四，背景是土星，以及侧视的环系。红色的土卫六刚好在环面之上可见。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Homeworld: The Blue Planet.</h1> <p>A list of sights and places can be selected from the Preset list of the Camera dialog (Ctrl-F1).</p> <p>For most spectacular results, make sure you have a high-resolution Earth texture packs installed.</p> "
+msgstr "<h1>家园：蓝色星球</h1> <p>可以从相机对话框（Ctrl-F1）的预设列表中选择一系列景观和地点。</p> <p>为了获得最壮观的效果，请确保安装了高分辨率地球纹理包。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>In low orbit over Africa</h1> <p>In low orbit crossing over central Africa, with Lake Victoria below.</p> "
+msgstr "<h1>非洲上空低轨道</h1> <p>低轨道穿越非洲中部，下方是维多利亚湖。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>The Great Lakes</h1> <p>Specular reflection from water surfaces in northern America.</p> "
+msgstr "<h1>五大湖</h1> <p>北美洲水面上的镜面反射。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>The Himalayas</h1> <p>Crossing over the roof of the world.</p> "
+msgstr "<h1>喜马拉雅山脉</h1> <p>飞越世界屋脊。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Enceladus</h1> <p>Saturn moons: Enceladus. Now with new textures from the Cassini mission.</p> "
+msgstr "<h1>土卫二</h1> <p>土星卫星：土卫二。现已采用卡西尼任务的新纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Galilean system view</h1> <p>View of Europa, with Jupiter in the background and Io passing below.</p> "
+msgstr "<h1>伽利略卫星系统视图</h1> <p>木卫二，背景是木星，木卫一从下方掠过。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Grand tour</h1> <p>A few vistas from around our Solar System. To visit them, launch Orbiter, then open the Camera dialog (Ctrl-F1), click the Preset button, and select views from the list.</p> "
+msgstr "<h1>宏伟之旅</h1> <p>太阳系各处的一些景观。要游览它们，启动 Orbiter，然后打开相机对话框（Ctrl-F1），点击预设按钮，并从列表中选择视图。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Iapetus</h1> <p>Saturn moons: Iapetus. Now with new textures from the Cassini mission.</p> "
+msgstr "<h1>土卫八</h1> <p>土星卫星：土卫八。现已采用卡西尼任务的新纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Mimas</h1> <p>Saturn moons: Mimas. Now with new textures from the Cassini mission.</p> "
+msgstr "<h1>土卫一</h1> <p>土星卫星：土卫一。现已采用卡西尼任务的新纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Moon</h1> <p>Orbiter now uses Jens Meyer's new Moon textures by default.</p> "
+msgstr "<h1>月球</h1> <p>Orbiter 现在默认使用 Jens Meyer 制作的新月球纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Rhea</h1> <p>Saturn moons: Rhea. Now with new textures from the Cassini mission.</p> "
+msgstr "<h1>土卫五</h1> <p>土星卫星：土卫五。现已采用卡西尼任务的新纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Saturn</h1> <p>A view of Saturn and its ring system.</p> "
+msgstr "<h1>土星</h1> <p>土星及其环系的视图。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Tethys</h1> <p>Saturn moons: Tethys with large impact crater. Now with new textures from the Cassini mission.</p> <p>The orange object in the background is Titan, another of Saturn's moons.</p> "
+msgstr "<h1>土卫三</h1> <p>土星卫星：土卫三，带有大型撞击坑。现已采用卡西尼任务的新纹理。</p> <p>背景中的橙色物体是土卫六，土星的另一颗卫星。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Titan</h1> <p>Saturn moons: Titan. Now with atmosphere, cloud layer and new surface textures from the Cassini mission.</p> "
+msgstr "<h1>土卫六</h1> <p>土星卫星：土卫六。现已具有大气、云层以及卡西尼任务的新地表纹理。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Today</h1> <p>The solar system at present.</p> "
+msgstr "<h1>今天</h1> <p>当前的太阳系。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Triton</h1> <p>Orbiter now includes Robert Stettner's Uranus and Neptune moons package. Here we have Neptune's colourful moon Triton.</p> "
+msgstr "<h1>海卫一</h1> <p>Orbiter 现在包含 Robert Stettner 制作的天王星与海王星卫星包。这里展示的是海王星色彩斑斓的卫星海卫一。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Venus</h1> <p>The DeltaGlider in low orbit around Venus (courtesy Jim \"BigJimW\" Williams). Drop below the cloud layer to get a glimpse at the new surface textures. But beware of the dense atmosphere!</p> "
+msgstr "<h1>金星</h1> <p>三角滑翔机在金星低轨道上（感谢 Jim “BigJimW” Williams）。下降到云层以下，一瞥新的地表纹理。但要小心浓密的大气！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>ADI instrument training</h1> <p>An introduction to the Attitude Director Indicator (ADI) instrument in the Shuttle-A.</p> <p>Please pay attention - there will be a test ;-)</p> "
+msgstr "<h1>ADI 仪表训练</h1> <p>介绍 Shuttle-A 中的姿态指示器（ADI）仪表。</p> <p>请注意听讲——之后会有测验 ;-)</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>DG stunts (Recording tutorial)</h1> <p>A small tutorial introducing Orbiter's flight recording and playback capabilities.</p> <p>(And a lively tour of the Kennedy Space Center with a DG spaceplane.)</p> "
+msgstr "<h1>DG 特技（录像教程）</h1> <p>一个小教程，介绍 Orbiter 的飞行录制和回放功能。</p> <p>（以及一次驾驶 DG 航天飞机游览肯尼迪航天中心的生动旅程。）</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>DG to the Moon</h1> <p>This flight is an example of a complete and quite extensive mission: Take-off from Cape Canaveral with a Delta-glider into low Earth orbit, translunar insertion, lunar orbit, and touchdown at the fictional Brighton Beach base on the moon.</p> <p>On-screen annotations explain the actions at various stages of the flight.</p> <p>The whole playback, including default time acceleration, runs for about one hour.</p> "
+msgstr "<h1>DG 飞向月球</h1> <p>这次飞行是一个完整而相当大的任务示例：驾驶三角滑翔机从卡纳维拉尔角起飞进入低地球轨道，执行地月转移，进入月球轨道，并在月球上虚构的布莱顿海滩基地着陆。</p> <p>屏幕上的注释解释了飞行各阶段的动作。</p> <p>整个回放（包括默认时间加速）持续约一小时。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>DG-ISS docking</h1> <p>A recorded approach and docking of a DG spaceplane to the International Space Station.</p> <p>If you play back with time acceleration as recorded, the replay will take 36 minutes of real time for 6.5 hours of simulated time.</p> <p>In addition to the on-screen notes in this recording, this scenario is explained in more detail in chapter 5 (\"Dancing in the Dark\") of the second edition of \"Go Play In Space,\" available at http://www.aovi93.dsl.pipex.com/play_in_space.htm (free download).</p> "
+msgstr "<h1>DG-ISS 对接</h1> <p>一段 DG 航天飞机接近并停靠国际空间站的录像。</p> <p>如果按录制时的时间加速回放，回放将花费 36 分钟实时时间，对应 6.5 小时模拟时间。</p> <p>除了本录像中的屏幕注释外，此场景在《Go Play In Space》第二版第 5 章（“Dancing in the Dark”）中有更详细的说明，可在 http://www.aovi93.dsl.pipex.com/play_in_space.htm 免费下载。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Smack! Rescue</h1> <p>The starting scenario for a 9-minute flight recording playback based on the original supplied scenario \"Smack!\" which is still found in the Delta-glider folder.</p> <p>This annotated playback shows and describes the events in the first part of chapter 2 of \"Go Play In Space (Second Edition)\" by Bruce Irving with Andy McSorley, available at Andy's website, www.virtualspaceflight.com. That chapter and this playback explain a few very basic orbital operations in Orbiter.</p> <p>Note that the axial rotation of the two approaching Delta Gliders in this scenario has no special utility other than it looks pretty cool. If you were in a real spacecraft spinning like this, you probably would not enjoy it for very long!</p> "
+msgstr "<h1>啪！救援</h1> <p>这是基于原始场景“啪！”的 9 分钟飞行录像回放的起始场景，原场景仍可在 Delta-glider 文件夹中找到。</p> <p>这段带注释的回放展示并描述了 Bruce Irving 与 Andy McSorley 合著的《Go Play In Space（第二版）》第 2 章第一部分的事件，可在 Andy 的网站 www.virtualspaceflight.com 获取。该章和本回放解释了 Orbiter 中一些非常基本的轨道操作。</p> <p>注意：本场景中两架接近的三角滑翔机的轴向旋转除了看起来相当酷之外没有特殊用途。如果你乘坐的真实航天器这样旋转，你大概不会享受太久！</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Space Shuttle final approach</h1> <p>This tutorial scenario contains a playback of Space Shuttle Atlantis on final approach to the landing facility at Kennedy Space Center.</p> <p>Playback duration: 3min 55sec.</p> "
+msgstr "<h1>航天飞机最终进近</h1> <p>本教程场景包含亚特兰蒂斯号航天飞机最终进近肯尼迪航天中心着陆设施的录像。</p> <p>回放时长：3 分 55 秒。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Atmospheric haze</h1> <p>Improved rendering of atmospheric effects from orbit.</p> "
+msgstr "<h1>大气雾霾</h1> <p>改进后的轨道大气效果渲染。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Cloud microtextures</h1> <p>Microtexturing provides more detail in cloud rendering. Here is an example from the surface of Venus.</p1> "
+msgstr "<h1>云微纹理</h1> <p>微纹理为云层渲染提供更多细节。以下是金星表面的示例。</p1> "
+
+msgctxt "scenario.description"
+msgid "<h1>KSC coverage</h1> <p>The area of high-resolution texture coverage around the Kennedy Space Center has been extended.</p> "
+msgstr "<h1>KSC 覆盖范围</h1> <p>肯尼迪航天中心周围的高分辨率纹理覆盖区域已扩大。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Martian atmosphere colours</h1> <p>Olympus base on Mars: new atmospheric rendering parameters provide more realistic skies. Note the blue tint above the horizon.</p> <p>To check out the effect from higher up, take the small 1-seated Shuttle-PB for a spin.</p> "
+msgstr "<h1>火星大气色彩</h1> <p>火星奥林匹斯基地：新的大气渲染参数提供更真实的天空。注意地平线上方的蓝色调。</p> <p>要从更高处观察该效果，可以驾驶小型单座 Shuttle-PB 兜一圈。</p> "
+
+msgctxt "scenario.description"
+msgid "<h1>Moon through atmosphere</h1> <p>New additive rendering of objects through atmospheric layers.</p> <p>The Moon now looks much more realistic from the surface of Earth during the daytime.</p> "
+msgstr "<h1>透过大气看月球</h1> <p>新的穿过大气层物体的叠加渲染。</p> <p>现在白天从地球表面看月球要真实得多。</p> "
+

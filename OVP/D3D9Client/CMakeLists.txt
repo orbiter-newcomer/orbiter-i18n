@@ -180,6 +180,7 @@ function(add_d3d9client_variant target_name backend_macro)
 	)
 
 	target_include_directories(${target_name} PUBLIC
+    		${CMAKE_SOURCE_DIR}/i18n/d3d9client
 		${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 		${DXSDK_DIR}/Include
 		${imgui_SOURCE_DIR}/

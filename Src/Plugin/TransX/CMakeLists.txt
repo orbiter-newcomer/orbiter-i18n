@@ -23,6 +23,7 @@ add_library(TransX SHARED
 )
 
 target_include_directories(TransX
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${MODULE_COMMON_DIR}
 )

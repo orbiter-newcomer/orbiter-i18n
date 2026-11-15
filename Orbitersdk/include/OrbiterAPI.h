@@ -2484,6 +2484,107 @@ OAPIFUNC int oapiGetOrbiterVersion ();
 OAPIFUNC const char *oapiTr (const char *english);
 
 /**
+ * \brief Context-aware translation.
+ * \param context context identifier (e.g. "scenario.description")
+ * \param english English source string as displayed in English mode
+ * \return translated string (UTF-8) if a context-specific translation exists;
+ *   otherwise falls back to oapiTr(english). The returned pointer stays valid
+ *   for the lifetime of the process.
+ * \note Resolves ambiguities where the same English word needs different
+ *   translations depending on where it occurs. English mode returns the
+ *   source string unchanged.
+ */
+OAPIFUNC const char *oapiTrContext (const char *context, const char *english);
+
+/**
+ * \brief Translates the display name of an object (planet, base, ...).
+ * \param english English display name
+ * \return localised name (UTF-8), or the source string if no translation exists
+ * \note This is a convenience wrapper around oapiTr for names; it keeps the
+ *   English original as the canonical key for scenarios/resource files.
+ */
+OAPIFUNC const char *oapiTrName (const char *english);
+
+/**
+ * \brief Reverse name lookup: localised name -> English original.
+ * \param localized localised display name (e.g. a Chinese planet/base name)
+ * \return English original name, or the passed pointer if the name is unknown.
+ * \note Useful for matching user selections against scenario/resource file
+ *   names, which are always stored in English.
+ */
+OAPIFUNC const char *oapiGetOriginalName (const char *localized);
+
+/**
+ * \brief Returns the name of the active locale.
+ * \return "zh_CN" for the Chinese localisation, "en" for English.
+ * \note The language can only be changed in the Launchpad; it takes effect on
+ *   the next simulation start (the pointer returned is static and stays valid).
+ */
+OAPIFUNC const char *oapiGetLocale ();
+
+/**
+ * \brief Registers a translation at run time (typically from a module during
+ *   its Open() call, i.e. before the simulation UI is used).
+ * \param locale locale name ("zh", "zh_CN", ...); NULL/"" = active locale;
+ *   "en" is accepted but has no effect
+ * \param english English source string
+ * \param translated translation (UTF-8)
+ * \return non-zero on success
+ * \note The strings are copied. Registration only adds new entries; existing
+ *   entries are never replaced, so plugins cannot override core translations.
+ */
+OAPIFUNC int oapiRegisterTranslation (const char *locale, const char *english, const char *translated);
+
+/**
+ * \brief Loads translations from a .po-style catalog file.
+ * \param path path of the catalog file (relative to the Orbiter working dir)
+ * \return non-zero if the file was parsed successfully
+ * \note Supports msgid/msgstr pairs, comments (#) and strings continued over
+ *   several lines. Entries are added like repeated oapiRegisterTranslation
+ *   calls. Intended for plugins that ship their own translation catalogs.
+ */
+OAPIFUNC int oapiRegisterTranslationCatalog (const char *path);
+
+/**
+ * \brief Converts a UTF-8 string to UTF-16.
+ * \param utf8 source string (UTF-8)
+ * \param buf destination buffer (may be NULL to query the required size)
+ * \param buflen destination buffer size in wchar_t elements
+ * \return required buffer size in elements, including the terminating null
+ *   character (0 on error). The buffer is filled only if it is large enough.
+ */
+OAPIFUNC int oapiUtf8ToWide (const char *utf8, wchar_t *buf, int buflen);
+
+/**
+ * \brief Converts a UTF-16 string to UTF-8.
+ * \param wide source string (UTF-16)
+ * \param buf destination buffer (may be NULL to query the required size)
+ * \param buflen destination buffer size in bytes
+ * \return required buffer size in bytes, including the terminating null
+ *   character (0 on error). The buffer is filled only if it is large enough.
+ */
+OAPIFUNC int oapiWideToUtf8 (const wchar_t *wide, char *buf, int buflen);
+
+/**
+ * \brief Converts a UTF-8 string to a UTF-16 string.
+ * \param utf8 source string (UTF-8, may be NULL)
+ * \return UTF-16 string (empty for NULL/empty input)
+ * \note Convenience wrapper around oapiUtf8ToWide for the common case of
+ *   passing translated (UTF-8) text to the Unicode Win32 API. Modules do not
+ *   need to implement their own MultiByteToWideChar conversion.
+ */
+inline std::wstring oapiUtf8ToWString (const char *utf8)
+{
+	if (!utf8 || !*utf8) return std::wstring();
+	int n = oapiUtf8ToWide (utf8, 0, 0);
+	if (n <= 1) return std::wstring();
+	std::wstring w ((size_t)n, L'\0');
+	oapiUtf8ToWide (utf8, &w[0], n);
+	w.resize ((size_t)n - 1);
+	return w;
+}
+
+/**
  * \brief Registers a short text to be drawn on the glass cockpit HUD
  * \param x,y centre position in HUD/panel pixel coordinates
  * \param size font height in pixels

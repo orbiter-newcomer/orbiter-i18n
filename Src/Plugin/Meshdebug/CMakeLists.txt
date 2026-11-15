@@ -7,6 +7,7 @@ add_library(Meshdebug SHARED
 )
 
 target_include_directories(Meshdebug
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${MODULE_COMMON_DIR}
 )

@@ -791,9 +791,7 @@ BOOL OptionsPage_Physics::OnInitDialog(HWND hPage, WPARAM wParam, LPARAM lParam)
 {
 	OptionsPage::OnInitDialog(hPage, wParam, lParam);
 	// FTL velocity handling combo box
-	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Report error")).c_str());
-	SendDlgItemMessageW (hPage, IDC_OPT_PHYS_RELFTL, CB_ADDSTRING, 0, (LPARAM)orbiter::Utf8ToWideString (orbiter::Tr ("Clamp to 0.9c")).c_str());
-	SendDlgItemMessage (hPage, IDC_OPT_PHYS_RELFTL, CB_SETCURSEL, Cfg()->CfgPhysicsPrm.RelativityFTLMode, 0);
+	// FTL mode controls removed: superluminal velocity is now handled automatically
 	return TRUE;
 }
 

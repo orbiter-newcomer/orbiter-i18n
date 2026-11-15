@@ -9,6 +9,7 @@ add_library(TrackIR SHARED
 )
 
 target_include_directories(TrackIR
+	PUBLIC ${CMAKE_SOURCE_DIR}/i18n/plugins
 	PUBLIC ${ORBITER_SOURCE_SDK_INCLUDE_DIR}
 	PUBLIC ${MODULE_COMMON_DIR}
 )

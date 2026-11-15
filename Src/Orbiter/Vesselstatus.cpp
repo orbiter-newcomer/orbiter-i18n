@@ -8,6 +8,7 @@
 
 #include "Orbiter.h"
 #include "Vessel.h"
+#include "WreckDebris.h"
 #include "Supervessel.h"
 #include "Config.h"
 #include "Pane.h"
@@ -510,6 +511,9 @@ void Vessel::SetState (const VESSELSTATUS &status)
 void Vessel::SetState2 (const void *status)
 {
 	VESSELSTATUS2 *vs = (VESSELSTATUS2*)status;
+	// wreck vessels must receive their initial state: clear any attach status that
+	// would otherwise suppress the state setup
+	if (!name.empty () && strncmp (name.c_str(), "WRECK-", 6) == 0) attach_status.pname = nullptr;
 	DWORD i, idx;
 	double lvl;
 	const bool checkOverlap = (g_psys && g_psys->isVessel(this) && g_pOrbiter && g_pOrbiter->Cfg()->CfgPhysicsPrm.bVesselCollision && !m_overlapStateDirty);
@@ -569,7 +573,7 @@ void Vessel::SetState2 (const void *status)
 	// state vectors
 	switch (vs->status) {
 	case 0: { // freeflight
-		if (!attach_status.pname) {
+		if (!attach_status.pname || WreckIsObserver (this)) {
 			Vector rp (vs->rpos.x, vs->rpos.y, vs->rpos.z);
 			Vector rv (vs->rvel.x, vs->rvel.y, vs->rvel.z);
 			Vector orient (vs->arot.x, vs->arot.y, vs->arot.z);
