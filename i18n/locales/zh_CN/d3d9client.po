@@ -560,3 +560,7 @@ msgstr "（未使用）"
 msgid "Windowed"
 msgstr "窗口模式"
 
+
+# ---- D3D9Client 地形加载等待 ----
+msgid "Loading terrain..."
+msgstr "地形加载中……"

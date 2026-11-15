@@ -455,6 +455,26 @@ public:
 
 	Tile *SearchTile (double lng, double lat, int maxlvl, bool bOwntex) const;
 
+	/**
+	 * \brief Number of tiles currently queued or being loaded from storage.
+	 * \details Used by the graphics client to keep the simulation paused until
+	 * the initial terrain around the camera has been loaded, so that the
+	 * simulation does not start on a partially loaded surface.
+	 */
+	int PendingTileCount () const
+	{
+		return CountPendingNode (&tiletree[0]) + CountPendingNode (&tiletree[1]);
+	}
+	static int CountPendingNode (const QuadTreeNode<TileType> *node)
+	{
+		if (!node) return 0;
+		int n = 0;
+		const TileType *t = node->Entry ();
+		if (t && (t->state == Tile::InQueue || t->state == Tile::Loading)) n++;
+		for (int i = 0; i < 4; i++) n += CountPendingNode (node->Child (i));
+		return n;
+	}
+
 	inline TileType *GlobalTile (int lvl) const {	return (lvl >= -3 && lvl < 0 ? globtile[lvl + 3] : NULL); }
 //	{ return globtile[lvl]; } @todo: Is that ( above) OK for us?
 

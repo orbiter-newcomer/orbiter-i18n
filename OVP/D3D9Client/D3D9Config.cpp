@@ -42,6 +42,9 @@ void D3D9Config::Reset ()
 	OrbitalShadowMult   = 0.85;
 	PlanetPreloadMode	= 0;
 	PlanetLoadFrequency	= 40;
+	TerrainLoadWait		= 1;
+	TerrainLoadWaitTimeout = 30;
+	WaitTerrainLoadCamera  = 1;
 	Anisotrophy			= 4;
 	SceneAntialias		= 4;
 	DebugLvl			= 1;
@@ -146,6 +149,9 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"CustomCamMode", i))			CustomCamMode = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"PlanetPreloadMode", i))		PlanetPreloadMode = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"PlanetTexLoadFreq", i))		PlanetLoadFrequency = max(1, min(1000, i));
+	if (oapiReadItem_int   (hFile, (char*)"WaitTerrainLoad", i))		TerrainLoadWait = max(0, min(1, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitTimeout", i))	TerrainLoadWaitTimeout = max(1, min(120, i));
+	if (oapiReadItem_int   (hFile, (char*)"WaitTerrainLoadCamera", i))	WaitTerrainLoadCamera = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"Anisotrophy", i))			Anisotrophy = max(1, min(16, i));
 	if (oapiReadItem_int   (hFile, (char*)"SceneAntialias", i))		SceneAntialias = i;
 	if (oapiReadItem_int   (hFile, (char*)"SketchpadFont", i))			SketchpadFont = max(0, min(2, i));
@@ -241,6 +247,9 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"CustomCamMode", CustomCamMode);
 	oapiWriteItem_int   (hFile, (char*)"PlanetPreloadMode", PlanetPreloadMode);
 	oapiWriteItem_int   (hFile, (char*)"PlanetTexLoadFreq", PlanetLoadFrequency);
+	oapiWriteItem_int   (hFile, (char*)"WaitTerrainLoad", TerrainLoadWait);
+	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitTimeout", TerrainLoadWaitTimeout);
+	oapiWriteItem_int   (hFile, (char*)"WaitTerrainLoadCamera", WaitTerrainLoadCamera);
 	oapiWriteItem_int   (hFile, (char*)"Anisotrophy", Anisotrophy);
 	oapiWriteItem_int   (hFile, (char*)"SceneAntialias", SceneAntialias);
 	oapiWriteItem_int   (hFile, (char*)"SketchpadFont", SketchpadFont);

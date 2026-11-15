@@ -36,6 +36,9 @@ public:
 	int Enable9On12;				///< Enable DX9 through DX12
 	int PlanetPreloadMode;			///< Planet preload mode setting (0=load on demand, 1=preload)
 	int PlanetLoadFrequency;		///< Load frequency for on-demand textures \[Hz\] (1...1000)
+	int TerrainLoadWait;			///< Wait for terrain tiles to load before the simulation starts (0=off, 1=on)
+	int TerrainLoadWaitTimeout;		///< Maximum wait time for the terrain load \[s\] (1...120)
+	int WaitTerrainLoadCamera;		///< Re-run the terrain load wait when the camera target changes (0=off, 1=on)
 	int Anisotrophy;				///< Anisotropic filtering setting \[factor\] (1...16)
 	int SceneAntialias;				///< Antialiasing setting \[factor\] (0...)
 	int DisableDriverManagement;	///< Disable the D3D9 driver management \[sets the D3DCREATE_DISABLE_DRIVER_MANAGEMENT behavior flag\]  (0=default, 1:disabled)
