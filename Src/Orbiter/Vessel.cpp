@@ -1202,21 +1202,6 @@ bool Vessel::SetTouchdownPoints (const TOUCHDOWNVTX *tdvtx, DWORD ntp)
 		touchdown_vtx[i].mu_lng    = tdvtx[i].mu_lng;
 	}
 
-	// Unified hull contact parameters for ALL vessels (mass-independent behaviour):
-	// hull points (index >= 3) always use the same stiffness and friction, and the
-	// damping is scaled with sqrt(m_eff) so the damping ratio stays constant
-	// regardless of the vessel mass. A crashed vessel always stops immediately.
-	if (ntouchdown_vtx > 3 && !WreckIsObserver (this)) {   // wrecks keep their own contact parameters
-		double m_eff = (mass > 0.0 ? mass : 10000.0) / (double)ntouchdown_vtx;
-		if (m_eff < 100.0) m_eff = 100.0;
-		double hull_k = 5e5;
-		double hull_c = 2.0 * 1.2 * sqrt (hull_k * m_eff);   // damping ratio zeta = 1.2
-		for (DWORD ih = 3; ih < ntouchdown_vtx; ih++) {
-			touchdown_vtx[ih].stiffness = hull_k;
-			touchdown_vtx[ih].damping   = hull_c;
-			touchdown_vtx[ih].mu        = 100.0;
-		}
-	}
 
 	// The rest of this function refers to the first 3 (primary) touchdown points
 	// upward normal of touchdown plane
@@ -4579,14 +4564,14 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 					mu = touchdown_vtx[i].mu;
 				}
 				flng[i] = mu * maxpress;												// horizon-longitudinal force component: surface friction
-				// (low-speed friction attenuation removed: Coulomb friction is speed-independent)
+				if (fabs(gv_lon) < 10.0) flng[i] *= sqrt(fabs(0.1*gv_lon));             // cancel horizontal forces at low speeds
 				//flng[i] = min (flng[i], fabs(gv_lon) * fn[i] * mu/dt);
 				if (gv_lon > 0.0) flng[i] = -flng[i];
 				flng_tot += flng[i];
 
 				mu = touchdown_vtx[i].mu;
 				flat[i] = mu * maxpress;									// horizon-lateral force component: surface friction
-				// (low-speed friction attenuation removed)
+				if (fabs(gv_lat) < 10.0) flat[i] *= sqrt(fabs(0.1*gv_lat));
 				//flat[i] = min (flat[i], fabs(gv_lat) * fn[i] * mu/dt);
 				if (gv_lat > 0.0) flat[i] = -flat[i];
 				flat_tot += flat[i];
