@@ -9,7 +9,7 @@ This repository is a **64-bit branch** of [Orbiter](https://github.com/orbitersi
 - **Relativistic physics and visual extension**: 1PN/Kerr gravity fields, frame dragging, relativistic mass, time dilation, Doppler shift, aberration, gravitational lensing (the "hole" method), gravitational redshift, black hole / neutron star rendering, FTL and strong-field protection, charge-induced gravity
 
 - Repository: https://github.com/orbiter-newcomer/orbiter-i18n
-- Current version: **v1.3.0** (synced with the latest official Orbiter 2024 upstream)
+- Current version: **v1.3.1** (synced with the latest official Orbiter 2024 upstream; i18n and layout system improvements)
 - 中文说明: [README.md](./README.md)
 
 ---
@@ -142,6 +142,7 @@ Debug modes (`LensBrightness`): `-1` raw cubemap, `-2` hole weight map, `-3` hol
 | v1.2.4 | Sky-box "hole" method refinements (seam fixes, hole debug tools) |
 | v1.2.5 | Charge-induced gravity (Reissner–Nordström), vertex limit bound to the hole parameters, vertex-displacement fallback criterion, synced with the latest official 2024 upstream |
 | v1.3.0 | **Wreck/debris system** (impact destruction, random-polyhedron debris physics, wreck messages/cameras, atmospheric burn-up); **shadow reference-plane fix** (base pad / actual terrain instead of the mean sphere); **base buildings rest on their footprint minimum**; dynamic strong-field criterion; all translations externalized to `.po` files (`i18n/locales/zh_CN/*.po`, editable without recompiling); Lua script localization (Challenges, Demos tutorials, Solar-system annotations); plugin-private wchar_t tables migrated to `oapiTr`; scenario descriptions / constellations / notifications / wreck messages completed; Chinese HTML help pages; dead-code cleanup and simplifications |
+| v1.3.1 | **i18n and layout system improvements**: unified text encoding layer (UTF-8 used internally, unified file reading / encoding detection / boundary conversion APIs, scattered Win32 encoding conversions removed); Chinese layout data externalized to `i18n/layout/zh_CN/layout.ini` (MFD offsets, panel font sizes / button / HUD texts, MFD button labels, dialog layout offsets — runtime changes without rebuilding); dialog layout adaptation SDK APIs (`oapiZhFitDialogButtons` etc., official layout + Chinese offset, including automatic widening/growing/row repacking of vessel animation-page buttons); scenario description reading/translation moved behind an API (long lines are no longer split by the fixed line buffer); 40 missing plain-text DESC scenario translations completed (zero missing); relativity scenario files converted from GBK to UTF-8; hard-coded Chinese removed from D3D9Client settings pages / TrackIR / scenario editor / flight recorder / date format; all Chinese help pages are UTF-8 with charset declarations; `tools/i18n_lint.ps1` encoding and localisation rule checks; bilingual i18n documentation |
 
 ---
 

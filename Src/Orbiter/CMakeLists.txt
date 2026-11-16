@@ -192,7 +192,7 @@ add_custom_command(TARGET ${OrbiterTgt}	POST_BUILD
 )
 
 string(TIMESTAMP DATE "%d %b %Y")
-set(VERSION "1.3.0")
+set(VERSION "1.3.1")
 configure_file(about.hpp.in about.hpp @ONLY)
 
 # Chinese localisation catalogs (external UTF-8 .po translation files)
