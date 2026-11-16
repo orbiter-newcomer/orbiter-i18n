@@ -41,6 +41,7 @@
 #include "Mesh.h"
 #include "CollisionCore.h"
 #include "elevmgr.h"
+#include "ContactModel.inc"   // contact force solver (project extension)
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -4474,8 +4475,13 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 
 	if (bDynamicGroundContact) {
 
-//#define NEWCONTACTMODEL
-#ifdef NEWCONTACTMODEL // new version - experimental!
+		// Contact model configuration (project extension, Config::ContactLoad):
+		//   ContactFrictionModel: 0 = traditional, 1 = experimental
+		//   ContactSolver: 0 = official explicit, 1 = implicit damping, 2 = fully implicit
+		const int contactFrictionModel = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactFrictionModel;
+		const int contactSolver = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactSolver;
+
+		if (contactFrictionModel == 1) {   // experimental friction model
 		if (tdymin < 0.0) {
 			DWORD ntouch = 0;
 			double mueff_lng, mueff_lat, gv_hor;
@@ -4504,8 +4510,15 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 						flng[i] = -gv_lon * fn[i] * touchdown_vtx[i].mu/dt1 * 1e-0;
 					flat[i] = -gv_lat * fn[i] * touchdown_vtx[i].mu/dt1 * 1e-0;
 
-					// vertical damping
-					fn[i] -= gv_n*touchdown_vtx[i].damping;
+					// contact force solver (project extension)
+					if (contactSolver == 0) {
+						// vertical damping (official explicit)
+						fn[i] -= gv_n*touchdown_vtx[i].damping;
+					} else {
+						// implicit damping / fully implicit contact normal force
+						fn[i] = ContactNormalForce (touchdown_vtx[i].stiffness, touchdown_vtx[i].damping,
+							tdy[i], gv_n, mass, dt, contactSolver);
+					}
 					//fn[i] = max (fn[i], 0.0);
 					fn_tot += fn[i];
 
@@ -4544,7 +4557,7 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 			}
 		}
 
-#else
+		} else {   // traditional friction model
 
 		DWORD ntouch = 0;
 		for (i = 0; i < ntouchdown_vtx; i++) {
@@ -4581,7 +4594,13 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 
 				E_comp -= fn[i]*tdy[i]*0.5; // compression energy
 				fn_tot_undamped += fn[i];
-				fn[i] -= gv_n*touchdown_vtx[i].damping;
+				// contact force solver (project extension)
+				if (contactSolver == 0) {
+					fn[i] -= gv_n*touchdown_vtx[i].damping;
+				} else {
+					fn[i] = ContactNormalForce (touchdown_vtx[i].stiffness, touchdown_vtx[i].damping,
+						tdy[i], gv_n, mass, dt, contactSolver);
+				}
 				fn_tot += fn[i];
 
 				// debug
@@ -4711,7 +4730,7 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 
 		//sprintf (DBG_MSG, "dE_kin=%le, dE_comp=%le", dE_kin, dE_comp);
 
-#endif
+		}   // end of dynamic contact model block
 	} else {
 		double v1, v2;
 		for (i = 0; i < 3; i++) {

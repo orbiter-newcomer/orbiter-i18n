@@ -3218,6 +3218,7 @@ OAPIFUNC double oapiGetMass (OBJHANDLE hObj);
 
 #include "RelativityAPI.h"
 #include "WreckAPI.h"
+#include "ContactAPI.h"
 	
 /**
  * \brief Returns the position of an object in the global reference frame.

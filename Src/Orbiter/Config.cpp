@@ -71,7 +71,9 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	false,		// bRelativisticCharge (charge-induced gravity disabled by default)
 	0.5,		// RelChargeRatio (r_Q/r_s; 0.5 = clearly visible)
 	10.0,		// RelCollisionDVThreshold (m/s; collision impact tolerance)
-	0.8			// RelGasGiantFactor (gas-giant crushing radius factor)
+	0.8,		// RelGasGiantFactor (gas-giant crushing radius factor)
+	0,			// ContactFrictionModel (0=traditional, 1=experimental)
+	0			// ContactSolver (0=explicit, 1=implicit damping, 2=fully implicit)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {
@@ -626,6 +628,7 @@ bool Config::Load(const char *fname)
 	GetBool (ifs, "StabiliseOrbits", CfgPhysicsPrm.bOrbitStabilise);
 	RelativityLoad (ifs);
 	WreckLoad (ifs);
+	ContactLoad (ifs);
 	GetReal (ifs, "StabilisePLimit", CfgPhysicsPrm.Stabilise_PLimit);
 	GetReal (ifs, "StabiliseSLimit", CfgPhysicsPrm.Stabilise_SLimit);
 	if (GetString (ifs, "PertPropSubsampling", cbuf, sizeof(cbuf)))
@@ -914,6 +917,8 @@ const void *Config::GetParam (DWORD paramtype) const
 	if (const void *relparam = GetRelativityParam (paramtype)) return relparam;
 	// Wreck/debris system parameters (implementation in WreckConfig.inc)
 	if (const void *wreckparam = GetWreckParam (paramtype)) return wreckparam;
+	// Contact model parameters (implementation in ContactConfig.inc)
+	if (const void *contactparam = GetContactParam (paramtype)) return contactparam;
 	switch (paramtype) {
 	case CFGPRM_SURFACEMAXLEVEL:
 		return (void*)&CfgVisualPrm.PlanetMaxLevel;
@@ -1203,6 +1208,7 @@ BOOL Config::Write (const char *fname) const
 			ofs << "StabiliseOrbits = " << BoolStr (CfgPhysicsPrm.bOrbitStabilise) << '\n';
 		RelativityWritePhysics (ofs, bEchoAll);
 		WreckWritePhysics (ofs, bEchoAll);
+		ContactWritePhysics (ofs, bEchoAll);
 		if (CfgPhysicsPrm.Stabilise_PLimit != CfgPhysicsPrm_default.Stabilise_PLimit || bEchoAll)
 			ofs << "StabilisePLimit = " << CfgPhysicsPrm.Stabilise_PLimit << '\n';
 		if (CfgPhysicsPrm.Stabilise_SLimit != CfgPhysicsPrm_default.Stabilise_SLimit || bEchoAll)
@@ -1634,3 +1640,4 @@ bool Config::GetVector (const char *category, Vector &val)
 
 // Wreck/debris system configuration handling (implementation, Src/Wreck)
 #include "WreckConfig.inc"
+#include "ContactConfig.inc"

@@ -88,6 +88,8 @@ struct CFG_PHYSICSPRM {
 	double RelChargeRatio;          // charge ratio q = r_Q/r_s (0..1)
 	double RelCollisionDVThreshold; // collision impact delta-v [m/s] above which a vessel explodes
 	double RelGasGiantFactor;       // radius factor R for gas-giant crushing (r < factor*R)
+	int    ContactFrictionModel;    // contact friction model: 0=traditional, 1=experimental
+	int    ContactSolver;           // contact force solver: 0=explicit, 1=implicit damping, 2=fully implicit
 };
 
 struct CFG_LOGICPRM {
@@ -480,6 +482,11 @@ private:
 	void WreckLoad (std::istream &is);
 	void WreckWritePhysics (std::ostream &os, bool bEchoAll) const;
 	const void *GetWreckParam (DWORD paramtype) const;
+
+	// Contact model (implementation in ContactConfig.inc)
+	void ContactLoad (std::istream &is);
+	void ContactWritePhysics (std::ostream &os, bool bEchoAll) const;
+	const void *GetContactParam (DWORD paramtype) const;
 
 	mutable char cfgpath[256];  // buffer for creating full path names
 	char mshpath[256];
