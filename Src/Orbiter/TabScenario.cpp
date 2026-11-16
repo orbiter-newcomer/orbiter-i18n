@@ -323,28 +323,24 @@ char *ScanFileDesc (std::istream &is, const char *blockname)
 	strncpy (blockend+4, blockname, 240);
 
 	if (FindLine (is, blockbegin)) {
-		int buflen = 0;
-		std::string line;
-		for(;;) {
-			if (!std::getline (is, line)) {
+		int i, len, buflen = 0;
+		const int linelen = 256;
+		char line[linelen];
+		for(i = 0;; i++) {
+			if (!is.getline(line, linelen-2)) {
 				if (is.eof()) break;
-				else { is.clear(); continue; }
+				else is.clear();
 			}
-			if (_strnicmp (line.c_str(), blockend, strlen(blockend))) {
-				// Line buffer is a std::string, so long description lines are not
-				// truncated any more (the old fixed 254-byte buffer split long lines
-				// into several chunks and inserted extra spaces, which made the
-				// translation lookup key differ from the .po msgid).
-				int len = (int)line.size();
-				if (len) line += " ";                 // convert newline to space
-				else line = "\r\n";                   // convert empty line to CR
-				len = (int)line.size();
+			if (_strnicmp (line, blockend, strlen(blockend))) {
+				len = strlen(line);
+				if (len) strcat (line, " "), len++;    // convert newline to space
+				else     strcpy (line, "\r\n"), len=2; // convert empty line to CR
 				char *tmp = new char[buflen+len+1];
 				if (buflen) {
 					memcpy (tmp, buf, buflen*sizeof(char));
 					delete []buf;
 				}
-				memcpy (tmp+buflen, line.c_str(), len*sizeof(char));
+				memcpy (tmp+buflen, line, len*sizeof(char));
 				buflen += len;
 				tmp[buflen] = '\0';
 				buf = tmp;
