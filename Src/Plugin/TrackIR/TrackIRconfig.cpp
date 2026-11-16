@@ -51,34 +51,18 @@ void TrackIRconfig::InitDialog (HWND hDlg)
 	// 汉化扩展：主窗口标题 / 按钮文本（数据见 TrackIRZh.inc；英文模式无操作）
 	TrackIRZhLocalizeWindow (hDlg);
 
-	// 页签标签：中文模式用中文（宽度不受影响），英文模式保持原版
-	static const wchar_t *zhTabLabel[4] = { L"模式", L"座舱", L"追踪", L"诊断" };
-	if (oapiZhActive() != 0) {
+	// Page labels: English originals translated through the localisation API
+	{
+		static const char *tabLabel[4] = { "Mode", "VC", "Track", "Diagnostic" };
 		TCITEMW tie;
 		tie.mask = TCIF_TEXT;
 		tie.iImage = -1;
 		for (int i = 0; i < 4; i++) {
-			tie.pszText = const_cast<LPWSTR>(zhTabLabel[i]);
+			std::wstring w = oapiUtf8ToWString(oapiTr(tabLabel[i]));
+			tie.pszText = const_cast<LPWSTR>(w.c_str());
 			SendDlgItemMessageW (hDlg, IDC_TAB1, TCM_INSERTITEMW, i, (LPARAM)&tie);
 		}
 	}
-	else {
-		char cbuf[256];
-		TC_ITEM tie;
-		tie.mask = TCIF_TEXT;
-		tie.iImage = -1;
-		tie.pszText = cbuf;
-
-		strcpy (cbuf, "Mode");
-		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 0, (LPARAM)&tie);
-		strcpy (cbuf, "VC");
-		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 1, (LPARAM)&tie);
-		strcpy (cbuf, "Track");
-		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 2, (LPARAM)&tie);
-		strcpy (cbuf, "Diagnostic");
-		SendDlgItemMessage (hDlg, IDC_TAB1, TCM_INSERTITEM, 3, (LPARAM)&tie);
-	}
-
 	hTab[0] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_MODE), hDlg, TabProc_mode);
 	hTab[1] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_VC), hDlg, TabProc_cfg);
 	hTab[2] = CreateDialog (gParams.hInst, MAKEINTRESOURCE(IDD_CFG_TRACK), hDlg, TabProc_trk);

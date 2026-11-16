@@ -28,11 +28,8 @@ static bool ScnEditorCheckSuperluminal (VECTOR3 vel)
 	const double C_LIGHT = 299792458.0;
 	double vl = sqrt (vel.x*vel.x + vel.y*vel.y + vel.z*vel.z);
 	if (vl <= C_LIGHT) return true;
-	const bool zh = (oapiZhActive () != 0);
-	const char *txt = zh
-		? "相对论模式：输入的速度超过光速，输入已被截留。"
-		: "Relativistic mode: the entered velocity exceeds the speed of light. The input has been rejected.";
-	const wchar_t *title = zh ? L"相对论模式" : L"Relativistic mode";
-	MessageBoxW (NULL, oapiUtf8ToWString(txt).c_str(), title, MB_OK | MB_ICONWARNING);
+	const char *txt = oapiTr ("Relativistic mode: the entered velocity exceeds the speed of light. The input has been rejected.");
+	const char *title = oapiTr ("Relativistic mode");
+	MessageBoxW (NULL, oapiUtf8ToWString (txt).c_str(), oapiUtf8ToWString (title).c_str(), MB_OK | MB_ICONWARNING);
 	return false;
 }

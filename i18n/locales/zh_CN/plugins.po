@@ -497,3 +497,20 @@ msgstr "低"
 msgid "High resolution textures and meshes provide a better visual appearance, but can reduce the performance of the simulator, in particular on less powerful computers.\r\nIf you experience problems, try switching to the low resolution options."
 msgstr "高分辨率纹理和网格能提供更好的视觉效果，但会降低模拟器性能，尤其是在性能较弱的计算机上。\r\n如果遇到问题，请尝试切换到低分辨率选项。"
 
+msgid "Mode"
+msgstr "模式"
+
+msgid "VC"
+msgstr "座舱"
+
+msgid "Track"
+msgstr "追踪"
+
+msgid "Diagnostic"
+msgstr "诊断"
+
+msgid "Relativistic mode"
+msgstr "相对论模式"
+
+msgid "Relativistic mode: the entered velocity exceeds the speed of light. The input has been rejected."
+msgstr "相对论模式：输入的速度超过光速，输入已被截留。"
