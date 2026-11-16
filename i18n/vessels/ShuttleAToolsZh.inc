@@ -50,4 +50,8 @@ static void ZhLocalizeSaPage (HWND hDlg)
     if (oapiZhActive() == 0) return;
     EnumChildWindows (hDlg, SaPageLocCb, 0);
     ZhFitSaControls (hDlg);
+    // 原版布局 + 偏置：所有按钮按中文文字宽高适配（含同列重排）
+    oapiZhFitDialogButtons (hDlg,
+        oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadX", 10),
+        oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadY", 6));
 }

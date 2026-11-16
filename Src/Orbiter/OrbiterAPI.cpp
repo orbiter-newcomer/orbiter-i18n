@@ -145,8 +145,9 @@ static bool ZhTranslateDlgItem (HWND hCtrl)
 	return true;
 }
 
-// Measure the current text of a control in dialog font pixels.
-static int ZhMeasureDlgItem (HWND hDlg, HWND hCtrl)
+// Measure the current text of a control in dialog font pixels. When hOut is not
+// null it receives the text height as well.
+static int ZhMeasureDlgItem (HWND hDlg, HWND hCtrl, int *hOut = 0)
 {
 	wchar_t wtxt[512];
 	if (GetWindowTextW(hCtrl, wtxt, 512) <= 0) return 0;
@@ -157,6 +158,7 @@ static int ZhMeasureDlgItem (HWND hDlg, HWND hCtrl)
 	GetTextExtentPoint32W(hdc, wtxt, (int)wcslen(wtxt), &sz);
 	if (old) SelectObject(hdc, old);
 	ReleaseDC(hDlg, hdc);
+	if (hOut) *hOut = sz.cy;
 	return sz.cx;
 }
 
@@ -217,6 +219,133 @@ DLLEXPORT int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int
 		SetWindowPos(ctrl[(size_t)i], NULL, x, ny, nw, h, SWP_NOZORDER);
 		x += nw + gap;
 		adjusted++;
+	}
+	return adjusted;
+}
+
+// ---------------------------------------------------------------------------
+// oapiZhFitDialogButtons: fit all push buttons of a dialog to their Chinese
+// texts. Column-stacked buttons are repacked so that taller buttons do not
+// overlap; standalone buttons grow around their centre.
+// ---------------------------------------------------------------------------
+
+static int ZhMaxI (int a, int b) { return a > b ? a : b; }
+static int ZhAbsI (int a) { return a < 0 ? -a : a; }
+
+struct ZhFitDlgBtn {
+	HWND h;
+	RECT r;      // position relative to the dialog
+	int tw, th;  // measured Chinese text size in pixels
+};
+
+struct ZhFitDlgCtx {
+	HWND hDlg;
+	std::vector<ZhFitDlgBtn> btns;
+};
+
+static BOOL CALLBACK ZhCollectDlgBtnCb (HWND hCtrl, LPARAM lp)
+{
+	ZhFitDlgCtx *ctx = (ZhFitDlgCtx*)lp;
+	LONG style = GetWindowLongA(hCtrl, GWL_STYLE);
+	LONG type = style & 0xF;
+	if (type != BS_PUSHBUTTON && type != BS_DEFPUSHBUTTON) return TRUE;
+	ZhFitDlgBtn b;
+	b.h = hCtrl;
+	GetWindowRect(hCtrl, &b.r);
+	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&b.r, 2);
+	ZhTranslateDlgItem(hCtrl);
+	b.tw = ZhMeasureDlgItem(ctx->hDlg, hCtrl, &b.th);
+	ctx->btns.push_back(b);
+	return TRUE;
+}
+
+DLLEXPORT int oapiZhFitDialogButtons (HWND hDlg, int padX, int padY)
+{
+	if (!hDlg || !orbiter::IsChinese()) return 0;
+	if (padX < 0) padX = 0;
+	if (padY < 0) padY = 0;
+
+	ZhFitDlgCtx ctx;
+	ctx.hDlg = hDlg;
+	EnumChildWindows(hDlg, ZhCollectDlgBtnCb, (LPARAM)&ctx);
+
+	const size_t n = ctx.btns.size();
+	std::vector<bool> used(n, false);
+	int adjusted = 0;
+
+	for (size_t i = 0; i < n; i++) {
+		if (used[i]) continue;
+
+		// buttons sharing the same left edge form a column
+		std::vector<size_t> col;
+		col.push_back(i);
+		used[i] = true;
+		for (size_t j = i + 1; j < n; j++) {
+			if (used[j]) continue;
+			if (ZhAbsI(ctx.btns[j].r.left - ctx.btns[i].r.left) <= 2) {
+				col.push_back(j);
+				used[j] = true;
+			}
+		}
+		// order the column by vertical position
+		for (size_t a = 1; a < col.size(); a++) {
+			size_t v = col[a];
+			size_t b = a;
+			while (b > 0 && ctx.btns[col[b - 1]].r.top > ctx.btns[v].r.top) {
+				col[b] = col[b - 1];
+				b--;
+			}
+			col[b] = v;
+		}
+		// split the column into rectangles that are actually stacked: larger
+		// vertical gaps separate independent groups (e.g. different group boxes)
+		std::vector<std::vector<size_t> > groups;
+		{
+			std::vector<size_t> g;
+			g.push_back(col[0]);
+			for (size_t k = 1; k < col.size(); k++) {
+				int gap = ctx.btns[col[k]].r.top - ctx.btns[col[k - 1]].r.bottom;
+				if (gap > 24) { groups.push_back(g); g.clear(); }
+				g.push_back(col[k]);
+			}
+			groups.push_back(g);
+		}
+
+		for (size_t gi = 0; gi < groups.size(); gi++) {
+			std::vector<size_t> &g = groups[gi];
+			if (g.size() == 1) {
+				ZhFitDlgBtn &b = ctx.btns[g[0]];
+				int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
+				int nw = ZhMaxI(w, b.tw + padX);
+				int nh = ZhMaxI(h, b.th + padY);
+				if (nw != w || nh != h) {
+					SetWindowPos(b.h, NULL, b.r.left - (nw - w) / 2,
+						b.r.top - (nh - h) / 2, nw, nh, SWP_NOZORDER);
+					adjusted++;
+				}
+				continue;
+			}
+			// uniform size for the whole group (only grow, never shrink)
+			int uw = 0, uh = 0;
+			for (size_t k = 0; k < g.size(); k++) {
+				ZhFitDlgBtn &b = ctx.btns[g[k]];
+				int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
+				uw = ZhMaxI(uw, ZhMaxI(w, b.tw + padX));
+				uh = ZhMaxI(uh, ZhMaxI(h, b.th + padY));
+			}
+			int gap = 2;
+			if (g.size() >= 2) {
+				ZhFitDlgBtn &b0 = ctx.btns[g[0]], &b1 = ctx.btns[g[1]];
+				gap = ZhMaxI(2, b1.r.top - b0.r.bottom);
+			}
+			int left = ctx.btns[g[0]].r.left;
+			int top = ctx.btns[g[0]].r.top;
+			for (size_t k = 0; k < g.size(); k++) {
+				SetWindowPos(ctx.btns[g[k]].h, NULL, left, top, uw, uh, SWP_NOZORDER);
+				top += uh + gap;
+				adjusted++;
+			}
+		}
 	}
 	return adjusted;
 }

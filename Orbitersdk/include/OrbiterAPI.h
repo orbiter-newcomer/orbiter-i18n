@@ -2545,6 +2545,21 @@ OAPIFUNC int oapiZhFitControlText (HWND hDlg, int ctrlId, int padX);
 OAPIFUNC int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int padX, int gap, int startX);
 
 /**
+ * \brief Fits every push button of a dialog to its translated Chinese text.
+ * \param hDlg dialog window
+ * \param padX horizontal padding added to each measured text width
+ * \param padY vertical padding added to each measured text height
+ * \return number of buttons that were adjusted
+ * \note Convenience wrapper for dialogs with many buttons (e.g. vessel editor
+ *   pages): all push buttons are translated and, where the Chinese text does
+ *   not fit the official rect, enlarged. Buttons stacked in one column are
+ *   repacked so that taller buttons do not overlap; standalone buttons grow
+ *   around their centre. Offsets come from layout.ini ([dialog.*] sections).
+ *   English mode does not touch the layout at all.
+ */
+OAPIFUNC int oapiZhFitDialogButtons (HWND hDlg, int padX, int padY);
+
+/**
  * \brief Translates the display name of an object (planet, base, ...).
  * \param english English display name
  * \return localised name (UTF-8), or the source string if no translation exists
