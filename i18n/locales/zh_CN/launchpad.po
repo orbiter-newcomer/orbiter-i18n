@@ -1176,3 +1176,50 @@ msgstr "取消"
 
 msgid "Reset"
 msgstr "重置"
+
+; 接触模型页（扩展页）
+
+msgid "Contact model"
+msgstr "接触模型"
+
+msgid "Orbiter: Contact model"
+msgstr "Orbiter：接触模型"
+
+msgid "Configure the surface contact friction model and the contact force solver used by the physics engine.\n\nFriction model: traditional (original) or experimental (static/speed-proportional friction with force limiter).\n\nForce solver: official explicit, implicit damping, or fully implicit contact spring/damper."
+msgstr "配置物理引擎使用的地表接触摩擦模型与接触力求解方法。\n\n摩擦模型：传统（原始）或实验性（静摩擦/速度比例摩擦 + 力限幅）。\n\n求解方法：官方显式、隐式阻尼或全隐式接触弹簧/阻尼。"
+
+msgid "Friction model:"
+msgstr "摩擦模型："
+
+msgid "Force solver:"
+msgstr "求解方法："
+
+msgid "Traditional"
+msgstr "传统"
+
+msgid "Experimental"
+msgstr "实验性"
+
+msgid "Official (explicit)"
+msgstr "官方（显式）"
+
+msgid "Implicit damping"
+msgstr "隐式阻尼"
+
+msgid "Fully implicit"
+msgstr "全隐式"
+
+msgid "Traditional: original surface friction model."
+msgstr "传统：原始地表摩擦模型。"
+
+msgid "Experimental: static/speed-proportional friction with force limiter."
+msgstr "实验性：静摩擦/速度比例摩擦 + 力限幅。"
+
+msgid "Official: explicit contact spring/damper (original behaviour)."
+msgstr "官方：显式接触弹簧/阻尼（原始行为）。"
+
+msgid "Implicit damping: damping force evaluated at the end of the step."
+msgstr "隐式阻尼：阻尼力在步末计算。"
+
+msgid "Fully implicit: spring and damper evaluated at the end of the step."
+msgstr "全隐式：弹簧与阻尼均在步末计算。"

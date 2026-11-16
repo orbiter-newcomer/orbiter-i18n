@@ -155,3 +155,7 @@
 #define IDC_MNUCFG_RINFO                1011
 #define IDC_MNUCFG_SHOWWARP             1012
 #define IDC_MNUCFG_SCIWARP              1013
+
+// Resource IDs for dialog IDD_EXTRA_CONTACT
+#define IDC_CONTACT_FRICTION            1200
+#define IDC_CONTACT_SOLVER              1201

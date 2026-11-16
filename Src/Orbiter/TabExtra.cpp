@@ -68,6 +68,7 @@ void orbiter::ExtraTab::GetConfig (const Config *cfg)
 	RegisterExtraParam(new ExtraDynamics(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraStabilisation(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraRelativity(this), ht); TRACENEW
+	RegisterExtraParam(new ExtraContact(this), ht); TRACENEW
 	ht = RegisterExtraParam(new ExtraInstruments(this), NULL); TRACENEW
 	RegisterExtraParam(new ExtraMfdConfig(this), ht); TRACENEW
 	RegisterExtraParam(new ExtraVesselConfig(this), NULL); TRACENEW
@@ -1654,3 +1655,8 @@ void orbiter::ExtraTab::RefreshLocalization()
 		SendMessageW(hTree, TVM_SETITEMW, 0, (LPARAM)&set);
 	}
 }
+
+// ==============================================================
+// Project extensions (contact model page)
+// ==============================================================
+#include "TabExtraContact.inc"
