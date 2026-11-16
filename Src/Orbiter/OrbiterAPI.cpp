@@ -122,6 +122,105 @@ DLLEXPORT const char *oapiGetLayoutString (const char *section, const char *key,
 	return orbiter::LayoutString(section, key, def);
 }
 
+// ---------------------------------------------------------------------------
+// Chinese dialog layout helpers ("official layout + offset")
+//
+// The RC resources keep the official English layout. In Chinese mode the text
+// is translated and controls that cannot hold the wider Chinese text are
+// enlarged / repacked. English mode never touches the layout.
+// ---------------------------------------------------------------------------
+
+// Translate the text of a dialog control in place. Returns true if the text is
+// now Chinese (i.e. a translation existed).
+static bool ZhTranslateDlgItem (HWND hCtrl)
+{
+	if (!hCtrl) return false;
+	wchar_t wtxt[512];
+	if (GetWindowTextW(hCtrl, wtxt, 512) <= 0) return false;
+	std::string utf8 = orbiter::WideToUtf8String(wtxt);
+	const char *zh = orbiter::Tr(utf8.c_str());
+	if (!zh || strcmp(zh, utf8.c_str()) == 0) return false;
+	std::wstring wz = orbiter::Utf8ToWideString(zh);
+	SetWindowTextW(hCtrl, wz.c_str());
+	return true;
+}
+
+// Measure the current text of a control in dialog font pixels.
+static int ZhMeasureDlgItem (HWND hDlg, HWND hCtrl)
+{
+	wchar_t wtxt[512];
+	if (GetWindowTextW(hCtrl, wtxt, 512) <= 0) return 0;
+	HDC hdc = GetDC(hDlg);
+	HFONT hf = (HFONT)SendMessageW(hCtrl, WM_GETFONT, 0, 0);
+	HGDIOBJ old = hf ? SelectObject(hdc, hf) : NULL;
+	SIZE sz = { 0, 0 };
+	GetTextExtentPoint32W(hdc, wtxt, (int)wcslen(wtxt), &sz);
+	if (old) SelectObject(hdc, old);
+	ReleaseDC(hDlg, hdc);
+	return sz.cx;
+}
+
+DLLEXPORT int oapiZhFitControlText (HWND hDlg, int ctrlId, int padX)
+{
+	if (!hDlg || !orbiter::IsChinese()) return 0;
+	HWND hCtrl = GetDlgItem(hDlg, ctrlId);
+	if (!hCtrl) return 0;
+	ZhTranslateDlgItem(hCtrl);
+	int textW = ZhMeasureDlgItem(hDlg, hCtrl);
+	if (textW <= 0) return 0;
+	RECT r;
+	GetWindowRect(hCtrl, &r);
+	MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+	int w = r.right - r.left, h = r.bottom - r.top;
+	int nw = textW + (padX > 0 ? padX : 0);
+	if (nw <= w) return 0;
+	SetWindowPos(hCtrl, NULL, r.left, r.top, nw, h, SWP_NOZORDER);
+	return 1;
+}
+
+DLLEXPORT int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int padX, int gap, int startX)
+{
+	if (!hDlg || !ctrlIds || count <= 0 || !orbiter::IsChinese()) return 0;
+	if (gap < 0) gap = 0;
+	if (padX < 0) padX = 0;
+
+	std::vector<HWND> ctrl((size_t)count, (HWND)0);
+	std::vector<int>  width((size_t)count, 0);
+	RECT r0;
+	bool haveFirst = false;
+	int adjusted = 0;
+
+	for (int i = 0; i < count; i++) {
+		ctrl[(size_t)i] = GetDlgItem(hDlg, ctrlIds[i]);
+		if (!ctrl[(size_t)i]) return adjusted;
+		ZhTranslateDlgItem(ctrl[(size_t)i]);
+		width[(size_t)i] = ZhMeasureDlgItem(hDlg, ctrl[(size_t)i]) + padX;
+		if (!haveFirst) {
+			GetWindowRect(ctrl[0], &r0);
+			MapWindowPoints(NULL, hDlg, (POINT*)&r0, 2);
+			haveFirst = true;
+		}
+	}
+
+	int x = (startX >= 0) ? startX : r0.left;
+	int y = r0.top, h = r0.bottom - r0.top;
+	for (int i = 0; i < count; i++) {
+		RECT r;
+		GetWindowRect(ctrl[(size_t)i], &r);
+		MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+		int w = r.right - r.left;
+		int nw = width[(size_t)i];
+		if (nw < w) nw = w;   // never shrink below the official size
+		int nh = (r.bottom - r.top);
+		// keep the vertical centre of the original control
+		int ny = r.top + (nh - h) / 2;
+		SetWindowPos(ctrl[(size_t)i], NULL, x, ny, nw, h, SWP_NOZORDER);
+		x += nw + gap;
+		adjusted++;
+	}
+	return adjusted;
+}
+
 // 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）
 extern void ZhHudAddText (int x, int y, int size, const char *utf8);
 

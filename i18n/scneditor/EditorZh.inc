@@ -119,7 +119,7 @@ static void ZhLocalizeScnDlg(HWND hDlg)
                 SIZE sz = {0, 0};
                 GetTextExtentPoint32W(hdcO, wzh.c_str(), (int)wzh.size(), &sz);
                 if (old) SelectObject(hdcO, old);
-                int wNew = sz.cx + 8;
+                int wNew = sz.cx + oapiGetLayoutInt("dialog.scneditor.secondary", "orientationLabelPadX", 8);
                 int wOld = r.right - r.left;
                 if (wNew < wOld) wNew = wOld;
                 // left-align all three labels to the same column
@@ -151,7 +151,8 @@ static void ZhLocalizeScnDlg(HWND hDlg)
             GetTextExtentPoint32W(hdcP, wzh.c_str(), (int)wzh.size(), &sz);
             if (old) SelectObject(hdcP, old);
             int w = r.right - r.left, h = r.bottom - r.top;
-            int nw = sz.cx + 16, nh = sz.cy + 8;
+            int nw = sz.cx + oapiGetLayoutInt("dialog.scneditor.secondary", "buttonPadX", 16);
+            int nh = sz.cy + oapiGetLayoutInt("dialog.scneditor.secondary", "buttonPadY", 8);
             if (nw < w) nw = w;
             if (nh < h) nh = h;
             SetWindowPos(hB, NULL, r.left - (nw-w)/2, r.top - (nh-h)/2, nw, nh, SWP_NOZORDER);
@@ -175,7 +176,7 @@ static void ZhLocalizeScnDlg(HWND hDlg)
             if (sz.cx > maxW) maxW = sz.cx;
         }
         ReleaseDC(hDlg, hdc);
-        const int LBL_X = 220;
+        const int LBL_X = oapiGetLayoutInt("dialog.scneditor.secondary", "labelX", 220);
         const int LBL_W = maxW;            // label column: exactly the widest text
         const int VAL_X = LBL_X + LBL_W - 1;   // value column: 5px left of the old 4px gap
         for (int i = 0; i < nLabel; i++) {
@@ -187,7 +188,8 @@ static void ZhLocalizeScnDlg(HWND hDlg)
                 RECT rv; GetWindowRect(hVal, &rv);
                 MapWindowPoints(NULL, hDlg, (POINT*)&rv, 2);
                 int valW = cr.right - VAL_X - 4;
-                if (valW < 24) valW = 24;
+                int minValW = oapiGetLayoutInt("dialog.scneditor.secondary", "minValWidth", 24);
+                if (valW < minValW) valW = minValW;
                 SetWindowPos(hVal, NULL, VAL_X, rv.top, valW, rv.bottom-rv.top, SWP_NOZORDER);
             }
         }

@@ -16,7 +16,7 @@
 extern Vessel *g_focusobj;
 extern Orbiter *g_pOrbiter;
 
-DlgRecorder::DlgRecorder() : ImGuiDialog(ICON_FA_FILM " Flight recorder/player", {329,354}) {
+DlgRecorder::DlgRecorder() : ImGuiDialog((std::string(ICON_FA_FILM " ") + orbiter::Tr("Flight recorder/player")).c_str(), {329,354}) {
 	SetHelp("html/orbiter.chm", "/recorder.htm");
     strcpy(m_ScenarioFile, "test_record");
 }
@@ -24,7 +24,7 @@ DlgRecorder::DlgRecorder() : ImGuiDialog(ICON_FA_FILM " Flight recorder/player",
 void DlgRecorder::OnDraw() {
     int status = g_pOrbiter->RecorderStatus();
     static const char *statestr[3] = {"Status: Normal", "Status: Recording", "Status: Playing"};
-    ImGui::TextUnformatted(statestr[status]);
+    ImGui::TextUnformatted(orbiter::Tr(statestr[status]));
 
     switch(status) {
         case 0: DrawNormalRecording(false); break;

@@ -4538,3 +4538,16 @@ msgstr "关"
 
 msgid "Receiver %d %0.2fMHz"
 msgstr "接收机%d %0.2fMHz"
+
+; Flight recorder dialog (DlgRecorder.cpp)
+msgid "Flight recorder/player"
+msgstr "飞行记录器/回放"
+
+msgid "Status: Normal"
+msgstr "状态：正常"
+
+msgid "Status: Recording"
+msgstr "状态：录制中"
+
+msgid "Status: Playing"
+msgstr "状态：回放中"

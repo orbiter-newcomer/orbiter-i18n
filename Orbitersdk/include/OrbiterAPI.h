@@ -2514,6 +2514,37 @@ OAPIFUNC double oapiGetLayoutFloat (const char *section, const char *key, double
 OAPIFUNC const char *oapiGetLayoutString (const char *section, const char *key, const char *def);
 
 /**
+ * \brief Fits a dialog control to its translated Chinese text.
+ * \param hDlg dialog window
+ * \param ctrlId control identifier
+ * \param padX horizontal padding added to the measured text width
+ * \return 1 if the control was adjusted, 0 otherwise (English mode, missing
+ *   control, or the original size already fits)
+ * \note Implements the "official layout + offset" rule for dialogs: the RC
+ *   resources keep the official English layout; in Chinese mode the control
+ *   text is translated (oapiTr) and, if the Chinese text does not fit, the
+ *   control is widened while keeping its left edge and vertical position.
+ *   The official layout stays authoritative in English mode.
+ */
+OAPIFUNC int oapiZhFitControlText (HWND hDlg, int ctrlId, int padX);
+
+/**
+ * \brief Fits and repacks a horizontal row of dialog controls (buttons).
+ * \param hDlg dialog window
+ * \param ctrlIds control identifiers in left-to-right order
+ * \param count number of identifiers
+ * \param padX horizontal padding added to each measured text width
+ * \param gap gap between adjacent controls
+ * \param startX left edge of the row; if negative, the current left edge of the
+ *   first control is used
+ * \return number of controls that were adjusted
+ * \note Same "official layout + offset" rule as oapiZhFitControlText, but the
+ *   controls are packed left-to-right so that wider Chinese button texts do not
+ *   overlap. English mode does not touch the layout.
+ */
+OAPIFUNC int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int padX, int gap, int startX);
+
+/**
  * \brief Translates the display name of an object (planet, base, ...).
  * \param english English display name
  * \return localised name (UTF-8), or the source string if no translation exists
