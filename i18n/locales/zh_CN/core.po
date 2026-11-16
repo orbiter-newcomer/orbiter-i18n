@@ -4506,3 +4506,35 @@ msgstr "Lua 飞船错误"
 
 msgid "TIME DILATION: waiting for focus vessel..."
 msgstr "时间膨胀：等待焦点飞船..."
+
+; Date format / weekday names (Astro.cpp, Chinese date display)
+msgid "%d-%d-%d %s %02d:%02d:%02d"
+msgstr "%d年%d月%d日 %s %02d:%02d:%02d"
+
+msgid "Sunday"
+msgstr "周日"
+
+msgid "Monday"
+msgstr "周一"
+
+msgid "Tuesday"
+msgstr "周二"
+
+msgid "Wednesday"
+msgstr "周三"
+
+msgid "Thursday"
+msgstr "周四"
+
+msgid "Friday"
+msgstr "周五"
+
+msgid "Saturday"
+msgstr "周六"
+
+; Relative exposure readout and docking HUD NAV line
+msgid "off"
+msgstr "关"
+
+msgid "Receiver %d %0.2fMHz"
+msgstr "接收机%d %0.2fMHz"

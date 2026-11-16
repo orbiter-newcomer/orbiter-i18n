@@ -434,11 +434,13 @@ namespace ZhHud {
 	}
 
 	// 对接 HUD 的 NAV 频率行："接收机X 123.45MHz"
+	// The English template is the translation key (text in core.po): the English
+	// wording itself is never displayed (this path is Chinese mode only).
 	inline bool AddDockNav (int cx, int cy, int fh, int navidx, double freq)
 	{
 		if (!orbiter::IsChinese()) return false;
 		char buf[64];
-		sprintf (buf, "接收机%d %0.2fMHz", navidx, freq);
+		sprintf (buf, orbiter::Tr("Receiver %d %0.2fMHz"), navidx, freq);
 		AddText (cx, cy, buf, fh);
 		return true;
 	}

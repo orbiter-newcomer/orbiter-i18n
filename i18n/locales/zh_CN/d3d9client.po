@@ -611,3 +611,19 @@ msgstr "8x 全"
 
 msgid "8x"
 msgstr "8x"
+
+; Splash screen (startup) texts, D3D9Client.cpp
+msgid "Graphics engine: D3D9Client"
+msgstr "图形引擎：D3D9Client"
+
+msgid "Build date 20%lu-%lu-%lu [%u, debug]"
+msgstr "构建时间20%lu年%lu月%lu日[%u（debug）版]"
+
+msgid "Build date 20%lu-%lu-%lu [%u]"
+msgstr "构建时间20%lu年%lu月%lu日[%u版]"
+
+msgid "ORBITER Space Flight Simulator"
+msgstr "ORBITER太空飞行模拟器"
+
+msgid "Loading..."
+msgstr "载入中…"

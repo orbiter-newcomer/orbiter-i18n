@@ -57,9 +57,12 @@ char *DateStr (double mjd)
 	static char datestr[256];
 	static char wdaystr[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 	static char monstr[13][4] = {"","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-	// Chinese weekday names are kept separately: "Sun" is also the name of the
-	// star and must not be confused with the Sunday abbreviation.
-	static const char *wdayzh[7] = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
+	// Full English weekday names are the translation keys for the Chinese date
+	// display: "Sun" is also the name of the star and must not be confused with
+	// the Sunday abbreviation.
+	static const char *wdayKeys[7] = {
+		"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+	};
 
 	double ijd, c, e, h;
 	int a, f, wday, mday, mon, year, hour, min, sec;
@@ -83,9 +86,9 @@ char *DateStr (double mjd)
 	sec   = (int)(h = 60.0 * (h - min));
 	
 	if (orbiter::IsChinese()) {
-		// Chinese date format: 2010年3月14日 周日 16:05:53
-		sprintf (datestr, "%d年%d月%d日 %s %02d:%02d:%02d",
-			year, mon, mday, wdayzh[wday], hour, min, sec);
+		// Chinese date format (translation data in core.po), e.g. 2010年3月14日 周日 16:05:53
+		sprintf (datestr, orbiter::Tr("%d-%d-%d %s %02d:%02d:%02d"),
+			year, mon, mday, orbiter::Tr(wdayKeys[wday]), hour, min, sec);
 	} else {
 		sprintf (datestr, "%s %s %02d %02d:%02d:%02d %d", wdaystr[wday], monstr[mon], mday,
 			hour, min, sec, year);

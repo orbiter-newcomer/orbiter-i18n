@@ -3092,12 +3092,12 @@ void D3D9Client::SplashScreen()
 
 	char dataA[256], dataB[128];
 	if (chinese) {
-		// Graphics engine line: plain engine name, no version/build suffix.
-		strcpy_s(dataA, "图形引擎：D3D9Client");
+		// Chinese mode: translated text (English originals come from d3d9client.po).
+		strcpy_s(dataA, oapiTr("Graphics engine: D3D9Client"));
 #ifdef _DEBUG
-		sprintf_s(dataB, 128, "构建时间20%lu年%lu月%lu日[%u（debug）版]", y, m, d, oapiGetOrbiterVersion());
+		sprintf_s(dataB, 128, oapiTr("Build date 20%lu-%lu-%lu [%u, debug]"), y, m, d, oapiGetOrbiterVersion());
 #else
-		sprintf_s(dataB, 128, "构建时间20%lu年%lu月%lu日[%u版]", y, m, d, oapiGetOrbiterVersion());
+		sprintf_s(dataB, 128, oapiTr("Build date 20%lu-%lu-%lu [%u]"), y, m, d, oapiGetOrbiterVersion());
 #endif
 	} else {
 		strcpy_s(dataA, "D3D9Client");
@@ -3114,7 +3114,7 @@ void D3D9Client::SplashScreen()
 	int yc = viewH*545/800;
 
 	if (chinese) {
-		std::wstring wtitle = oapiUtf8ToWString("ORBITER太空飞行模拟器");
+		std::wstring wtitle = oapiUtf8ToWString(oapiTr("ORBITER Space Flight Simulator"));
 		std::wstring wdataB = oapiUtf8ToWString(dataB);
 		std::wstring wdataA = oapiUtf8ToWString(dataA);
 		TextOutW(hDC, xc, yc + 0*20, wtitle.c_str(), (int)wtitle.length());
@@ -3144,9 +3144,9 @@ void D3D9Client::SplashScreen()
 		const int lx = (int)round(imgOfsX + imgW * imgScale * 0.5);
 		const int ly = (int)round(imgOfsY + imgH * imgScale * (1082.0 / 1200.0));
 		if (chinese) {
-			const wchar_t* wload = L"载入中…";
-			GetTextExtentPoint32W(hDC, wload, (int)wcslen(wload), &sz);
-			TextOutW(hDC, lx - sz.cx / 2, ly - sz.cy / 2, wload, (int)wcslen(wload));
+			std::wstring wload = oapiUtf8ToWString(oapiTr("Loading..."));
+			GetTextExtentPoint32W(hDC, wload.c_str(), (int)wload.size(), &sz);
+			TextOutW(hDC, lx - sz.cx / 2, ly - sz.cy / 2, wload.c_str(), (int)wload.size());
 		} else {
 			const char* aload = "Loading...";
 			GetTextExtentPoint32A(hDC, aload, (int)strlen(aload), &sz);

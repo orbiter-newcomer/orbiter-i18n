@@ -22,9 +22,9 @@ void UpdateRelExposureLabel (HWND hPage)
 {
 	int pos = (int)SendDlgItemMessage (hPage, IDC_OPT_VIS_RELEXPOSURE, TBM_GETPOS, 0, 0);
 	char buf[32];
-	if (pos >= 8) strcpy_s (buf, 32, orbiter::IsChinese() ? "关" : "off");
+	if (pos >= 8) strcpy_s (buf, 32, orbiter::Tr("off"));
 	else sprintf_s (buf, 32, "K=%.1f", 1.0 + (pos - 1) * 0.5);
-	orbiter::SetWindowTextUtf8 (GetDlgItem (hPage, IDC_OPT_VIS_RELEXP_DSP), buf);   // UTF-8 -> wide (中文"关"防乱码)
+	orbiter::SetWindowTextUtf8 (GetDlgItem (hPage, IDC_OPT_VIS_RELEXP_DSP), buf);   // UTF-8 -> wide: avoid ANSI gaps
 }
 
 BOOL OptionsPage_Visual::OnHScroll (HWND hPage, WPARAM wParam, LPARAM lParam)
