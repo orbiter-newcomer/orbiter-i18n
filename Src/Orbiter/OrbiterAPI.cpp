@@ -302,38 +302,38 @@ DLLEXPORT int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int
 
 // ---------------------------------------------------------------------------
 // oapiZhFitDialogButtons: fit all push buttons of a dialog to their Chinese
-// texts. The official layout is the base: every button is translated and only
-// grown (to the right / downwards) when the Chinese text does not fit its
-// official rect. Buttons are never moved or repacked here; targeted moves use
-// oapiZhOffsetControls with offsets from layout.ini.
+// texts. The official layout is the base: every button is translated and grown
+// (to the right / downwards) when the Chinese text does not fit. Buttons on the
+// same row are repacked left-to-right only when widening them would make them
+// overlap (e.g. a row of long Chinese button labels); buttons in different
+// columns are not moved. Targeted moves use oapiZhOffsetControls.
 // ---------------------------------------------------------------------------
+
+struct ZhFitDlgBtn {
+	HWND h;
+	RECT r;      // position relative to the dialog
+	int tw, th;  // measured Chinese text size in pixels
+};
 
 struct ZhFitDlgCtx {
 	HWND hDlg;
 	int padX, padY;
-	int adjusted;
+	std::vector<ZhFitDlgBtn> btns;
 };
 
-static BOOL CALLBACK ZhFitDlgBtnCb (HWND hCtrl, LPARAM lp)
+static BOOL CALLBACK ZhCollectFitBtnCb (HWND hCtrl, LPARAM lp)
 {
 	ZhFitDlgCtx *ctx = (ZhFitDlgCtx*)lp;
 	LONG style = GetWindowLongA(hCtrl, GWL_STYLE);
 	LONG type = style & 0xF;
 	if (type != BS_PUSHBUTTON && type != BS_DEFPUSHBUTTON) return TRUE;
 	ZhTranslateDlgItem(hCtrl);
-	int textH = 0;
-	int textW = ZhMeasureDlgItem(ctx->hDlg, hCtrl, &textH);
-	if (textW <= 0) return TRUE;
-	RECT r;
-	GetWindowRect(hCtrl, &r);
-	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&r, 2);
-	int w = r.right - r.left, h = r.bottom - r.top;
-	int nw = w, nh = h;
-	if (textW + ctx->padX > w) nw = textW + ctx->padX;
-	if (textH + ctx->padY > h) nh = textH + ctx->padY;
-	if (nw == w && nh == h) return TRUE;
-	SetWindowPos(hCtrl, NULL, r.left, r.top, nw, nh, SWP_NOZORDER);
-	ctx->adjusted++;
+	ZhFitDlgBtn b;
+	b.h = hCtrl;
+	GetWindowRect(hCtrl, &b.r);
+	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&b.r, 2);
+	b.tw = ZhMeasureDlgItem(ctx->hDlg, hCtrl, &b.th);
+	ctx->btns.push_back(b);
 	return TRUE;
 }
 
@@ -344,9 +344,82 @@ DLLEXPORT int oapiZhFitDialogButtons (HWND hDlg, int padX, int padY)
 	ctx.hDlg = hDlg;
 	ctx.padX = padX > 0 ? padX : 0;
 	ctx.padY = padY > 0 ? padY : 0;
-	ctx.adjusted = 0;
-	EnumChildWindows(hDlg, ZhFitDlgBtnCb, (LPARAM)&ctx);
-	return ctx.adjusted;
+	EnumChildWindows(hDlg, ZhCollectFitBtnCb, (LPARAM)&ctx);
+
+	const size_t n = ctx.btns.size();
+	std::vector<bool> used(n, false);
+	int adjusted = 0;
+	const int rowGap = 4;
+
+	for (size_t i = 0; i < n; i++) {
+		if (used[i]) continue;
+
+		// buttons on the same row (same top edge) are handled together
+		std::vector<size_t> row;
+		row.push_back(i);
+		used[i] = true;
+		for (size_t j = i + 1; j < n; j++) {
+			if (used[j]) continue;
+			int dt = ctx.btns[j].r.top - ctx.btns[i].r.top;
+			if (dt >= -1 && dt <= 1) {
+				row.push_back(j);
+				used[j] = true;
+			}
+		}
+		// order the row by horizontal position
+		for (size_t a = 1; a < row.size(); a++) {
+			size_t v = row[a], b = a;
+			while (b > 0 && ctx.btns[row[b - 1]].r.left > ctx.btns[v].r.left) {
+				row[b] = row[b - 1];
+				b--;
+			}
+			row[b] = v;
+		}
+
+		// target size of every button in the row (only grow)
+		int rowH = 0;
+		for (size_t k = 0; k < row.size(); k++) {
+			ZhFitDlgBtn &b = ctx.btns[row[k]];
+			int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
+			int nw = w, nh = h;
+			if (b.tw + ctx.padX > w) nw = b.tw + ctx.padX;
+			if (b.th + ctx.padY > h) nh = b.th + ctx.padY;
+			b.tw = nw;   // reuse: target width
+			b.th = nh;   // reuse: target height
+			if (nh > rowH) rowH = nh;
+		}
+
+		// check whether the wider buttons would overlap in the official layout
+		bool overlap = false;
+		int acc = ctx.btns[row[0]].r.left;
+		for (size_t k = 0; k < row.size(); k++) {
+			int x = ctx.btns[row[k]].r.left;
+			if (k > 0 && x < acc) { overlap = true; break; }
+			acc = x + ctx.btns[row[k]].tw;
+		}
+
+		if (overlap) {
+			// repack the row left-to-right from the official left edge so that
+			// the wider Chinese labels fit without overlapping each other
+			int x = ctx.btns[row[0]].r.left;
+			int y = ctx.btns[row[0]].r.top;
+			for (size_t k = 0; k < row.size(); k++) {
+				ZhFitDlgBtn &b = ctx.btns[row[k]];
+				SetWindowPos(b.h, NULL, x, y, b.tw, rowH, SWP_NOZORDER);
+				x += b.tw + rowGap;
+				adjusted++;
+			}
+		} else {
+			for (size_t k = 0; k < row.size(); k++) {
+				ZhFitDlgBtn &b = ctx.btns[row[k]];
+				int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
+				if (b.tw == w && b.th == h) continue;
+				SetWindowPos(b.h, NULL, b.r.left, b.r.top, b.tw, b.th, SWP_NOZORDER);
+				adjusted++;
+			}
+		}
+	}
+	return adjusted;
 }
 
 // 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）
