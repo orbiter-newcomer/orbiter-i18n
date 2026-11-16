@@ -379,3 +379,172 @@ msgstr "现在我要停止自旋的火箭。\n观察它如何在非均匀引力�
 
 msgid "Now I am spinning up the other rocket.\nAs a result, it will maintain the orientation of its\nlongitudinal axis."
 msgstr "现在我要让另一枚火箭自旋起来。\n结果它将保持其纵轴指向。"
+
+; MFD button labels for Lua-scripted MFDs (context "mfd.button")
+msgctxt "mfd.button"
+msgid "SET"
+msgstr "设置"
+
+msgctxt "mfd.button"
+msgid "DCK"
+msgstr "对接"
+
+msgctxt "mfd.button"
+msgid "SUS"
+msgstr "挂起"
+
+msgctxt "mfd.button"
+msgid "END"
+msgstr "取消"
+
+msgctxt "mfd.button"
+msgid "CFG"
+msgstr "配置"
+
+msgctxt "mfd.button"
+msgid "+R"
+msgstr "加旋转"
+
+msgctxt "mfd.button"
+msgid "-R"
+msgstr "删旋转"
+
+msgctxt "mfd.button"
+msgid "AX"
+msgstr "旋转轴"
+
+msgctxt "mfd.button"
+msgid "+V"
+msgstr "加角度"
+
+msgctxt "mfd.button"
+msgid "-V"
+msgstr "减角度"
+
+msgctxt "mfd.button"
+msgid "UP"
+msgstr "上移"
+
+msgctxt "mfd.button"
+msgid "DN"
+msgstr "下移"
+
+msgctxt "mfd.button"
+msgid "GO"
+msgstr "启动"
+
+msgctxt "mfd.button"
+msgid "RTN"
+msgstr "返回"
+
+msgctxt "mfd.button"
+msgid "BAS"
+msgstr "基准"
+
+msgctxt "mfd.button"
+msgid "INV"
+msgstr "反向"
+
+msgctxt "mfd.button"
+msgid "CUR"
+msgstr "保持"
+
+msgctxt "mfd.button"
+msgid "NAV"
+msgstr "接收机"
+
+msgctxt "mfd.button"
+msgid "ACT"
+msgstr "激活"
+
+msgctxt "mfd.button"
+msgid "CNC"
+msgstr "取消"
+
+msgctxt "mfd.button"
+msgid "L"
+msgstr "发射"
+
+msgctxt "mfd.button"
+msgid "EA"
+msgstr "接通"
+
+msgctxt "mfd.button"
+msgid "DA"
+msgstr "断开"
+
+msgctxt "mfd.button"
+msgid "PG-"
+msgstr "上页"
+
+msgctxt "mfd.button"
+msgid "PG+"
+msgstr "下页"
+
+msgctxt "mfd.button"
+msgid "AZ-"
+msgstr "方位-"
+
+msgctxt "mfd.button"
+msgid "AZ+"
+msgstr "方位+"
+
+msgctxt "mfd.button"
+msgid "AL-"
+msgstr "高度-"
+
+msgctxt "mfd.button"
+msgid "AL+"
+msgstr "高度+"
+
+msgctxt "mfd.button"
+msgid "OM2"
+msgstr "圆化"
+
+msgctxt "mfd.button"
+msgid "NA"
+msgstr "附件+"
+
+msgctxt "mfd.button"
+msgid "PA"
+msgstr "附件-"
+
+msgctxt "mfd.button"
+msgid "ND"
+msgstr "接口+"
+
+msgctxt "mfd.button"
+msgid "PD"
+msgstr "接口-"
+
+msgctxt "mfd.button"
+msgid "FWD"
+msgstr "前进"
+
+msgctxt "mfd.button"
+msgid "BWD"
+msgstr "后退"
+
+msgctxt "mfd.button"
+msgid "VES"
+msgstr "选船"
+
+msgctxt "mfd.button"
+msgid "NV"
+msgstr "夜视"
+
+msgctxt "mfd.button"
+msgid "ZM+"
+msgstr "放大"
+
+msgctxt "mfd.button"
+msgid "ZM-"
+msgstr "缩小"
+
+msgctxt "mfd.button"
+msgid "PAR"
+msgstr "父级"
+
+msgctxt "mfd.button"
+msgid "CRS"
+msgstr "准星"

@@ -214,7 +214,7 @@ char *AscentMFD::ButtonLabel (int bt)
 {
 	static const char *label[4] = {"PG", "AR", "VRR", "VTR"};
 	if (bt < 0 || bt >= 4) return 0;
-	if (oapiZhActive()) return (char*)g_zhAscentMfdBtnLabel[bt];   // Chinese mode: return Chinese label
+	if (oapiZhActive()) return (char*)ZhAscentMfdBtnLabel(bt);   // Chinese mode: return Chinese label
 	return (char*)label[bt];
 }
 

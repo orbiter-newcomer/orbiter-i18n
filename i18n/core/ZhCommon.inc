@@ -195,9 +195,9 @@ namespace ZhPanel {
 	inline void FontSizes (int paneH, int *fh)
 	{
 		for (int i = 0; i < 4; i++) {
-			int v = paneH * g_zhPanelFontSpec[i].num / g_zhPanelFontSpec[i].den;
-			fh[i] = (v < g_zhPanelFontSpec[i].lo ? g_zhPanelFontSpec[i].lo
-			       : (v > g_zhPanelFontSpec[i].hi ? g_zhPanelFontSpec[i].hi : v));
+			int v = paneH * ZhPanelFontSpec(i).num / ZhPanelFontSpec(i).den;
+			fh[i] = (v < ZhPanelFontSpec(i).lo ? ZhPanelFontSpec(i).lo
+			       : (v > ZhPanelFontSpec(i).hi ? ZhPanelFontSpec(i).hi : v));
 		}
 	}
 
@@ -334,7 +334,7 @@ void DefaultPanel::DrawZhMfdButtonLabels ()
 				for (int j = 0; j < 4; j++)
 					ng->Vtx[i*4+j].tu = (316.0f+(j%2)*44.0f)/512.0f;
 				skp->SetTextColor (btcol[colidx & 3]);
-				ZhCommon::DrawButtonLabel (skp, gc, g_zhNavBtnLabel[i],
+				ZhCommon::DrawButtonLabel (skp, gc, ZhNavBtnLabel(i),
 					ng->Vtx[i*4].x + btnw*0.5f, ng->Vtx[i*4].y + btnh*0.5f, fhs, -1, btnw);
 			}
 		}
@@ -373,7 +373,7 @@ void DefaultPanel::DrawZhMfdButtonLabels ()
 				skp->Rectangle ((int)x1+2, (int)y1+2, (int)(x1+bw)-2, (int)(y1+bh)-2);
 			}
 			skp->SetTextColor (btcol[colidx & 3]);   // 文字颜色与其他面板按钮统一
-			ZhCommon::DrawButtonLabel (skp, gc, g_zhRcsBtnLabel[i],
+			ZhCommon::DrawButtonLabel (skp, gc, ZhRcsBtnLabel(i),
 				x1 + bw*0.5f, y1 + bh*0.5f, fhs, 1);           // 中号档、单行居中
 		}
 
@@ -418,7 +418,7 @@ namespace ZhHud {
 	inline bool AddBand (int mode, int cx, int cy, int fh, const char *refname)
 	{
 		if (!orbiter::IsChinese()) return false;
-		std::string band = g_zhHudModeTitle[(mode >= 0 && mode < 3) ? mode : 0];
+		std::string band = ZhHudModeTitle((mode >= 0 && mode < 3) ? mode : 0);
 		band += "  ";
 		band += orbiter::Tr (refname);
 		AddText (cx, cy, band.c_str(), fh);
@@ -429,7 +429,7 @@ namespace ZhHud {
 	{
 		if (!orbiter::IsChinese()) return false;
 		if (label < 1 || label > 5) return false;
-		AddText (cx, cy, g_zhHudReadoutLabel[label], fh);
+		AddText (cx, cy, ZhHudReadoutLabel(label), fh);
 		return true;
 	}
 

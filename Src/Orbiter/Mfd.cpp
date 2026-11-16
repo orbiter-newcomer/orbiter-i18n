@@ -902,7 +902,7 @@ void Instrument::DisplayModes (int page)
 	char *name;
 	int n, x, y, pg;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = max (bt_dy, ch*zhOff_Menu.rowCh + (ch/4)*zhOff_Menu.rowQuarterCh);
+	int dy = max (bt_dy, ch*ZhOffMenu().rowCh + (ch/4)*ZhOffMenu().rowQuarterCh);
 	int slot;
 
 	ClearSurface();
@@ -944,7 +944,7 @@ void Instrument::DisplayModes (int page)
 			KeyStr[1] = (id == MFD_RIGHT ? 'R' : 'L');
 			KeyStr[8] = Key2Char[m->Spec()->key];
 			skp->SetTextColor (col_grey2);
-			skp->Text (x, y + ch*zhOff_Menu.keyCh + (ch/4)*zhOff_Menu.keyQuarterCh, KeyStr, 10);
+			skp->Text (x, y + ch*ZhOffMenu().keyCh + (ch/4)*ZhOffMenu().keyQuarterCh, KeyStr, 10);
 		}
 		y += dy;
 		slot++;
@@ -979,7 +979,7 @@ void Instrument::DrawMenu ()
 	const MFDBUTTONMENU *mnu;
 	int side, i, n, x, y, item, itemofs, nmnu;
 	int y0 = bt_y0 - (id <= MFD_RIGHT ? ch : ch/2);
-	int dy = max (bt_dy, ch*zhOff_Menu.rowCh + (ch/4)*zhOff_Menu.rowQuarterCh);
+	int dy = max (bt_dy, ch*ZhOffMenu().rowCh + (ch/4)*ZhOffMenu().rowQuarterCh);
 
 	ClearSurface();
 	oapi::Sketchpad *skp = BeginDraw ();
@@ -1002,9 +1002,9 @@ void Instrument::DrawMenu ()
 
 			int w1 = mnu[item].line1 ? (int)skp->GetTextWidth(mnu[item].line1, (int)strlen(mnu[item].line1)) : 0;
 			int w2 = mnu[item].line2 ? (int)skp->GetTextWidth(mnu[item].line2, (int)strlen(mnu[item].line2)) : 0;
-			int gap = (mnu[item].line1 && mnu[item].line2) ? (cw/2)*zhOff_Menu.itemGapHalfCw : 0;
+			int gap = (mnu[item].line1 && mnu[item].line2) ? (cw/2)*ZhOffMenu().itemGapHalfCw : 0;
 			int total = w1 + gap + w2;
-			int lx = side ? (IW - (cw/2)*zhOff_Menu.rightGapHalfCw - total) : x;
+			int lx = side ? (IW - (cw/2)*ZhOffMenu().rightGapHalfCw - total) : x;
 
 			// Menu labels are provided by the MFD modes in English; translate them
 			// at display time (English mode returns the original text unchanged).

@@ -121,7 +121,7 @@ char *TransxMFD::ButtonLabel (int bt)
 {
 	const char *label[] = {"HLP","FWD","BCK", "VW","VAR","-VR", "ADJ", "-AJ","++", "--","EXE","ENT"};
 	if (bt < 0 || bt >= (int)(sizeof(label) / sizeof(char*))) return 0;
-	if (oapiZhActive()) return (char*)g_zhTransXBtnLabel[bt];   // Chinese mode: return Chinese label
+	if (oapiZhActive()) return (char*)ZhTransXBtnLabel(bt);   // Chinese mode: return Chinese label
 	return (char*)label[bt];
 }
 

@@ -2497,6 +2497,23 @@ OAPIFUNC const char *oapiTr (const char *english);
 OAPIFUNC const char *oapiTrContext (const char *context, const char *english);
 
 /**
+ * \brief Queries runtime layout data of the Chinese localisation.
+ * \param section layout section name (e.g. "mfd.landing")
+ * \param key entry name inside the section (e.g. "navRowX")
+ * \param def value returned when the entry is not present
+ * \return parsed layout value (integer / floating point / string)
+ * \note Layout values live in i18n/layout/zh_CN/layout.ini and can be edited
+ *   without rebuilding the program. Missing files/entries always fall back to
+ *   the passed default, so a plugin behaves identically when no layout data is
+ *   installed. English mode does not load layout data, i.e. defaults apply.
+ *   The layout system is intended for Chinese localisation metrics (offsets,
+ *   font sizes, ...), not for general plugin configuration.
+ */
+OAPIFUNC int oapiGetLayoutInt (const char *section, const char *key, int def);
+OAPIFUNC double oapiGetLayoutFloat (const char *section, const char *key, double def);
+OAPIFUNC const char *oapiGetLayoutString (const char *section, const char *key, const char *def);
+
+/**
  * \brief Translates the display name of an object (planet, base, ...).
  * \param english English display name
  * \return localised name (UTF-8), or the source string if no translation exists

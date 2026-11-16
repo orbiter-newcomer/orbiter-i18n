@@ -367,7 +367,7 @@ void Instrument_Map::UpdateDraw_Map (oapi::Sketchpad *skp)
 		const SurfParam *sp = (g_focusobj->ProxyPlanet() == refplanet ? vessel->GetSurfParam() : NULL);
 		char cbuf[128];
 		oapi::Font *pfont = 0;
-		int y = orbiter::IsChinese() ? IH - ch*zhOff_Map.infoRowCh - (ch/2)*zhOff_Map.infoRowHalfCh : IH-ch;   // Chinese layout shifts the info lines up
+		int y = orbiter::IsChinese() ? IH - ch*ZhOffMap().infoRowCh - (ch/2)*ZhOffMap().infoRowHalfCh : IH-ch;   // Chinese layout shifts the info lines up
 		if (track) {
 			skp->SetTextColor (draw[2][0].col);
 			skp->Text (IW-(cw*22)/2, 0, orbiter::Tr("TRK"), (int)strlen(orbiter::Tr("TRK")));

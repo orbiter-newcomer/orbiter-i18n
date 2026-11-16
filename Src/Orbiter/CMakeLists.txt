@@ -61,6 +61,7 @@ set(common_src
 	Select.cpp
 	OptionsPages.cpp
 	${CMAKE_SOURCE_DIR}/i18n/core/Localization.cpp
+    ${CMAKE_SOURCE_DIR}/i18n/core/Layout.cpp
 # Body classes
 	Body.cpp
 	BodyIntegrator.cpp
@@ -195,6 +196,6 @@ set(VERSION "1.3.0")
 configure_file(about.hpp.in about.hpp @ONLY)
 
 # Chinese localisation catalogs (external UTF-8 .po translation files)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/i18n/locales
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/i18n/locales ${CMAKE_SOURCE_DIR}/i18n/layout
 	DESTINATION ${ORBITER_INSTALL_ROOT_DIR}/i18n
 )

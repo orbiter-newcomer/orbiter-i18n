@@ -309,7 +309,7 @@ char *CameraMFD::ButtonLabel (int bt)
 	// The labels for the buttons used by our MFD mode
 	static const char *label[] = {"NA", "PA", "ND", "PD", "FWD", "BWD", "VES", "NV", "ZM+", "ZM-", "PAR", "CRS"};
 	if (bt < 0 || bt >= (int)ARRAYSIZE(label)) return 0;
-	if (oapiZhActive()) return (char*)g_zhGcamBtnLabel[bt];   // Chinese mode: return Chinese label
+	if (oapiZhActive()) return (char*)ZhGcamBtnLabel(bt);   // Chinese mode: return Chinese label
 	return (char*)label[bt];
 }
 

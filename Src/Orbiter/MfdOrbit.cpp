@@ -311,7 +311,7 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			};
 			const DWORD colors[4] = { draw[2][0].col, draw[2][0].col, draw[2][1].col, draw[2][1].col };
 			const int gaps[4] = { 1, 3, 1, 0 };
-			DrawRightAlignedSegments(skp, IW - zhOff_Orbit.headerRightCw*cw, 1, texts, colors, gaps, 4, cw);
+			DrawRightAlignedSegments(skp, IW - ZhOffOrbit().headerRightCw*cw, 1, texts, colors, gaps, 4, cw);
 		}
 		if (bValidShpEl && projmode == PRJ_SHIP) {
 			irot = IRotMatrix (shpel->cost, shpel->sint, shpel->cosi, shpel->sini);
@@ -345,7 +345,7 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			};
 			const DWORD colors[2] = { draw[2][0].col, draw[2][0].col };
 			const int gaps[2] = { 1, 0 };
-			DrawRightAlignedSegments(skp, IW - zhOff_Orbit.headerRightCw*cw, 1, texts, colors, gaps, 2, cw);
+			DrawRightAlignedSegments(skp, IW - ZhOffOrbit().headerRightCw*cw, 1, texts, colors, gaps, 2, cw);
 		}
 	}
 
@@ -381,7 +381,7 @@ void Instrument_Orbit::UpdateDraw (oapi::Sketchpad *skp)
 			// widest row ends at the right edge of the MFD (text left-aligned).
 			int tgtMaxW = 0;
 			DisplayElements (skp, tgtel, 0, 0, 1, &tgtMaxW);
-			int tgtX = IW - (cw/2)*zhOff_Orbit.tgtRightHalfCw - tgtMaxW;
+			int tgtX = IW - (cw/2)*ZhOffOrbit().tgtRightHalfCw - tgtMaxW;
 			if (tgtX < IW/2) tgtX = IW/2;
 			skp->Text (tgtX, (ch*3)/2, cbuf, (int)strlen(cbuf));
 			DisplayElements (skp, tgtel, tgtX, (ch*5)/2, 0, 0);

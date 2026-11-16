@@ -111,7 +111,7 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 
 	skp->SetTextColor (draw[0][0].col);
 	sprintf (cbuf, "%s%d %06.2fMHz", orbiter::Tr("NAV"), nv+1, nav->freq);
-	skp->Text (IW-cw*15 + (zh ? zhOff_Landing.navRowX*cw : 0), 0, cbuf, strlen (cbuf));
+	skp->Text (IW-cw*15 + (zh ? ZhOffLanding().navRowX*cw : 0), 0, cbuf, strlen (cbuf));
 
 	if (nav->sender) {
 		switch (nav->sender->Type()) {
@@ -240,9 +240,9 @@ void Instrument_Landing::UpdateDraw (oapi::Sketchpad *skp)
 	skp->SetTextAlign (oapi::Sketchpad::CENTER);
 	skp->Text ((IW* 9)/12-(5*barw)/2, bar0-barh/2, "10 ^ x m", 8);
 	skp->Text ((IW*11)/12-2*barw, bar0-barh/2, "10 ^ x m/s", 10);
-	skp->Text (circx-barw-(cw/2)*zhOff_Landing.cirScaleLblHalfCw, circy-circr/2, "10 ^ x m", 8);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
+	skp->Text (circx-barw-(cw/2)*ZhOffLanding().cirScaleLblHalfCw, circy-circr/2, "10 ^ x m", 8);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 	skp->SetTextColor (draw[1][0].col);
-	skp->Text (circx-barw-(cw/2)*zhOff_Landing.cirScaleLblHalfCw, circy+circr/2, "10 ^ x m/s", 10);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
+	skp->Text (circx-barw-(cw/2)*ZhOffLanding().cirScaleLblHalfCw, circy+circr/2, "10 ^ x m/s", 10);   // 中文：数量级标签再左移，避免贴住瞄准圈中线
 
 	// VTOL cone
 	if (draw_cone) {

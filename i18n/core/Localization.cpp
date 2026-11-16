@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 
 #include "Localization.h"
+#include "Layout.h"
 
 #include <windows.h>
 #include <commctrl.h>
@@ -323,6 +324,17 @@ static void BuildTables()
 		return kCfgFile;
 	}
 
+	// Load the runtime layout data matching the active language. The file is
+	// optional: without it the built-in default layout values stay in effect
+	// (identical to the historical compiled-in values). English mode uses the
+	// defaults, i.e. the official layout.
+	static void LoadLayoutForLanguage()
+	{
+		ClearLayout();
+		if (g_language == Language::Chinese)
+			LoadLayoutFile("i18n/layout/zh_CN/layout.ini");
+	}
+
 	void InitLocalization()
 	{
 		BuildTables();
@@ -348,6 +360,7 @@ static void BuildTables()
 				}
 			}
 		}
+		LoadLayoutForLanguage();
 	}
 
 	Language GetLanguage()
@@ -364,6 +377,7 @@ static void BuildTables()
 	{
 		g_language = lang;
 		BuildTables();
+		LoadLayoutForLanguage();
 		if (!save) return;
 
 		std::ofstream ofs(kCfgFile);

@@ -19,6 +19,7 @@
 #include "Script.h"
 #include "Util.h"
 #include "Localization.h"
+#include "Layout.h"
 #include "Log.h"
 #include "Dialogs.h"
 #include "resource.h"
@@ -104,6 +105,21 @@ DLLEXPORT int oapiUtf8ToWide (const char *utf8, wchar_t *buf, int buflen)
 DLLEXPORT int oapiWideToUtf8 (const wchar_t *wide, char *buf, int buflen)
 {
 	return orbiter::WideToUtf8Buffer(wide, buf, buflen);
+}
+
+DLLEXPORT int oapiGetLayoutInt (const char *section, const char *key, int def)
+{
+	return orbiter::LayoutInt(section, key, def);
+}
+
+DLLEXPORT double oapiGetLayoutFloat (const char *section, const char *key, double def)
+{
+	return orbiter::LayoutFloat(section, key, def);
+}
+
+DLLEXPORT const char *oapiGetLayoutString (const char *section, const char *key, const char *def)
+{
+	return orbiter::LayoutString(section, key, def);
 }
 
 // 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）

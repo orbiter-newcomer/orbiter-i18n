@@ -47,7 +47,7 @@ char *ScriptMFD::ButtonLabel (int bt)
 	// The labels for the buttons used by our MFD mode
 	static const char *label[5] = {"INP", "NEW", "DEL", "PG>", "<PG"};
 	if (bt < 0 || bt >= 5) return 0;
-	if (oapiZhActive()) return (char*)g_zhLuaMfdTermLabel[bt];   // Chinese mode: return Chinese label
+	if (oapiZhActive()) return (char*)ZhLuaMfdTermLabel(bt);   // Chinese mode: return Chinese label
 	return (char*)label[bt];
 }
 

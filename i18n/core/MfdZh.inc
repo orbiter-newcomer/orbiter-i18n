@@ -1,80 +1,154 @@
 // =============================================================================
-// MfdZh.inc - MFD 相关的中文数据（本文件只放数据/参数，不含具体过程）
+// MfdZh.inc - MFD 相关的中文数据（数据/参数，不含具体排版过程）
 //
 // 内容包括：
-//   1. 各 MFD 的中文布局偏置数据（zhOff_*）：以官方坐标为基准，中文模式叠加
-//   2. MFD 按钮标签文字映射数据（内置 MFD 别名表；外部 MFD 由各插件自行提供中文标签）
+//   1. 各 MFD 的中文布局偏置（ZhOff*）：以官方坐标为基准，中文模式叠加。
+//      数值默认值在代码中，可由运行时数据文件覆盖而无需重新编译：
+//        i18n/layout/zh_CN/layout.ini  -> [mfd.landing] / [mfd.docking] / ...
+//   2. MFD 按钮标签文字映射数据（内置 MFD 别名表；外部 MFD 由各插件自行提供）
 //
-// 具体排版过程（右对齐多段文本、实测列宽三列布局等）在 ZhCommon.inc 中实现；
-// 本文件只通过注释标明各偏置的用途（"此处使用右对齐/实测列宽"等）。
-// 各 MFD 官方 .cpp 只保留布局公式与调用点，偏置数值统一在此。
-// 英文模式（Language=en）下按钮映射返回原文、偏置不使用，行为与官方完全一致。
+// 具体排版过程（右对齐多段文本、实测列宽三列布局等）在 ZhCommon.inc 中实现。
+// 英文模式（Language=en）下按钮映射返回原文、偏置不使用（layout.ini 不加载）。
 //
 // 相关文件：
-//   ZhCommon.inc —— 汉化公共逻辑（字体/文本绘制/排版算法/面板与 HUD 流程）
-//   InstrumentZh.inc —— 其他仪表数据（玻璃座舱面板 + HUD）
-//   （面板与 HUD 的数据都集中在 InstrumentZh.inc）
+//   ZhCommon.inc         —— 汉化公共逻辑（字体/文本绘制/排版算法/面板与 HUD 流程）
+//   InstrumentZh.inc     —— 其他仪表数据（玻璃座舱面板 + HUD）
+//   i18n/layout/zh_CN/layout.ini —— 运行时可调布局数据
 // =============================================================================
 #ifndef MFDZH_INC
 #define MFDZH_INC
 
 #include "Localization.h"
+#include "Layout.h"
 #include "Mfd.h"
 #include <string.h>
 
 // -----------------------------------------------------------------------------
-// 一、各 MFD 的中文布局偏置数据
+// 一、各 MFD 的中文布局偏置（惰性读取 layout.ini，缺失时使用编译默认值）
+//
 // 约定：用整数单位表达分数偏移（cw/2、ch/4 等），便于维护、避免魔法小数。
+// Getter 返回每个编译单元内的单例；首次访问时从 layout 数据读取覆盖。
 // -----------------------------------------------------------------------------
 
 // ---- 着陆 / VOR-VTOL MFD（MfdLanding.cpp）----
-static const struct {
+struct ZhOffLandingT {
 	int navRowX;            // 右上 NAV 行左移量（单位 cw；"接收机…"比"NAV…"宽）
 	int cirScaleLblHalfCw;  // 瞄准圈数量级标签额外左移（单位 cw/2，正数=向左）
-} zhOff_Landing = { -3, 1 };
+};
+inline ZhOffLandingT &ZhOffLanding ()
+{
+	static ZhOffLandingT v = { -3, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.navRowX           = orbiter::LayoutInt("mfd.landing", "navRowX", v.navRowX);
+		v.cirScaleLblHalfCw = orbiter::LayoutInt("mfd.landing", "cirScaleLblHalfCw", v.cirScaleLblHalfCw);
+	}
+	return v;
+}
 
 // ---- 对接 MFD（MfdDocking.cpp）----
-static const struct {
+struct ZhOffDockT {
 	int navRowX;            // 右上 NAV 行左移量（单位 cw）
 	int colGap;             // 中文实测列间距（单位 cw，第二列起）
 	int arrowHalfCw;        // 箭头位于行尾后的额外间距（单位 cw/2）
-} zhOff_Dock = { -3, 2, 1 };
+};
+inline ZhOffDockT &ZhOffDock ()
+{
+	static ZhOffDockT v = { -3, 2, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.navRowX     = orbiter::LayoutInt("mfd.docking", "navRowX", v.navRowX);
+		v.colGap      = orbiter::LayoutInt("mfd.docking", "colGap", v.colGap);
+		v.arrowHalfCw = orbiter::LayoutInt("mfd.docking", "arrowHalfCw", v.arrowHalfCw);
+	}
+	return v;
+}
 
 // ---- 轨道同步 MFD（MfdSync.cpp）----
-static const struct {
+struct ZhOffSyncT {
 	int colGap;             // 三列紧凑排列的列间距（单位 cw）
 	int rightHalfCw;        // 表格右对齐时的右边距（单位 cw/2）
-} zhOff_Sync = { 1, 1 };
+};
+inline ZhOffSyncT &ZhOffSync ()
+{
+	static ZhOffSyncT v = { 1, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.colGap      = orbiter::LayoutInt("mfd.sync", "colGap", v.colGap);
+		v.rightHalfCw = orbiter::LayoutInt("mfd.sync", "rightHalfCw", v.rightHalfCw);
+	}
+	return v;
+}
 
 // ---- 轨道 MFD（MfdOrbit.cpp）----
-static const struct {
+struct ZhOffOrbitT {
 	int headerRightCw;      // 表头右对齐边距（单位 cw）
 	int tgtRightHalfCw;     // 目标列右对齐边距（单位 cw/2）
-} zhOff_Orbit = { 1, 1 };
+};
+inline ZhOffOrbitT &ZhOffOrbit ()
+{
+	static ZhOffOrbitT v = { 1, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.headerRightCw  = orbiter::LayoutInt("mfd.orbit", "headerRightCw", v.headerRightCw);
+		v.tgtRightHalfCw = orbiter::LayoutInt("mfd.orbit", "tgtRightHalfCw", v.tgtRightHalfCw);
+	}
+	return v;
+}
 
 // ---- 地图 MFD（MfdMap.cpp）----
-static const struct {
+struct ZhOffMapT {
 	int infoRowCh;          // 信息行上移（单位 ch）
 	int infoRowHalfCh;      // 额外上移（单位 ch/2）
-} zhOff_Map = { 1, 1 };
+};
+inline ZhOffMapT &ZhOffMap ()
+{
+	static ZhOffMapT v = { 1, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.infoRowCh     = orbiter::LayoutInt("mfd.map", "infoRowCh", v.infoRowCh);
+		v.infoRowHalfCh = orbiter::LayoutInt("mfd.map", "infoRowHalfCh", v.infoRowHalfCh);
+	}
+	return v;
+}
 
 // ---- MFD 菜单（Mfd.cpp）----
-static const struct {
+struct ZhOffMenuT {
 	int rowCh;              // 菜单行距基础部分（单位 ch）
 	int rowQuarterCh;       // 菜单行距额外部分（单位 ch/4）
 	int keyCh;              // 快捷键行下移基础部分（单位 ch）
 	int keyQuarterCh;       // 快捷键行下移额外部分（单位 ch/4）
 	int itemGapHalfCw;      // 两行菜单项间距（单位 cw/2）
 	int rightGapHalfCw;     // 右侧菜单右对齐边距（单位 cw/2）
-} zhOff_Menu = { 2, 1, 1, 1, 1, 1 };
+};
+inline ZhOffMenuT &ZhOffMenu ()
+{
+	static ZhOffMenuT v = { 2, 1, 1, 1, 1, 1 };
+	static bool loaded = false;
+	if (!loaded) {
+		loaded = true;
+		v.rowCh          = orbiter::LayoutInt("mfd.menu", "rowCh", v.rowCh);
+		v.rowQuarterCh   = orbiter::LayoutInt("mfd.menu", "rowQuarterCh", v.rowQuarterCh);
+		v.keyCh          = orbiter::LayoutInt("mfd.menu", "keyCh", v.keyCh);
+		v.keyQuarterCh   = orbiter::LayoutInt("mfd.menu", "keyQuarterCh", v.keyQuarterCh);
+		v.itemGapHalfCw  = orbiter::LayoutInt("mfd.menu", "itemGapHalfCw", v.itemGapHalfCw);
+		v.rightGapHalfCw = orbiter::LayoutInt("mfd.menu", "rightGapHalfCw", v.rightGapHalfCw);
+	}
+	return v;
+}
 
 // -----------------------------------------------------------------------------
 // 二、MFD 按钮标签文字映射数据
 // 查询过程见 ZhCommon.inc（ZH_PANEL 段 ZhPanel::MfdButtonText）。
+// -----------------------------------------------------------------------------
 
 // MFD 控制按钮（玻璃座舱面板底部）：电源 / 选择 / 说明
 static const char *g_zhPanelBtnAlias[3] = { "PANEL_PWR", "PANEL_SEL", "PANEL_MNU" };
-// -----------------------------------------------------------------------------
 
 // 内置 MFD 的按钮标签别名表：个别按钮标签与 MFD 内容文本共用同一个英文键、但语义不同，
 // 这时改查独立别名键：
