@@ -566,3 +566,162 @@ msgctxt "scenario.description"
 msgid "<h1>Moon through atmosphere</h1> <p>New additive rendering of objects through atmospheric layers.</p> <p>The Moon now looks much more realistic from the surface of Earth during the daytime.</p> "
 msgstr "<h1>透过大气看月球</h1> <p>新的穿过大气层物体的叠加渲染。</p> <p>现在白天从地球表面看月球要真实得多。</p> "
 
+msgctxt "scenario.description"
+msgid "Orbiter 2024: A quick aerial tour of Kennedy Space Center \n\nHere is a pre-recorded flight showcasing the new look of the KSC in the latest Orbiter edition: higher resolution surface textures, vegetation roughness, improved water surfaces and remodelled launch pads. "
+msgstr "Orbiter 2024：肯尼迪航天中心快速空中游览。这段预录飞行展示了最新版 Orbiter 中肯尼迪航天中心的新面貌：更高分辨率的地表纹理、植被粗糙度、改进的水面以及重新建模的发射台。"
+
+msgctxt "scenario.description"
+msgid "Earth views 2016 \n\nA flyby over some of Earth's surface formations in Orbiter 2016, featuring new textures and elevation maps. \n\nNote that the default Orbiter installation only comes with a low-resolution version of the Earth maps. To see the full supported resolution in Orbiter, you need to install the full resolution maps. Go to the Orbiter home page for links and installation instructions. Be sure to have plenty of free space on your hard drive! "
+msgstr "地球景观 2016。在 Orbiter 2016 中飞越地球表面的部分地貌，展示新的纹理和高程图。请注意，Orbiter 默认安装只包含低分辨率地球地图。要看到 Orbiter 支持的完整分辨率，需要安装完整分辨率地图。请访问 Orbiter 主页获取链接和安装说明。请确保硬盘有足够可用空间！"
+
+msgctxt "scenario.description"
+msgid "Space Shuttle ascent autopilot \n\nThe default Space Shuttle Atlantis bundled with Orbiter now contains a built-in ascent autopilot. \n\nFor instructions on configuring and executing the autopilot, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "航天飞机上升自动驾驶。Orbiter 自带的默认航天飞机 Atlantis 现在内置上升自动驾驶。有关配置和执行自动驾驶的说明，请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Enable non-spherical gravity and watch the Moon's MASCONS perturb the 16x16km orbit of a Deltaglder. Don't stay this low for too long... "
+msgstr "启用非球形引力，观察月球的质量瘤（MASCON）如何扰动三角滑翔机 16×16 公里的轨道。不要在这种低轨道停留太久……"
+
+msgctxt "scenario.description"
+msgid "Orbiter 2016: Fly across the Alps \n\nOrbiter now supports planetary surface elevations. Take a DG on a flight across the Alps, finally in 3D. "
+msgstr "Orbiter 2016：飞越阿尔卑斯山。Orbiter 现在支持行星表面高程。驾驶三角滑翔机飞越阿尔卑斯山，终于有了 3D 地形。"
+
+msgctxt "scenario.description"
+msgid "Orbiter Challenges: 1 \n\nThe task: Fly the Delta-glider to the International Space Station on as little fuel as possible.  \n\nFor details, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "Orbiter 挑战：1。任务：用尽可能少的燃料驾驶三角滑翔机飞抵国际空间站。详情请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Orbiter Challenges: 2 \n\nYou are piloting a Delta-glider from low Earth orbit to rendezvous with a space station orbiting the moon. \n\nFor details, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "Orbiter 挑战：2。你驾驶三角滑翔机从低地球轨道出发，与环绕月球的太空站交会。详情请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Mission 1: Delta-glider to ISS \n\nIn this mission we launch the Delta-glider into orbit from runway 33 of the Shuttle Landing Facility (SLF) at the Kennedy Space Center, and perform a rendezvous and docking manoeuvre with the International Space Station.  \n\nFor instructions, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "任务 1：三角滑翔机前往国际空间站。本任务中，我们从肯尼迪航天中心航天飞机着陆设施（SLF）33 号跑道起飞三角滑翔机进入轨道，并与国际空间站进行交会和对接。说明请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Mission 2: ISS to Mir transfer \n\nThis mission performs an orbital transfer from the International Space Station to the Russian Mir station (which in Orbiter's virtual reality is still happily in Earth orbit). Note that in Orbiter, Mir is placed in an ecliptic orbit to make it a platform for interplanetary missions. This means that ISS and Mir have a very high relative inclination which makes the transfer very expensive in terms of fuel expenditure.  \n\nFor instructions, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "任务 2：国际空间站到和平号转移。本任务执行从国际空间站到俄罗斯和平号空间站的轨道转移（在 Orbiter 的虚拟现实中，和平号仍快乐地留在环绕地球的轨道上）。注意，在 Orbiter 中和平号位于黄道轨道，以作为行星际任务的平台。这意味着国际空间站与和平号的相对倾角非常大，转移需要消耗大量燃料。说明请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Mission 3: De-orbit from Mir \n\nThis mission completes your orbital roundtrip with a re-entry to return to Kennedy Space Center.  \n\nFor instructions, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "任务 3：从和平号离轨。本任务通过再入返回肯尼迪航天中心，完成你的轨道往返之旅。说明请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Quickstart \n\nThis section demonstrates how to take off and land with one of Orbiter's default spacecraft, the Delta-glider. If you are using Orbiter for the first time, this will help to familiarise yourself with some basic concepts of spacecraft and camera control. Consult the Orbiter Manual for further details.  \n\nFor instructions, launch the scenario, then open the Help window (Alt-F1). "
+msgstr "快速开始。本节演示如何用 Orbiter 默认航天器之一——三角滑翔机——起飞和着陆。如果你是第一次使用 Orbiter，这有助于熟悉航天器和相机控制的一些基本概念。更多细节请参阅 Orbiter 手册。说明请启动场景后打开帮助窗口（Alt-F1）。"
+
+msgctxt "scenario.description"
+msgid "Current scenario state \n\nContains the latest simulation state. "
+msgstr "当前场景状态。包含最新的模拟状态。"
+
+msgctxt "scenario.description"
+msgid "Lined up for docking at the International Space Station. \nWatch the approach path indicator on your left MFD and the HUD approach markers while closing in on the ISS. \nUse your linear RCS (Reaction control system) thrusters to keep aligned with the approach path. \nYour final closing velocity should be less than 0.1 m/s. "
+msgstr "已对准国际空间站准备对接。接近国际空间站时，注意左侧 MFD 上的接近路径指示器和 HUD 上的接近标记。使用线性 RCS（反作用控制系统）推进器保持与接近路径对齐。最终接近速度应小于 0.1 米/秒。"
+
+msgctxt "scenario.description"
+msgid "Dione with Saturn in the background and an edge-on view of the ring system. "
+msgstr "土卫四（Dione）与背景中的土星，以及侧视的土星环系统。"
+
+msgctxt "scenario.description"
+msgid "Start in a glider docked to the International Space Station. \nCurrent location: above central China. "
+msgstr "以对接在国际空间站上的滑翔机开始。当前位置：中国中部上空。"
+
+msgctxt "scenario.description"
+msgid "Homeworld: The Blue Planet. "
+msgstr "家园世界：蓝色星球。"
+
+msgctxt "scenario.description"
+msgid "View of Europa, with Jupiter in the background and Io passing below. "
+msgstr "木卫二（Europa）的景观，背景是木星，木卫一（Io）从下方经过。"
+
+msgctxt "scenario.description"
+msgid "Orbiter now supports higher resolution planetary textures (level 9, up to 32768x16384 effective bitmap size). The standard Orbiter distribution contains level 9 coverage for the Gulf of Mexico area. To get full land coverage, you must download and install the additional Earth super-hires texture pack. The new Earth textures also contain a new land-sea mask with improved inland water surface data. \nTo see more hi-res Earth views, open the Camera dialog (Ctrl-F1) and select from the Preset list. "
+msgstr "Orbiter 现在支持更高分辨率的行星纹理（9 级，有效位图尺寸最高 32768×16384）。标准 Orbiter 发行版包含墨西哥湾地区的 9 级覆盖。要获得完整陆地覆盖，需下载安装额外的高精度地球纹理包。新的地球纹理还包含新的海陆掩码，内陆水面数据更好。要看更多高分辨率地球景观，请打开相机对话框（Ctrl-F1），从预设列表中选择。"
+
+msgctxt "scenario.description"
+msgid "Burn-up? What burn-up? Space station Mir is back in orbit. Mir's orbital plane has been rotated to make it an ideal platform for lunar transits. \nMir model by Jason Benson (agent036). "
+msgstr "烧毁？什么烧毁？和平号空间站又回到了轨道上。和平号的轨道平面已被旋转，成为月球转移任务的理想平台。和平号模型作者：Jason Benson（agent036）。"
+
+msgctxt "scenario.description"
+msgid "Start the Simulator with Atlantis docked to the ISS. The Leonardo MPLM is in the Atlantis cargo bay.  "
+msgstr "以对接在国际空间站的航天飞机 Atlantis 开始模拟。Leonardo 多用途后勤舱（MPLM）位于 Atlantis 的货舱中。"
+
+msgctxt "scenario.description"
+msgid "A view of Saturn and its ring system. "
+msgstr "土星及其环系统的景观。"
+
+msgctxt "scenario.description"
+msgid "Orbiter now has improved ephemeris calculations for planetary and lunar positions. Eclipses finally occur at the correct times! "
+msgstr "Orbiter 现在改进了行星和月球位置的星历计算。日食/月食终于发生在正确的时间了！"
+
+msgctxt "scenario.description"
+msgid "The solar system at present. "
+msgstr "当前时刻的太阳系。"
+
+msgctxt "scenario.description"
+msgid "Contains the latest simulation state. "
+msgstr "包含最新的模拟状态。"
+
+msgctxt "scenario.description"
+msgid "This was compiled and created with 021118 + patch. "
+msgstr "本场景使用 021118 + 补丁编译创建。"
+
+msgctxt "scenario.description"
+msgid "Use the TransX to plan and execute maneuvers to take a Delta-Glider from Earth to Mars. "
+msgstr "使用 TransX 规划并执行机动，将三角滑翔机从地球送往火星。"
+
+msgctxt "scenario.description"
+msgid "Use the TransX to plan and execute maneuvers to take a Delta-Glider from Earth orbit to Lunar orbit. "
+msgstr "使用 TransX 规划并执行机动，将三角滑翔机从地球轨道送往月球轨道。"
+
+msgctxt "scenario.description"
+msgid "Use the TransX to fly the Voyager Grand Tour. "
+msgstr "使用 TransX 飞行旅行者号大巡游航线。"
+
+msgctxt "scenario.description"
+msgid "Use the Quadcopter to survey the VAB and adjacent areas. "
+msgstr "使用四轴飞行器勘察垂直总装厂房（VAB）及周边区域。"
+
+msgctxt "scenario.description"
+msgid "This is a view from Panama of the total / annular hybrid eclipse on Friday, April 8. "
+msgstr "这是从巴拿马观看 4 月 8 日星期五全环食（混合食）的景象。"
+
+msgctxt "scenario.description"
+msgid "This is a view from the Sun of the total / annular hybrid eclipse on Friday, April 8, 2005. The Moon's antumbra will first touch the Earth's surface in the South Pacific Ocean near New Zealand. With the Moon being too small to completely cover the Sun, viewers will see an annulus, or ring of light. But the Moon will grow slightly in visual size during the course of this eclipse providing a total eclipse to viewers in the tropical Pacific waters. As the surface of the Earth recedes from the Moon, it will once again shrink in visible size, providing an annular eclipse to viewers in Panama and northern South America. "
+msgstr "这是从太阳视角观看 2005 年 4 月 8 日星期五全环食的景象。月球的反本影将首先触及新西兰附近南太平洋的地球表面。由于月球太小，无法完全遮住太阳，观测者会看到环状的光环。但在这次食的过程中，月球的视尺寸会略微增大，为热带太平洋水域的观测者带来全食。随着地球表面远离月球，月球的视尺寸又会缩小，为巴拿马和南美洲北部的观测者带来环食。"
+
+msgctxt "scenario.description"
+msgid "The Lunar eclipse of October 27/28, 2004. Watch from the lunar surface as the Earth covers the face of the Sun. \nYou can speed up the simulation by using time acceleration (T). Use planetarium mode (F9) to locate the dark disc of Earth. \nNote Mercury (the dim red dot) in the lower left corner of the screen. "
+msgstr "2004 年 10 月 27/28 日的月食。从月球表面观看地球遮住太阳圆面。可用时间加速（T）加快模拟。用星空模式（F9）定位地球的暗面圆盘。注意屏幕左下角的水星（暗红色小点）。"
+
+msgctxt "scenario.description"
+msgid "Orbiter now has improved ephemeris calculations for planetary and lunar positions. Eclipses finally occur at the correct times! "
+msgstr "Orbiter 现在改进了行星和月球位置的星历计算。日食/月食终于发生在正确的时间了！"
+
+msgctxt "scenario.description"
+msgid "Earth and Moon. Lunar ephemerides now use the ELP2000-82 perturbation solution, improving the accuracy of the Moon's position in Orbiter. This provides more precise eclipse timings, and removes the relative motion artefacts of the previous release. \nTurn on labels (F9), switch to highest time acceleration, and watch the Moon rotate around Earth. "
+msgstr "地球与月球。月球星历现在使用 ELP2000-82 摄动解，提高了 Orbiter 中月球位置的精度。这提供了更精确的食时刻，并消除了上一版本的相对运动伪影。打开标签（F9），切换到最高时间加速，观察月球绕地球旋转。"
+
+msgctxt "scenario.description"
+msgid "A view of the Jovian system with Jupiter and the four major moons Io, Europa, Ganymede and Callisto. \nOrbiter now uses semi-analytic perturbation solutions to provide long-term stability of positions for the Jovian system. Simply turn on the planet labels (F9), switch to 100000x time acceleration, and watch. "
+msgstr "木星系统景观：木星与四颗主要卫星——木卫一（Io）、木卫二（Europa）、木卫三（Ganymede）和木卫四（Callisto）。Orbiter 现在使用半解析摄动解为木星系统提供长期位置稳定性。只需打开行星标签（F9），切换到 100000 倍时间加速，观察即可。"
+
+msgctxt "scenario.description"
+msgid "On June 27, 1996 the Galileo Spacecraft made its first flyby of Jupiter's largest moon, Ganymede. "
+msgstr "1996 年 6 月 27 日，伽利略号探测器首次飞越木星最大的卫星——木卫三（Ganymede）。"
+
+msgctxt "scenario.description"
+msgid "Nearing the end of its mission, on October 11, 1999, Galileo braved the intense Jovian radiation to make a close flyby of the most volcanic body in our solar system, Io. "
+msgstr "1999 年 10 月 11 日，在任务即将结束时，伽利略号冒着木星强烈的辐射，近距离飞越了太阳系中火山活动最活跃的天体——木卫一（Io）。"
+
+msgctxt "scenario.description"
+msgid "On September 6, 1996 the Galileo Spacecraft passed even closer to Ganymede's surface during its second flyby of this icy world. "
+msgstr "1996 年 9 月 6 日，伽利略号探测器第二次飞越这个冰封世界时，更近距离地掠过木卫三（Ganymede）表面。"
+
+msgctxt "scenario.description"
+msgid "On November 25, 1999, less than 2 months plunging through Jupiter's intense radiation to get some close-up pictures of Io, Galileo does it again! "
+msgstr "1999 年 11 月 25 日，在穿越木星强烈辐射、拍摄木卫一（Io）特写照片后不到两个月，伽利略号再次完成了这一壮举！"
+
+msgctxt "scenario.description"
+msgid "The Delta Glider cruises through the Jovian system on Voyager I's historic trajectory. Increase the time warp to 1000x and enjoy this hands-off tour of Jupiter and its Galilean Moons. \nAfter leaving the Jovian system, increase the time warp further and wait for the Saturn flyby in November 1980. "
+msgstr "三角滑翔机沿着旅行者一号的历史轨迹巡航穿越木星系统。将时间加速提高到 1000 倍，享受这次无需操作的木星及其伽利略卫星之旅。离开木星系统后，进一步提高时间加速，等待 1980 年 11 月的土星飞越。"

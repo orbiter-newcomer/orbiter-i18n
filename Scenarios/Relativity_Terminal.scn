@@ -1,0 +1,67 @@
+BEGIN_DESC
+相对论验证（Terminal MFD 版）
+  两艘空载 DeltaGlider，满油：
+  - REL-LOW：低速（约 2 km/s），作为牛顿基准
+  - REL-06C：0.6c 高速
+
+  测试步骤（Left MFD 是 Terminal MFD，按 INP 按钮输入 Lua 命令）：
+  1) 记录基准（INP 输入）：
+     v=vessel.get_focusinterface(); t0=oapi.get_simtime(); v0=v:get_globalvel(); m=v:get_mass(); print(string.format("t0=%.3f v0=(%.2f,%.2f,%.2f) m=%.1f",t0,v0.x,v0.y,v0.z,m))
+  2) 推满主发动机（主油门），飞行 3~5 秒
+  3) 计算加速度（INP 输入）：
+     t1=oapi.get_simtime(); v1=v:get_globalvel(); dt=t1-t0; ax=(v1.x-v0.x)/dt; ay=(v1.y-v0.y)/dt; az=(v1.z-v0.z)/dt; a=math.sqrt(ax*ax+ay*ay+az*az); sp=math.sqrt(v0.x*v0.x+v0.y*v0.y+v0.z*v0.z); al=(ax*v0.x+ay*v0.y+az*v0.z)/sp; print(string.format("dt=%.3f |a|=%.6f along=%.6f",dt,a,al))
+  4) 切到 REL-LOW（F3）重复 1~3，得到低速基准 a0
+  预期：REL-06C 纵向 along = 0.512 * a0（gamma^3 修正），横向 = 0.8 * a0
+
+  注意：测量使用模拟时间（oapi.get_simtime），不受时间加速影响。时间加速会随焦点船速度自动调整（0.6c 时 x1.25）。
+END_DESC
+
+BEGIN_ENVIRONMENT
+  System Sol
+  Date MJD 52006.75
+END_ENVIRONMENT
+
+BEGIN_FOCUS
+  Ship REL-06C
+END_FOCUS
+
+BEGIN_CAMERA
+  TARGET REL-06C
+  MODE Cockpit
+END_CAMERA
+
+BEGIN_HUD
+  TYPE Surface
+END_HUD
+
+BEGIN_MFD Left
+  TYPE Terminal MFD
+END_MFD
+
+BEGIN_MFD Right
+  TYPE Orbit
+  REF Sun
+END_MFD
+
+BEGIN_SHIPS
+REL-LOW:DeltaGlider
+  STATUS Orbiting Sun
+  RPOS 1.5e11 0 0
+  RVEL 0 0 2000
+  AROT 0 0 0
+  PRPLEVEL 0:1.000000 1:1.000000
+  NAVFREQ 0 0
+  XPDR 0
+  HUDMode 2
+END
+REL-06C:DeltaGlider
+  STATUS Orbiting Sun
+  RPOS 1.5e11 1e9 1.5e11
+  RVEL 0 0 179875474
+  AROT 0 0 0
+  PRPLEVEL 0:1.000000 1:1.000000
+  NAVFREQ 0 0
+  XPDR 0
+  HUDMode 2
+END
+END_SHIPS
