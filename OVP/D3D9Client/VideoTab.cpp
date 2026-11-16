@@ -21,6 +21,14 @@
 #include <sstream>
 #include <richedit.h>
 
+// Add a combo box entry from an English original translated at run time
+// (English mode shows the original, Chinese mode the .po translation).
+static void AddComboStringTr (HWND hWnd, int id, const char *english)
+{
+	std::wstring w = oapiUtf8ToWString (oapiTr (english));
+	SendDlgItemMessageW (hWnd, id, CB_ADDSTRING, 0, (LPARAM)w.c_str());
+}
+
 using namespace oapi;
 
 const UINT IDC_SCENARIO_TREE = (oapiGetOrbiterVersion() >= 111105) ? 1090 : 1088;
@@ -212,9 +220,9 @@ bool VideoTab::Initialise()
 		SendDlgItemMessageA(hTab, IDC_VID_MODE, CB_SETITEMDATA, k, (LPARAM)(mode.Height<<16 | mode.Width));
 	}
 
-	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"真全屏（不可 Alt-Tab）");
-	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"全屏窗口");
-	SendDlgItemMessageW(hTab, IDC_VID_BPP, CB_ADDSTRING, 0, (LPARAM)L"带任务栏窗口");
+	AddComboStringTr (hTab, IDC_VID_BPP, "True Full Screen (no alt-tab)");
+	AddComboStringTr (hTab, IDC_VID_BPP, "Full Screen Window");
+	AddComboStringTr (hTab, IDC_VID_BPP, "Window with Taskbar");
 	SendDlgItemMessageA(hTab, IDC_VID_BPP, CB_SETCURSEL, data->style, 0);
 
 	//SetWindowText(GetDlgItem(hTab, IDC_VID_STATIC5), "Resolution");
@@ -574,7 +582,7 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	// AA -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_AA, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"无");
+	AddComboStringTr (hWnd, IDC_AA, "None");
 	if (aamax>=2)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"2x");
 	if (aamax>=4)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"4x");
 	if (aamax>=8)  SendDlgItemMessageW(hWnd, IDC_AA, CB_ADDSTRING, 0, (LPARAM)L"8x");
@@ -593,133 +601,133 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	// DEBUG --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_DEBUG, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"0（关闭日志）");
-	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"1（基础日志）");
-	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"2（详细日志）");
-	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"3（调试日志）");
-	SendDlgItemMessageW(hWnd, IDC_DEBUG, CB_ADDSTRING, 0, (LPARAM)L"4（全部日志）");
+	AddComboStringTr (hWnd, IDC_DEBUG, "0");
+	AddComboStringTr (hWnd, IDC_DEBUG, "1");
+	AddComboStringTr (hWnd, IDC_DEBUG, "2");
+	AddComboStringTr (hWnd, IDC_DEBUG, "3");
+	AddComboStringTr (hWnd, IDC_DEBUG, "4");
 	
 	// SKETCHPAD --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_FONT, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"锐利");
-	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"抗锯齿");
-	SendDlgItemMessageW(hWnd, IDC_FONT, CB_ADDSTRING, 0, (LPARAM)L"清晰字体");
+	AddComboStringTr (hWnd, IDC_FONT, "Crisp");
+	AddComboStringTr (hWnd, IDC_FONT, "Antialiased");
+	AddComboStringTr (hWnd, IDC_FONT, "Cleartype");
 	
 	// ENVMAP MODE --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用（调试）");
-	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"仅行星");
-	SendDlgItemMessageW(hWnd, IDC_ENVMODE, CB_ADDSTRING, 0, (LPARAM)L"全场景");
+	AddComboStringTr (hWnd, IDC_ENVMODE, "Disable (Debug)");
+	AddComboStringTr (hWnd, IDC_ENVMODE, "Planet Only");
+	AddComboStringTr (hWnd, IDC_ENVMODE, "Full Scene");
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_SETCURSEL, 0, 0);
 
 	// CUSTOM CAMERA MODE --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_CAMMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
-	SendDlgItemMessageW(hWnd, IDC_CAMMODE, CB_ADDSTRING, 0, (LPARAM)L"启用");
+	AddComboStringTr (hWnd, IDC_CAMMODE, "Disable");
+	AddComboStringTr (hWnd, IDC_CAMMODE, "Enabled");
 	SendDlgItemMessage(hWnd, IDC_ENVMODE, CB_SETCURSEL, 0, 0);
 
 	// ENVMAP FACES --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ENVFACES, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"快");
-	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"中");
-	SendDlgItemMessageW(hWnd, IDC_ENVFACES, CB_ADDSTRING, 0, (LPARAM)L"慢");
+	AddComboStringTr (hWnd, IDC_ENVFACES, "Light");
+	AddComboStringTr (hWnd, IDC_ENVFACES, "Medimum");
+	AddComboStringTr (hWnd, IDC_ENVFACES, "Heavy");
 	SendDlgItemMessage(hWnd, IDC_ENVFACES, CB_SETCURSEL, 0, 0);
 
 	// TEXTURE MIPMAP POLICY --------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_TEXMIPS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"按定义加载");
-	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"自动生成缺失");
-	SendDlgItemMessageW(hWnd, IDC_TEXMIPS, CB_ADDSTRING, 0, (LPARAM)L"全部自动生成");
+	AddComboStringTr (hWnd, IDC_TEXMIPS, "Load as defined");
+	AddComboStringTr (hWnd, IDC_TEXMIPS, "Autogen missing");
+	AddComboStringTr (hWnd, IDC_TEXMIPS, "Autogen all");
 	SendDlgItemMessage(hWnd, IDC_TEXMIPS, CB_SETCURSEL, 0, 0);
 
 	// MICROTEX FILTER --------------------------------------------
 
 	SendDlgItemMessage(hWnd,  IDC_MICROFILTER, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"点采样（快/好）");
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"线性（快/差）");
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 2x");
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 4x（较好）");
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 8x");
-	SendDlgItemMessageW(hWnd, IDC_MICROFILTER, CB_ADDSTRING, 0, (LPARAM)L"各向异性 16x（慢/最佳）");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Point (Fast/Good)");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Linear (Fast/Bad)");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Anisotropic 2x");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Anisotropic 4x (Better)");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Anisotropic 8x");
+	AddComboStringTr (hWnd, IDC_MICROFILTER, "Anisotropic 16x (Slow/Best)");
 	SendDlgItemMessage(hWnd,  IDC_MICROFILTER, CB_SETCURSEL, 0, 0);
 	
 	// MICROTEX FILTER --------------------------------------------
 
 	SendDlgItemMessage(hWnd,  IDC_MICROMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
-	SendDlgItemMessageW(hWnd, IDC_MICROMODE, CB_ADDSTRING, 0, (LPARAM)L"启用");
+	AddComboStringTr (hWnd, IDC_MICROMODE, "Disabled");
+	AddComboStringTr (hWnd, IDC_MICROMODE, "Enabled");
 	SendDlgItemMessage(hWnd,  IDC_MICROMODE, CB_SETCURSEL, 0, 0);
 
 
 	// MICROTEX BLEND MODE -----------------------------------------
 	
 	SendDlgItemMessage(hWnd,  IDC_BLENDMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"柔光");
-	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"普通光照");
-	SendDlgItemMessageW(hWnd, IDC_BLENDMODE, CB_ADDSTRING, 0, (LPARAM)L"硬光");
+	AddComboStringTr (hWnd, IDC_BLENDMODE, "Soft light");
+	AddComboStringTr (hWnd, IDC_BLENDMODE, "Normal light");
+	AddComboStringTr (hWnd, IDC_BLENDMODE, "Hard light");
 	SendDlgItemMessage(hWnd,  IDC_BLENDMODE, CB_SETCURSEL, 0, 0);
 
 	// TILE MIPMAP POLICY -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_MIPMAPS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)L"禁用");
-	SendDlgItemMessageW(hWnd, IDC_MIPMAPS, CB_ADDSTRING, 0, (LPARAM)L"启用（慢速加载）");
+	AddComboStringTr (hWnd, IDC_MIPMAPS, "Disabled");
+	AddComboStringTr (hWnd, IDC_MIPMAPS, "Enabled (slow2load)");
 	SendDlgItemMessage(hWnd, IDC_MIPMAPS, CB_SETCURSEL, 0, 0);
 
 	// ARCHIVE METHOD ------------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_ARCHIVE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"仅缓存");
-	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"仅存档");
-	SendDlgItemMessageW(hWnd, IDC_ARCHIVE, CB_ADDSTRING, 0, (LPARAM)L"缓存并存档");
+	AddComboStringTr (hWnd, IDC_ARCHIVE, "Cache only");
+	AddComboStringTr (hWnd, IDC_ARCHIVE, "Archive only");
+	AddComboStringTr (hWnd, IDC_ARCHIVE, "Cache & Archive");
 	SendDlgItemMessage(hWnd, IDC_ARCHIVE, CB_SETCURSEL, 0, 0);
 
 	// POSTPROCESSING METHOD ------------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_POSTPROCESS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)L"无");
-	SendDlgItemMessageW(hWnd, IDC_POSTPROCESS, CB_ADDSTRING, 0, (LPARAM)L"轻辉光");
+	AddComboStringTr (hWnd, IDC_POSTPROCESS, "None");
+	AddComboStringTr (hWnd, IDC_POSTPROCESS, "Light glow");
 	SendDlgItemMessage(hWnd, IDC_POSTPROCESS, CB_SETCURSEL, 0, 0);
 
 	// Local Lights -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_LIGHTCONFIG, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"无");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 部分");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"4x 全");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x 部分");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"8x 全");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 部分");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"12x 全");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"16x 部分");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"16x 全");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"20x 部分");
-	SendDlgItemMessageW(hWnd, IDC_LIGHTCONFIG, CB_ADDSTRING, 0, (LPARAM)L"20x 全");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "None");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "4x Partial");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "4x Full");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "8x Partial");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "8x Full");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "12x Partial");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "12x Full");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "16x Partial");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "16x Full");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "20x Partial");
+	AddComboStringTr (hWnd, IDC_LIGHTCONFIG, "20x Full");
 
 	// Shadows -----------------------------------------
 
 	SendDlgItemMessage(hWnd, IDC_SELFSHADOWS, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"无");
-	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"焦点 + 载荷");
-	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"附近物体");
-	SendDlgItemMessageW(hWnd, IDC_SELFSHADOWS, CB_ADDSTRING, 0, (LPARAM)L"所有可见物体");
+	AddComboStringTr (hWnd, IDC_SELFSHADOWS, "None");
+	AddComboStringTr (hWnd, IDC_SELFSHADOWS, "Focus + payload");
+	AddComboStringTr (hWnd, IDC_SELFSHADOWS, "Near by objects");
+	AddComboStringTr (hWnd, IDC_SELFSHADOWS, "All visible objects");
 
 	SendDlgItemMessage(hWnd, IDC_SHADOWFILTER, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"9 样本");
-	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"27 样本");
-	SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"27s 抖动");
+	AddComboStringTr (hWnd, IDC_SHADOWFILTER, "9 samples");
+	AddComboStringTr (hWnd, IDC_SHADOWFILTER, "27 samples");
+	AddComboStringTr (hWnd, IDC_SHADOWFILTER, "27s dither");
 	//SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"40 样本");
 	//SendDlgItemMessageW(hWnd, IDC_SHADOWFILTER, CB_ADDSTRING, 0, (LPARAM)L"40s 抖动");
 
 	SendDlgItemMessage(hWnd, IDC_TERRAIN, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"无");
-	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"模板");
-	SendDlgItemMessageW(hWnd, IDC_TERRAIN, CB_ADDSTRING, 0, (LPARAM)L"投影");
+	AddComboStringTr (hWnd, IDC_TERRAIN, "None");
+	AddComboStringTr (hWnd, IDC_TERRAIN, "Stencil");
+	AddComboStringTr (hWnd, IDC_TERRAIN, "Projected");
 
 	SendDlgItemMessage(hWnd, IDC_MESHRES, CB_RESETCONTENT, 0, 0);
 	SendDlgItemMessageW(hWnd, IDC_MESHRES, CB_ADDSTRING, 0, (LPARAM)L"16");
@@ -733,9 +741,9 @@ void VideoTab::InitSetupDialog(HWND hWnd)
 	// gcGUI -----------------------------------------
 	if (Config->gcGUIMode == 1) Config->gcGUIMode = 0;
 	SendDlgItemMessage(hWnd, IDC_GUIMODE, CB_RESETCONTENT, 0, 0);
-	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"禁用");
-	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"（未使用）");
-	SendDlgItemMessageW(hWnd, IDC_GUIMODE, CB_ADDSTRING, 0, (LPARAM)L"窗口模式");
+	AddComboStringTr (hWnd, IDC_GUIMODE, "Disabled");
+	AddComboStringTr (hWnd, IDC_GUIMODE, "(unused)");
+	AddComboStringTr (hWnd, IDC_GUIMODE, "Windowed");
 
 	// Earth AtmoConfig -------------------------------
 	SendDlgItemMessage(hWnd, IDC_EARTHVISCFG, CB_RESETCONTENT, 0, 0);
