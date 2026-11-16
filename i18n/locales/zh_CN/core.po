@@ -4507,7 +4507,7 @@ msgstr "Lua 飞船错误"
 msgid "TIME DILATION: waiting for focus vessel..."
 msgstr "时间膨胀：等待焦点飞船..."
 
-; Date format / weekday names (Astro.cpp, Chinese date display)
+; 日期格式与星期名（Astro.cpp，中文日期显示）
 msgid "%d-%d-%d %s %02d:%02d:%02d"
 msgstr "%d年%d月%d日 %s %02d:%02d:%02d"
 
@@ -4532,14 +4532,14 @@ msgstr "周五"
 msgid "Saturday"
 msgstr "周六"
 
-; Relative exposure readout and docking HUD NAV line
+; 相对论曝光读数与对接 HUD 的 NAV 频率行
 msgid "off"
 msgstr "关"
 
 msgid "Receiver %d %0.2fMHz"
 msgstr "接收机%d %0.2fMHz"
 
-; Flight recorder dialog (DlgRecorder.cpp)
+; 飞行记录器对话框（DlgRecorder.cpp）
 msgid "Flight recorder/player"
 msgstr "飞行记录器/回放"
 

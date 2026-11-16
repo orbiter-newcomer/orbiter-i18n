@@ -1169,7 +1169,7 @@ msgstr "三字母"
 msgid "Celestial markers"
 msgstr "天体标记"
 
-; Orbit stabilisation parameters dialog (Extra tab) - remaining entries
+; 轨道稳定化参数对话框（扩展页）—— 其余条目
 
 msgid "Cancel"
 msgstr "取消"

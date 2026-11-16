@@ -565,7 +565,7 @@ msgstr "窗口模式"
 msgid "Loading terrain..."
 msgstr "地形加载中……"
 
-; D3D9Client video settings combo options (English originals from official D3D9Client)
+; D3D9Client 视频设置页下拉选项（英文原文来自官方 D3D9Client）
 
 msgid "600"
 msgstr "600"
@@ -612,7 +612,7 @@ msgstr "8x 全"
 msgid "8x"
 msgstr "8x"
 
-; Splash screen (startup) texts, D3D9Client.cpp
+; 启动画面文本（D3D9Client.cpp）
 msgid "Graphics engine: D3D9Client"
 msgstr "图形引擎：D3D9Client"
 

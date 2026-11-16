@@ -380,7 +380,7 @@ msgstr "现在我要停止自旋的火箭。\n观察它如何在非均匀引力�
 msgid "Now I am spinning up the other rocket.\nAs a result, it will maintain the orientation of its\nlongitudinal axis."
 msgstr "现在我要让另一枚火箭自旋起来。\n结果它将保持其纵轴指向。"
 
-; MFD button labels for Lua-scripted MFDs (context "mfd.button")
+; Lua 脚本 MFD 的按钮标签（上下文 "mfd.button"）
 msgctxt "mfd.button"
 msgid "SET"
 msgstr "设置"
