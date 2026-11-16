@@ -61,4 +61,11 @@ bool WreckIsObserver (class Vessel *vessel);
 // Atmospheric dynamic-pressure check (vessel burns up as a meteor).
 void WreckAtmosphericBurnup (class Vessel *vessel);
 
+// Numerical-failure report from vessel modules (e.g. the thermal system): the
+// request is queued (REL_WRECK_NUMERIC) and left to the vessel destruction code
+// in the safe phase. Currently no destruction is performed (stub).
+void WreckReportNumericFailure (class Vessel *vessel, double maxTemp, int compartment);
+// Query/consume the queued numerical-failure request (for the destruction code).
+bool WreckGetPendingNumericFailure (char *vesselName, int nameN, double *maxTemp, int *compartment);
+
 #endif // __WRECKDEBRIS_H

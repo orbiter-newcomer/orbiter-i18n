@@ -170,6 +170,40 @@ void WreckDestroyVessel (Vessel *vessel, int reason, const char *otherName)
 }
 
 
+// ---- numerical-failure reports (queued for the vessel destruction code) ----
+static char   g_pendingNumericName[64] = "";
+static double g_pendingNumericTemp = 0.0;
+static int    g_pendingNumericComp = -1;
+static int    g_pendingNumericCount = 0;
+
+void WreckReportNumericFailure (Vessel *vessel, double maxTemp, int compartment)
+{
+	if (!vessel) return;
+	// Queue only (REL_WRECK_NUMERIC). The destruction policy is handled by the
+	// vessel destruction code in the safe phase; WreckDestroyVessel is currently
+	// a stub, so nothing is destroyed here.
+	strncpy_s (g_pendingNumericName, 64, vessel->Name (), 63);
+	g_pendingNumericName[63] = 0;
+	g_pendingNumericTemp = maxTemp;
+	g_pendingNumericComp = compartment;
+	g_pendingNumericCount++;
+	LOGOUT_ERR ("Wreck: numerical failure reported for %s (max T=%.1f K, compartment %d)",
+		g_pendingNumericName, maxTemp, compartment);
+}
+
+bool WreckGetPendingNumericFailure (char *vesselName, int nameN, double *maxTemp, int *compartment)
+{
+	if (g_pendingNumericCount <= 0 || !g_pendingNumericName[0]) return false;
+	if (vesselName && nameN > 0) {
+		strncpy_s (vesselName, nameN, g_pendingNumericName, nameN-1);
+		vesselName[nameN-1] = 0;
+	}
+	if (maxTemp) *maxTemp = g_pendingNumericTemp;
+	if (compartment) *compartment = g_pendingNumericComp;
+	return true;
+}
+
+
 bool WreckIsObserver (Vessel *vessel)
 {
 	if (!vessel) return false;

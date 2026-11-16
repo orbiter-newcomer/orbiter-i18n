@@ -22,3 +22,8 @@ DLLEXPORT bool oapiGetWreckMessageEx (char *buf, int n, double *age_ms, int *isF
 }
 
 DLLEXPORT OBJHANDLE oapiGetWreckAnchorVessel () { return WreckGetVessel (); }
+
+DLLEXPORT void oapiWreckReportNumericFailure (OBJHANDLE hVessel, double maxTemp, int compartment)
+{
+	WreckReportNumericFailure ((Vessel*)hVessel, maxTemp, compartment);
+}

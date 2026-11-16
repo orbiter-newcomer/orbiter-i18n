@@ -18,6 +18,8 @@
 #include "meshres_p1.h"
 #include "meshres_vc.h"
 #include "dg_vc_anim.h"
+#include "WreckAPI.h"          // oapiWreckReportNumericFailure (wreck system, project extension)
+#include <cmath>
 
 using std::min;
 using std::max;
@@ -35,6 +37,7 @@ const double c_radiator = 0.2e3;
 // ==============================================================
 // Thermal control subsystem
 // ==============================================================
+
 
 const double ThermalSubsystem::Ax_fuselage = 27.6;
 const double ThermalSubsystem::Ay_fuselage = 62.4;
@@ -57,21 +60,11 @@ const double ThermalSubsystem::k_convect = 5e-4;
 ThermalSubsystem::ThermalSubsystem (DeltaGlider *v)
   : DGSubsystem (v)
 {
-	// compartment masses
-	double m0 = v->GetEmptyMass();
-	cprm[SURFUPPERFUSELAGE].mass    = m0*0.2;
-	cprm[SURFLOWERFUSELAGE].mass    = m0*0.15;
-	cprm[SURFUPPERLEFTWING].mass    = m0*0.075;
-	cprm[SURFLOWERLEFTWING].mass    = m0*0.075;
-	cprm[SURFUPPERRIGHTWING].mass   = m0*0.075;
-	cprm[SURFLOWERRIGHTWING].mass   = m0*0.075;
-	cprm[INTERIORFUSELAGE].mass     = m0*0.31;
-	cprm[AVIONICS].mass             = m0*0.03;
-	cprm[CABIN].mass                = 0.0;
-	cprm[PROPELLANT_LEFTWING].mass  = 0.0;
-	cprm[PROPELLANT_RIGHTWING].mass = 0.0;
-	cprm[PROPELLANT_MAIN].mass      = 0.0;
-	cprm[RADIATOR].mass             = m0*0.01;
+	// Compartment masses are derived from the vessel's true empty mass in
+	// UpdateStructuralMasses() (project extension, ThermalSolver.inc). They must
+	// not be computed here: at construction time (inside the vessel module
+	// initialisation) the core vessel still holds the generic default empty mass.
+	InitCompartmentParams ();
 
 	// compartment heat capacity coefficients
 	cprm[SURFUPPERFUSELAGE].cp      = c_metal;
@@ -96,29 +89,28 @@ ThermalSubsystem::ThermalSubsystem (DeltaGlider *v)
 	cprm[PROPELLANT_MAIN].T = 240.0;
 	cprm[AVIONICS].T = 500.0;
 
-	// structural equivalent thermal masses: a compartment keeps a finite heat
-	// capacity even when it contains no propellant/air (empty fuel tanks, cabin in
-	// vacuum). Without this, the thermal capacity would drop to zero and the
-	// temperature update would divide by zero (or produce huge excursions).
-	for (Compartment c = SURFUPPERFUSELAGE; c <= RADIATOR; c = (Compartment)(c+1)) {
-		cprm[c].mass_struct = 0.0;
-		cprm[c].mass_air = 0.0;
-	}
-	cprm[PROPELLANT_LEFTWING].mass_struct  = m0*0.02;
-	cprm[PROPELLANT_RIGHTWING].mass_struct = m0*0.02;
-	cprm[PROPELLANT_MAIN].mass_struct      = m0*0.03;
-	cprm[CABIN].mass_struct                = m0*0.012;
+	// structural equivalent thermal masses of the dynamically loaded compartments
+	// are computed in UpdateStructuralMasses() (from the vessel's true empty mass)
 
 	eps = 0.7;
 	sr_updt = -1e10;
 
 	hSun = NULL;
+	hSunRef = NULL;
 	Spos = _V(0, 0, 0);
+
+	bNumericFailureReported = false;
 
 	// create component instances
 	AddSubsystem (coolantloop = new CoolantLoop (this));
 	AddSubsystem (radiatorctrl = new RadiatorControl (this));
 }
+
+// --------------------------------------------------------------
+
+// The compartment mass model, the heat flux accumulation, the equilibrium
+// solver and the implicit integration are implemented in ThermalSolver.inc
+// (project extension; included at the end of this file).
 
 // --------------------------------------------------------------
 
@@ -146,82 +138,15 @@ const AnimState2 &ThermalSubsystem::RadiatorState() const
 void ThermalSubsystem::clbkPreStep (double simt, double simdt, double mjd)
 {
 	if (!simdt) return; // sanity check
-
-	UpdateSun();   // cache the actual sun position (the sun is not at the origin)
-
-	// constants and spacecraft parameters
-	static const double R = 287.0;          // gas constant [J/kg/K]
-	static const double v_cabin = 24.0;     // cabin volume
-	static const double v_airlock = 4.0;    // airlock volume
-
-	// dynamic compartment masses
-	// (CMB floor also protects the cabin mass computation against T=0)
-	double T_cab = max (cprm[CABIN].T, T_CMB);
-	cprm[CABIN].mass_air = (DG()->SubsysPressure()->PCabin() * v_cabin + DG()->SubsysPressure()->PAirlock() * v_airlock)/(R*T_cab);
-	cprm[CABIN].mass = cprm[CABIN].mass_air + cprm[CABIN].mass_struct;
-	if (DG()->ScramVersion()) {
-		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.5*DG()->GetPropellantMass(DG()->ph_main) + cprm[PROPELLANT_LEFTWING].mass_struct;
-		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_rcs) + DG()->SubsysScram()->GetPropellantMass() + cprm[PROPELLANT_MAIN].mass_struct;
-	} else {
-		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.35*DG()->GetPropellantMass(DG()->ph_main) + cprm[PROPELLANT_LEFTWING].mass_struct;
-		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_main)*0.3 + DG()->GetPropellantMass(DG()->ph_rcs) + cprm[PROPELLANT_MAIN].mass_struct;
-	}
-
-	atm_p = DG()->GetAtmPressure();
-	atm_T = DG()->GetAtmTemperature();
-	eps = (atm_p ? exp(-0.5e-5*atm_p)*0.7 : 0.7);
-
-	int i;
-
-	DGSubsystem::clbkPreStep (simt, simdt, mjd);
-
-	if (simt > sr_updt + 1.0 || simt < sr_updt) {
-		// compute solar irradiance at vessel position (0 if in shadow)
-		H0 = SolarRadiation (&sdir);
-		if (atm_p) H0 *= exp(-3.63e-6*atm_p);
-		// compute IR irradiation from orbited body
-		H1 = PlanetRadiation(&pdir);
-		sr_updt = simt;
-	}
-
-	double dQ[13];
-	for (i = 0; i < 13; i++) dQ[i] = 0.0;
-
-	// irradiance
-	if (H0) AddIrradiance (H0, sdir, dQ); // add solar irrandiance
-	if (H1) AddIrradiance (H1, pdir, dQ); // add planet IR irrandiance
-	if (H0 && H1) AddAlbedoReflection (H0, pdir, dQ); // add reflected planet irradiance
-
-	// add internal heat generation
-	bool active = (DG()->GetFlightStatus() & 1) == 0;
-	dQ[AVIONICS] = (active ? 6e3 : 2e3); // simplistic power management for now
-
-	// heat exchange from crew to cabin atmosphere (convection)
-	double p = DG()->SubsysPressure()->PCabin();
-	double dQ_crew = 1e-3 * p; // heat exchange is pressure-dependent
-	dQ[CABIN] = dQ_crew; // pilot
-	for (i = 0; i < 4; i++)
-		if (DG()->psngr[i]) dQ[CABIN] += dQ_crew;
-
-	// subtract black-body radiation
-	SubtractBlackbodyRadiation (dQ);
-
-	// atmospheric heat convection
-	if (atm_p && atm_T)
-		AtmosphericConvection (dQ);
-
-	// internal heat conduction
-	HeatConduction (dQ);
-
-	// compute temperature change
-	for (i = 0; i < 13; i++) {
-		if (cprm[i].mass > 1e-9)
-			cprm[i].T += dQ[i] * simdt / (cprm[i].mass * cprm[i].cp);
-		cprm[i].T = max (cprm[i].T, T_CMB);   // CMB floor: no colder than the background radiation
-	}
-
-	//sprintf(oapiDebugString(), "T(inner)=%lf, T(outer)=%lf", cprm[INTERIORFUSELAGE].T, cprm[SURFUPPERFUSELAGE].T);
+	// thermal state update (explicit / half-implicit, project extension)
+	UpdateThermalStep (simt, simdt, mjd);
 }
+
+// --------------------------------------------------------------
+
+// The heat flux accumulation, the equilibrium solver, the numerical failure
+// handling and the sun position tracking are implemented in ThermalSolver.inc
+// (project extension; included at the end of this file).
 
 // --------------------------------------------------------------
 
@@ -250,18 +175,7 @@ bool ThermalSubsystem::clbkParseScenarioLine (const char *line)
 
 // --------------------------------------------------------------
 
-// Locates the sun (star) and caches its global position. The sun is not
-// necessarily at the origin of the global frame (the old code assumed that).
-void ThermalSubsystem::UpdateSun ()
-{
-	if (!hSun) {
-		for (OBJHANDLE hObj = DG()->GetSurfaceRef(); hObj; hObj = oapiGetGbodyParent(hObj)) {
-			if (oapiGetObjectType(hObj) == OBJTP_STAR) { hSun = hObj; break; }
-		}
-		if (!hSun) hSun = oapiGetGbodyByIndex(0);   // fallback: old behaviour
-	}
-	if (hSun) oapiGetGlobalPos(hSun, &Spos);
-}
+// (UpdateSun: implemented in ThermalSolver.inc)
 
 double ThermalSubsystem::SolarRadiation(VECTOR3 *sdir)
 {
@@ -310,7 +224,14 @@ double ThermalSubsystem::PlanetRadiation(VECTOR3 *pdir)
 	rel = Ppos - Vpos;
 	double pdist = length(rel);
 	if (pdist < prad) pdist = prad;   // inside the body: surface value (physical bound)
-	if (pdir) *pdir = rel/pdist;
+	if (pdir) {
+		// The irradiance functions interpret their direction argument in the
+		// vessel frame (the sun direction is converted the same way in
+		// SolarRadiation). Convert the planet direction from global to vessel frame.
+		MATRIX3 Vrot;
+		DG()->GetRotationMatrix(Vrot);
+		*pdir = tmul(Vrot, rel/pdist);
+	}
 	double alt_ratio = prad/pdist;
 	const double Hplanet = 237.0; // W/m^2; only true for Earth
 	return Hplanet * (alt_ratio*alt_ratio);
@@ -646,8 +567,10 @@ CoolantLoop::CoolantLoop (ThermalSubsystem *_subsys)
 	node[EXCHANGER_AVIONICSCOLDPLATE].k = 10.0;
 
 	// default propellant temperature
-	for (int i = 0; i < nnode; i++)
+	for (int i = 0; i < nnode; i++) {
 		node[i].T0 = node[i].T1 = 293.0;
+		node[i].Q = 0.0;
+	}
 
 	Tref_tgt = 287.0;
 	pumprate = 0.5;
@@ -665,7 +588,8 @@ void CoolantLoop::ActivatePump (bool on)
 
 void CoolantLoop::SetPumprate (double rate)
 {
-	pumprate = rate;
+	// clamp to the valid range (also guards against malformed scenario values)
+	pumprate = max (0.0, min (1.0, rate));
 	if (bPumpActive) node[PUMP].pumprate = pumprate;
 	DG()->SetAnimation (anim_vc_pumpdial, pumprate*1.0);
 	disp->Refresh();
@@ -685,7 +609,8 @@ void CoolantLoop::IncPumprate (bool increase)
 
 void CoolantLoop::SetReftemp (double temp)
 {
-	Tref_tgt = temp;
+	// clamp to the valid range (also guards against malformed scenario values)
+	Tref_tgt = max (282.0, min (292.0, temp));
 	DG()->SetAnimation (anim_vc_reftempdial, (Tref_tgt-282.0)*0.1);
 	disp->Refresh();
 }
@@ -704,21 +629,14 @@ void CoolantLoop::IncReftemp (bool increase)
 
 void CoolantLoop::clbkPreStep (double simt, double simdt, double mjd)
 {
-	node[EXCHANGER_CABIN].k = node[EXCHANGER_CABIN].cprm->mass_air*3.7;
-
-	// set the wing tank bypass rate
-	double Ta = node[MERGER_WINGBYPASS].upstream[0]->T1;
-	double Tb = node[MERGER_WINGBYPASS].upstream[1]->T1;
-	node[SPLITTER_WINGBYPASS].split = ((Ta != Tb) ? min (1.0, max (0.0, (Tref_tgt-Tb)/(Ta-Tb))) : 1.0);
-
-	// set the heatsink bypass rate
-	Ta = node[MERGER_HEATSINKBYPASS].upstream[0]->T1;
-	Tb = node[MERGER_HEATSINKBYPASS].upstream[1]->T1;
-	node[SPLITTER_HEATSINKBYPASS].split = ((Ta != Tb) ? min(1.0, max(0.0, (Tref_tgt-Tb)/(Ta-Tb))) : 1.0);
-
-	for (int i = 0; i < nnode; i++)
-		node[i].Update (simdt);
+	// update the loop for the current step (project extension: explicit update)
+	UpdateExplicit (simdt);
 }
+
+// --------------------------------------------------------------
+
+// (ComputeSplits, UpdateExplicit, UpdateQuasiStatic, AddHeatFlux,
+//  GetEffectiveConductance: implemented in ThermalSolver.inc)
 
 // --------------------------------------------------------------
 
@@ -773,6 +691,8 @@ void CoolantLoop::clbkSaveState (FILEHANDLE scn)
 	char cbuf[1024];
 	sprintf (cbuf, "%d %0.3lf %0.3lf", bPumpActive ? 1:0, pumprate, Tref_tgt);
 	oapiWriteScenario_string (scn, (char*)"COOLANT_STATE", cbuf);
+	// node temperatures (entry/exit of each loop node: project extension)
+	SaveNodeTemperatures (scn);
 	DGSubsystem::clbkSaveState (scn);
 }
 
@@ -781,12 +701,18 @@ void CoolantLoop::clbkSaveState (FILEHANDLE scn)
 bool CoolantLoop::clbkParseScenarioLine (const char *line)
 {
 	if (!_strnicmp(line, "COOLANT_STATE", 13)) {
-		int i;
-		double rate, temp;
-		sscanf(line+13, "%d%lf%lf", &i, &rate, &temp);
-		ActivatePump (i != 0);
-		SetPumprate (rate);
-		SetReftemp (temp);
+		int pump = 0;
+		double rate = pumprate, temp = Tref_tgt;
+		int got = sscanf (line+13, "%d%lf%lf", &pump, &rate, &temp);
+		if (got >= 1) ActivatePump (pump != 0);
+		if (got >= 2) SetPumprate (rate);
+		if (got >= 3) SetReftemp (temp);
+		return true;
+	}
+	if (!_strnicmp(line, "COOLANT_NODES", 13)) {
+		// optional node temperatures (project extension); missing values keep the
+		// defaults (293 K)
+		ParseNodeTemperatures (line);
 		return true;
 	}
 	return DGSubsystem::clbkParseScenarioLine (line);
@@ -814,6 +740,7 @@ double CoolantLoop::NodeParam::Flowrate (const NodeParam *dn)
 
 void CoolantLoop::NodeParam::Update (double simdt)
 {
+	Q = 0.0;
 	switch (nodetype) {
 	case PUMP:
 	case SPLITTER:
@@ -837,14 +764,17 @@ void CoolantLoop::NodeParam::Update (double simdt)
 				double efficiency = flowrate*cp;   // transfer efficiency
 				double dTrel = exp(-k/efficiency); // 0: T1=T(reservoir); 1: T1=T0
 				T1 = T + dTrel*(T0-T);             // coolant exit temp
-				double q = (T1-T0)*efficiency;     // heat flow rate [W]
-				cprm->T -= q * simdt / (cprm->mass * cprm->cp); // update reservoir temp
-
-				// DEBUG
-				if (fabs(k-15.0) < 1e-6)
-					sprintf(oapiDebugString(), "T0=%lf, T1=%lf, T(av)=%lf, Q=%lf", T0, T1, cprm->T, q);
+				double q = (T1-T0)*efficiency;     // heat flow from reservoir into coolant [W]
+				Q = q;
+				// Update the reservoir temperature. In the quasi-static path (simdt==0)
+				// the reservoir temperature is left to the equilibrium solver. The
+				// mass guard prevents a division by zero if a compartment has no mass
+				// (empty tank, vacuum cabin) - the structural equivalent masses make
+				// this a safety net for future changes.
+				if (simdt != 0.0 && cprm->mass > 1e-9)
+					cprm->T -= q * simdt / (cprm->mass * cprm->cp);
 			} else {
-				// todo
+				// no flow: no heat exchange; keep the previous node temperatures
 			}
 		}
 		break;
@@ -857,6 +787,11 @@ CoolantLoopDisplay::CoolantLoopDisplay (CoolantLoop *comp, SURFHANDLE blitsrc)
 : PanelElement(comp->DG()), component(comp), bsrc(blitsrc)
 {
 	btgt = 0;
+	upt = 0.0;
+	// initialise the readout cache (the 2D panel path does not call ResetVC)
+	for (int i = 0; i < 15; i++)
+		for (int j = 0; j < 8; j++)
+			label[i][j] = ' ';
 }
 
 // --------------------------------------------------------------
@@ -1280,3 +1215,10 @@ bool RadiatorSwitch::ProcessMouseVC (int event, VECTOR3 &p)
 	}
 	return false;
 }
+
+// ==============================================================
+// Project extensions (thermal solver, mass model, coolant loop support).
+// The implementation is kept in a separate file to limit the changes to the
+// official Orbiter sources.
+// ==============================================================
+#include "ThermalSolver.inc"

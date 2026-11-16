@@ -48,4 +48,19 @@ OAPIFUNC bool oapiGetWreckMessageEx (char *buf, int n, double *age_ms, int *isFo
 /** Handle of the invisible wreck anchor vessel (0 if none). */
 OAPIFUNC OBJHANDLE oapiGetWreckAnchorVessel ();
 
+/**
+ * \brief Report a numerical failure (non-finite or out-of-range state) of a
+ *   vessel to the wreck/destruction system.
+ * \param hVessel vessel handle
+ * \param maxTemp maximum temperature of the affected compartment [K] (0 if the
+ *   failure is not a temperature failure)
+ * \param compartment affected compartment index (-1 if unknown)
+ * \note The request is only queued by the wreck system (REL_WRECK_NUMERIC).
+ *   The actual destruction policy is decided by the vessel destruction code in
+ *   the safe phase (currently stubbed); this API exists so that vessel modules
+ *   (e.g. the thermal system) can hand over numerical failures without creating
+ *   or deleting vessels during the physics update.
+ */
+OAPIFUNC void oapiWreckReportNumericFailure (OBJHANDLE hVessel, double maxTemp, int compartment);
+
 #endif // !__WRECKAPI_H
