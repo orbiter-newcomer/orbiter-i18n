@@ -468,20 +468,10 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 	if (ifs) {
 		if (!have_info) {
 			char *buf;
-			// Description texts are data-file strings (Description.txt / .scn
-			// BEGIN_DESC blocks), not source-code literals, so they are translated
-			// through the context "scenario.description". The English text is the
-			// lookup key; if a translation exists, the buffer is replaced by a
-			// copy of the translated text (memory ownership stays with the buffer).
-			auto tr = [](char *b) -> char * {
-				if (!b) return b;
-				const char *t = orbiter::TrContext("scenario.description", b);
-				if (!t || t == b) return b;
-				delete[] b;
-				char *r = new char[strlen(t) + 1];
-				strcpy(r, t);
-				return r;
-			};
+			// Scenario/folder description texts are data-file strings (Description.txt
+			// / .scn BEGIN_DESC blocks). Reading, normalisation and translation are
+			// handled by the localisation API (orbiter::ReadScenarioDescription), so
+			// this file only calls the API (see i18n/core/Localization.cpp).
 			if (htmldesc) {
 				buf = ScanFileDesc(ifs, "URLDESC");
 				if (buf) {
@@ -507,9 +497,9 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 					have_info = true;
 				}
 				else {
-					buf = tr(ScanFileDesc(ifs, "HYPERDESC"));
+					buf = orbiter::ReadScenarioDescription(ifs, "HYPERDESC");
 					if (!buf) {
-						buf = tr(ScanFileDesc(ifs, "DESC"));
+						buf = orbiter::ReadScenarioDescription(ifs, "DESC");
 						if (buf) {
 							std::string str(buf);
 							Text2Html(str);
@@ -531,10 +521,10 @@ void orbiter::ScenarioTab::ScenarioChanged ()
 					}
 				}
 			} else {
-				if (buf = tr(ScanFileDesc (ifs, "DESC"))) {
+				if (buf = orbiter::ReadScenarioDescription(ifs, "DESC")) {
 					orbiter::SetWindowTextUtf8(GetDlgItem(hTab, IDC_SCN_DESC), buf);
 					have_info = true;
-				} else if (buf = tr(ScanFileDesc (ifs, "HYPERDESC"))) {
+				} else if (buf = orbiter::ReadScenarioDescription(ifs, "HYPERDESC")) {
 					std::string str(buf);
 					Html2Text(str);
 					orbiter::SetWindowTextUtf8(GetDlgItem(hTab, IDC_SCN_DESC), str.c_str());

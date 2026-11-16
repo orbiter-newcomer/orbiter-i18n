@@ -151,10 +151,6 @@ msgid "<h1>Space Shuttle to ISS</h1> <p>This is a pre-recorded tutorial launchin
 msgstr "<h1>航天飞机飞往国际空间站</h1> <p>这是一段预录教程，演示亚特兰蒂斯号航天飞机执行飞往国际空间站的任务。它展示了发射自动驾驶的使用，以及轨道面调整、空间站交会规划和对接程序等技巧。</p> "
 
 msgctxt "scenario.description"
-msgid "<h1>Space Shuttle to ISS</h1> <p>This is a pre-recorded tutorial launching Space Shuttle Atlantis on a mission to the International Space Station. It demonstrates the use of the launch autopilot, and techniques for aligning orbital planes, planning a rendezvous with an orbital stati on, and docking procedures.</p> "
-msgstr "<h1>航天飞机飞往国际空间站</h1> <p>这是一段预录教程，演示亚特兰蒂斯号航天飞机执行飞往国际空间站的任务。它展示了发射自动驾驶的使用，以及轨道面调整、空间站交会规划和对接程序等技巧。</p> "
-
-msgctxt "scenario.description"
 msgid "<h1>Spotlights</h1> <p>A demonstration of spotlight support in Orbiter. A DeltaGlider with its docking lights is rotating in front of the ISS, as both enter Earth's shadow.</p> <p>Make sure that <i>Local light sources</i> is enabled under the <i>Visual effects</i> tab before running this scenario.</p> "
 msgstr "<h1>聚光灯</h1> <p>演示 Orbiter 的聚光灯支持。一架打开对接灯的三角滑翔机在国际空间站前方旋转，二者一同进入地球阴影。</p> <p>运行此场景前，请确保在“视觉特效”选项卡中启用了 <i>局部光源</i>。</p> "
 

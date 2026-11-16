@@ -758,4 +758,51 @@ static void BuildTables()
 		auto fwd = g_enToZh.find(english);
 		return (fwd != g_enToZh.end()) ? fwd->second : english;
 	}
+
+	// Read a "BEGIN_<blockname> ... END_<blockname>" text block from a scenario or
+	// scenario-folder description file, normalise it the way the scenario list
+	// displays it (each line + single space; empty line -> CRLF) and translate it
+	// through the "scenario.description" context. The stream is rewound first, so
+	// several blocks can be read from the same stream in sequence.
+	//
+	// std::getline reads whole lines, so long descriptions are never split (the
+	// old fixed 256-byte line buffer inserted extra spaces in the middle of long
+	// lines, which broke the translation lookup).
+	char *ReadScenarioDescription(std::istream &is, const char *blockname)
+	{
+		if (!blockname) return 0;
+		std::string begin = "BEGIN_";
+		begin += blockname;
+		std::string end = "END_";
+		end += blockname;
+
+		is.clear();
+		is.seekg(0, std::ios::beg);
+
+		std::string line, text;
+		bool found = false;
+		while (std::getline(is, line)) {
+			size_t p = line.find_first_not_of(" \t");
+			std::string t = (p == std::string::npos) ? std::string() : line.substr(p);
+			if (!found) {
+				if (t.size() >= begin.size() && _strnicmp(t.c_str(), begin.c_str(), begin.size()) == 0)
+					found = true;
+				continue;
+			}
+			if (t.size() >= end.size() && _strnicmp(t.c_str(), end.c_str(), end.size()) == 0)
+				break;
+			if (!line.empty()) { text += line; text += ' '; }
+			else text += "\r\n";
+		}
+		if (!found) return 0;
+
+		// English mode returns the original text; Chinese mode looks up the
+		// translation and falls back to the original if no entry exists.
+		const char *src = TrContext("scenario.description", text.c_str());
+		if (!src || !*src) src = text.c_str();
+		size_t n = strlen(src);
+		char *r = new char[n + 1];
+		memcpy(r, src, n + 1);
+		return r;
+	}
 } // namespace orbiter

@@ -16,6 +16,7 @@
 
 #include <windows.h>
 #include <string>
+#include <istream>
 
 namespace orbiter {
 
@@ -106,6 +107,19 @@ namespace orbiter {
 	// (dialog controls, tab pages, nested dialogs). Switching back to English
 	// is supported via the reverse mapping of the translation table.
 	void LocalizeWindowTree(HWND root);
+
+	// Read a "BEGIN_<blockname> ... END_<blockname>" text block from a scenario
+	// or scenario-folder description file, normalise it the way the scenario list
+	// displays it (each source line becomes one text line, empty lines become line
+	// breaks) and translate it through the context "scenario.description".
+	//
+	// The whole block is read line by line with std::getline, i.e. long lines are
+	// never split (the old fixed-size line buffer inserted spurious spaces and
+	// broke the translation lookup). The stream is rewound before scanning.
+	//
+	// Returns a buffer allocated with new[] that the caller must delete[], or NULL
+	// if the block does not exist. In English mode the original text is returned.
+	char *ReadScenarioDescription(std::istream &is, const char *blockname);
 
 	// Initialize the language selector combobox of the Launchpad.
 	// The combobox must be a CBS_DROPDOWNLIST control.
