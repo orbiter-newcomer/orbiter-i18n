@@ -69,7 +69,9 @@ private:
 
 	// thermal parameters of the vessel compartments
 	struct CompartmentParam {
-		double mass; // compartment mass [kg]
+		double mass;        // compartment mass [kg] (thermal capacity: propellant/air + structure)
+		double mass_air;    // CABIN: air mass only (used as convection coefficient); 0 elsewhere
+		double mass_struct; // structural equivalent thermal mass [kg]
 		double cp;   // compartment heat capacity coefficient [J/kg/K]
 		double T;    // compartment temperature [K]
 	} cprm[13];
@@ -101,6 +103,12 @@ private:
 	double H1;      // IR irradiation from orbited body
 	VECTOR3 sdir;   // current sun direction in vessel frame
 	VECTOR3 pdir;   // current planet direction in vessel frame
+
+	// location of the sun (global frame). The sun is not necessarily at the global
+	// origin, so all solar computations use its actual position.
+	OBJHANDLE hSun;
+	VECTOR3 Spos;
+	void UpdateSun ();   // locate the sun and cache its global position
 
 	CoolantLoop *coolantloop;
 	RadiatorControl *radiatorctrl;

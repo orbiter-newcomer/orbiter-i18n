@@ -23,6 +23,7 @@ using std::min;
 using std::max;
 
 static const double sigma = 5.670e-8;   // Boltzmann constant
+static const double T_CMB = 2.725;      // cosmic microwave background temperature [K]
 
 // heat capacity coefficients [J kg^-1 K^-1]
 const double c_metal = 0.6e3;
@@ -95,8 +96,24 @@ ThermalSubsystem::ThermalSubsystem (DeltaGlider *v)
 	cprm[PROPELLANT_MAIN].T = 240.0;
 	cprm[AVIONICS].T = 500.0;
 
+	// structural equivalent thermal masses: a compartment keeps a finite heat
+	// capacity even when it contains no propellant/air (empty fuel tanks, cabin in
+	// vacuum). Without this, the thermal capacity would drop to zero and the
+	// temperature update would divide by zero (or produce huge excursions).
+	for (Compartment c = SURFUPPERFUSELAGE; c <= RADIATOR; c = (Compartment)(c+1)) {
+		cprm[c].mass_struct = 0.0;
+		cprm[c].mass_air = 0.0;
+	}
+	cprm[PROPELLANT_LEFTWING].mass_struct  = m0*0.02;
+	cprm[PROPELLANT_RIGHTWING].mass_struct = m0*0.02;
+	cprm[PROPELLANT_MAIN].mass_struct      = m0*0.03;
+	cprm[CABIN].mass_struct                = m0*0.012;
+
 	eps = 0.7;
 	sr_updt = -1e10;
+
+	hSun = NULL;
+	Spos = _V(0, 0, 0);
 
 	// create component instances
 	AddSubsystem (coolantloop = new CoolantLoop (this));
@@ -130,19 +147,24 @@ void ThermalSubsystem::clbkPreStep (double simt, double simdt, double mjd)
 {
 	if (!simdt) return; // sanity check
 
+	UpdateSun();   // cache the actual sun position (the sun is not at the origin)
+
 	// constants and spacecraft parameters
 	static const double R = 287.0;          // gas constant [J/kg/K]
 	static const double v_cabin = 24.0;     // cabin volume
 	static const double v_airlock = 4.0;    // airlock volume
 
 	// dynamic compartment masses
-	cprm[CABIN].mass = (DG()->SubsysPressure()->PCabin() * v_cabin + DG()->SubsysPressure()->PAirlock() * v_airlock)/(R*cprm[CABIN].T);
+	// (CMB floor also protects the cabin mass computation against T=0)
+	double T_cab = max (cprm[CABIN].T, T_CMB);
+	cprm[CABIN].mass_air = (DG()->SubsysPressure()->PCabin() * v_cabin + DG()->SubsysPressure()->PAirlock() * v_airlock)/(R*T_cab);
+	cprm[CABIN].mass = cprm[CABIN].mass_air + cprm[CABIN].mass_struct;
 	if (DG()->ScramVersion()) {
-		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.5*DG()->GetPropellantMass(DG()->ph_main);
-		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_rcs) + DG()->SubsysScram()->GetPropellantMass();
+		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.5*DG()->GetPropellantMass(DG()->ph_main) + cprm[PROPELLANT_LEFTWING].mass_struct;
+		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_rcs) + DG()->SubsysScram()->GetPropellantMass() + cprm[PROPELLANT_MAIN].mass_struct;
 	} else {
-		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.35*DG()->GetPropellantMass(DG()->ph_main);
-		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_main)*0.3 + DG()->GetPropellantMass(DG()->ph_rcs);
+		cprm[PROPELLANT_LEFTWING].mass = cprm[PROPELLANT_RIGHTWING].mass = 0.35*DG()->GetPropellantMass(DG()->ph_main) + cprm[PROPELLANT_LEFTWING].mass_struct;
+		cprm[PROPELLANT_MAIN].mass = DG()->GetPropellantMass(DG()->ph_main)*0.3 + DG()->GetPropellantMass(DG()->ph_rcs) + cprm[PROPELLANT_MAIN].mass_struct;
 	}
 
 	atm_p = DG()->GetAtmPressure();
@@ -192,9 +214,11 @@ void ThermalSubsystem::clbkPreStep (double simt, double simdt, double mjd)
 	HeatConduction (dQ);
 
 	// compute temperature change
-	for (i = 0; i < 13; i++)
-		if (cprm[i].mass)
+	for (i = 0; i < 13; i++) {
+		if (cprm[i].mass > 1e-9)
 			cprm[i].T += dQ[i] * simdt / (cprm[i].mass * cprm[i].cp);
+		cprm[i].T = max (cprm[i].T, T_CMB);   // CMB floor: no colder than the background radiation
+	}
 
 	//sprintf(oapiDebugString(), "T(inner)=%lf, T(outer)=%lf", cprm[INTERIORFUSELAGE].T, cprm[SURFUPPERFUSELAGE].T);
 }
@@ -226,21 +250,39 @@ bool ThermalSubsystem::clbkParseScenarioLine (const char *line)
 
 // --------------------------------------------------------------
 
+// Locates the sun (star) and caches its global position. The sun is not
+// necessarily at the origin of the global frame (the old code assumed that).
+void ThermalSubsystem::UpdateSun ()
+{
+	if (!hSun) {
+		for (OBJHANDLE hObj = DG()->GetSurfaceRef(); hObj; hObj = oapiGetGbodyParent(hObj)) {
+			if (oapiGetObjectType(hObj) == OBJTP_STAR) { hSun = hObj; break; }
+		}
+		if (!hSun) hSun = oapiGetGbodyByIndex(0);   // fallback: old behaviour
+	}
+	if (hSun) oapiGetGlobalPos(hSun, &Spos);
+}
+
 double ThermalSubsystem::SolarRadiation(VECTOR3 *sdir)
 {
-	// Check if we are in the shadow of the closest celestial body
-	// For simplicity, assume sun position is at origin
-	VECTOR3 Ppos, Vpos;
-	double vdist, pdist, prad, srad;
+	// distance from the sun (relative to its actual global position)
+	VECTOR3 Vpos, Vrel;
 	DG()->GetGlobalPos(Vpos);
-	vdist = length(Vpos); // distance from sun
+	Vrel = Vpos - Spos;
+	double vdist = length(Vrel);
+	double srad = (hSun ? oapiGetSize(hSun) : 0.0);
+	if (vdist < srad) vdist = srad;   // inside the sun: surface flux (physical bound)
+
+	// Check if we are in the shadow of the closest celestial bodies
 	OBJHANDLE hObj = DG()->GetSurfaceRef();
 	while (hObj && oapiGetObjectType(hObj) == OBJTP_PLANET) {
-		prad = oapiGetSize(hObj);
+		VECTOR3 Ppos, Prel;
+		double prad = oapiGetSize(hObj);
 		oapiGetGlobalPos(hObj, &Ppos);
-		pdist = length(Ppos);
+		Prel = Ppos - Spos;
+		double pdist = length(Prel);
 		if (vdist > pdist) {
-			double d = length(crossp(Ppos, Ppos-Vpos))/vdist;
+			double d = length(crossp(Prel, Ppos-Vpos))/vdist;
 			if (d < prad) return 0.0;
 		}
 		hObj = oapiGetGbodyParent(hObj);
@@ -248,11 +290,9 @@ double ThermalSubsystem::SolarRadiation(VECTOR3 *sdir)
 	if (sdir) {
 		MATRIX3 Vrot;
 		DG()->GetRotationMatrix(Vrot);
-		*sdir = tmul(Vrot, Vpos / -vdist);
+		*sdir = tmul(Vrot, Vrel / -vdist);
 	}
-	const OBJHANDLE hSun = oapiGetGbodyByIndex(0);
-	srad = oapiGetSize(hSun);
-	const double Hsun = 62499432.6; // should be queried from hSun
+	const double Hsun = 62499432.6; // solar surface flux [W/m^2] (sigma * T_sun^4)
 	return Hsun * (srad*srad)/(vdist*vdist);
 }
 
@@ -261,14 +301,16 @@ double ThermalSubsystem::SolarRadiation(VECTOR3 *sdir)
 double ThermalSubsystem::PlanetRadiation(VECTOR3 *pdir)
 {
 	OBJHANDLE hObj = DG()->GetSurfaceRef();
-	if (!hObj) return 0.0;	
-	
-	VECTOR3 Ppos, Vpos;
+	if (!hObj) return 0.0;
+
+	VECTOR3 Ppos, Vpos, rel;
 	double prad = oapiGetSize(hObj);
 	oapiGetGlobalPos(hObj, &Ppos);
 	DG()->GetGlobalPos(Vpos);
-	double pdist = length(Ppos-Vpos);
-	if (pdir) *pdir = (Ppos-Vpos)/pdist;
+	rel = Ppos - Vpos;
+	double pdist = length(rel);
+	if (pdist < prad) pdist = prad;   // inside the body: surface value (physical bound)
+	if (pdir) *pdir = rel/pdist;
 	double alt_ratio = prad/pdist;
 	const double Hplanet = 237.0; // W/m^2; only true for Earth
 	return Hplanet * (alt_ratio*alt_ratio);
@@ -289,12 +331,19 @@ void ThermalSubsystem::AddAlbedoReflection (double rPower, const VECTOR3 &dir, d
 {
 	const double albedo = 0.3;  // for now
 
-	VECTOR3 Ppos, Vpos;
+	VECTOR3 Ppos, Vpos, rel, toSun;
 	OBJHANDLE hObj = DG()->GetSurfaceRef();
 	oapiGetGlobalPos(hObj, &Ppos);
 	DG()->GetGlobalPos(Vpos);
-	double cosphi = dotp(unit(Vpos-Ppos), unit(-Ppos));
-	double irelalt = oapiGetSize(hObj)/length(Vpos-Ppos);
+	double prad = oapiGetSize(hObj);
+	rel = Vpos - Ppos;
+	double d = length(rel);
+	if (d < prad) d = prad;   // inside the body: surface value (physical bound)
+	toSun = Spos - Ppos;      // planet -> sun direction (actual sun position)
+	if (length(toSun) < 1e-3) return;
+	double cosphi = dotp(rel/d, unit(toSun));
+	if (cosphi < 0.0) cosphi = 0.0;
+	double irelalt = prad/d;
 	rPower *= albedo * irelalt*irelalt * cosphi;
 	AddIrradiance (rPower, dir, compartmentQ);
 }
@@ -434,7 +483,7 @@ void ThermalSubsystem::AtmosphericConvection (double *compartmentQ)
 
 	const PressureSubsystem *pssys = DG()->SubsysPressure();
 	if (pssys->HatchState().IsOpen() || (pssys->OLockState().IsOpen() && pssys->ILockState().IsOpen())) {
-		dq = (cprm[CABIN].T - atm_T) * k_convect * atm_p * cprm[CABIN].mass;
+		dq = (cprm[CABIN].T - atm_T) * k_convect * atm_p * cprm[CABIN].mass_air;
 		compartmentQ[CABIN] -= dq;
 	}
 }
@@ -479,13 +528,13 @@ void ThermalSubsystem::HeatConduction (double *compartmentQ) const
 		compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[PROPELLANT_MAIN] += q;
 	}
 	// fuselage interior <--> cabin
-	q = (cprm[INTERIORFUSELAGE].T - cprm[CABIN].T) * k_cabin * A_cabin * cprm[CABIN].mass;
+	q = (cprm[INTERIORFUSELAGE].T - cprm[CABIN].T) * k_cabin * A_cabin * cprm[CABIN].mass_air;
 	compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[CABIN] += q;
 	// fuselage interior <--> avionics
 	q = (cprm[INTERIORFUSELAGE].T - cprm[AVIONICS].T) * k_upper * A_avionics;
 	compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[AVIONICS] += q;
 	// cabin <--> avionics
-	q = (cprm[CABIN].T - cprm[AVIONICS].T) * k_cabin * A_avionics * cprm[CABIN].mass;
+	q = (cprm[CABIN].T - cprm[AVIONICS].T) * k_cabin * A_avionics * cprm[CABIN].mass_air;
 	compartmentQ[CABIN] -= q;   compartmentQ[AVIONICS] += q;
 	// radiator <--> fuselage exterior
 	double rstate = RadiatorState().State();
@@ -566,7 +615,7 @@ CoolantLoop::CoolantLoop (ThermalSubsystem *_subsys)
 	node[EXCHANGER_PROPRWING].nodetype = NodeParam::EXCHANGER;
 	node[EXCHANGER_PROPRWING].upstream[0] = &node[SPLITTER_WINGDISTRIBUTE];
 	node[EXCHANGER_PROPRWING].dnstream[0] = &node[MERGER_WINGDISTRIBUTE];
-	node[EXCHANGER_PROPRWING].cprm = &ssys_th->cprm[ThermalSubsystem::PROPELLANT_LEFTWING];
+	node[EXCHANGER_PROPRWING].cprm = &ssys_th->cprm[ThermalSubsystem::PROPELLANT_RIGHTWING];
 	node[EXCHANGER_PROPRWING].k = 40.0;
 
 	node[MERGER_WINGDISTRIBUTE].nodetype = NodeParam::MERGER;
@@ -655,7 +704,7 @@ void CoolantLoop::IncReftemp (bool increase)
 
 void CoolantLoop::clbkPreStep (double simt, double simdt, double mjd)
 {
-	node[EXCHANGER_CABIN].k = node[EXCHANGER_CABIN].cprm->mass*3.7;
+	node[EXCHANGER_CABIN].k = node[EXCHANGER_CABIN].cprm->mass_air*3.7;
 
 	// set the wing tank bypass rate
 	double Ta = node[MERGER_WINGBYPASS].upstream[0]->T1;
