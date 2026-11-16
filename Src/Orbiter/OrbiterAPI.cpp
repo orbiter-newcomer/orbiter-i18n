@@ -216,6 +216,19 @@ DLLEXPORT int oapiZhOffsetControls (HWND hDlg, const int *ctrlIds, int count, in
 	return moved;
 }
 
+DLLEXPORT int oapiZhOffsetWindow (HWND hCtrl, int dx, int dy)
+{
+	if (!hCtrl || !orbiter::IsChinese()) return 0;
+	if (dx == 0 && dy == 0) return 0;
+	RECT r;
+	GetWindowRect(hCtrl, &r);
+	HWND hParent = GetParent(hCtrl);
+	if (hParent) MapWindowPoints(NULL, hParent, (POINT*)&r, 2);
+	SetWindowPos(hCtrl, NULL, r.left + dx, r.top + dy, r.right - r.left,
+		r.bottom - r.top, SWP_NOZORDER);
+	return 1;
+}
+
 // Lay out all push buttons of a dialog for the Chinese UI (see OrbiterAPI.h):
 // translate, grow vertically if needed, then move the whole row down by yOffset.
 struct ZhLayoutDlgCtx {

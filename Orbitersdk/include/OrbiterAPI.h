@@ -2572,6 +2572,18 @@ OAPIFUNC int oapiZhFitControlHeight (HWND hDlg, int ctrlId, int padY);
 OAPIFUNC int oapiZhOffsetControls (HWND hDlg, const int *ctrlIds, int count, int dx, int dy);
 
 /**
+ * \brief Moves one dialog control by a pixel offset (Chinese layout adjustment).
+ * \param hCtrl control window (may be obtained with GetDlgItem or by enumerating
+ *   the dialog's child windows, e.g. for controls that share a static ID)
+ * \param dx horizontal offset in pixels
+ * \param dy vertical offset in pixels
+ * \return 1 if the control was moved, 0 otherwise
+ * \note Same "official layout + offset" rule as oapiZhOffsetControls, for
+ *   individual controls. English mode never moves anything.
+ */
+OAPIFUNC int oapiZhOffsetWindow (HWND hCtrl, int dx, int dy);
+
+/**
  * \brief Lays out all buttons of a dialog for the Chinese UI in one call.
  * \param hDlg dialog window
  * \param padY vertical padding added to the measured text height
