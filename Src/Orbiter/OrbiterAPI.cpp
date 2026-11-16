@@ -180,6 +180,83 @@ DLLEXPORT int oapiZhFitControlText (HWND hDlg, int ctrlId, int padX)
 	return 1;
 }
 
+DLLEXPORT int oapiZhFitControlHeight (HWND hDlg, int ctrlId, int padY)
+{
+	if (!hDlg || !orbiter::IsChinese()) return 0;
+	HWND hCtrl = GetDlgItem(hDlg, ctrlId);
+	if (!hCtrl) return 0;
+	ZhTranslateDlgItem(hCtrl);
+	int textH = 0;
+	if (ZhMeasureDlgItem(hDlg, hCtrl, &textH) <= 0) return 0;
+	RECT r;
+	GetWindowRect(hCtrl, &r);
+	MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+	int w = r.right - r.left, h = r.bottom - r.top;
+	int nh = textH + (padY > 0 ? padY : 0);
+	if (nh <= h) return 0;
+	SetWindowPos(hCtrl, NULL, r.left, r.top, w, nh, SWP_NOZORDER);
+	return 1;
+}
+
+DLLEXPORT int oapiZhOffsetControls (HWND hDlg, const int *ctrlIds, int count, int dx, int dy)
+{
+	if (!hDlg || !ctrlIds || count <= 0 || !orbiter::IsChinese()) return 0;
+	if (dx == 0 && dy == 0) return 0;
+	int moved = 0;
+	for (int i = 0; i < count; i++) {
+		HWND hCtrl = GetDlgItem(hDlg, ctrlIds[i]);
+		if (!hCtrl) continue;
+		RECT r;
+		GetWindowRect(hCtrl, &r);
+		MapWindowPoints(NULL, hDlg, (POINT*)&r, 2);
+		SetWindowPos(hCtrl, NULL, r.left + dx, r.top + dy, r.right - r.left,
+			r.bottom - r.top, SWP_NOZORDER);
+		moved++;
+	}
+	return moved;
+}
+
+// Lay out all push buttons of a dialog for the Chinese UI (see OrbiterAPI.h):
+// translate, grow vertically if needed, then move the whole row down by yOffset.
+struct ZhLayoutDlgCtx {
+	HWND hDlg;
+	int padY;
+	int yOffset;
+	int adjusted;
+};
+
+static BOOL CALLBACK ZhLayoutDlgBtnCb (HWND hCtrl, LPARAM lp)
+{
+	ZhLayoutDlgCtx *ctx = (ZhLayoutDlgCtx*)lp;
+	LONG style = GetWindowLongA(hCtrl, GWL_STYLE);
+	LONG type = style & 0xF;
+	if (type != BS_PUSHBUTTON && type != BS_DEFPUSHBUTTON) return TRUE;
+	ZhTranslateDlgItem(hCtrl);
+	int textH = 0;
+	if (ZhMeasureDlgItem(ctx->hDlg, hCtrl, &textH) <= 0) return TRUE;
+	RECT r;
+	GetWindowRect(hCtrl, &r);
+	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&r, 2);
+	int w = r.right - r.left, h = r.bottom - r.top;
+	int nh = textH + (ctx->padY > 0 ? ctx->padY : 0);
+	if (nh < h) nh = h;
+	SetWindowPos(hCtrl, NULL, r.left, r.top + ctx->yOffset, w, nh, SWP_NOZORDER);
+	ctx->adjusted++;
+	return TRUE;
+}
+
+DLLEXPORT int oapiZhLayoutDialogButtons (HWND hDlg, int padY, int yOffset)
+{
+	if (!hDlg || !orbiter::IsChinese()) return 0;
+	ZhLayoutDlgCtx ctx;
+	ctx.hDlg = hDlg;
+	ctx.padY = padY > 0 ? padY : 0;
+	ctx.yOffset = yOffset;
+	ctx.adjusted = 0;
+	EnumChildWindows(hDlg, ZhLayoutDlgBtnCb, (LPARAM)&ctx);
+	return ctx.adjusted;
+}
+
 DLLEXPORT int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int padX, int gap, int startX)
 {
 	if (!hDlg || !ctrlIds || count <= 0 || !orbiter::IsChinese()) return 0;
@@ -225,129 +302,51 @@ DLLEXPORT int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int
 
 // ---------------------------------------------------------------------------
 // oapiZhFitDialogButtons: fit all push buttons of a dialog to their Chinese
-// texts. Column-stacked buttons are repacked so that taller buttons do not
-// overlap; standalone buttons grow around their centre.
+// texts. The official layout is the base: every button is translated and only
+// grown (to the right / downwards) when the Chinese text does not fit its
+// official rect. Buttons are never moved or repacked here; targeted moves use
+// oapiZhOffsetControls with offsets from layout.ini.
 // ---------------------------------------------------------------------------
-
-static int ZhMaxI (int a, int b) { return a > b ? a : b; }
-static int ZhAbsI (int a) { return a < 0 ? -a : a; }
-
-struct ZhFitDlgBtn {
-	HWND h;
-	RECT r;      // position relative to the dialog
-	int tw, th;  // measured Chinese text size in pixels
-};
 
 struct ZhFitDlgCtx {
 	HWND hDlg;
-	std::vector<ZhFitDlgBtn> btns;
+	int padX, padY;
+	int adjusted;
 };
 
-static BOOL CALLBACK ZhCollectDlgBtnCb (HWND hCtrl, LPARAM lp)
+static BOOL CALLBACK ZhFitDlgBtnCb (HWND hCtrl, LPARAM lp)
 {
 	ZhFitDlgCtx *ctx = (ZhFitDlgCtx*)lp;
 	LONG style = GetWindowLongA(hCtrl, GWL_STYLE);
 	LONG type = style & 0xF;
 	if (type != BS_PUSHBUTTON && type != BS_DEFPUSHBUTTON) return TRUE;
-	ZhFitDlgBtn b;
-	b.h = hCtrl;
-	GetWindowRect(hCtrl, &b.r);
-	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&b.r, 2);
 	ZhTranslateDlgItem(hCtrl);
-	b.tw = ZhMeasureDlgItem(ctx->hDlg, hCtrl, &b.th);
-	ctx->btns.push_back(b);
+	int textH = 0;
+	int textW = ZhMeasureDlgItem(ctx->hDlg, hCtrl, &textH);
+	if (textW <= 0) return TRUE;
+	RECT r;
+	GetWindowRect(hCtrl, &r);
+	MapWindowPoints(NULL, ctx->hDlg, (POINT*)&r, 2);
+	int w = r.right - r.left, h = r.bottom - r.top;
+	int nw = w, nh = h;
+	if (textW + ctx->padX > w) nw = textW + ctx->padX;
+	if (textH + ctx->padY > h) nh = textH + ctx->padY;
+	if (nw == w && nh == h) return TRUE;
+	SetWindowPos(hCtrl, NULL, r.left, r.top, nw, nh, SWP_NOZORDER);
+	ctx->adjusted++;
 	return TRUE;
 }
 
 DLLEXPORT int oapiZhFitDialogButtons (HWND hDlg, int padX, int padY)
 {
 	if (!hDlg || !orbiter::IsChinese()) return 0;
-	if (padX < 0) padX = 0;
-	if (padY < 0) padY = 0;
-
 	ZhFitDlgCtx ctx;
 	ctx.hDlg = hDlg;
-	EnumChildWindows(hDlg, ZhCollectDlgBtnCb, (LPARAM)&ctx);
-
-	const size_t n = ctx.btns.size();
-	std::vector<bool> used(n, false);
-	int adjusted = 0;
-
-	for (size_t i = 0; i < n; i++) {
-		if (used[i]) continue;
-
-		// buttons sharing the same left edge form a column
-		std::vector<size_t> col;
-		col.push_back(i);
-		used[i] = true;
-		for (size_t j = i + 1; j < n; j++) {
-			if (used[j]) continue;
-			if (ZhAbsI(ctx.btns[j].r.left - ctx.btns[i].r.left) <= 2) {
-				col.push_back(j);
-				used[j] = true;
-			}
-		}
-		// order the column by vertical position
-		for (size_t a = 1; a < col.size(); a++) {
-			size_t v = col[a];
-			size_t b = a;
-			while (b > 0 && ctx.btns[col[b - 1]].r.top > ctx.btns[v].r.top) {
-				col[b] = col[b - 1];
-				b--;
-			}
-			col[b] = v;
-		}
-		// split the column into rectangles that are actually stacked: larger
-		// vertical gaps separate independent groups (e.g. different group boxes)
-		std::vector<std::vector<size_t> > groups;
-		{
-			std::vector<size_t> g;
-			g.push_back(col[0]);
-			for (size_t k = 1; k < col.size(); k++) {
-				int gap = ctx.btns[col[k]].r.top - ctx.btns[col[k - 1]].r.bottom;
-				if (gap > 24) { groups.push_back(g); g.clear(); }
-				g.push_back(col[k]);
-			}
-			groups.push_back(g);
-		}
-
-		for (size_t gi = 0; gi < groups.size(); gi++) {
-			std::vector<size_t> &g = groups[gi];
-			if (g.size() == 1) {
-				ZhFitDlgBtn &b = ctx.btns[g[0]];
-				int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
-				int nw = ZhMaxI(w, b.tw + padX);
-				int nh = ZhMaxI(h, b.th + padY);
-				if (nw != w || nh != h) {
-					SetWindowPos(b.h, NULL, b.r.left - (nw - w) / 2,
-						b.r.top - (nh - h) / 2, nw, nh, SWP_NOZORDER);
-					adjusted++;
-				}
-				continue;
-			}
-			// uniform size for the whole group (only grow, never shrink)
-			int uw = 0, uh = 0;
-			for (size_t k = 0; k < g.size(); k++) {
-				ZhFitDlgBtn &b = ctx.btns[g[k]];
-				int w = b.r.right - b.r.left, h = b.r.bottom - b.r.top;
-				uw = ZhMaxI(uw, ZhMaxI(w, b.tw + padX));
-				uh = ZhMaxI(uh, ZhMaxI(h, b.th + padY));
-			}
-			int gap = 2;
-			if (g.size() >= 2) {
-				ZhFitDlgBtn &b0 = ctx.btns[g[0]], &b1 = ctx.btns[g[1]];
-				gap = ZhMaxI(2, b1.r.top - b0.r.bottom);
-			}
-			int left = ctx.btns[g[0]].r.left;
-			int top = ctx.btns[g[0]].r.top;
-			for (size_t k = 0; k < g.size(); k++) {
-				SetWindowPos(ctx.btns[g[k]].h, NULL, left, top, uw, uh, SWP_NOZORDER);
-				top += uh + gap;
-				adjusted++;
-			}
-		}
-	}
-	return adjusted;
+	ctx.padX = padX > 0 ? padX : 0;
+	ctx.padY = padY > 0 ? padY : 0;
+	ctx.adjusted = 0;
+	EnumChildWindows(hDlg, ZhFitDlgBtnCb, (LPARAM)&ctx);
+	return ctx.adjusted;
 }
 
 // 汉化扩展：玻璃座舱 HUD 中文文字登记（实现在 hud.cpp）

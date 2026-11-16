@@ -2545,6 +2545,49 @@ OAPIFUNC int oapiZhFitControlText (HWND hDlg, int ctrlId, int padX);
 OAPIFUNC int oapiZhFitControlRow (HWND hDlg, const int *ctrlIds, int count, int padX, int gap, int startX);
 
 /**
+ * \brief Grows a dialog control vertically to fit its translated Chinese text.
+ * \param hDlg dialog window
+ * \param ctrlId control identifier
+ * \param padY vertical padding added to the measured text height
+ * \return 1 if the control was adjusted, 0 otherwise
+ * \note Same "official layout + offset" rule as oapiZhFitControlText, but only
+ *   the height is adapted (width and position of the control stay unchanged).
+ *   Useful for button rows whose horizontal packing must not change.
+ */
+OAPIFUNC int oapiZhFitControlHeight (HWND hDlg, int ctrlId, int padY);
+
+/**
+ * \brief Moves dialog controls by a pixel offset (Chinese layout adjustment).
+ * \param hDlg dialog window
+ * \param ctrlIds control identifiers
+ * \param count number of identifiers
+ * \param dx horizontal offset in pixels
+ * \param dy vertical offset in pixels
+ * \return number of controls moved
+ * \note Implements the "official layout + offset" rule for controls whose
+ *   translated texts overlap neighbouring controls: the official rc position
+ *   is kept as the base and only a small offset from layout.ini is applied.
+ *   English mode never moves anything.
+ */
+OAPIFUNC int oapiZhOffsetControls (HWND hDlg, const int *ctrlIds, int count, int dx, int dy);
+
+/**
+ * \brief Lays out all buttons of a dialog for the Chinese UI in one call.
+ * \param hDlg dialog window
+ * \param padY vertical padding added to the measured text height
+ * \param yOffset downward offset (pixels) applied to every button
+ * \return number of buttons that were adjusted
+ * \note Applies the "official layout + offset" rule to a complete dialog:
+ *   every push button is translated (oapiTr), grown vertically when the Chinese
+ *   text does not fit the official height, and then moved down by yOffset.
+ *   Width and horizontal position of the official layout are never changed, so
+ *   button rows cannot overlap horizontally. Both values normally come from
+ *   layout.ini ([dialog.*] sections), so no per-control code is needed.
+ *   English mode does not touch the layout.
+ */
+OAPIFUNC int oapiZhLayoutDialogButtons (HWND hDlg, int padY, int yOffset);
+
+/**
  * \brief Fits every push button of a dialog to its translated Chinese text.
  * \param hDlg dialog window
  * \param padX horizontal padding added to each measured text width

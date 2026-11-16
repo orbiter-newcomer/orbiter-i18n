@@ -29,8 +29,7 @@ static void ZhLocalizeDgPage (HWND hDlg)
 {
     if (oapiZhActive() == 0) return;
     EnumChildWindows (hDlg, DgPageLocCb, 0);
-    // 原版布局 + 偏置：中文按钮按实测文字宽高适配（含同列按钮重排），
-    // 偏置数值来自 i18n/layout/zh_CN/layout.ini -> [dialog.vessel_pages]
+    // 文字适配（保留）：官方布局为基准，按钮只按中文文字加宽/加高，不移动
     oapiZhFitDialogButtons (hDlg,
         oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadX", 10),
         oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadY", 6));

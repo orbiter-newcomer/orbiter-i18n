@@ -4,8 +4,10 @@
 // 迁移说明：英文为键、中文为值的数据已并入核心翻译表（.po 文件）；
 // 本文件只保留场景编辑器载具编辑页的本地化逻辑：
 //   - 控件文本翻译（oapiTr）
-//   - 中文布局适配（原版布局 + 测量/偏置，见 oapiZhFitControl*）
-// 偏置数值来自 i18n/layout/zh_CN/layout.ini -> [dialog.shuttle_a_anim]。
+//   - 按钮文字适配（原版布局为基准，按中文文字加宽/加高，不移动按钮）
+//   - 辅助吊舱三个按钮的移动：布局 API + layout.ini 偏置（只移动这一行）
+// 偏置数值来自 i18n/layout/zh_CN/layout.ini -> [dialog.shuttle_a_anim]；
+// 代码中不写死任何像素坐标或尺寸。
 // 英文模式下不做任何事（.rc 资源保持原样）。
 // =============================================================================
 static BOOL CALLBACK SaPageLocCb (HWND hWnd, LPARAM)
@@ -21,37 +23,18 @@ static BOOL CALLBACK SaPageLocCb (HWND hWnd, LPARAM)
     return TRUE;
 }
 
-// 中文模式控件适配（原版布局 + 偏置）：文字加宽 / 同排按钮重排
-static void ZhFitSaControls (HWND hDlg)
-{
-    const int padX = oapiGetLayoutInt ("dialog.shuttle_a_anim", "buttonPadX", 20);
-    const int gap  = oapiGetLayoutInt ("dialog.shuttle_a_anim", "buttonGap", 4);
-    const int rowX = oapiGetLayoutInt ("dialog.shuttle_a_anim", "auxRowX", 15);
-
-    // 起落架 / 对接口 / 气闸：每个按钮按中文宽度加宽（成对垂直排列，不重排）
-    static const int btnIds[] = {
-        IDC_GEAR_UP, IDC_GEAR_DOWN,
-        IDC_DPORT_CLOSE, IDC_DPORT_OPEN,
-        IDC_OLOCK_CLOSE, IDC_OLOCK_OPEN
-    };
-    for (int i = 0; i < (int)(sizeof(btnIds)/sizeof(btnIds[0])); i++)
-        oapiZhFitControlText (hDlg, btnIds[i], padX);
-
-    // 辅助吊舱：Retro / Hover / Fwd 三个按钮按中文宽度从左重排
-    static const int auxRow[] = { IDC_AUX_RETRO, IDC_AUX_HOVER, IDC_AUX_FWD };
-    oapiZhFitControlRow (hDlg, auxRow, 3, padX, gap, rowX);
-
-    // 同步（Sync）按钮：按中文宽度加宽
-    oapiZhFitControlText (hDlg, IDC_AUX_SYNC, padX);
-}
-
 static void ZhLocalizeSaPage (HWND hDlg)
 {
     if (oapiZhActive() == 0) return;
     EnumChildWindows (hDlg, SaPageLocCb, 0);
-    ZhFitSaControls (hDlg);
-    // 原版布局 + 偏置：所有按钮按中文文字宽高适配（含同列重排）
+
+    // 文字适配（保留）：官方布局为基准，按钮只按中文文字加宽/加高，不移动
     oapiZhFitDialogButtons (hDlg,
         oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadX", 10),
         oapiGetLayoutInt ("dialog.vessel_pages", "buttonPadY", 6));
+
+    // 只把辅助吊舱那一行的三个按钮下移（布局 API + layout.ini 偏置）
+    static const int auxBtn[] = { IDC_AUX_RETRO, IDC_AUX_HOVER, IDC_AUX_FWD };
+    oapiZhOffsetControls (hDlg, auxBtn, 3, 0,
+        oapiGetLayoutInt ("dialog.shuttle_a_anim", "auxButtonYOffset", 16));
 }
