@@ -214,7 +214,7 @@ void D3D9Client::DrawTerrainLoadWaitLabel ()
 	if (!pDevice || !pFramework || !pFramework->GetLargeFont()) return;
 
 	wchar_t wbuf[256] = L"";
-	MultiByteToWideChar (CP_UTF8, 0, oapiTr("Loading terrain..."), -1, wbuf, 256);
+	oapiUtf8ToWide (oapiTr("Loading terrain..."), wbuf, 256);
 	RECT rect = _RECT (0, viewH / 2 - 20, viewW, viewH / 2 + 20);
 	pDevice->BeginScene();
 	pFramework->GetLargeFont()->DrawTextW (NULL, wbuf, -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE, D3DCOLOR_XRGB (255, 255, 255));

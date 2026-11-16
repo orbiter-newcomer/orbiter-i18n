@@ -16,6 +16,7 @@
 #include "Log.h"
 #include "Util.h"
 #include "resource.h"
+#include "Localization.h"
 #include <wincodec.h>
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -30,24 +31,13 @@ using namespace oapi;
 
 const char *strWndClass = "Orbiter Render Window";
 
-// Convert a file path from UTF-8 (fallback: system ANSI code page) to UTF-16
-// for the WIC API. This must not depend on the process locale, so that file
-// handling is identical on all system region settings.
+// Convert a file path to UTF-16 for the WIC API. The unified text codec layer
+// handles UTF-8 with a fallback to the system ANSI code page, so file handling
+// is identical on all system region settings.
 static std::wstring PathToWide (const char *path)
 {
 	if (!path) return std::wstring();
-	int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, nullptr, 0);
-	UINT cp = CP_UTF8;
-	if (wlen <= 0) {
-		cp = CP_ACP;
-		wlen = MultiByteToWideChar(CP_ACP, 0, path, -1, nullptr, 0);
-	}
-	if (wlen <= 0) return std::wstring();
-
-	std::wstring w(size_t(wlen), L'\0');
-	MultiByteToWideChar(cp, 0, path, -1, &w[0], wlen);
-	if (!w.empty() && w.back() == L'\0') w.pop_back();
-	return w;
+	return orbiter::LocalToWide(path);
 }
 
 OAPIFUNC LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
@@ -861,61 +851,12 @@ void ScreenAnnotation::SetPosition (double x1, double y1, double x2, double y2)
 void ScreenAnnotation::SetText(char *str)
 {
 	int len = (int)strlen(str);
-	bool validUTF8 = true;
-
-	// Check whether the input is valid UTF-8
-	for (int i = 0; i < len; ) {
-		unsigned char c = (unsigned char)str[i];
-
-		if (c < 0x80) {
-			i++;
-			continue;
-		}
-
-		int n;
-		if ((c & 0xE0) == 0xC0)      n = 2;
-		else if ((c & 0xF0) == 0xE0) n = 3;
-		else if ((c & 0xF8) == 0xF0) n = 4;
-		else {
-			validUTF8 = false;
-			break;
-		}
-
-		if (i + n > len) {
-			validUTF8 = false;
-			break;
-		}
-
-		for (int j = 1; j < n; j++) {
-			if (((unsigned char)str[i + j] & 0xC0) != 0x80) {
-				validUTF8 = false;
-				break;
-			}
-		}
-
-		if (!validUTF8) break;
-		i += n;
-	}
-
+	// The text may come from addons that still pass Windows-1252 strings instead
+	// of UTF-8; the codec layer detects and converts that once (see TextCodec in
+	// i18n/core/Localization.h).
+	bool validUTF8 = orbiter::IsValidUtf8(str, len);
 	std::string converted;
-
-	if (!validUTF8) {
-		// Assume Windows-1252 and convert to UTF-8
-		int wlen = MultiByteToWideChar(1252, 0, str, -1, NULL, 0);
-		if (wlen) {
-			std::vector<wchar_t> wide(wlen);
-			MultiByteToWideChar(1252, 0, str, -1, wide.data(), wlen);
-
-			int ulen = WideCharToMultiByte(CP_UTF8, 0, wide.data(), -1, NULL, 0, NULL, NULL);
-
-			if (ulen) {
-				std::vector<char> utf8(ulen);
-				WideCharToMultiByte(CP_UTF8, 0, wide.data(), -1, utf8.data(), ulen, NULL, NULL);
-				converted.assign(utf8.data());
-			}
-		}
-	}
-
+	if (!validUTF8) converted = orbiter::Latin1ToUtf8(str, len);
 	const char *src = converted.empty() ? str : converted.c_str();
 	len = (int)strlen(src);
 

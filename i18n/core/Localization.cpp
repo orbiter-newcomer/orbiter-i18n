@@ -169,6 +169,150 @@ static void BuildTables()
 	}
 
 	// ========================================================================
+	// Unified text encoding layer (TextCodec)
+	// ========================================================================
+
+	// Strict UTF-8 validation (BOM allowed). Rejects overlong sequences,
+	// surrogates and code points above U+10FFFF.
+	static bool Utf8IsValid(const char* data, int len)
+	{
+		if (!data) return false;
+		if (len < 0) len = int(strlen(data));
+		int i = 0;
+		if (len >= 3 && (unsigned char)data[0] == 0xEF && (unsigned char)data[1] == 0xBB
+			&& (unsigned char)data[2] == 0xBF) i = 3;
+		while (i < len) {
+			unsigned char c = (unsigned char)data[i];
+			if (c < 0x80) { i++; continue; }
+			int n;
+			if ((c & 0xE0) == 0xC0) {
+				if (c < 0xC2) return false;
+				n = 1;
+			} else if ((c & 0xF0) == 0xE0) {
+				n = 2;
+			} else if ((c & 0xF8) == 0xF0) {
+				if (c > 0xF4) return false;
+				n = 3;
+			} else {
+				return false;
+			}
+			if (i + n >= len) return false;
+			for (int k = 1; k <= n; k++)
+				if (((unsigned char)data[i + k] & 0xC0) != 0x80) return false;
+			i += n + 1;
+		}
+		return true;
+	}
+
+	bool IsValidUtf8(const char* data, int len)
+	{
+		return Utf8IsValid(data, len);
+	}
+
+	TextEncoding DetectTextEncoding(const char* data, int len)
+	{
+		if (!data) return TextEncoding::Ansi;
+		if (len < 0) len = int(strlen(data));
+		if (len >= 2) {
+			unsigned char b0 = (unsigned char)data[0], b1 = (unsigned char)data[1];
+			if (b0 == 0xFF && b1 == 0xFE) return TextEncoding::Utf16LE;
+			if (b0 == 0xFE && b1 == 0xFF) return TextEncoding::Utf16BE;
+		}
+		if (len == 0 || Utf8IsValid(data, len)) return TextEncoding::Utf8;
+		return TextEncoding::Ansi;
+	}
+
+	std::string LocalToUtf8(const char* local, int len)
+	{
+		if (!local) return std::string();
+		if (len < 0) len = int(strlen(local));
+		if (len == 0) return std::string();
+		int wlen = MultiByteToWideChar(CP_ACP, 0, local, len, nullptr, 0);
+		if (wlen <= 0) return std::string();
+		std::wstring w(size_t(wlen), L'\0');
+		MultiByteToWideChar(CP_ACP, 0, local, len, &w[0], wlen);
+		return WideToUtf8String(w.c_str());
+	}
+
+	std::wstring LocalToWide(const char* utf8, int len)
+	{
+		if (!utf8) return std::wstring();
+		if (len < 0) len = int(strlen(utf8));
+		if (len == 0) return std::wstring();
+		int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8, len, nullptr, 0);
+		UINT cp = CP_UTF8;
+		if (wlen <= 0) {
+			cp = CP_ACP;
+			wlen = MultiByteToWideChar(CP_ACP, 0, utf8, len, nullptr, 0);
+		}
+		if (wlen <= 0) return std::wstring();
+		std::wstring w(size_t(wlen), L'\0');
+		MultiByteToWideChar(cp, 0, utf8, len, &w[0], wlen);
+		return w;
+	}
+
+	std::string Utf8ToLatin1(const char* utf8, int len)
+	{
+		if (!utf8) return std::string();
+		if (len < 0) len = int(strlen(utf8));
+		if (len == 0) return std::string();
+		std::wstring w = LocalToWide(utf8, len);
+		if (w.empty()) return std::string(utf8, len);
+		int n = WideCharToMultiByte(28591, 0, w.c_str(), int(w.size()), nullptr, 0, nullptr, nullptr);
+		if (n <= 0) return std::string(utf8, len);
+		std::string s(size_t(n), '\0');
+		WideCharToMultiByte(28591, 0, w.c_str(), int(w.size()), &s[0], n, nullptr, nullptr);
+		return s;
+	}
+
+	std::string Latin1ToUtf8(const char* latin1, int len)
+	{
+		if (!latin1) return std::string();
+		if (len < 0) len = int(strlen(latin1));
+		if (len == 0) return std::string();
+		std::wstring w(size_t(len), L'\0');
+		for (int i = 0; i < len; i++) w[size_t(i)] = wchar_t((unsigned char)latin1[i]);
+		return WideToUtf8String(w.c_str());
+	}
+
+	static bool DecodeTextToUtf8(const std::string& data, std::string& out)
+	{
+		out.clear();
+		if (data.empty()) return true;
+		TextEncoding enc = DetectTextEncoding(data.data(), int(data.size()));
+		if (enc == TextEncoding::Utf16LE || enc == TextEncoding::Utf16BE) {
+			size_t chars = (data.size() - 2) / 2;
+			std::wstring w(chars, L'\0');
+			for (size_t i = 0; i < chars; i++) {
+				unsigned char b0 = (unsigned char)data[2 + i * 2];
+				unsigned char b1 = (unsigned char)data[2 + i * 2 + 1];
+				w[i] = (enc == TextEncoding::Utf16LE) ? wchar_t(b0 | (b1 << 8)) : wchar_t((b0 << 8) | b1);
+			}
+			out = WideToUtf8(w.c_str());
+			return true;
+		}
+		if (enc == TextEncoding::Utf8) {
+			size_t off = 0;
+			if (data.size() >= 3 && (unsigned char)data[0] == 0xEF
+				&& (unsigned char)data[1] == 0xBB && (unsigned char)data[2] == 0xBF) off = 3;
+			out.assign(data, off, data.size() - off);
+			return true;
+		}
+		out = LocalToUtf8(data.c_str(), int(data.size()));
+		return true;
+	}
+
+	bool ReadTextFileUtf8(const char* path, std::string& out)
+	{
+		out.clear();
+		if (!path) return false;
+		std::ifstream ifs(path, std::ios::binary);
+		if (!ifs) return false;
+		std::string data((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+		return DecodeTextToUtf8(data, out);
+	}
+
+	// ========================================================================
 	// Configuration
 	// ========================================================================
 
@@ -716,7 +860,7 @@ static void BuildTables()
 	// Language selector combobox (Launchpad)
 	// ========================================================================
 
-	static const wchar_t* kLangNames[2] = { L"English", L"中文（简体）" };
+	static const wchar_t* kLangNames[2] = { L"English", L"中文（简体）" };   // lint:allow-cjk language endonyms
 
 	void InitLanguageCombo(HWND hCombo)
 	{

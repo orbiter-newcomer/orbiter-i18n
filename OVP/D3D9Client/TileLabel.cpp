@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include "TextCodec.inc"
 
 TileLabel *TileLabel::Create (const SurfTile *stile)
 {
@@ -71,18 +72,16 @@ static std::unique_ptr<WCHAR> _wbuffer; // this should get destroyed @ shutdown
 
 static LPWSTR GetWBuffer (const std::string &name, int *_len, int _stopLen = -1)
 {
-	LPWSTR dst = NULL;
-	int len = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), _stopLen, NULL, 0);
-	if (len) {
-		// Grow buffer?
-		if (len > _wbufferSize) {
-			_wbuffer.reset(new WCHAR[len+16]);
-			_wbufferSize = len+16;
-		}
-		dst = _wbuffer.get();
-		MultiByteToWideChar(CP_UTF8, 0, name.c_str(), _stopLen, dst, len);
+	std::wstring w = Utf8ToWideLocal(name.c_str(), _stopLen);
+	if (w.empty()) { *_len = 0; return NULL; }
+	// Grow buffer?
+	if ((int)w.size() + 16 > _wbufferSize) {
+		_wbuffer.reset(new WCHAR[w.size() + 16]);
+		_wbufferSize = (int)w.size() + 16;
 	}
-	*_len = len ? len - 1 : 0;
+	LPWSTR dst = _wbuffer.get();
+	memcpy(dst, w.c_str(), (w.size() + 1) * sizeof(WCHAR));
+	*_len = (int)w.size();
 	return dst;
 }
 
@@ -461,4 +460,3 @@ int TileLabel::LimitAndRotateLongLabelList(TLABEL *l, DWORD H, int *y)
 
 	return partLen;
 }
-

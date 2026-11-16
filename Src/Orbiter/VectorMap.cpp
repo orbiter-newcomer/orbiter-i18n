@@ -1019,9 +1019,9 @@ void VectorMap::DrawCustomMarkerSet (oapi::Sketchpad *skp, int idx)
 			} else {
 				skp->Ellipse (x-2, y-2, x+3, y+3);
 				if (drawlabel && set->list->marker[i].label[0].size()) {
-					WCHAR wlabel[256];
-					MultiByteToWideChar(CP_UTF8, 0, set->list->marker[i].label[0].c_str(), -1, wlabel, 256);
-					skp->TextW (x+3, y, wlabel, wcslen(wlabel));
+					std::wstring wlabel = orbiter::LocalToWide(set->list->marker[i].label[0].c_str());
+					if (!wlabel.empty())
+						skp->TextW (x+3, y, const_cast<LPWSTR>(wlabel.c_str()), (int)wlabel.size());
 				}
 			}
 		}

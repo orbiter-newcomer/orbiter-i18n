@@ -12,6 +12,7 @@
 #include "D3D9TextMgr.h"
 #include "D3D9Config.h"
 #include "Log.h"
+#include "TextCodec.inc"
 
 #include "Mesh.h"
 
@@ -49,74 +50,6 @@ oapi::Font * deffont = 0;
 oapi::Pen * defpen = 0;
 
 
-static std::string UTF8ToCP1252(const char *utf8, int ulen)
-{
-	// Convert UTF-8 to Windows-1252
-	// Get the required length to convert from UTF-8 to UTF-16
-	// Use MB_ERR_INVALID_CHARS to have the call fail if the string
-	// contains invalid characters. In that case we assume it's
-	// a legacy plugin providing a Windows-1252 string instead of UTF-8
-	int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8, ulen, nullptr, 0);
-
-	// Return the original string and hope it was already using Windows-1252
-	if (wlen == 0) {
-		return std::string(utf8);
-	}
-	std::wstring utf16(wlen, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, utf8,
-                        ulen, utf16.data(), wlen);
-
-	int len = WideCharToMultiByte(28591, 0, utf16.c_str(),
-                                  utf16.length(), nullptr, 0,
-                                  nullptr, nullptr);
-
-	if (len == 0) {
-		return std::string(utf8);
-	}
-
-	std::string str(len, '\0');
-	len = WideCharToMultiByte(28591, 0, utf16.c_str(),
-                        utf16.length(), str.data(), len,
-                        nullptr, nullptr);
-
-	if (len == 0) {
-		return std::string(utf8);
-	}
-
-	return str;
-}
-
-
-// Convert a UTF-8 string to UTF-16. Falls back to the system ANSI code page
-// for legacy strings that are not valid UTF-8.
-static std::wstring UTF8ToUTF16(const char *utf8, int ulen)
-{
-	if (!utf8) return std::wstring();
-	if (ulen < 0) ulen = int(strlen(utf8));
-
-	int wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8, ulen, nullptr, 0);
-	UINT cp = CP_UTF8;
-	if (wlen <= 0) {
-		cp = CP_ACP;
-		wlen = MultiByteToWideChar(CP_ACP, 0, utf8, ulen, nullptr, 0);
-	}
-	if (wlen <= 0) return std::wstring();
-
-	std::wstring w(size_t(wlen), L'\0');
-	MultiByteToWideChar(cp, 0, utf8, ulen, &w[0], wlen);
-	return w;
-}
-
-
-// Returns true if the text contains characters that the single-byte ANSI/CP1252
-// font path cannot represent (e.g. CJK characters).
-static bool NeedsUnicodeText(const std::wstring &w)
-{
-	for (size_t i = 0; i < w.size(); i++) {
-		if ((unsigned int)w[i] > 0xFF) return true;
-	}
-	return false;
-}
 
 
 // ===============================================================================================
@@ -1006,11 +939,11 @@ DWORD D3D9Pad::GetTextWidth (const char *utf8, int ulen)
 	if (cfont==NULL) return 0;
 
 	// Unicode (CJK etc.) text is measured with the D3DXFont interface
-	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
+	std::wstring wstr = Utf8ToWideLocal(utf8, ulen);
 	if (NeedsUnicodeText(wstr)) {
 		return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(wstr.c_str(), int(wstr.length())));
 	}
-	std::string str = UTF8ToCP1252(utf8, ulen);
+	std::string str = Utf8ToCp1252(utf8, ulen);
 
 	return DWORD(static_cast<D3D9PadFont *>(cfont)->pFont->Length2(str.c_str(), str.length()));
 }
@@ -1174,14 +1107,14 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 	// '@' fonts render everything through the Unicode font (Chinese UI only)
 	const D3D9PadFont *puf = (cfont ? static_cast<const D3D9PadFont*>(cfont) : nullptr);
 	if (puf && puf->m_bUnicodeAll && oapiZhActive() != 0) {
-		std::wstring wall = UTF8ToUTF16(utf8, ulen);
+		std::wstring wall = Utf8ToWideLocal(utf8, ulen);
 		int oxa = 0, oya = 0;
 		GetOrigin(&oxa, &oya);
 		return TextW(x + oxa, y + oya, const_cast<LPWSTR>(wall.c_str()), int(wall.length()));
 	}
 
 	// Route non-Latin text (e.g. CJK) through the Unicode (D3DXFont) renderer
-	std::wstring wstr = UTF8ToUTF16(utf8, ulen);
+	std::wstring wstr = Utf8ToWideLocal(utf8, ulen);
 	if (NeedsUnicodeText(wstr)) {
 		// The bitmap (ASCII) path draws through the vertex pipeline, which applies
 		// the sketchpad origin/transform. The D3DXFont path draws directly, so the
@@ -1190,7 +1123,7 @@ bool D3D9Pad::Text (int x, int y, const char *utf8, int ulen)
 		GetOrigin(&ox, &oy);
 		return TextW(x + ox, y + oy, const_cast<LPWSTR>(wstr.c_str()), int(wstr.length()));
 	}
-	std::string str = UTF8ToCP1252(utf8, ulen);
+	std::string str = Utf8ToCp1252(utf8, ulen);
 
 #ifdef SKPDBG 
 	Log("Text(%s)", str);
@@ -2130,7 +2063,7 @@ HFONT D3D9PadFont::GetGDIFont () const
 int D3D9PadFont::GetTextLength(const char *pText, int len) const
 {
 	if (m_bUnicodeAll && oapiZhActive() != 0) {
-		std::wstring w = UTF8ToUTF16(pText, len);
+		std::wstring w = Utf8ToWideLocal(pText, len);
 		return int(pFont->Length2(w.c_str(), (int)w.length()));
 	}
 	return int(pFont->Length2(pText, len));
@@ -2209,4 +2142,3 @@ void D3D9PadBrush::D3D9TechInit(LPDIRECT3DDEVICE9 pDevice)
 {
 	//pDev = pDevice;
 }
-

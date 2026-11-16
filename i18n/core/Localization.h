@@ -79,6 +79,50 @@ namespace orbiter {
 	int Utf8ToWideBuffer(const char* utf8, wchar_t* buf, int buflen);
 	int WideToUtf8Buffer(const wchar_t* wide, char* buf, int buflen);
 
+	// ------------------------------------------------------------------------
+	// Unified text encoding layer (TextCodec)
+	//
+	// Rule: UTF-8 is the only encoding used inside the program. Text that enters
+	// the program from a file or from a legacy ANSI API is converted once, here;
+	// text that leaves the program for a Win32 API uses the Unicode variant of
+	// that API. Code outside this layer must not call MultiByteToWideChar /
+	// WideCharToMultiByte directly.
+	// ------------------------------------------------------------------------
+
+	// Detected text encoding of a byte buffer.
+	enum class TextEncoding {
+		Utf8,        // valid UTF-8 (with or without BOM)
+		Utf16LE,     // UTF-16 little endian with BOM
+		Utf16BE,     // UTF-16 big endian with BOM
+		Ansi         // not valid UTF-8: assume the system ANSI code page
+	};
+
+	// Check whether a byte sequence is well-formed UTF-8 (BOM allowed).
+	bool IsValidUtf8(const char* data, int len = -1);
+
+	// Detect the encoding of a byte buffer (BOM / UTF-8 validation / ANSI fallback).
+	TextEncoding DetectTextEncoding(const char* data, int len = -1);
+
+	// Read a whole text file and return its content as UTF-8, independent of the
+	// file's own encoding (UTF-8 with/without BOM, UTF-16 LE/BE with BOM, or the
+	// system ANSI code page as fallback). Missing/unreadable files return false.
+	// This is the only file text reader the program should use.
+	bool ReadTextFileUtf8(const char* path, std::string& out);
+
+	// System ANSI code page -> UTF-8 (legacy data written by ANSI-only tools).
+	std::string LocalToUtf8(const char* local, int len = -1);
+
+	// UTF-8 -> UTF-16; falls back to the system ANSI code page when the input is
+	// not valid UTF-8 (legacy plugins/data that still pass ANSI strings).
+	std::wstring LocalToWide(const char* utf8, int len = -1);
+
+	// UTF-8 -> ISO-8859-1/Windows-1252 bytes (single-byte render paths of the
+	// graphics clients; CJK text uses a separate wide path there).
+	std::string Utf8ToLatin1(const char* utf8, int len = -1);
+
+	// ISO-8859-1/Windows-1252 bytes -> UTF-8 (legacy single-byte text input).
+	std::string Latin1ToUtf8(const char* latin1, int len = -1);
+
 	// Convert a UTF-8 string to the system ANSI code page (for legacy ANSI APIs
 	// such as the inline HTML control). Unmappable characters become '?'.
 	std::string Utf8ToAnsiString(const char* utf8);

@@ -6,6 +6,7 @@
 #include "Orbiter.h"
 #include "MfdUser.h"
 #include "Config.h"
+#include "Localization.h"
 #include "Astro.h"
 #include "Select.h"
 #include "Planet.h"
@@ -361,10 +362,9 @@ void GraphMFD::SetAxisTitle (int g, int axis, char *title)
 static void GraphTextOutUtf8 (HDC hDC, int x, int y, const char *s)
 {
 	if (!s) return;
-	wchar_t wbuf[512];
-	int n = MultiByteToWideChar (CP_UTF8, 0, s, -1, wbuf, 512);
-	if (n <= 0) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
-	TextOutW ((HDC)hDC, x, y, wbuf, n-1);
+	std::wstring w = orbiter::LocalToWide(s);
+	if (w.empty()) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
+	TextOutW ((HDC)hDC, x, y, w.c_str(), (int)w.size());
 }
 
 void GraphMFD::Plot (HDC hDC, int g, int h0, int h1, const char *title)

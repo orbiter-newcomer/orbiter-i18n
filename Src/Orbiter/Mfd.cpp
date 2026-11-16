@@ -884,10 +884,9 @@ void Instrument::DisplayTitle (oapi::Sketchpad *skp, const char *title) const
 static void TextOutUtf8 (HDC hDC, int x, int y, const char *s)
 {
 	if (!s) return;
-	wchar_t wbuf[512];
-	int n = MultiByteToWideChar (CP_UTF8, 0, s, -1, wbuf, 512);
-	if (n <= 0) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
-	TextOutW (hDC, x, y, wbuf, n-1);
+	std::wstring w = orbiter::LocalToWide(s);
+	if (w.empty()) { TextOutA (hDC, x, y, s, (int)strlen(s)); return; }
+	TextOutW (hDC, x, y, w.c_str(), (int)w.size());
 }
 
 void Instrument::DisplayTitle (HDC hDC, const char *title) const
