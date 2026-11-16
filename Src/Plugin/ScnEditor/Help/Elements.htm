@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
-<HEAD>
+<HEAD><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
 <LINK REL="stylesheet" TYPE="TEXT/CSS" HREF="Orbiter.css">
 <Title>Orbital elements</Title>
@@ -16,9 +16,9 @@ Use this page to place a vessel into orbit around a celestial body.
 <p>
 First select the object (planet, moon or sun) around which you want your vessel to orbit in the <i>Orbit reference</i> box.
 <p>
-Next, in the <i>Frame</i> box, select the coordinate frame in which the elements will be expressed. The choices are <i>ecliptic</i> and <i>ref. equator</i>. The ecliptic frame is defined by the plane of Earthís orbit, and the direction of the vernal equinox (at epoch J2000.0). This frame is useful e.g. if you want to place a vessel into an orbit for an interplanetary transfer. The equatorial frame is defined by the equatorial plane of the reference body. It is useful if you want to place the vessel into a specific orbit with respect to the planet surface, e.g. geostationary or polar.
+Next, in the <i>Frame</i> box, select the coordinate frame in which the elements will be expressed. The choices are <i>ecliptic</i> and <i>ref. equator</i>. The ecliptic frame is defined by the plane of EarthÊäØ orbit, and the direction of the vernal equinox (at epoch J2000.0). This frame is useful e.g. if you want to place a vessel into an orbit for an interplanetary transfer. The equatorial frame is defined by the equatorial plane of the reference body. It is useful if you want to place the vessel into a specific orbit with respect to the planet surface, e.g. geostationary or polar.
 <p>
-Finally, set the <i>reference epoch</i> for the elements. This is the date to which the <i>mean longitude</i> pa≠rameter of the orbital elements will refer. If you select <i>current</i>, then the value will be interpreted as the mean longitude at the current simulation time. Otherwise, the value will represent the mean longitude at the specified <i>MJD</i> (Modified Julian Date). The latter option is more useful when editing a scenario without pausing, be≠cause a vesselís mean longitude is continuously changing along its orbit.
+Finally, set the <i>reference epoch</i> for the elements. This is the date to which the <i>mean longitude</i> paÁíªameter of the orbital elements will refer. If you select <i>current</i>, then the value will be interpreted as the mean longitude at the current simulation time. Otherwise, the value will represent the mean longitude at the specified <i>MJD</i> (Modified Julian Date). The latter option is more useful when editing a scenario without pausing, beÁí´ause a vesselÊäØ mean longitude is continuously changing along its orbit.
 <p>
 Now you are ready to set the elements in the left column of the dialog box. The six elements completely describe a Keplerian (2-body) orbit of an object in the form of a conic section, either periodic (elliptic) or non-periodic (hyperbolic). Under the influence of gravitational perturbations the orbital elements will change over time. In this case, the specified values describe the current <i>osculating orbit</i>, i.e. the Keplerian orbit producing the same vessel state vectors (position and velocity) at the current time.
 <p>
@@ -37,7 +37,7 @@ Defines the shape of the orbit:
 </table>
 
 <h3>Inclination [Inc]</h3>
-Defines the angle between the orbital plane and the reference plane. For example, if you selected "ref. equatorî frame, then setting <i>i</i> = 0 will put the vessel into an orbit above the planetís equator, while <i>i</i> = 90 defines a polar orbit.
+Defines the angle between the orbital plane and the reference plane. For example, if you selected "ref. equator?frame, then setting <i>i</i> = 0 will put the vessel into an orbit above the planetÊäØ equator, while <i>i</i> = 90 defines a polar orbit.
 
 <h3>Longitude of ascending node [LAN]</h3>
 The angular distance between the reference direction (e.g. vernal equinox) and the line of nodes (the intersection between the orbital and reference planes).
@@ -46,7 +46,7 @@ The angular distance between the reference direction (e.g. vernal equinox) and t
 The sum of LAN and the argument of periapsis (the angle between periapsis and the line of nodes).
 
 <h3>Mean longitude at epoch [eps]</h3>
-This defines the vesselís position along the orbital trajectory. The mean longitude is the sum of LAN and the mean anomaly (the angle between periapsis and the vessel position for a hypothetical circular orbit with the same orbital period as the true orbit). The value entered here refers to the specified epoch. For epoch = ìcurrentî, the value represents the vesselís current (continuously varying) mean longitude. Otherwise, it is the longitude at the specified date (fixed for a given Keplerian orbit.)
+This defines the vesselÊäØ position along the orbital trajectory. The mean longitude is the sum of LAN and the mean anomaly (the angle between periapsis and the vessel position for a hypothetical circular orbit with the same orbital period as the true orbit). The value entered here refers to the specified epoch. For epoch = Êè∑urrent? the value represents the vesselÊäØ current (continuously varying) mean longitude. Otherwise, it is the longitude at the specified date (fixed for a given Keplerian orbit.)
 
 </BODY>
 </HTML>

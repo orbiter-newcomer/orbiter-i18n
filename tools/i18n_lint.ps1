@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 # i18n_lint.ps1 - text encoding / localisation rules for the China-localised
 # Orbiter fork.
 #
@@ -18,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $root 'i18n'))) { $root = Get-Location }
 
-$srcExts   = @('.cpp', '.h', '.hpp', '.c', '.inc')
+$srcExts   = @('.cpp', '.h', '.hpp', '.c', '.inc')   # .rc resources are RC-compiler input (may use Windows-1252)
 $dataExts  = @('.scn', '.txt', '.htm', '.html', '.cfg', '.ini', '.lua', '.md', '.json', '.xml')
 $srcDirs   = @('Src', 'OVP', 'Orbitersdk', 'i18n')
 $dataDirs  = @('Scenarios', 'Config', 'Html', 'Doc', 'Script', 'GravityModels', 'Kernels', 'Flights', 'BinAssets')
@@ -46,6 +46,7 @@ foreach ($f in $allFiles) {
     if (-not ($isSrc -or $isData)) { continue }
     $ext = $f.Extension.ToLower()
     if (-not ($srcExts -contains $ext -or ($isData -and $dataExts -contains $ext))) { continue }
+    if ($ext -eq '.rc') { continue }   # resource scripts are compiled from their own ANSI code page
     $bytes = [System.IO.File]::ReadAllBytes($fn)
     if ($bytes.Length -eq 0) { continue }
     try { [void]$strictUtf8.GetString($bytes) }
