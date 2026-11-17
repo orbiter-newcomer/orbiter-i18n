@@ -90,12 +90,12 @@ struct CFG_PHYSICSPRM {
 	double RelGasGiantFactor;       // radius factor R for gas-giant crushing (r < factor*R)
 	int    ContactFrictionModel;    // contact friction model: 0=traditional, 1=experimental
 	int    ContactSolver;           // contact force solver: 0=explicit, 1=implicit damping, 2=fully implicit
-	double ContactGearStiffnessScale; // landing gear contact stiffness scaling (1 = original)
-	double ContactGearDampingRatio;   // landing gear contact damping ratio zeta (0 = original damping)
-	double ContactGearFrictionScale;  // landing gear friction coefficient scaling (1 = original)
-	double ContactHullStiffnessScale; // hull/body contact stiffness scaling (1 = original)
-	double ContactHullDampingRatio;   // hull/body contact damping ratio zeta (0 = original damping)
-	double ContactHullFrictionScale;  // hull/body friction coefficient scaling (1 = original)
+	double ContactGearStiffness;    // absolute landing gear stiffness [N/m] (0 = original)
+	double ContactGearDamping;      // absolute landing gear damping [N/(m/s)] (0 = original)
+	double ContactGearFriction;     // absolute landing gear friction coefficient (0 = original)
+	double ContactHullStiffness;    // absolute hull/body stiffness [N/m] (0 = original)
+	double ContactHullDamping;      // absolute hull/body damping [N/(m/s)] (0 = original)
+	double ContactHullFriction;     // absolute hull/body friction coefficient (0 = original)
 };
 
 struct CFG_LOGICPRM {

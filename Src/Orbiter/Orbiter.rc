@@ -1164,13 +1164,13 @@ BEGIN
     LTEXT           "Implicit damping: damping force evaluated at the end of the step.",IDC_STATIC,14,86,350,8
     LTEXT           "Fully implicit: spring and damper evaluated at the end of the step.",IDC_STATIC,14,96,350,8
     GROUPBOX        "Landing gear contact",IDC_STATIC,7,108,362,52
-    LTEXT           "Stiffness scale:",IDC_STATIC,14,122,58,8
+    LTEXT           "Stiffness:",IDC_STATIC,14,122,48,8
     EDITTEXT        IDC_CONTACT_GEAR_STIFF,76,120,40,14,ES_AUTOHSCROLL
-    LTEXT           "Damping ratio:",IDC_STATIC,124,122,55,8
+    LTEXT           "Damping:",IDC_STATIC,124,122,45,8
     EDITTEXT        IDC_CONTACT_GEAR_DAMP,182,120,40,14,ES_AUTOHSCROLL
-    LTEXT           "Friction scale:",IDC_STATIC,234,122,55,8
+    LTEXT           "Friction:",IDC_STATIC,234,122,45,8
     EDITTEXT        IDC_CONTACT_GEAR_MU,292,120,40,14,ES_AUTOHSCROLL
-    LTEXT           "1 = original; damping ratio 0 = use original damping.",IDC_STATIC,14,138,350,8
+    LTEXT           "0 = original value.",IDC_STATIC,14,138,350,8
     GROUPBOX        "Hull/body contact",IDC_STATIC,7,164,362,52
     LTEXT           "Stiffness scale:",IDC_STATIC,14,178,58,8
     EDITTEXT        IDC_CONTACT_HULL_STIFF,76,176,40,14,ES_AUTOHSCROLL

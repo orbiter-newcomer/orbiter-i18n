@@ -54,17 +54,17 @@ void ExtraContact::SetDialog (HWND hWnd, const CFG_PHYSICSPRM &prm)
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_FRICTION, CB_SETCURSEL, f, 0);
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_SOLVER, CB_SETCURSEL, s, 0);
 	char buf[64];
-	sprintf (buf, "%g", prm.ContactGearStiffnessScale);
+	sprintf (buf, "%g", prm.ContactGearStiffness);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_STIFF), buf);
-	sprintf (buf, "%g", prm.ContactGearDampingRatio);
+	sprintf (buf, "%g", prm.ContactGearDamping);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_DAMP), buf);
-	sprintf (buf, "%g", prm.ContactGearFrictionScale);
+	sprintf (buf, "%g", prm.ContactGearFriction);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_MU), buf);
-	sprintf (buf, "%g", prm.ContactHullStiffnessScale);
+	sprintf (buf, "%g", prm.ContactHullStiffness);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_STIFF), buf);
-	sprintf (buf, "%g", prm.ContactHullDampingRatio);
+	sprintf (buf, "%g", prm.ContactHullDamping);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_DAMP), buf);
-	sprintf (buf, "%g", prm.ContactHullFrictionScale);
+	sprintf (buf, "%g", prm.ContactHullFriction);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_MU), buf);
 }
 
@@ -101,25 +101,19 @@ bool ExtraContact::StoreParams (HWND hWnd)
 	Config *cfg = pTab->Cfg();
 	cfg->CfgPhysicsPrm.ContactFrictionModel = (f != 0 ? 1 : 0);
 	cfg->CfgPhysicsPrm.ContactSolver = (s < 0 ? 0 : (s > 2 ? 2 : s));
-	// clamp to the valid ranges (same limits as Config::ContactLoad)
-	if (kGear < 0.01) kGear = 0.01;
-	if (kGear > 100.0) kGear = 100.0;
-	if (dGear < 0.0) dGear = 0.0;
-	if (dGear > 20.0) dGear = 20.0;
-	if (muGear < 0.0) muGear = 0.0;
-	if (muGear > 100.0) muGear = 100.0;
-	if (kHull < 0.01) kHull = 0.01;
-	if (kHull > 100.0) kHull = 100.0;
-	if (dHull < 0.0) dHull = 0.0;
-	if (dHull > 20.0) dHull = 20.0;
-	if (muHull < 0.0) muHull = 0.0;
-	if (muHull > 100.0) muHull = 100.0;
-	cfg->CfgPhysicsPrm.ContactGearStiffnessScale = kGear;
-	cfg->CfgPhysicsPrm.ContactGearDampingRatio = dGear;
-	cfg->CfgPhysicsPrm.ContactGearFrictionScale = muGear;
-	cfg->CfgPhysicsPrm.ContactHullStiffnessScale = kHull;
-	cfg->CfgPhysicsPrm.ContactHullDampingRatio = dHull;
-	cfg->CfgPhysicsPrm.ContactHullFrictionScale = muHull;
+	// clamp to sensible ranges; 0 keeps the original value of the contact point
+	if (kGear > 0.0) { if (kGear < 1e3) kGear = 1e3; else if (kGear > 1e9) kGear = 1e9; }
+	if (dGear < 0.0) dGear = 0.0; else if (dGear > 1e10) dGear = 1e10;
+	if (muGear < 0.0) muGear = 0.0; else if (muGear > 1e6) muGear = 1e6;
+	if (kHull > 0.0) { if (kHull < 1e3) kHull = 1e3; else if (kHull > 1e9) kHull = 1e9; }
+	if (dHull < 0.0) dHull = 0.0; else if (dHull > 1e10) dHull = 1e10;
+	if (muHull < 0.0) muHull = 0.0; else if (muHull > 1e6) muHull = 1e6;
+	cfg->CfgPhysicsPrm.ContactGearStiffness = kGear;
+	cfg->CfgPhysicsPrm.ContactGearDamping = dGear;
+	cfg->CfgPhysicsPrm.ContactGearFriction = muGear;
+	cfg->CfgPhysicsPrm.ContactHullStiffness = kHull;
+	cfg->CfgPhysicsPrm.ContactHullDamping = dHull;
+	cfg->CfgPhysicsPrm.ContactHullFriction = muHull;
 	return true;
 }
 

@@ -1242,5 +1242,17 @@ msgstr "阻尼比："
 msgid "Friction scale:"
 msgstr "摩擦倍率："
 
+msgid "Stiffness:"
+msgstr "刚度："
+
+msgid "Damping:"
+msgstr "阻尼："
+
+msgid "Friction:"
+msgstr "摩擦："
+
+msgid "0 = original value."
+msgstr "0 = 原始值。"
+
 msgid "1 = original; damping ratio 0 = use original damping."
 msgstr "1 = 原始值；阻尼比 0 = 使用原始阻尼。"

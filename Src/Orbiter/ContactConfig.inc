@@ -8,7 +8,8 @@
 //
 // Two independent parameter sets are available: one for the landing gear
 // contact points (the first three touchdown vertices) and one for the hull /
-// body contact points (all remaining vertices).
+// body contact points (all remaining vertices). A value of 0 means "use the
+// original value of the contact point".
 // ==============================================================
 
 #include "ContactAPI.h"
@@ -22,30 +23,21 @@ void Config::ContactLoad (std::istream &ifs)
 	if (GetInt (ifs, "ContactSolver", i))
 		CfgPhysicsPrm.ContactSolver = (i < 0 ? 0 : (i > 2 ? 2 : i));
 
-	if (GetReal (ifs, "ContactGearStiffnessScale", d))
-		CfgPhysicsPrm.ContactGearStiffnessScale = (d < 0.01 ? 0.01 : (d > 100.0 ? 100.0 : d));
-	if (GetReal (ifs, "ContactGearDampingRatio", d))
-		CfgPhysicsPrm.ContactGearDampingRatio = (d < 0.0 ? 0.0 : (d > 20.0 ? 20.0 : d));
-	if (GetReal (ifs, "ContactGearFrictionScale", d))
-		CfgPhysicsPrm.ContactGearFrictionScale = (d < 0.0 ? 0.0 : (d > 100.0 ? 100.0 : d));
-	if (GetReal (ifs, "ContactHullStiffnessScale", d))
-		CfgPhysicsPrm.ContactHullStiffnessScale = (d < 0.01 ? 0.01 : (d > 100.0 ? 100.0 : d));
-	if (GetReal (ifs, "ContactHullDampingRatio", d))
-		CfgPhysicsPrm.ContactHullDampingRatio = (d < 0.0 ? 0.0 : (d > 20.0 ? 20.0 : d));
-	if (GetReal (ifs, "ContactHullFrictionScale", d))
-		CfgPhysicsPrm.ContactHullFrictionScale = (d < 0.0 ? 0.0 : (d > 100.0 ? 100.0 : d));
+	// landing gear contact parameters (absolute values; 0 = original)
+	if (GetReal (ifs, "ContactGearStiffness", d))
+		CfgPhysicsPrm.ContactGearStiffness = (d < 1e3 ? 0.0 : (d > 1e9 ? 1e9 : d));
+	if (GetReal (ifs, "ContactGearDamping", d))
+		CfgPhysicsPrm.ContactGearDamping = (d < 0.0 ? 0.0 : (d > 1e10 ? 1e10 : d));
+	if (GetReal (ifs, "ContactGearFriction", d))
+		CfgPhysicsPrm.ContactGearFriction = (d < 0.0 ? 0.0 : (d > 1e6 ? 1e6 : d));
 
-	// backwards compatibility: the earlier single parameter set applied to both
-	// groups, so use it as a default for the gear group if the new keys are absent
-	if (GetReal (ifs, "ContactStiffnessScale", d) &&
-		CfgPhysicsPrm.ContactGearStiffnessScale == CfgPhysicsPrm_default.ContactGearStiffnessScale)
-		CfgPhysicsPrm.ContactGearStiffnessScale = (d < 0.01 ? 0.01 : (d > 100.0 ? 100.0 : d));
-	if (GetReal (ifs, "ContactDampingRatio", d) &&
-		CfgPhysicsPrm.ContactGearDampingRatio == CfgPhysicsPrm_default.ContactGearDampingRatio)
-		CfgPhysicsPrm.ContactGearDampingRatio = (d < 0.0 ? 0.0 : (d > 20.0 ? 20.0 : d));
-	if (GetReal (ifs, "ContactFrictionScale", d) &&
-		CfgPhysicsPrm.ContactGearFrictionScale == CfgPhysicsPrm_default.ContactGearFrictionScale)
-		CfgPhysicsPrm.ContactGearFrictionScale = (d < 0.0 ? 0.0 : (d > 100.0 ? 100.0 : d));
+	// hull/body contact parameters (absolute values; 0 = original)
+	if (GetReal (ifs, "ContactHullStiffness", d))
+		CfgPhysicsPrm.ContactHullStiffness = (d < 1e3 ? 0.0 : (d > 1e9 ? 1e9 : d));
+	if (GetReal (ifs, "ContactHullDamping", d))
+		CfgPhysicsPrm.ContactHullDamping = (d < 0.0 ? 0.0 : (d > 1e10 ? 1e10 : d));
+	if (GetReal (ifs, "ContactHullFriction", d))
+		CfgPhysicsPrm.ContactHullFriction = (d < 0.0 ? 0.0 : (d > 1e6 ? 1e6 : d));
 }
 
 void Config::ContactWritePhysics (std::ostream &ofs, bool bEchoAll) const
@@ -54,18 +46,18 @@ void Config::ContactWritePhysics (std::ostream &ofs, bool bEchoAll) const
 		ofs << "ContactFrictionModel = " << CfgPhysicsPrm.ContactFrictionModel << '\n';
 	if (CfgPhysicsPrm.ContactSolver != CfgPhysicsPrm_default.ContactSolver || bEchoAll)
 		ofs << "ContactSolver = " << CfgPhysicsPrm.ContactSolver << '\n';
-	if (CfgPhysicsPrm.ContactGearStiffnessScale != CfgPhysicsPrm_default.ContactGearStiffnessScale || bEchoAll)
-		ofs << "ContactGearStiffnessScale = " << CfgPhysicsPrm.ContactGearStiffnessScale << '\n';
-	if (CfgPhysicsPrm.ContactGearDampingRatio != CfgPhysicsPrm_default.ContactGearDampingRatio || bEchoAll)
-		ofs << "ContactGearDampingRatio = " << CfgPhysicsPrm.ContactGearDampingRatio << '\n';
-	if (CfgPhysicsPrm.ContactGearFrictionScale != CfgPhysicsPrm_default.ContactGearFrictionScale || bEchoAll)
-		ofs << "ContactGearFrictionScale = " << CfgPhysicsPrm.ContactGearFrictionScale << '\n';
-	if (CfgPhysicsPrm.ContactHullStiffnessScale != CfgPhysicsPrm_default.ContactHullStiffnessScale || bEchoAll)
-		ofs << "ContactHullStiffnessScale = " << CfgPhysicsPrm.ContactHullStiffnessScale << '\n';
-	if (CfgPhysicsPrm.ContactHullDampingRatio != CfgPhysicsPrm_default.ContactHullDampingRatio || bEchoAll)
-		ofs << "ContactHullDampingRatio = " << CfgPhysicsPrm.ContactHullDampingRatio << '\n';
-	if (CfgPhysicsPrm.ContactHullFrictionScale != CfgPhysicsPrm_default.ContactHullFrictionScale || bEchoAll)
-		ofs << "ContactHullFrictionScale = " << CfgPhysicsPrm.ContactHullFrictionScale << '\n';
+	if (CfgPhysicsPrm.ContactGearStiffness != CfgPhysicsPrm_default.ContactGearStiffness || bEchoAll)
+		ofs << "ContactGearStiffness = " << CfgPhysicsPrm.ContactGearStiffness << '\n';
+	if (CfgPhysicsPrm.ContactGearDamping != CfgPhysicsPrm_default.ContactGearDamping || bEchoAll)
+		ofs << "ContactGearDamping = " << CfgPhysicsPrm.ContactGearDamping << '\n';
+	if (CfgPhysicsPrm.ContactGearFriction != CfgPhysicsPrm_default.ContactGearFriction || bEchoAll)
+		ofs << "ContactGearFriction = " << CfgPhysicsPrm.ContactGearFriction << '\n';
+	if (CfgPhysicsPrm.ContactHullStiffness != CfgPhysicsPrm_default.ContactHullStiffness || bEchoAll)
+		ofs << "ContactHullStiffness = " << CfgPhysicsPrm.ContactHullStiffness << '\n';
+	if (CfgPhysicsPrm.ContactHullDamping != CfgPhysicsPrm_default.ContactHullDamping || bEchoAll)
+		ofs << "ContactHullDamping = " << CfgPhysicsPrm.ContactHullDamping << '\n';
+	if (CfgPhysicsPrm.ContactHullFriction != CfgPhysicsPrm_default.ContactHullFriction || bEchoAll)
+		ofs << "ContactHullFriction = " << CfgPhysicsPrm.ContactHullFriction << '\n';
 }
 
 const void *Config::GetContactParam (DWORD paramtype) const
