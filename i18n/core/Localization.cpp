@@ -854,7 +854,10 @@ static void BuildTables()
 		GetClassNameW(hWnd, cls, 64);
 		if (wcscmp(cls, L"ComboBox") == 0)
 			LocalizeComboBox(hWnd);
-		else
+		else if (wcscmp(cls, L"Edit") != 0)
+			// never translate edit control contents: numeric values such as "0"/"1"
+			// can collide with (short) catalog entries from unrelated plugins and
+			// would corrupt user input fields
 			LocalizeWindow(hWnd);
 		return TRUE;
 	}
