@@ -159,5 +159,9 @@
 // Resource IDs for dialog IDD_EXTRA_CONTACT
 #define IDC_CONTACT_FRICTION            1200
 #define IDC_CONTACT_SOLVER              1201
-#define IDC_CONTACT_GEAR_DAMP           1202
-#define IDC_CONTACT_HULL_DAMP           1203
+#define IDC_CONTACT_GEAR_STIFF          1202
+#define IDC_CONTACT_GEAR_DAMP           1203
+#define IDC_CONTACT_GEAR_MU             1204
+#define IDC_CONTACT_HULL_STIFF          1205
+#define IDC_CONTACT_HULL_DAMP           1206
+#define IDC_CONTACT_HULL_MU             1207

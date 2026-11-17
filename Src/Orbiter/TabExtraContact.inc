@@ -54,10 +54,18 @@ void ExtraContact::SetDialog (HWND hWnd, const CFG_PHYSICSPRM &prm)
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_FRICTION, CB_SETCURSEL, f, 0);
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_SOLVER, CB_SETCURSEL, s, 0);
 	char buf[64];
+	sprintf (buf, "%g", prm.ContactGearStiffness);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_STIFF), buf);
 	sprintf (buf, "%g", prm.ContactGearDampingRatio);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_DAMP), buf);
+	sprintf (buf, "%g", prm.ContactGearFriction);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_GEAR_MU), buf);
+	sprintf (buf, "%g", prm.ContactHullStiffness);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_STIFF), buf);
 	sprintf (buf, "%g", prm.ContactHullDampingRatio);
 	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_DAMP), buf);
+	sprintf (buf, "%g", prm.ContactHullFriction);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_HULL_MU), buf);
 }
 
 // read a floating point value from an edit control
@@ -80,22 +88,32 @@ bool ExtraContact::StoreParams (HWND hWnd)
 		Error ("Invalid contact model selection.");
 		return false;
 	}
-	double ratioGear, ratioHull;
-	if (!ReadContactValue (hWnd, IDC_CONTACT_GEAR_DAMP, ratioGear) ||
-		!ReadContactValue (hWnd, IDC_CONTACT_HULL_DAMP, ratioHull)) {
-		Error ("Invalid contact damping ratio value.");
+	double kGear, dGear, muGear, kHull, dHull, muHull;
+	if (!ReadContactValue (hWnd, IDC_CONTACT_GEAR_STIFF, kGear) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_GEAR_DAMP, dGear) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_GEAR_MU, muGear) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_HULL_STIFF, kHull) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_HULL_DAMP, dHull) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_HULL_MU, muHull)) {
+		Error ("Invalid contact parameter value.");
 		return false;
 	}
 	Config *cfg = pTab->Cfg();
 	cfg->CfgPhysicsPrm.ContactFrictionModel = (f != 0 ? 1 : 0);
 	cfg->CfgPhysicsPrm.ContactSolver = (s < 0 ? 0 : (s > 2 ? 2 : s));
-	// clamp to the valid range; 0 keeps the original damping
-	if (ratioGear < 0.0) ratioGear = 0.0;
-	if (ratioGear > 20.0) ratioGear = 20.0;
-	if (ratioHull < 0.0) ratioHull = 0.0;
-	if (ratioHull > 20.0) ratioHull = 20.0;
-	cfg->CfgPhysicsPrm.ContactGearDampingRatio = ratioGear;
-	cfg->CfgPhysicsPrm.ContactHullDampingRatio = ratioHull;
+	// clamp to sensible ranges; 0 keeps the original value
+	if (kGear > 0.0) { if (kGear < 1e3) kGear = 1e3; else if (kGear > 1e9) kGear = 1e9; }
+	if (dGear < 0.0) dGear = 0.0; else if (dGear > 20.0) dGear = 20.0;
+	if (muGear < 0.0) muGear = 0.0; else if (muGear > 1e6) muGear = 1e6;
+	if (kHull > 0.0) { if (kHull < 1e3) kHull = 1e3; else if (kHull > 1e9) kHull = 1e9; }
+	if (dHull < 0.0) dHull = 0.0; else if (dHull > 20.0) dHull = 20.0;
+	if (muHull < 0.0) muHull = 0.0; else if (muHull > 1e6) muHull = 1e6;
+	cfg->CfgPhysicsPrm.ContactGearStiffness = kGear;
+	cfg->CfgPhysicsPrm.ContactGearDampingRatio = dGear;
+	cfg->CfgPhysicsPrm.ContactGearFriction = muGear;
+	cfg->CfgPhysicsPrm.ContactHullStiffness = kHull;
+	cfg->CfgPhysicsPrm.ContactHullDampingRatio = dHull;
+	cfg->CfgPhysicsPrm.ContactHullFriction = muHull;
 	return true;
 }
 

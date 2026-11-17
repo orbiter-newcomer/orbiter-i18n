@@ -4481,23 +4481,37 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 		const int contactFrictionModel = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactFrictionModel;
 		const int contactSolver = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactSolver;
 		// contact parameters (project extension, launchpad "Contact model"):
-		// stiffness and friction always use the original per-point values; only
-		// the damping can be overridden as a damping ratio zeta, converted at
-		// runtime to c = 2*zeta*sqrt(k*m). A value of 0 keeps the original
-		// damping of the contact point.
-		// The first three touchdown vertices are the landing gear/wheels, all
-		// remaining vertices belong to the hull/body.
+		// six parameters in two sets (landing gear = first 3 contact points,
+		// hull/body = all remaining points):
+		//   stiffness : absolute value [N/m]        (0 = original)
+		//   damping   : damping RATIO zeta          (0 = original damping)
+		//   friction  : absolute friction coeff.    (0 = original)
+		// The damping ratio is converted to a damping coefficient at runtime:
+		//   c = 2*zeta*sqrt(k*m)   (k = effective stiffness, m = vessel mass)
 		const CFG_PHYSICSPRM &cfgcontact = g_pOrbiter->Cfg()->CfgPhysicsPrm;
-		const double ratioGear = cfgcontact.ContactGearDampingRatio;
-		const double ratioHull = cfgcontact.ContactHullDampingRatio;
+		const double kGear = cfgcontact.ContactGearStiffness;
+		const double dGear = cfgcontact.ContactGearDampingRatio;
+		const double muGear = cfgcontact.ContactGearFriction;
+		const double kHull = cfgcontact.ContactHullStiffness;
+		const double dHull = cfgcontact.ContactHullDampingRatio;
+		const double muHull = cfgcontact.ContactHullFriction;
 		const double contactMass = (mass > 1.0 ? mass : 1.0);
-		auto contactK = [&](int idx) -> double { return touchdown_vtx[idx].stiffness; };
+		auto contactK = [&](int idx) -> double {
+			double v = (idx < 3 ? kGear : kHull);
+			return (v > 0.0 ? v : touchdown_vtx[idx].stiffness);
+		};
 		auto contactC = [&](int idx) -> double {
-			double ratio = (idx < 3 ? ratioGear : ratioHull);
+			double ratio = (idx < 3 ? dGear : dHull);
 			return (ratio > 0.0 ? 2.0*ratio*std::sqrt (contactK(idx)*contactMass) : touchdown_vtx[idx].damping);
 		};
-		auto contactMu = [&](int idx) -> double { return touchdown_vtx[idx].mu; };
-		auto contactMuLng = [&](int idx) -> double { return touchdown_vtx[idx].mu_lng; };
+		auto contactMu = [&](int idx) -> double {
+			double v = (idx < 3 ? muGear : muHull);
+			return (v > 0.0 ? v : touchdown_vtx[idx].mu);
+		};
+		auto contactMuLng = [&](int idx) -> double {
+			double v = (idx < 3 ? muGear : muHull);
+			return (v > 0.0 ? v : touchdown_vtx[idx].mu_lng);
+		};
 
 		if (contactFrictionModel == 1) {   // experimental friction model
 		if (tdymin < 0.0) {

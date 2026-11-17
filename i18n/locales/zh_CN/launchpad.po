@@ -1251,6 +1251,9 @@ msgstr "阻尼："
 msgid "Friction:"
 msgstr "摩擦："
 
+msgid "Stiffness/friction 0 = original; damping ratio 0 = original damping."
+msgstr "刚度/摩擦 0 = 原始值；阻尼比 0 = 原始阻尼。"
+
 msgid "0 = original damping; >0: c = 2*zeta*sqrt(k*m)."
 msgstr "0 = 原始阻尼；>0 时 c = 2ζ√(k·m)。"
 
