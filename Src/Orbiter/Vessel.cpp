@@ -4484,16 +4484,22 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 		// stiffness scale, damping ratio (zeta; 0 = keep original damping) and
 		// friction coefficient scale
 		const CFG_PHYSICSPRM &cfgcontact = g_pOrbiter->Cfg()->CfgPhysicsPrm;
-		const double kScale = (cfgcontact.ContactStiffnessScale > 0.0 ? cfgcontact.ContactStiffnessScale : 1.0);
-		const double dampingRatio = (cfgcontact.ContactDampingRatio > 0.0 ? cfgcontact.ContactDampingRatio : 0.0);
-		const double muScale = (cfgcontact.ContactFrictionScale >= 0.0 ? cfgcontact.ContactFrictionScale : 1.0);
+		const double kGear = (cfgcontact.ContactGearStiffnessScale > 0.0 ? cfgcontact.ContactGearStiffnessScale : 1.0);
+		const double dGear = (cfgcontact.ContactGearDampingRatio > 0.0 ? cfgcontact.ContactGearDampingRatio : 0.0);
+		const double muGear = (cfgcontact.ContactGearFrictionScale >= 0.0 ? cfgcontact.ContactGearFrictionScale : 1.0);
+		const double kHull = (cfgcontact.ContactHullStiffnessScale > 0.0 ? cfgcontact.ContactHullStiffnessScale : 1.0);
+		const double dHull = (cfgcontact.ContactHullDampingRatio > 0.0 ? cfgcontact.ContactHullDampingRatio : 0.0);
+		const double muHull = (cfgcontact.ContactHullFrictionScale >= 0.0 ? cfgcontact.ContactHullFrictionScale : 1.0);
 		const double contactMass = (mass > 1.0 ? mass : 1.0);
-		auto contactK = [&](int idx) -> double { return touchdown_vtx[idx].stiffness * kScale; };
+		// the first three touchdown vertices are the landing gear/wheels, all
+		// remaining vertices belong to the hull/body
+		auto contactK = [&](int idx) -> double { return touchdown_vtx[idx].stiffness * (idx < 3 ? kGear : kHull); };
 		auto contactC = [&](int idx) -> double {
-			return (dampingRatio > 0.0 ? 2.0*dampingRatio*std::sqrt (contactK(idx)*contactMass) : touchdown_vtx[idx].damping);
+			double ratio = (idx < 3 ? dGear : dHull);
+			return (ratio > 0.0 ? 2.0*ratio*std::sqrt (contactK(idx)*contactMass) : touchdown_vtx[idx].damping);
 		};
-		auto contactMu = [&](int idx) -> double { return touchdown_vtx[idx].mu * muScale; };
-		auto contactMuLng = [&](int idx) -> double { return touchdown_vtx[idx].mu_lng * muScale; };
+		auto contactMu = [&](int idx) -> double { return touchdown_vtx[idx].mu * (idx < 3 ? muGear : muHull); };
+		auto contactMuLng = [&](int idx) -> double { return touchdown_vtx[idx].mu_lng * (idx < 3 ? muGear : muHull); };
 
 		if (contactFrictionModel == 1) {   // experimental friction model
 		if (tdymin < 0.0) {

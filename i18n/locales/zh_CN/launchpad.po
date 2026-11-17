@@ -1227,6 +1227,12 @@ msgstr "全隐式：弹簧与阻尼均在步末计算。"
 msgid "Contact parameters"
 msgstr "接触参数"
 
+msgid "Landing gear contact"
+msgstr "起落架接触"
+
+msgid "Hull/body contact"
+msgstr "船身接触"
+
 msgid "Stiffness scale:"
 msgstr "刚度倍率："
 

@@ -270,7 +270,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 369
         TOPMARGIN, 7
-        BOTTOMMARGIN, 189
+        BOTTOMMARGIN, 241
     END
 
     IDD_EXTRA_STABILISATION, DIALOG
@@ -1147,7 +1147,7 @@ BEGIN
     EDITTEXT        IDC_PROP_MAXSAMPLE,79,150,40,14,ES_AUTOHSCROLL
 END
 
-IDD_EXTRA_CONTACT DIALOGEX 0, 0, 376, 196
+IDD_EXTRA_CONTACT DIALOGEX 0, 0, 376, 248
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Orbiter: Contact model"
@@ -1163,18 +1163,26 @@ BEGIN
     LTEXT           "Official: explicit contact spring/damper (original behaviour).",IDC_STATIC,14,76,350,8
     LTEXT           "Implicit damping: damping force evaluated at the end of the step.",IDC_STATIC,14,86,350,8
     LTEXT           "Fully implicit: spring and damper evaluated at the end of the step.",IDC_STATIC,14,96,350,8
-    GROUPBOX        "Contact parameters",IDC_STATIC,7,108,362,52
+    GROUPBOX        "Landing gear contact",IDC_STATIC,7,108,362,52
     LTEXT           "Stiffness scale:",IDC_STATIC,14,122,58,8
-    EDITTEXT        IDC_CONTACT_STIFF,76,120,44,14,ES_AUTOHSCROLL
-    LTEXT           "Damping ratio:",IDC_STATIC,130,122,55,8
-    EDITTEXT        IDC_CONTACT_DAMP,188,120,44,14,ES_AUTOHSCROLL
-    LTEXT           "Friction scale:",IDC_STATIC,242,122,55,8
-    EDITTEXT        IDC_CONTACT_MUSCALE,300,120,44,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_CONTACT_GEAR_STIFF,76,120,40,14,ES_AUTOHSCROLL
+    LTEXT           "Damping ratio:",IDC_STATIC,124,122,55,8
+    EDITTEXT        IDC_CONTACT_GEAR_DAMP,182,120,40,14,ES_AUTOHSCROLL
+    LTEXT           "Friction scale:",IDC_STATIC,234,122,55,8
+    EDITTEXT        IDC_CONTACT_GEAR_MU,292,120,40,14,ES_AUTOHSCROLL
     LTEXT           "1 = original; damping ratio 0 = use original damping.",IDC_STATIC,14,138,350,8
-    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,7,163,362,1
-    DEFPUSHBUTTON   "OK",IDOK,7,172,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,61,172,50,14
-    PUSHBUTTON      "Reset",IDC_RESET,115,172,50,14
+    GROUPBOX        "Hull/body contact",IDC_STATIC,7,164,362,52
+    LTEXT           "Stiffness scale:",IDC_STATIC,14,178,58,8
+    EDITTEXT        IDC_CONTACT_HULL_STIFF,76,176,40,14,ES_AUTOHSCROLL
+    LTEXT           "Damping ratio:",IDC_STATIC,124,178,55,8
+    EDITTEXT        IDC_CONTACT_HULL_DAMP,182,176,40,14,ES_AUTOHSCROLL
+    LTEXT           "Friction scale:",IDC_STATIC,234,178,55,8
+    EDITTEXT        IDC_CONTACT_HULL_MU,292,176,40,14,ES_AUTOHSCROLL
+    LTEXT           "1 = original; damping ratio 0 = use original damping.",IDC_STATIC,14,194,350,8
+    CONTROL         "",IDC_STATIC,"Static",SS_BLACKRECT,7,220,362,1
+    DEFPUSHBUTTON   "OK",IDOK,7,228,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,61,228,50,14
+    PUSHBUTTON      "Reset",IDC_RESET,115,228,50,14
 END
 
 IDD_EXTRA_STABILISATION DIALOGEX 0, 0, 330, 239
