@@ -143,12 +143,10 @@ void ScnEditor::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 {
 	// populate a list of celestial bodies (names translated in Chinese mode)
 	char cbuf[256];
-	DWORD sel = 0;
 	SendDlgItemMessage (hDlg, hList, CB_RESETCONTENT, 0, 0);
 	for (DWORD n = 0; n < oapiGetGbodyCount(); n++) {
 		OBJHANDLE hBody = oapiGetGbodyByIndex (n);
 		oapiGetObjectName (hBody, cbuf, 256);
-		if (hBody == hSelect) sel = n;
 		int item = -1;
 		if (oapiZhActive() != 0) {
 			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr(cbuf)).c_str());
@@ -156,6 +154,21 @@ void ScnEditor::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
 		}
 		if (item >= 0) SendDlgItemMessage (hDlg, hList, CB_SETITEMDATA, item, (LPARAM)n);
+	}
+	// The combobox is sorted by name (CBS_SORT), so the requested body must be
+	// located through its item data (the celestial body index). Using the body
+	// index directly as the selection index would select the wrong body after
+	// sorting (e.g. always the same entry regardless of the vessel's orbit).
+	int sel = 0;
+	if (hSelect) {
+		int count = (int)SendDlgItemMessage (hDlg, hList, CB_GETCOUNT, 0, 0);
+		for (int i = 0; i < count; i++) {
+			LRESULT data = SendDlgItemMessage (hDlg, hList, CB_GETITEMDATA, i, 0);
+			if (data != CB_ERR && oapiGetGbodyByIndex ((DWORD)data) == hSelect) {
+				sel = i;
+				break;
+			}
+		}
 	}
 	SendDlgItemMessage (hDlg, hList, CB_SETCURSEL, sel, 0);
 }
@@ -2331,13 +2344,11 @@ void EditorTab_Landed::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 {
 	// populate a list of celestial bodies (names translated in Chinese mode)
 	char cbuf[256];
-	DWORD sel = 0, idx = 0;
 	SendDlgItemMessage (hDlg, hList, CB_RESETCONTENT, 0, 0);
 	for (DWORD n = 0; n < oapiGetGbodyCount(); n++) {
 		OBJHANDLE hBody = oapiGetGbodyByIndex (n);
 		if (oapiGetObjectType (hBody) == OBJTP_STAR) continue; // skip stars
 		oapiGetObjectName (hBody, cbuf, 256);
-		if (hBody == hSelect) sel = idx;
 		int item = -1;
 		if (oapiZhActive() != 0) {
 			item = (int)SendDlgItemMessageW (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)oapiUtf8ToWString(oapiTr(cbuf)).c_str());
@@ -2345,7 +2356,18 @@ void EditorTab_Landed::ScanCBodyList (HWND hDlg, int hList, OBJHANDLE hSelect)
 			item = (int)SendDlgItemMessage (hDlg, hList, CB_ADDSTRING, 0, (LPARAM)cbuf);
 		}
 		if (item >= 0) SendDlgItemMessage (hDlg, hList, CB_SETITEMDATA, item, (LPARAM)n);
-		idx++;
+	}
+	// locate the requested body through its item data (the combobox is sorted)
+	int sel = 0;
+	if (hSelect) {
+		int count = (int)SendDlgItemMessage (hDlg, hList, CB_GETCOUNT, 0, 0);
+		for (int i = 0; i < count; i++) {
+			LRESULT data = SendDlgItemMessage (hDlg, hList, CB_GETITEMDATA, i, 0);
+			if (data != CB_ERR && oapiGetGbodyByIndex ((DWORD)data) == hSelect) {
+				sel = i;
+				break;
+			}
+		}
 	}
 	SendDlgItemMessage (hDlg, hList, CB_SETCURSEL, sel, 0);
 }
