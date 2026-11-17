@@ -73,7 +73,10 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	10.0,		// RelCollisionDVThreshold (m/s; collision impact tolerance)
 	0.8,		// RelGasGiantFactor (gas-giant crushing radius factor)
 	0,			// ContactFrictionModel (0=traditional, 1=experimental)
-	0			// ContactSolver (0=explicit, 1=implicit damping, 2=fully implicit)
+	0,			// ContactSolver (0=explicit, 1=implicit damping, 2=fully implicit)
+	1.0,		// ContactStiffnessScale (1 = original stiffness)
+	0.0,		// ContactDampingRatio (0 = use original damping)
+	1.0			// ContactFrictionScale (1 = original friction coefficients)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {

@@ -53,6 +53,25 @@ void ExtraContact::SetDialog (HWND hWnd, const CFG_PHYSICSPRM &prm)
 	if (s > 2) s = 2;
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_FRICTION, CB_SETCURSEL, f, 0);
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_SOLVER, CB_SETCURSEL, s, 0);
+	char buf[64];
+	sprintf (buf, "%g", prm.ContactStiffnessScale);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_STIFF), buf);
+	sprintf (buf, "%g", prm.ContactDampingRatio);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_DAMP), buf);
+	sprintf (buf, "%g", prm.ContactFrictionScale);
+	SetWindowText (GetDlgItem (hWnd, IDC_CONTACT_MUSCALE), buf);
+}
+
+// read a floating point value from an edit control
+static bool ReadContactValue (HWND hWnd, int id, double &val)
+{
+	char buf[64];
+	GetWindowText (GetDlgItem (hWnd, id), buf, 64);
+	char *end = 0;
+	val = strtod (buf, &end);
+	if (end == buf) return false;
+	while (*end == ' ' || *end == '\t') end++;
+	return (*end == 0);
 }
 
 bool ExtraContact::StoreParams (HWND hWnd)
@@ -63,9 +82,26 @@ bool ExtraContact::StoreParams (HWND hWnd)
 		Error ("Invalid contact model selection.");
 		return false;
 	}
+	double kScale, dampingRatio, muScale;
+	if (!ReadContactValue (hWnd, IDC_CONTACT_STIFF, kScale) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_DAMP, dampingRatio) ||
+		!ReadContactValue (hWnd, IDC_CONTACT_MUSCALE, muScale)) {
+		Error ("Invalid contact parameter value.");
+		return false;
+	}
 	Config *cfg = pTab->Cfg();
 	cfg->CfgPhysicsPrm.ContactFrictionModel = (f != 0 ? 1 : 0);
 	cfg->CfgPhysicsPrm.ContactSolver = (s < 0 ? 0 : (s > 2 ? 2 : s));
+	// clamp to the valid ranges (same limits as Config::ContactLoad)
+	if (kScale < 0.01) kScale = 0.01;
+	if (kScale > 100.0) kScale = 100.0;
+	if (dampingRatio < 0.0) dampingRatio = 0.0;
+	if (dampingRatio > 20.0) dampingRatio = 20.0;
+	if (muScale < 0.0) muScale = 0.0;
+	if (muScale > 100.0) muScale = 100.0;
+	cfg->CfgPhysicsPrm.ContactStiffnessScale = kScale;
+	cfg->CfgPhysicsPrm.ContactDampingRatio = dampingRatio;
+	cfg->CfgPhysicsPrm.ContactFrictionScale = muScale;
 	return true;
 }
 
@@ -73,8 +109,10 @@ INT_PTR CALLBACK ExtraContact::DlgProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 {
 	switch (uMsg) {
 	case WM_INITDIALOG:
-		((ExtraContact*)lParam)->InitDialog (hWnd);
+		// localize the static texts first, then fill in the control values (the
+		// numeric edit fields must not be touched by the localization pass)
 		orbiter::LocalizeWindowTree(hWnd);
+		((ExtraContact*)lParam)->InitDialog (hWnd);
 		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {

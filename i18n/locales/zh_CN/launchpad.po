@@ -1223,3 +1223,18 @@ msgstr "隐式阻尼：阻尼力在步末计算。"
 
 msgid "Fully implicit: spring and damper evaluated at the end of the step."
 msgstr "全隐式：弹簧与阻尼均在步末计算。"
+
+msgid "Contact parameters"
+msgstr "接触参数"
+
+msgid "Stiffness scale:"
+msgstr "刚度倍率："
+
+msgid "Damping ratio:"
+msgstr "阻尼比："
+
+msgid "Friction scale:"
+msgstr "摩擦倍率："
+
+msgid "1 = original; damping ratio 0 = use original damping."
+msgstr "1 = 原始值；阻尼比 0 = 使用原始阻尼。"

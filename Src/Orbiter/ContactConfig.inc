@@ -12,10 +12,17 @@
 void Config::ContactLoad (std::istream &ifs)
 {
 	int i;
+	double d;
 	if (GetInt (ifs, "ContactFrictionModel", i))
 		CfgPhysicsPrm.ContactFrictionModel = (i != 0 ? 1 : 0);
 	if (GetInt (ifs, "ContactSolver", i))
 		CfgPhysicsPrm.ContactSolver = (i < 0 ? 0 : (i > 2 ? 2 : i));
+	if (GetReal (ifs, "ContactStiffnessScale", d))
+		CfgPhysicsPrm.ContactStiffnessScale = max (0.01, min (100.0, d));
+	if (GetReal (ifs, "ContactDampingRatio", d))
+		CfgPhysicsPrm.ContactDampingRatio = max (0.0, min (20.0, d));
+	if (GetReal (ifs, "ContactFrictionScale", d))
+		CfgPhysicsPrm.ContactFrictionScale = max (0.0, min (100.0, d));
 }
 
 void Config::ContactWritePhysics (std::ostream &ofs, bool bEchoAll) const
@@ -24,6 +31,12 @@ void Config::ContactWritePhysics (std::ostream &ofs, bool bEchoAll) const
 		ofs << "ContactFrictionModel = " << CfgPhysicsPrm.ContactFrictionModel << '\n';
 	if (CfgPhysicsPrm.ContactSolver != CfgPhysicsPrm_default.ContactSolver || bEchoAll)
 		ofs << "ContactSolver = " << CfgPhysicsPrm.ContactSolver << '\n';
+	if (CfgPhysicsPrm.ContactStiffnessScale != CfgPhysicsPrm_default.ContactStiffnessScale || bEchoAll)
+		ofs << "ContactStiffnessScale = " << CfgPhysicsPrm.ContactStiffnessScale << '\n';
+	if (CfgPhysicsPrm.ContactDampingRatio != CfgPhysicsPrm_default.ContactDampingRatio || bEchoAll)
+		ofs << "ContactDampingRatio = " << CfgPhysicsPrm.ContactDampingRatio << '\n';
+	if (CfgPhysicsPrm.ContactFrictionScale != CfgPhysicsPrm_default.ContactFrictionScale || bEchoAll)
+		ofs << "ContactFrictionScale = " << CfgPhysicsPrm.ContactFrictionScale << '\n';
 }
 
 const void *Config::GetContactParam (DWORD paramtype) const

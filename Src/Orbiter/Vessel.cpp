@@ -4480,6 +4480,20 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 		//   ContactSolver: 0 = official explicit, 1 = implicit damping, 2 = fully implicit
 		const int contactFrictionModel = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactFrictionModel;
 		const int contactSolver = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactSolver;
+		// contact parameter scaling (project extension, launchpad "Contact model"):
+		// stiffness scale, damping ratio (zeta; 0 = keep original damping) and
+		// friction coefficient scale
+		const CFG_PHYSICSPRM &cfgcontact = g_pOrbiter->Cfg()->CfgPhysicsPrm;
+		const double kScale = (cfgcontact.ContactStiffnessScale > 0.0 ? cfgcontact.ContactStiffnessScale : 1.0);
+		const double dampingRatio = (cfgcontact.ContactDampingRatio > 0.0 ? cfgcontact.ContactDampingRatio : 0.0);
+		const double muScale = (cfgcontact.ContactFrictionScale >= 0.0 ? cfgcontact.ContactFrictionScale : 1.0);
+		const double contactMass = (mass > 1.0 ? mass : 1.0);
+		auto contactK = [&](int idx) -> double { return touchdown_vtx[idx].stiffness * kScale; };
+		auto contactC = [&](int idx) -> double {
+			return (dampingRatio > 0.0 ? 2.0*dampingRatio*std::sqrt (contactK(idx)*contactMass) : touchdown_vtx[idx].damping);
+		};
+		auto contactMu = [&](int idx) -> double { return touchdown_vtx[idx].mu * muScale; };
+		auto contactMuLng = [&](int idx) -> double { return touchdown_vtx[idx].mu_lng * muScale; };
 
 		if (contactFrictionModel == 1) {   // experimental friction model
 		if (tdymin < 0.0) {
@@ -4501,22 +4515,22 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 					gv_hor = hypot(gv_lon,gv_lat);
 					Vector gV_hor0 (gV_hor/gv_hor);
 
-					fn[i] = -tdy[i]*touchdown_vtx[i].stiffness; 	// horizon-normal force component: gear compression forces
+					fn[i] = -tdy[i]*contactK(i); 	// horizon-normal force component: gear compression forces
 
-					if (i < 3 && touchdown_vtx[i].mu_lng != touchdown_vtx[i].mu) {
-						flng[i] = fn[i] * touchdown_vtx[i].mu_lng;
+					if (i < 3 && contactMuLng(i) != contactMu(i)) {
+						flng[i] = fn[i] * contactMuLng(i);
 						if (gv_lon > 0.0) flng[i] = -flng[i];
 					} else
-						flng[i] = -gv_lon * fn[i] * touchdown_vtx[i].mu/dt1 * 1e-0;
-					flat[i] = -gv_lat * fn[i] * touchdown_vtx[i].mu/dt1 * 1e-0;
+						flng[i] = -gv_lon * fn[i] * contactMu(i)/dt1 * 1e-0;
+					flat[i] = -gv_lat * fn[i] * contactMu(i)/dt1 * 1e-0;
 
 					// contact force solver (project extension)
 					if (contactSolver == 0) {
 						// vertical damping (official explicit)
-						fn[i] -= gv_n*touchdown_vtx[i].damping;
+						fn[i] -= gv_n*contactC(i);
 					} else {
 						// implicit damping / fully implicit contact normal force
-						fn[i] = ContactNormalForce (touchdown_vtx[i].stiffness, touchdown_vtx[i].damping,
+						fn[i] = ContactNormalForce (contactK(i), contactC(i),
 							tdy[i], gv_n, mass, dt, contactSolver);
 					}
 					//fn[i] = max (fn[i], 0.0);
@@ -4569,15 +4583,15 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 				gv_lon = dotp (gv, d1h);											// longitudinal speed component for touchdown point i
 				gv_lat = dotp (gv, d2h);											// lateral speed component
 
-				fn[i] = -tdy[i]*touchdown_vtx[i].stiffness; 						// horizon-normal force component: gear compression forces
-				double maxpress = min (-tdy[i], 0.1)*touchdown_vtx[i].stiffness;
+				fn[i] = -tdy[i]*contactK(i); 						// horizon-normal force component: gear compression forces
+				double maxpress = min (-tdy[i], 0.1)*contactK(i);
 
 				if (i < 3) {
-					mu = touchdown_vtx[i].mu_lng;
+					mu = contactMuLng(i);
 					if (i && wbrake_level[i-1])
-						mu += (touchdown_vtx[i].mu - touchdown_vtx[i].mu_lng)*wbrake_level[i-1];
+						mu += (contactMu(i) - contactMuLng(i))*wbrake_level[i-1];
 				} else {
-					mu = touchdown_vtx[i].mu;
+					mu = contactMu(i);
 				}
 				flng[i] = mu * maxpress;												// horizon-longitudinal force component: surface friction
 				if (fabs(gv_lon) < 10.0) flng[i] *= sqrt(fabs(0.1*gv_lon));             // cancel horizontal forces at low speeds
@@ -4585,7 +4599,7 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 				if (gv_lon > 0.0) flng[i] = -flng[i];
 				flng_tot += flng[i];
 
-				mu = touchdown_vtx[i].mu;
+				mu = contactMu(i);
 				flat[i] = mu * maxpress;									// horizon-lateral force component: surface friction
 				if (fabs(gv_lat) < 10.0) flat[i] *= sqrt(fabs(0.1*gv_lat));
 				//flat[i] = min (flat[i], fabs(gv_lat) * fn[i] * mu/dt);
@@ -4596,9 +4610,9 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 				fn_tot_undamped += fn[i];
 				// contact force solver (project extension)
 				if (contactSolver == 0) {
-					fn[i] -= gv_n*touchdown_vtx[i].damping;
+					fn[i] -= gv_n*contactC(i);
 				} else {
-					fn[i] = ContactNormalForce (touchdown_vtx[i].stiffness, touchdown_vtx[i].damping,
+					fn[i] = ContactNormalForce (contactK(i), contactC(i),
 						tdy[i], gv_n, mass, dt, contactSolver);
 				}
 				fn_tot += fn[i];
