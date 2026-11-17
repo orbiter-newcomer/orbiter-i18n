@@ -6364,11 +6364,6 @@ int Vessel::BuildVoronoiSliceMeshes (std::vector<HullSliceMesh> &out, int maxCou
 		if (!mnm || !mnm[0]) {
 			if (firstMesh >= 0 && firstMesh < (int)nmesh && meshlist[firstMesh]) mnm = meshlist[firstMesh]->meshname;
 		}
-		{
-			char bl[512];
-			sprintf_s (bl, 512, "VORONOI: meshname=[%s] firstMesh=%d nmesh=%d", mnm ? mnm : "(null)", firstMesh, (int)nmesh);
-			LOGOUT_ERR (bl);
-		}
 		if (mnm && mnm[0]) {
 			char fn[512];
 			FILE *fp = 0;
@@ -6376,11 +6371,6 @@ int Vessel::BuildVoronoiSliceMeshes (std::vector<HullSliceMesh> &out, int maxCou
 			for (int ci = 0; ci < 5 && !fp; ci++) {
 				sprintf_s (fn, 512, cands[ci], mnm);
 				if (fopen_s (&fp, fn, "r") != 0) fp = 0;
-			}
-			{
-				char bl[512];
-				sprintf_s (bl, 512, "VORONOI: meshname=%s file=%s opened=%d", mnm, fn, fp ? 1 : 0);
-				LOGOUT_ERR (bl);
 			}
 			if (fp) {
 				char line[512];

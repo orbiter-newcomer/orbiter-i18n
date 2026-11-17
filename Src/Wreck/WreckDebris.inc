@@ -684,7 +684,7 @@ static void WreckCleanup ()
 				if (td.SimT1 - s_settleT[i] > 10.0) remove = true;
 			}
 			if (remove) {
-				LOGOUT_ERR ("Wreck %s removed (cleanup).", g_wreckVessels[i].name);
+				LOGOUT ("Wreck %s removed (cleanup).", g_wreckVessels[i].name);
 				wv->RequestDestruct ();
 				g_wreckVessels[i] = g_wreckVessels[g_wreckVesselCount - 1];
 				g_wreckVesselCount--;
