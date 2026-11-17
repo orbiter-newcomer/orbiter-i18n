@@ -971,11 +971,16 @@ void Orbiter::CloseSession ()
 		Instrument::GlobalExit (gclient);
 		meshmanager.Flush(); // destroy buffered meshes
 		DestroyWorld ();     // destroy logical objects
-		if (gclient)
-			gclient->clbkDestroyRenderWindow (false); // destroy graphics objects
 
+		// Notify the module plugins before the graphics client is destroyed, so
+		// that plugins can still release device resources (textures, fonts, ...)
+		// in clbkSimulationEnd. Calling them afterwards leaves those resources
+		// unreleased and makes D3D9Client report undeleted surfaces.
 		for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 			it->pModule->clbkSimulationEnd();
+
+		if (gclient)
+			gclient->clbkDestroyRenderWindow (false); // destroy graphics objects
 
 		hRenderWnd = NULL;
 		pDI->DestroyDevices();
@@ -986,11 +991,16 @@ void Orbiter::CloseSession ()
 		if (pDlgMgr)  { delete pDlgMgr; pDlgMgr = 0; }
 		if (gclient) {
 			gclient->clbkCloseSession (true);
-			gclient->clbkDestroyRenderWindow (true);
 		}
 
+		// Same ordering as above: give the plugins a chance to release device
+		// resources before the graphics services go off-line.
 		for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 			it->pModule->clbkSimulationEnd();
+
+		if (gclient) {
+			gclient->clbkDestroyRenderWindow (true);
+		}
 
 		hRenderWnd = NULL;
 		pDI->DestroyDevices();

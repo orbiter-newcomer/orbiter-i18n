@@ -116,7 +116,7 @@ DLLCLBK void ExitModule(HINSTANCE  hModule)
 // Orbiter Module
 // =================================================================================================
 //
-Orbits::Orbits(HINSTANCE hInst) : Module(hInst), pCore(NULL), Ref(NULL), pBody(NULL)
+Orbits::Orbits(HINSTANCE hInst) : Module(hInst), pCore(NULL), Ref(NULL), pBody(NULL), hTex(NULL), hFnt(NULL)
 {
 
 	FILE *fp = fopen("Config/DrawOrbits.cfg", "rt");
@@ -186,25 +186,26 @@ void Orbits::clbkSimulationEnd()
 {
 	oapiWriteLog((char*)"oapi::Module::clbkSimulationEnd");
 
-	if (pCore) 
-	{
-		//oapiReleaseTexture(hTex);
-		//oapiReleaseFont(hFnt);
-		//gcRegisterRenderProc(RenderOrbitClbk, RENDERPROC_DELETE, NULL);	// Unregister callback 
+	// Release the device resources created in clbkSimulationStart, otherwise
+	// D3D9Client reports them as undeleted surfaces when it shuts down (the
+	// module itself stays loaded for the next simulation session).
+	if (pCore) {
+		pCore->RegisterRenderProc(RenderOrbitClbk, RENDERPROC_DELETE, NULL);	// Unregister callback
+		if (hTex) { oapiReleaseTexture(hTex); hTex = NULL; }
+		if (hFnt) { oapiReleaseFont(hFnt); hFnt = NULL; }
+	}
 
+	if (pCore && pBody) {
 		int i = 0;
 		while (pBody[i].hObj) {
 			if (pBody[i].pOrb) delete pBody[i].pOrb;
 			i++;
 		}
-
-		if (Ref) delete Ref;
-
-		for (int i = 0; i < NTEMP; i++) {
-			//gcDeletePoly(pElliptic[i]);
-			//gcDeletePoly(pHyperbolic[i]);
-		}
 	}
+
+	if (Ref) { delete Ref; Ref = NULL; }
+	if (pBody) { delete[] pBody; pBody = NULL; }
+	if (pCore) pCore = NULL;
 }
 
 // =================================================================================================

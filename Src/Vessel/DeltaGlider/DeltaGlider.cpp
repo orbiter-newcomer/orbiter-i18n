@@ -1728,6 +1728,17 @@ int DeltaGlider::clbkGeneric (int msgid, int prm, void *context)
 // API callback interface
 // ==============================================================
 
+// Number of live DeltaGlider instances. The blit-source texture is a
+// module-level resource shared by all instances; it is released when the last
+// vessel of a simulation session is destroyed so that the graphics client does
+// not report it as an undeleted surface on shutdown, and reloaded on demand.
+static int g_dgSurfRefs = 0;
+
+static void DGEnsureModuleSurface ()
+{
+	if (!g_Param.surf) g_Param.surf = oapiLoadTexture ("DG\\blitsrc1.dds", true);
+}
+
 // --------------------------------------------------------------
 // Module initialisation
 // --------------------------------------------------------------
@@ -1739,7 +1750,7 @@ DLLCLBK void InitModule (HINSTANCE hModule)
 	// allocate SketchPad resources
 	g_Param.pen[0] = oapiCreatePen (PS_SOLID, 1, RGB(224,224,224));
 	g_Param.pen[1] = oapiCreatePen (PS_SOLID, 3, RGB(164,164,164));
-	g_Param.surf = oapiLoadTexture ("DG\\blitsrc1.dds", true);
+	DGEnsureModuleSurface ();
 }
 
 // --------------------------------------------------------------
@@ -1753,7 +1764,7 @@ DLLCLBK void ExitModule (HINSTANCE hModule)
 
 	// deallocate SketchPad resources
 	for (i = 0; i < 2; i++) oapiReleasePen(g_Param.pen[i]);
-	oapiReleaseTexture (g_Param.surf);
+	if (g_Param.surf) { oapiReleaseTexture (g_Param.surf); g_Param.surf = 0; }
 }
 
 // --------------------------------------------------------------
@@ -1765,6 +1776,9 @@ DLLCLBK VESSEL *ovcInit (OBJHANDLE hvessel, int flightmodel)
 	g_Param.col[2] = oapiGetColour(80,80,224);
 	g_Param.col[3] = oapiGetColour(160,120,64);
 
+	DGEnsureModuleSurface ();
+	g_dgSurfRefs++;
+
 	return new DeltaGlider (hvessel, flightmodel);
 }
 
@@ -1774,6 +1788,10 @@ DLLCLBK VESSEL *ovcInit (OBJHANDLE hvessel, int flightmodel)
 DLLCLBK void ovcExit (VESSEL *vessel)
 {
 	if (vessel) delete (DeltaGlider*)vessel;
+	if (--g_dgSurfRefs <= 0) {
+		g_dgSurfRefs = 0;
+		if (g_Param.surf) { oapiReleaseTexture (g_Param.surf); g_Param.surf = 0; }
+	}
 }
 
 
