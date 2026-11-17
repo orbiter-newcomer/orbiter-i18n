@@ -116,13 +116,13 @@ msgid "Olympus Base and Olympus Mons"
 msgstr "奥林匹斯基地与奥林匹斯山"
 
 msgid "Phobos"
-msgstr "火卫一"
+msgstr "火卫一（福波斯）"
 
 msgid "Natural satellite of Mars    Mean radius: 11.27km  Mass: 1.066×10^16kg  Mean orbital radius: 9,374km  Orbital period: 2.755×10^4s (0.32 days)"
 msgstr "火星的天然卫星  平均半径：11.27km  质量：1.066×10^16kg  平均轨道半径：9,374km  轨道周期：2.755×10^4s (0.32 天)"
 
 msgid "Deimos"
-msgstr "火卫二"
+msgstr "火卫二（得摩斯）"
 
 msgid "Natural satellite of Mars    Mean radius: 6.2km  Mass: 1.48×10^15kg  Mean orbital radius: 23,463km  Orbital period: 1.091×10^5s (1.263 days)"
 msgstr "火星的天然卫星  平均半径：6.2km  质量：1.48×10^15kg  平均轨道半径：23,463km  轨道周期：1.091×10^5s (1.263 天)"
@@ -140,7 +140,7 @@ msgid "Radius: 69,911km  Mass: 1.898×10^27kg  Mean orbital radius: 778.5×10^6k
 msgstr "半径：69,911km  质量：1.898×10^27kg  平均轨道半径：778.5×10^6km (5.20AU)  轨道周期：3.743×10^8s (11.86 年)"
 
 msgid "Io"
-msgstr "木卫一"
+msgstr "木卫一（伊奥）"
 
 msgid "Natural satellite of Jupiter  Radius: 1,821.6km  Mass: 8.932×10^22kg  Mean orbital radius: 421,700km  Orbital period: 1.529×10^5s (1.769 days)"
 msgstr "木星的天然卫星  半径：1,821.6km  质量：8.932×10^22kg  平均轨道半径：421,700km  轨道周期：1.529×10^5s (1.769 天)"
@@ -170,31 +170,31 @@ msgid "Radius: 58,232km  Mass:  5.683×10^26kg  Mean orbital radius: 1.433×10^9
 msgstr "半径：58,232km  质量： 5.683×10^26kg  平均轨道半径：1.433×10^9km (9.58AU)  轨道周期：9.2960×10^8s (29.46 年)"
 
 msgid "Mimas"
-msgstr "土卫一"
+msgstr "土卫一（弥玛斯）"
 
 msgid "Natural satellite of Saturn  Radius: 198.2km  Mass:  3.7493×10^19kg  Mean orbital radius: 185,320km  Orbital period: 81389s (0.942 days)"
 msgstr "土星的天然卫星  半径：198.2km  质量： 3.7493×10^19kg  平均轨道半径：185,320km  轨道周期：81389s (0.942 天)"
 
 msgid "Enceladus"
-msgstr "土卫二"
+msgstr "土卫二（恩克拉多斯）"
 
 msgid "Natural satellite of Saturn  Radius: 252.1km  Mass: 1.0802×10^20kg  Mean orbital radius: 237,912km  Orbital period: 1.184×10^5s (1.370 days)"
 msgstr "土星的天然卫星  半径：252.1km  质量：1.0802×10^20kg  平均轨道半径：237,912km  轨道周期：1.184×10^5s (1.370 天)"
 
 msgid "Tethys"
-msgstr "土卫三"
+msgstr "土卫三（忒堤斯）"
 
 msgid "Natural satellite of Saturn  Radius: 531.1km  Mass: 6.1745×10^20kg  Mean orbital radius: 294,572km  Orbital period: 1.631×10^5s (1.888 days)"
 msgstr "土星的天然卫星  半径：531.1km  质量：6.1745×10^20kg  平均轨道半径：294,572km  轨道周期：1.631×10^5s (1.888 天)"
 
 msgid "Dione"
-msgstr "土卫四"
+msgstr "土卫四（狄俄涅）"
 
 msgid "Natural satellite of Saturn  Radius: 561.4km  Mass: 1.0955×10^21kg  Mean orbital radius: 377,336km  Orbital period: 2.365×10^5s (2.737 days)"
 msgstr "土星的天然卫星  半径：561.4km  质量：1.0955×10^21kg  平均轨道半径：377,336km  轨道周期：2.365×10^5s (2.737 天)"
 
 msgid "Rhea"
-msgstr "土卫五"
+msgstr "土卫五（瑞亚）"
 
 msgid "Natural satellite of Saturn  Radius: 763.8km  Mass: 2.306518×10^21kg  Mean orbital radius: 527,067km  Orbital period: 3.904×10^5s (4.518 days)"
 msgstr "土星的天然卫星  半径：763.8km  质量：2.306518×10^21kg  平均轨道半径：527,067km  轨道周期：3.904×10^5s (4.518 天)"
@@ -206,7 +206,7 @@ msgid "Natural satellite of Saturn  Radius: 2575.5km  Mass: 1.3452×10^23kg  Mea
 msgstr "土星的天然卫星  半径：2575.5km  质量：1.3452×10^23kg  平均轨道半径：1.2217×10^6km  轨道周期：1.378×10^6s (15.945 天)"
 
 msgid "Iapetus"
-msgstr "土卫八"
+msgstr "土卫八（伊阿珀托斯）"
 
 msgid "Natural satellite of Saturn  Radius: 734.5km  Mass: 1.8056×10^21kg  Mean orbital radius: 3.5601×10^6km  Orbital period: 6.853×10^6s (79.322 days)"
 msgstr "土星的天然卫星  半径：734.5km  质量：1.8056×10^21kg  平均轨道半径：3.5601×10^6km  轨道周期：6.853×10^6s (79.322 天)"
@@ -218,31 +218,31 @@ msgid "Radius: 25,362km  Mass: 8.681×10^25kg  Mean orbital radius: 2.877×10^9k
 msgstr "半径：25,362km  质量：8.681×10^25kg  平均轨道半径：2.877×10^9km (19.23AU)  轨道周期：2.6515×10^9s (84.0205 年)"
 
 msgid "Miranda"
-msgstr "天卫五"
+msgstr "天卫五（米兰达）"
 
 msgid "Natural satellite of Uranus  Radius: 235.8km  Mass: 6.59×10^19kg  Mean orbital radius: 129,840km  Orbital period: 1.2212×10^5s (1.413 days)"
 msgstr "天王星的天然卫星  半径：235.8km  质量：6.59×10^19kg  平均轨道半径：129,840km  轨道周期：1.2212×10^5s (1.413 天)"
 
 msgid "Ariel"
-msgstr "天卫一"
+msgstr "天卫一（艾瑞尔）"
 
 msgid "Natural satellite of Uranus  Radius: 578.9km  Mass: 1.353×10^21kg  Mean orbital radius: 190,900km  Orbital period: 2.17728×10^5s (2.520 days)"
 msgstr "天王星的天然卫星  半径：578.9km  质量：1.353×10^21kg  平均轨道半径：190,900km  轨道周期：2.17728×10^5s (2.520 天)"
 
 msgid "Umbriel"
-msgstr "天卫二"
+msgstr "天卫二（乌姆柏里厄尔）"
 
 msgid "Natural satellite of Uranus  Radius: 584.7km  Mass: 1.172×10^21kg  Mean orbital radius: 265,967km  Orbital period: 3.5804×10^5s (4.144 days)"
 msgstr "天王星的天然卫星  半径：584.7km  质量：1.172×10^21kg  平均轨道半径：265,967km  轨道周期：3.5804×10^5s (4.144 天)"
 
 msgid "Titania"
-msgstr "天卫三"
+msgstr "天卫三（泰坦妮亚）"
 
 msgid "Natural satellite of Uranus  Radius: 788.4km  Mass: 3.527×10^21kg  Mean orbital radius: 436,282km  Orbital period: 7.522×10^5s (8.706 days)"
 msgstr "天王星的天然卫星  半径：788.4km  质量：3.527×10^21kg  平均轨道半径：436,282km  轨道周期：7.522×10^5s (8.706 天)"
 
 msgid "Oberon"
-msgstr "天卫四"
+msgstr "天卫四（奥伯龙）"
 
 msgid "Natural satellite of Uranus  Radius: 761.4km  Mass: 3.014×10^21kg  Mean orbital radius: 583,416km  Orbital period: 1.163×10^6s (13.463 days)"
 msgstr "天王星的天然卫星  半径：761.4km  质量：3.014×10^21kg  平均轨道半径：583,416km  轨道周期：1.163×10^6s (13.463 天)"
@@ -254,19 +254,19 @@ msgid "Radius: 24,622km  Mass: 1.024×10^26kg  Mean orbital radius: 4.498×10^9k
 msgstr "半径：24,622km  质量：1.024×10^26kg  平均轨道半径：4.498×10^9km (30.07AU)  轨道周期：5.1997×10^9s (164.8 年)"
 
 msgid "Triton"
-msgstr "海卫一"
+msgstr "海卫一（特里同）"
 
 msgid "Natural satellite of Neptune  Radius: 1353.4km  Mass: 2.14×10^22kg  Mean orbital radius: 354,757km  Orbital period: -5.0776×10^5s (-5.877 days) - retrograde"
 msgstr "海王星的天然卫星  半径：1353.4km  质量：2.14×10^22kg  平均轨道半径：354,757km  轨道周期：-5.0776×10^5s (-5.877 天) - 逆行"
 
 msgid "Proteus"
-msgstr "海卫八"
+msgstr "海卫八（普罗透斯）"
 
 msgid "Natural satellite of Neptune  Radius: 210km  Mass: 4.4×10^19kg  Mean orbital radius: 117,647km  Orbital period: 9.6968×10^4s (1.12231477 days)"
 msgstr "海王星的天然卫星  半径：210km  质量：4.4×10^19kg  平均轨道半径：117,647km  轨道周期：9.6968×10^4s (1.12231477 天)"
 
 msgid "Nereid"
-msgstr "海卫二"
+msgstr "海卫二（涅瑞伊得）"
 
 msgid "Natural satellite of Neptune  Radius: 170km  Mean orbital radius: 5.5141×10^6km  Orbital period: 3.1115×10^7s (360.1362 days)"
 msgstr "海王星的天然卫星  半径：170km  平均轨道半径：5.5141×10^6km  轨道周期：3.1115×10^7s (360.1362 天)"
@@ -548,3 +548,35 @@ msgstr "父级"
 msgctxt "mfd.button"
 msgid "CRS"
 msgstr "准星"
+msgid "Ceres"
+msgstr "谷神星"
+
+msgid "Amalthea"
+msgstr "木卫五（阿马尔忒亚）"
+
+msgid "Himalia"
+msgstr "木卫六（希马利亚）"
+
+msgid "Hyperion"
+msgstr "土卫七（海伯利安）"
+
+msgid "Phoebe"
+msgstr "土卫九（福柏）"
+
+msgid "Pluto"
+msgstr "冥王星"
+
+msgid "Charon"
+msgstr "冥卫一（卡戎）"
+
+msgid "Nix"
+msgstr "冥卫二（尼克斯）"
+
+msgid "Hydra"
+msgstr "冥卫三（许德拉）"
+
+msgid "Sol"
+msgstr "太阳系"
+
+msgid "Sun"
+msgstr "太阳"
