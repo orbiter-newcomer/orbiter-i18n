@@ -4475,10 +4475,8 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 
 	if (bDynamicGroundContact) {
 
-		// Contact model configuration (project extension, Config::ContactLoad):
-		//   ContactFrictionModel: 0 = traditional, 1 = experimental
+		// Contact solver configuration (project extension, Config::ContactLoad):
 		//   ContactSolver: 0 = official explicit, 1 = implicit damping, 2 = fully implicit
-		const int contactFrictionModel = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactFrictionModel;
 		const int contactSolver = g_pOrbiter->Cfg()->CfgPhysicsPrm.ContactSolver;
 		// contact parameters (project extension, launchpad "Contact model"):
 		// six parameters in two sets (landing gear = first 3 contact points,
@@ -4513,7 +4511,8 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 			return (v > 0.0 ? v : touchdown_vtx[idx].mu_lng);
 		};
 
-		if (contactFrictionModel == 1) {   // experimental friction model
+//#define NEWCONTACTMODEL
+#ifdef NEWCONTACTMODEL // new version - experimental!
 		if (tdymin < 0.0) {
 			DWORD ntouch = 0;
 			double mueff_lng, mueff_lat, gv_hor;
@@ -4589,7 +4588,7 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 			}
 		}
 
-		} else {   // traditional friction model
+#else
 
 		DWORD ntouch = 0;
 		for (i = 0; i < ntouchdown_vtx; i++) {
@@ -4762,7 +4761,7 @@ bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, doub
 
 		//sprintf (DBG_MSG, "dE_kin=%le, dE_comp=%le", dE_kin, dE_comp);
 
-		}   // end of dynamic contact model block
+#endif
 	} else {
 		double v1, v2;
 		for (i = 0; i < 3; i++) {

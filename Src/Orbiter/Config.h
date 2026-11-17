@@ -88,7 +88,6 @@ struct CFG_PHYSICSPRM {
 	double RelChargeRatio;          // charge ratio q = r_Q/r_s (0..1)
 	double RelCollisionDVThreshold; // collision impact delta-v [m/s] above which a vessel explodes
 	double RelGasGiantFactor;       // radius factor R for gas-giant crushing (r < factor*R)
-	int    ContactFrictionModel;    // contact friction model: 0=traditional, 1=experimental
 	int    ContactSolver;           // contact force solver: 0=explicit, 1=implicit damping, 2=fully implicit
 	double ContactGearStiffness;    // landing gear stiffness [N/m] (0 = original)
 	double ContactGearDampingRatio; // landing gear damping ratio zeta (0 = original damping)

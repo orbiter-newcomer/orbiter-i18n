@@ -1154,15 +1154,11 @@ CAPTION "Orbiter: Contact model"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     GROUPBOX        "Contact model",IDC_STATIC,7,7,362,96
-    LTEXT           "Friction model:",IDC_STATIC,14,20,55,8
-    COMBOBOX        IDC_CONTACT_FRICTION,72,18,150,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Traditional: original surface friction model.",IDC_STATIC,14,34,350,8
-    LTEXT           "Experimental: static/speed-proportional friction with force limiter.",IDC_STATIC,14,44,350,8
-    LTEXT           "Force solver:",IDC_STATIC,14,62,55,8
-    COMBOBOX        IDC_CONTACT_SOLVER,72,60,150,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Official: explicit contact spring/damper (original behaviour).",IDC_STATIC,14,76,350,8
-    LTEXT           "Implicit damping: damping force evaluated at the end of the step.",IDC_STATIC,14,86,350,8
-    LTEXT           "Fully implicit: spring and damper evaluated at the end of the step.",IDC_STATIC,14,96,350,8
+    LTEXT           "Force solver:",IDC_STATIC,14,20,55,8
+    COMBOBOX        IDC_CONTACT_SOLVER,72,18,150,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Official: explicit contact spring/damper (original behaviour).",IDC_STATIC,14,34,350,8
+    LTEXT           "Implicit damping: damping force evaluated at the end of the step.",IDC_STATIC,14,44,350,8
+    LTEXT           "Fully implicit: spring and damper evaluated at the end of the step.",IDC_STATIC,14,54,350,8
     GROUPBOX        "Landing gear contact",IDC_STATIC,7,108,362,52
     LTEXT           "Stiffness:",IDC_STATIC,14,122,48,8
     EDITTEXT        IDC_CONTACT_GEAR_STIFF,76,120,40,14,ES_AUTOHSCROLL

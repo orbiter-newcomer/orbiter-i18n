@@ -157,7 +157,6 @@
 #define IDC_MNUCFG_SCIWARP              1013
 
 // Resource IDs for dialog IDD_EXTRA_CONTACT
-#define IDC_CONTACT_FRICTION            1200
 #define IDC_CONTACT_SOLVER              1201
 #define IDC_CONTACT_GEAR_STIFF          1202
 #define IDC_CONTACT_GEAR_DAMP           1203

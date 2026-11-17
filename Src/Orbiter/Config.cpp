@@ -72,7 +72,6 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	0.5,		// RelChargeRatio (r_Q/r_s; 0.5 = clearly visible)
 	10.0,		// RelCollisionDVThreshold (m/s; collision impact tolerance)
 	0.8,		// RelGasGiantFactor (gas-giant crushing radius factor)
-	0,			// ContactFrictionModel (0=traditional, 1=experimental)
 	0,			// ContactSolver (0=explicit, 1=implicit damping, 2=fully implicit)
 	0.0,		// ContactGearStiffness (0 = original gear stiffness)
 	0.0,		// ContactGearDampingRatio (0 = original gear damping)

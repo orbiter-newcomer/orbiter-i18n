@@ -2,11 +2,11 @@
 // TabExtraContact.inc
 // Launchpad "Extra" page: contact model configuration (implementation).
 //
-// Included at the end of TabExtra.cpp. Exposes two settings of the physics
-// engine contact model:
-//   ContactFrictionModel: 0 = traditional, 1 = experimental
-//   ContactSolver:        0 = official explicit, 1 = implicit damping,
-//                         2 = fully implicit
+// Included at the end of TabExtra.cpp. Exposes the contact force solver and
+// the contact parameters of the physics engine:
+//   ContactSolver: 0 = official explicit, 1 = implicit damping, 2 = fully implicit
+//   contact parameters: landing gear / hull stiffness, damping ratio and
+//                       friction (see Config.h)
 // ==============================================================
 
 char *ExtraContact::Name ()
@@ -27,11 +27,8 @@ bool ExtraContact::clbkOpen (HWND hParent)
 
 void ExtraContact::InitDialog (HWND hWnd)
 {
-	static const char *friction[2] = { "Traditional", "Experimental" };
 	static const char *solver[3] = { "Official (explicit)", "Implicit damping", "Fully implicit" };
 	int i;
-	for (i = 0; i < 2; i++)
-		orbiter::ComboAddStringUtf8 (GetDlgItem (hWnd, IDC_CONTACT_FRICTION), orbiter::Tr(friction[i]));
 	for (i = 0; i < 3; i++)
 		orbiter::ComboAddStringUtf8 (GetDlgItem (hWnd, IDC_CONTACT_SOLVER), orbiter::Tr(solver[i]));
 	SetDialog (hWnd, pTab->Cfg()->CfgPhysicsPrm);
@@ -45,13 +42,9 @@ void ExtraContact::ResetDialog (HWND hWnd)
 
 void ExtraContact::SetDialog (HWND hWnd, const CFG_PHYSICSPRM &prm)
 {
-	int f = prm.ContactFrictionModel;
-	if (f < 0) f = 0;
-	if (f > 1) f = 1;
 	int s = prm.ContactSolver;
 	if (s < 0) s = 0;
 	if (s > 2) s = 2;
-	SendDlgItemMessageW (hWnd, IDC_CONTACT_FRICTION, CB_SETCURSEL, f, 0);
 	SendDlgItemMessageW (hWnd, IDC_CONTACT_SOLVER, CB_SETCURSEL, s, 0);
 	char buf[64];
 	sprintf (buf, "%g", prm.ContactGearStiffness);
@@ -82,10 +75,9 @@ static bool ReadContactValue (HWND hWnd, int id, double &val)
 
 bool ExtraContact::StoreParams (HWND hWnd)
 {
-	int f = (int)SendDlgItemMessage (hWnd, IDC_CONTACT_FRICTION, CB_GETCURSEL, 0, 0);
 	int s = (int)SendDlgItemMessage (hWnd, IDC_CONTACT_SOLVER, CB_GETCURSEL, 0, 0);
-	if (f == CB_ERR || s == CB_ERR) {
-		Error ("Invalid contact model selection.");
+	if (s == CB_ERR) {
+		Error ("Invalid contact solver selection.");
 		return false;
 	}
 	double kGear, dGear, muGear, kHull, dHull, muHull;
@@ -99,7 +91,6 @@ bool ExtraContact::StoreParams (HWND hWnd)
 		return false;
 	}
 	Config *cfg = pTab->Cfg();
-	cfg->CfgPhysicsPrm.ContactFrictionModel = (f != 0 ? 1 : 0);
 	cfg->CfgPhysicsPrm.ContactSolver = (s < 0 ? 0 : (s > 2 ? 2 : s));
 	// clamp to sensible ranges; 0 keeps the original value
 	if (kGear > 0.0) { if (kGear < 1e3) kGear = 1e3; else if (kGear > 1e9) kGear = 1e9; }
