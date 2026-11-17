@@ -126,11 +126,21 @@ void D3D9Client::UpdateTerrainLoadWait ()
 				// requests have been issued before the simulation is paused
 		terrainWaitFrames++;
 		if (terrainWaitFrames < 1) break;
-		if (oapiGetPause()) { terrainWaitState = 3; break; }	// user requested a paused start
-		oapiSetPause (true);
-		terrainWaitPaused = true;
+		if (oapiGetPause()) {
+			// The simulation is already paused (e.g. the previous session was
+			// paused, or the scenario was started paused). Still wait for the
+			// terrain instead of skipping the wait; only the ownership of the
+			// pause state differs, so the initial terrain wait stays visible
+			// on every scenario start (including reloading the same scenario).
+			terrainWaitPaused = false;
+		}
+		else {
+			oapiSetPause (true);
+			terrainWaitPaused = true;
+		}
 		terrainWaitState  = 2;
 		terrainWaitStable = 0;
+		oapiWriteLogV ("TerrainLoadWait: waiting for terrain (paused_by_wait=%d)", terrainWaitPaused ? 1 : 0);
 		break;
 
 	case 2: {	// wait until the surface tiles around the camera have been loaded
@@ -152,10 +162,19 @@ void D3D9Client::UpdateTerrainLoadWait ()
 				done = true;	// timeout: don't block the user
 		}
 		if (done) {
+			// Minimum wait duration: even if the terrain tiles are already
+			// cached (repeated loading of the same scenario) the pause must
+			// stay visible for a moment instead of disappearing within a frame.
+			if (Config->TerrainLoadWaitMinMs > 0 &&
+				oapiGetSysTime() - terrainWaitT0 < Config->TerrainLoadWaitMinMs * 0.001)
+				done = false;
+		}
+		if (done) {
 			if (terrainWaitPaused) oapiSetPause (false);
 			terrainWaitPaused   = false;
 			terrainWaitCooldown = oapiGetSysTime();
 			terrainWaitState    = 3;
+			oapiWriteLogV ("TerrainLoadWait: done after %.2f s", oapiGetSysTime() - terrainWaitT0);
 		}
 		break; }
 

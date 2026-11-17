@@ -44,6 +44,7 @@ void D3D9Config::Reset ()
 	PlanetLoadFrequency	= 40;
 	TerrainLoadWait		= 1;
 	TerrainLoadWaitTimeout = 30;
+	TerrainLoadWaitMinMs = 600;
 	WaitTerrainLoadCamera  = 1;
 	Anisotrophy			= 4;
 	SceneAntialias		= 4;
@@ -151,6 +152,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"PlanetTexLoadFreq", i))		PlanetLoadFrequency = max(1, min(1000, i));
 	if (oapiReadItem_int   (hFile, (char*)"WaitTerrainLoad", i))		TerrainLoadWait = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitTimeout", i))	TerrainLoadWaitTimeout = max(1, min(120, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitMinMs", i))	TerrainLoadWaitMinMs = max(0, min(5000, i));
 	if (oapiReadItem_int   (hFile, (char*)"WaitTerrainLoadCamera", i))	WaitTerrainLoadCamera = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"Anisotrophy", i))			Anisotrophy = max(1, min(16, i));
 	if (oapiReadItem_int   (hFile, (char*)"SceneAntialias", i))		SceneAntialias = i;
@@ -249,6 +251,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"PlanetTexLoadFreq", PlanetLoadFrequency);
 	oapiWriteItem_int   (hFile, (char*)"WaitTerrainLoad", TerrainLoadWait);
 	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitTimeout", TerrainLoadWaitTimeout);
+	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitMinMs", TerrainLoadWaitMinMs);
 	oapiWriteItem_int   (hFile, (char*)"WaitTerrainLoadCamera", WaitTerrainLoadCamera);
 	oapiWriteItem_int   (hFile, (char*)"Anisotrophy", Anisotrophy);
 	oapiWriteItem_int   (hFile, (char*)"SceneAntialias", SceneAntialias);

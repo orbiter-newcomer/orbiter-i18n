@@ -38,6 +38,7 @@ public:
 	int PlanetLoadFrequency;		///< Load frequency for on-demand textures \[Hz\] (1...1000)
 	int TerrainLoadWait;			///< Wait for terrain tiles to load before the simulation starts (0=off, 1=on)
 	int TerrainLoadWaitTimeout;		///< Maximum wait time for the terrain load \[s\] (1...120)
+	int TerrainLoadWaitMinMs;		///< Minimum duration of the terrain load wait \[ms\] (0...5000), makes the wait visible even when the tiles are cached
 	int WaitTerrainLoadCamera;		///< Re-run the terrain load wait when the camera target changes (0=off, 1=on)
 	int Anisotrophy;				///< Anisotropic filtering setting \[factor\] (1...16)
 	int SceneAntialias;				///< Antialiasing setting \[factor\] (0...)
