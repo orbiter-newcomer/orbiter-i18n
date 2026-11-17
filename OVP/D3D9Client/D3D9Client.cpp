@@ -638,6 +638,11 @@ void D3D9Client::clbkPostCreation()
 
 	bRunning = true;
 
+	// New simulation session: restart the terrain load wait state machine so
+	// that the initial "pause until terrain is loaded" phase happens every time
+	// (fast scenario switches could otherwise skip it).
+	ResetTerrainLoadWait ();
+
 	LogAlw("=============== Loading Completed and Visuals Created ================");
 
 #ifdef _DEBUG

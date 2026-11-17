@@ -1355,6 +1355,7 @@ private:
 	// initial terrain around the camera has been loaded by the tile loaders.
 	void UpdateTerrainLoadWait ();
 	void DrawTerrainLoadWaitLabel ();
+	void ResetTerrainLoadWait ();
 	bool ShouldWaitForCameraLoad ();
 	void UpdateCameraTargetRecord ();
 

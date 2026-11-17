@@ -37,6 +37,27 @@ static int TerrainLoadPendingTileCount (TileManager2<SurfTile> *mgr)
 
 // ---- terrain load wait state machine ----------------------------------------
 
+// Resets the wait state machine when a new simulation session is created
+// (called from clbkPostCreation, i.e. once per scenario start, before the first
+// frame is rendered). This makes the initial "wait for terrain" pause happen
+// deterministically for every new scenario, including fast scenario switches
+// where the simulation-time based new-session detection could miss it.
+void D3D9Client::ResetTerrainLoadWait ()
+{
+	terrainWaitState    = 0;
+	terrainWaitFrames   = 0;
+	terrainWaitPaused   = false;
+	terrainWaitT0       = 0.0;
+	terrainWaitStable   = 0;
+	terrainWaitCooldown = 0.0;
+	lastSimTime         = 0.0;
+	camTargetLast       = 0;
+	focusLast           = 0;
+	camModeLast         = -1;
+	lastTargetValid     = false;
+	lastTargetRefBody   = 0;
+}
+
 void D3D9Client::UpdateTerrainLoadWait ()
 {
 	if (!Config || Config->TerrainLoadWait == 0) return;
