@@ -214,6 +214,19 @@ bool WreckIsObserver (Vessel *vessel)
 }
 
 
+// The wreck/debris system is bound to the launcher setting "Damage and failure
+// simulation" (CfgLogicPrm.DamageSetting): with the damage simulation disabled
+// no wreck is created at all. The historical "Wrecks" configuration key is kept
+// as an additional master switch (default: enabled).
+bool WreckSystemEnabled ()
+{
+	if (!g_pOrbiter) return false;
+	const Config *cfg = g_pOrbiter->Cfg ();
+	if (!cfg) return false;
+	return cfg->CfgPhysicsPrm.bWrecks && (cfg->CfgLogicPrm.DamageSetting != 0);
+}
+
+
 static REL_DEBRIS g_relDebris[REL_DEBRIS_MAX];
 static int g_relDebrisNext = 0;
 
@@ -413,6 +426,7 @@ static CelestialBody *RelNearestBody (const Vector &pos)
 
 static void WreckProcessPending ()
 {
+	if (!WreckSystemEnabled ()) { g_pendingWreckCount = 0; return; }
 	if (g_pendingWreckTick != 0.0 || g_pendingWreckCount <= 0 || !g_psys) return;
 	if (td.SimT1 < g_pendingWreckReleaseT) return;   // wait until the parent bounces up
 	g_pendingWreckTick = -1e18;
@@ -794,7 +808,7 @@ void WreckDebrisUpdate ()
 
 void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *otherName, bool otherDestroyed)
 {
-	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bWrecks) return;
+	if (!vessel || !WreckSystemEnabled ()) return;
 	if (WreckIsObserver (vessel)) return;
 	if (vessel->KillPending()) return;
 	double dv = deltaV.length();
@@ -806,7 +820,7 @@ void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *oth
 
 void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state)
 {
-	if (!vessel || !g_psys) return;
+	if (!vessel || !g_psys || !WreckSystemEnabled ()) return;
 	if (WreckIsObserver (vessel)) return;
 	if (vessel->KillPending()) return;
 	static double s_lastImpactT = -1e18;
@@ -892,7 +906,7 @@ void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state)
 // high dynamic pressure (re-entry) burns up like a meteor.
 void WreckAtmosphericBurnup (Vessel *vessel)
 {
-	if (!vessel || !g_pOrbiter || !g_pOrbiter->Cfg()->CfgPhysicsPrm.bWrecks) return;
+	if (!vessel || !WreckSystemEnabled ()) return;
 	if (WreckIsObserver (vessel)) return;
 	if (vessel->KillPending()) return;
 	// GROUND-relative velocity (the atmosphere co-rotates with the body).
