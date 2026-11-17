@@ -74,12 +74,8 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	0.8,		// RelGasGiantFactor (gas-giant crushing radius factor)
 	0,			// ContactFrictionModel (0=traditional, 1=experimental)
 	0,			// ContactSolver (0=explicit, 1=implicit damping, 2=fully implicit)
-	0.0,		// ContactGearStiffness (0 = original gear stiffness)
-	0.0,		// ContactGearDamping (0 = original gear damping)
-	0.0,		// ContactGearFriction (0 = original gear friction)
-	0.0,		// ContactHullStiffness (0 = original hull stiffness)
-	0.0,		// ContactHullDamping (0 = original hull damping)
-	0.0			// ContactHullFriction (0 = original hull friction)
+	0.0,		// ContactGearDampingRatio (0 = original gear damping)
+	0.0			// ContactHullDampingRatio (0 = original hull damping)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {
