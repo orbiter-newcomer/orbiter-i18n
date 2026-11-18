@@ -101,6 +101,7 @@ uniform extern float3    kernel[KERNEL_SIZE];
 // -------------------------------------------------------------------------
 uniform extern float4x4  gW;			    // World matrix
 uniform extern float4x4  gLVP;			    // Light view projection
+uniform extern float4x4  gLVP2;			    // Scene shadow (G1) light view projection
 uniform extern float4x4  gVP;			    // Combined View and Projection matrix
 uniform extern float4x4  gGrpT;	            // Mesh group transformation matrix
 uniform extern float4    gAttennuate;       // (Mesh Constant Fog) Attennuation of fragment color
@@ -111,6 +112,8 @@ uniform extern float4    gAtmColor;         // Earth glow color
 uniform extern float4    gTexOff;			// Texture offsets used by surface manager
 uniform extern float4    gRadius;           // PlanetRad, AtmOuterLimit, CameraRad, CameraAlt
 uniform extern float4    gSHD;				// ShadowMap data
+uniform extern float4    gSHD2;				// Scene shadow (G1) data: texel world size, 1/size, 1/depth
+uniform extern float4    gSHDT2;			// Scene shadow (G1) coverage centre xyz + radius
 uniform extern float3    gCameraPos;        // Planet relative camera position, Unit vector
 uniform extern float3    gNorth;
 uniform extern float3    gEast;
@@ -165,6 +168,7 @@ uniform extern texture   gHeatMap;   		// Heat Map
 uniform extern texture   gTranslMap;		// Translucence Map
 uniform extern texture   gTransmMap;		// Transmittance Map
 uniform extern texture   gShadowMap;	    // Shadow Map
+uniform extern texture   gShadowMap2;	    // Unified scene shadow map (G1)
 uniform extern texture   gIrradianceMap;    // Irradiance Map
 
 // Legacy Atmosphere --------------------------------------------------------
@@ -265,6 +269,16 @@ sampler IrradS = sampler_state      // Irradiance map sampler
 sampler ShadowS = sampler_state      // Shadow map sampler
 {
 	Texture = <gShadowMap>;
+	MinFilter = POINT;
+	MagFilter = POINT;
+	MipFilter = POINT;
+	AddressU = CLAMP;
+	AddressV = CLAMP;
+};
+
+sampler ShadowS2 = sampler_state     // Unified scene shadow map (G1) sampler
+{
+	Texture = <gShadowMap2>;
 	MinFilter = POINT;
 	MagFilter = POINT;
 	MipFilter = POINT;

@@ -93,6 +93,16 @@ private:
 	mutable float *ggelev;		///< pointer to my elevation data in the great-grandparent
 
 	TileLabel *label;			///< surface labels associated with this tile
+
+	// Geometric LOD morph (CPU vertex interpolation)
+	float *morphLow;			///< low resolution (parent) vertex positions
+	float *morphHigh;			///< full detail vertex positions
+	double morphT0;				///< morph start time (0 = no morph)
+	double lastMorphEnd;		///< time the previous morph finished (cooldown against re-trigger "pulsation")
+	int morphHoldLevel;			///< deepest level a morph was already done for (sticky: small LOD flips must not re-morph)
+	void PrepareMorph ();
+	void UpdateMorph ();
+	bool IsMorphing () const { return morphT0 > 0.0; }
 };
 
 #endif // !__SURFMGR2_H

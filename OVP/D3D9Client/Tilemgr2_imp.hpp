@@ -19,7 +19,7 @@
 // -----------------------------------------------------------------------
 
 template<class TileType>
-QuadTreeNode<TileType> *TileManager2Base::FindNode (QuadTreeNode<TileType> root[2], int lvl, int ilng, int ilat)
+QuadTreeNode<TileType> *TileManager2Base::FindNode (QuadTreeNode<TileType> root[2], int lvl, int ilng, int ilat, bool bIncludeInvisible)
 {
 	int i, sublat, sublng, subidx;
 
@@ -32,7 +32,10 @@ QuadTreeNode<TileType> *TileManager2Base::FindNode (QuadTreeNode<TileType> root[
 	QuadTreeNode<TileType> *node = root + ((ilng >> lvl) & 1);
 	for (i = lvl-1; i >= 0; i--) {
 		if (node->Entry()->state == Tile::ForRender) return node;
-		if (node->Entry()->state == Tile::Invisible) return 0; // tile invisible
+		if (node->Entry()->state == Tile::Invisible) {
+			if (bIncludeInvisible) return node;	// use the invisible tile itself (do not descend)
+			return 0;							// tile invisible
+		}
 		sublat = (ilat >> i) & 1;
 		sublng = (ilng >> i) & 1;
 		subidx = sublat*2+sublng;
@@ -141,8 +144,10 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		return;
 	}
 
+	// LOD hysteresis: remember whether the tile is currently subdivided, so
+	// that the switch decision can use a dead band (avoids flickering)
+	bool wasActive = (tile->state == Tile::Active);
 	tile->state = Tile::ForRender;
-	tile->edgeok = false;
 
 	// check if patch is visible from camera position
 	VECTOR3 &cnt = tile->cnt;                   // tile centre in unit planet frame
@@ -154,8 +159,13 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (lvl == 0)
 			bstepdown = false;                // force render at lowest resolution
 		else {
-			if (scene->GetRenderPass() == RENDERPASS_MAINSCENE) node->DelChildren();
+			// Keep the subtree allocated while the tile is only outside the current
+			// view: rotating the camera must not release and reload the terrain.
 			tile->state = Tile::Invisible;
+			tile->edgeok = false;
+			if (scene->GetRenderPass() == RENDERPASS_MAINSCENE &&
+				(oapiGetSysTime() - tile->last_used) > 10.0)
+				node->DelChildren();
 			return;                           // no need to continue
 		}
 	}
@@ -169,6 +179,7 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 			// Keep a tile allocated as long as the tile can be seen from a current camera position.
 			// We have multiple views and only the active (current) view is checked here.
 			tile->state = Tile::Invisible;
+			tile->edgeok = false;	// neighbours may have changed: re-match edges when visible again
 			//return;  Cannot return here, must check the tile tatget level and release childs if needed.
 		}
 	}
@@ -202,8 +213,16 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 
 		// This doesn't work with narrow FOV, added max() to set low limit
 		double apr = tdist * fc * max(0.12, scene->GetTanAp()) * resolutionScale;
-		tgtres = (apr < 1e-6 ? maxlvl : max(0, min(maxlvl, (int)(bias - log(apr)*res_scale))));
-		bstepdown = (lvl < tgtres);
+		// continuous target level (integer level for the LOD selection, the
+		// continuous value for the hysteresis decision)
+		double tgtresF = (apr < 1e-6 ? (double)maxlvl : (bias - log(apr)*res_scale));
+		if (tgtresF < 0.0) tgtresF = 0.0;
+		if (tgtresF > (double)maxlvl) tgtresF = (double)maxlvl;
+		tgtres = (int)tgtresF;
+		// LOD hysteresis (dead band around the switch threshold)
+		const double hystUp = 0.55;		// switch up threshold offset
+		const double hystDown = 0.35;	// switch down threshold offset
+		bstepdown = wasActive ? (tgtresF > lvl + hystDown) : (tgtresF > lvl + hystUp);
 		tile->tgtscale = pow(2.0f, float(tgtres - lvl));
 	}
 
@@ -242,6 +261,16 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 				subcomplete = false;
 		}
 		if (subcomplete) {
+			bool wasForRender = (tile->state == Tile::ForRender);
+			// Prepare the geometric LOD morph ONLY on the actual switch (the tile was
+			// rendered before). Doing it every frame would restart the morph as soon
+			// as it finished, producing a periodic geometry "pulsation".
+			if (wasForRender && Config && Config->TerrainTransitionMs > 0) {
+				for (i = 0; i < 4; i++) {
+					TileType *mct = node->Child(i) ? node->Child(i)->Entry() : NULL;
+					if (mct) mct->PrepareMorph();
+				}
+			}
 			tile->state = Tile::Active;
 			for (i = 0; i < 4; i++)
 				ProcessNode(node->Child(i));
@@ -249,6 +278,36 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		}
 	}
 	else {
+		// ---- terrain LOD preloading (frontier prefetch) ---------------------
+		// Load the child tiles one or more levels ahead of the render requirement
+		// so that the LOD switch does not have to wait for the disk load. The
+		// tiles are only loaded and kept as cached (inactive) tiles here; the
+		// rendered representation itself is not changed. TileLoader distributes
+		// the load work over several frames.
+		int preloadLevels = (Config ? Config->TerrainPreloadLevels : 0);
+		// Preload also for off-screen (invisible) tiles so that turning the camera does
+		// not have to load the terrain in the new direction from scratch.
+		if (preloadLevels > 0 && tgtres >= 0 &&
+			(tile->state == Tile::ForRender || tile->state == Tile::Invisible) &&
+			lvl < tgtres + preloadLevels && bTileLoadThread)
+		{
+			for (int idx = 0; idx < 4; idx++) {
+				QuadTreeNode<TileType>* child = node->Child(idx);
+				if (!child) {
+					LoadChildNode(node, idx);
+				}
+				else if (child->Entry()->state == Tile::Invalid) {
+					loader->LoadTileAsync(child->Entry());
+				}
+			}
+		}
+
+		// start the fade-in for newly rendered leaves whose parent is fading out
+		if (Config && Config->TerrainTransitionMs > 0 && tile->fadeT0 == 0.0 && node->Parent()) {
+			TileType *pt = node->Parent()->Entry();
+			if (pt && IsFadeTile(pt)) tile->fadeT0 = oapiGetSysTime();
+		}
+
 		bool bDelete = true;
 		for (int idx = 0; idx < 4; idx++) {
 			QuadTreeNode<TileType>* child = node->Child(idx);
@@ -284,7 +343,9 @@ void TileManager2Base::RenderNode (QuadTreeNode<TileType> *node)
 	tile->last_used = oapiGetSysTime();
 
 	if (tile->state == Tile::ForRender) {
-		if (scene->GetRenderPass() == RENDERPASS_MAINSCENE) tile->MatchEdges ();
+		// Skip edge matching while a geometric morph is running: both rewrite the
+		// same vertex positions and would fight each other every frame (flicker).
+		if (scene->GetRenderPass() == RENDERPASS_MAINSCENE && !tile->IsMorphing()) tile->MatchEdges ();
 		tile->StepIn ();
 		tile->Render ();
 	} else if (tile->state == Tile::Active) {

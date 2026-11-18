@@ -16,6 +16,7 @@ struct PBRData
 	float4 tanW     : TEXCOORD3;	 // Handiness in .w
 #if SHDMAP > 0
 	float4 shdH     : TEXCOORD4;
+	float4 shdH2    : TEXCOORD5;
 #endif
 };
 
@@ -38,6 +39,7 @@ PBRData PBR_VS(MESH_VERTEX vrt)
 
 #if SHDMAP > 0
 	outVS.shdH = mul(float4(posW, 1.0f), gLVP);
+	outVS.shdH2 = mul(float4(posW + nrmW * (gSHD2[0] * 1.5f), 1.0f), gLVP2);
 #endif
 
     outVS.camW = -posW;
@@ -196,6 +198,8 @@ float4 PBR_PS(float4 sc : VPOS, PBRData frg) : COLOR
 
 #if SHDMAP > 0
 	cSun *= smoothstep(0, 0.72, ComputeShadow(frg.shdH, dLN, sc));
+	// scene shadow (G1): applied to all meshes (no bool branch: ps_3_0 bool register limit)
+	cSun *= ComputeSceneShadow(frg.shdH2, -frg.camW, dLN);
 #endif
 
 
@@ -385,6 +389,7 @@ struct FASTData
 	float3 nrmW     : TEXCOORD2;
 #if SHDMAP > 0
 	float4 shdH     : TEXCOORD4;
+	float4 shdH2    : TEXCOORD5;
 #endif
 };
 
@@ -407,6 +412,7 @@ FASTData FAST_VS(MESH_VERTEX vrt)
 
 #if SHDMAP > 0
 	outVS.shdH = mul(float4(posW, 1.0f), gLVP);
+	outVS.shdH2 = mul(float4(posW + nrmW * (gSHD2[0] * 1.5f), 1.0f), gLVP2);
 #endif
 
 	return outVS;
@@ -455,6 +461,8 @@ float4 FAST_PS(float4 sc : VPOS, FASTData frg) : COLOR
 
 #if SHDMAP > 0
 		float fShadow = smoothstep(0, 0.72, ComputeShadow(frg.shdH, dLN, sc));
+		// scene shadow (G1): applied to all meshes (no bool branch, see PBR_PS)
+		fShadow *= ComputeSceneShadow(frg.shdH2, -frg.camW, dLN);
 		dLN *= fShadow;
 #endif
 

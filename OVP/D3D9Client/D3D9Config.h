@@ -75,6 +75,21 @@ public:
 	int ShadowFilter;				///< Shadow Mapping Filter
 	int ShadowMapSize;				///< Shadow Map size
 	int TerrainShadowing;			///< Terrain Shadowing mode (0=None, 1=Stencil, 2=Projected, default=1)
+	int TerrainSelfShadow;			///< Unified scene shadow system: terrain self shadowing (G1) (0=off, 1=on, default=1)
+	int TerrainShadowSize;			///< Scene shadow map size (0 = same as ShadowMapSize, 512...4096)
+	int TerrainShadowRange;			///< Scene shadow coverage radius \[m\] (0 = automatic from camera altitude, 300...20000)
+	int TerrainShadowMaxAlt;		///< Disable scene shadows above this camera altitude \[m\] (100...100000, default=15000)
+	int TerrainShadowUpdate;		///< Scene shadow map update interval \[frames\] (1...8, default=1)
+	int TerrainShadowLegacy;		///< Keep legacy projected shadows when scene shadows are enabled (0=off, 1=on, default=0)
+	int TerrainShadowDebug;			///< Scene shadow debug visualisation (0=off, 1=coverage/shadows, default=0)
+	int TerrainShadowStrength;		///< Scene shadow strength (0...100, default=100)
+	int TerrainPreloadLevels;		///< Terrain LOD preloading: load tiles this many levels ahead of the render requirement (0=off, 1=default, 2)
+	int TerrainTransitionMs;		///< Terrain LOD cross fade transition time \[ms\] (0=off, 50...2000, default=0)
+	int TerrainElevMinLevel;		///< Terrain elevation loading: above TerrainElevSkipAlt do not read elevation files for tiles below this LOD level (0=off, default=10)
+	int TerrainElevSkipAlt;			///< Camera altitude \[m\] above which the elevation files are skipped for the low LOD tiles (0=always apply, default=50000)
+	int TerrainLoadThreads;			///< Terrain tile loader threads (1...4, default=2)
+	int TerrainLoadWaitFlying;		///< Pause the simulation when the terrain loader falls behind while flying (0=off, 1=on, default=1)
+	int TerrainLoadWaitPendingLimit;	///< Pending tile count that triggers the flying terrain load wait (4...64, default=12)
 	int CustomCamMode;				///< Custom Camera Mode
 	int TileMipmaps;				///< Enable surface tile mipmaps
 	int ShaderDebug;				///< Shader Debug Logging enable flag (0=disabled, 1=enabled)

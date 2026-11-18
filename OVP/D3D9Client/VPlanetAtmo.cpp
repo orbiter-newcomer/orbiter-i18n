@@ -32,6 +32,7 @@ PlanetShader::PlanetShader(LPDIRECT3DDEVICE9 pDev, const char* file, const char*
 	bLocals = false;
 	bMicrotex = false;
 	bShdMap = false;
+	bSceneShadow = false;
 	bDevtools = false;
 	bAtmosphere = true;
 	bWater = false;
@@ -42,6 +43,7 @@ PlanetShader::PlanetShader(LPDIRECT3DDEVICE9 pDev, const char* file, const char*
 	if (string(options).find("_LOCALLIGHTS") != string::npos) bLocals = true;
 	if (string(options).find("_MICROTEX") != string::npos) bMicrotex = true;
 	if (string(options).find("_SHDMAP") != string::npos) bShdMap = true;
+	if (string(options).find("_TERRSHD") != string::npos) bSceneShadow = true;
 	if (string(options).find("_DEVTOOLS") != string::npos) bDevtools = true;
 	if (string(options).find("_NO_ATMOSPHERE") != string::npos) bAtmosphere = false;
 	if (string(options).find("_WATER") != string::npos) bWater = true;
@@ -141,8 +143,15 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 
 	if (bLocals) flags += "_LOCALLIGHTS ";
 	if (Config->MicroMode) flags += "_MICROTEX ";
-	if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	// Terrain receivers use the unified scene shadow map (G1) only: the near field
+	// vessel self shadow map (G0) would need an additional sampler and the terrain
+	// pixel shader is already at the ps_3_0 sampler limit (16). The scene shadow
+	// map contains the vessels as casters, so the terrain still receives their
+	// shadows (with a somewhat coarser resolution than the near field map).
+	// if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
+	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";
 
 	pRender[PLT_MARS] = new PlanetShader(pDev, "Modules/D3D9Client/NewPlanet.hlsl", "TerrainVS", "TerrainPS", "Mars", (flags + blend).c_str());
@@ -161,8 +170,11 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 	if (bNightLights) flags += "_NIGHTLIGHTS ";
 	if (bLocals) flags += "_LOCALLIGHTS ";
 
-	if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	// terrain receivers: see the PLT_MARS comment above (G1 only, sampler limit)
+	// if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
+	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";
 
 	pRender[PLT_EARTH] = new PlanetShader(pDev, "Modules/D3D9Client/NewPlanet.hlsl", "TerrainVS", "TerrainPS", "Earth", (flags + blend).c_str());

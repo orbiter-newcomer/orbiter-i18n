@@ -1358,6 +1358,7 @@ private:
 	void ResetTerrainLoadWait ();
 	bool ShouldWaitForCameraLoad ();
 	void UpdateCameraTargetRecord ();
+	void TriggerTerrainLoadWait (const char *reason);
 
 	int    terrainWaitState;   // 0=idle, 1=warm-up, 2=waiting for terrain, 3=done
 	int    terrainWaitFrames;  // frames rendered since the simulation start
@@ -1373,6 +1374,9 @@ private:
 	bool   lastTargetValid;    // whether the previous-target record is valid
 	double terrainWaitCooldown; // earliest time for the next camera-triggered wait [s]
 	double lastSimTime;         // simulation time of the previous frame (new-sim detection)
+	double terrainWaitLastAlt;  // camera altitude at the previous frame (stall detection)
+	int    terrainWaitFlyingCount; // number of flying-time terrain waits in this session
+	DWORD  terrainStatsFrame;   // frame counter for the periodic terrain statistics log
 
 	DWORD loadd_x, loadd_y, loadd_w, loadd_h;
 	int LabelPos;

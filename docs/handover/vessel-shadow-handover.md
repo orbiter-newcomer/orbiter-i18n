@@ -263,3 +263,70 @@
 2. **改地形渲染时**：保留 `_SHDMAP` 接收链路与 `TerrainRender.inc`/`TerrainLoadWait.inc` 依赖的接口（§4），否则阴影/加载等待会一起坏。
 3. **地形自投影**（如果要做）：复用现有 shadow map 框架，重点解决"覆盖范围/分辨率/性能"和"bias"（§5.1）。
 4. **提交策略**：只本地提交，不推送（用户明确要求；见 §0.1）。
+
+---
+
+## 9. v2 变更：阴影与地形渲染绑定（2026-11-18，本次会话）
+
+### 9.1 用户需求
+> "能否把阴影跟地形渲染绑定：地形啥时候开始渲染，阴影就啥时候开始渲染；地形用啥参数和分辨率，阴影就用啥参数和分辨率。"
+
+### 9.2 已实现
+- **时机绑定**：G1 阴影在 `TileManager2<SurfTile>::Render` 内部生成（`ProcessNode` 之后、`RenderNode` 之前），与地形渲染**同帧同流程**；地形瓦片开始渲染时阴影贴图已就绪，`SurfTile::Render` 直接绑定采样（`Surfmgr2.cpp`）。
+- **覆盖范围绑定**：`Scene::RenderSceneShadow` 用新静态函数 `SceneShadowCoverageNode()` 遍历**当前地形渲染树**，用 `Scene::IsVisibleInCamera()` 收集**屏幕可见瓦片**，把它们的包围球合并成 AABB → 阴影覆盖中心/半径 = 可见地形范围（+500m 余量）。完全找不到可见瓦片时回退 `alt*6`（`TerrainRender.inc`）。
+  - 效果：地形渲染哪个范围、多大范围，阴影就覆盖同样范围（包括远距离低 LOD 瓦片）。
+- **分辨率绑定**：阴影贴图尺寸默认 = **back buffer 尺寸的 2 次幂**（1024–4096；2048x1152 视口 → 2048 贴图；`TerrainShadowSize > 0` 时用配置值）。`ShadowSystem::EnsureSize()` 每帧检查，窗口分辨率变化时自动重建贴图（`TerrainRender.inc`）。
+- **渲染状态恢复**（重要回归修复）：阴影 pass 结束 `RecallDefaultState()` + `TileManager2::Render` 中重新 `pShader->Setup()`。**没有这两步时地形会整片消失**（地形用阴影深度 shader 绘制 / 状态残留）。
+- **正常渲染阴影可见性**：阴影区域除直射光外，环境光也乘 `lerp(1, fShadow, 0.5)`（`NewPlanet.hlsl` TerrainPS），避免阴影只压直射光导致看不出来。
+
+### 9.3 配置（`install64\Orbiter\D3D9Client.cfg`）
+| 键 | 值 | 说明 |
+|---|---|---|
+| `TerrainSelfShadow` | 0/1 | 统一场景阴影（G1）总开关，默认 1 |
+| `TerrainShadowRange` | 0 / 300..60000 | 0=自动（=可见地形范围）；>0 固定覆盖半径 |
+| `TerrainShadowSize` | 0 / 512..4096 | 0=自动跟随视口分辨率；>0 固定贴图尺寸 |
+| `TerrainShadowDebug` | 0/1 | **1=调试可视化**：蓝=覆盖范围外，黄=覆盖内无遮挡，红=阴影（橙黄渐变=fShadow 中间值）；0=正常渲染 |
+| `TerrainShadowStrength` | 0..100 | 预留（未接线） |
+
+### 9.4 已验证
+- `TerrainShadowDebug=1` 调试图：黄色覆盖整个视野地形直到地平线，蓝色只在天空 → 覆盖范围与地形渲染一致。
+- 日志无 shader 编译错误、无崩溃；`ShadowSystem: scene shadow map 2048x2048`（视口 2048x1152）。
+- `TerrainShadowDebug=0` 正常渲染：地形正常显示，阴影进入光照计算。
+
+### 9.5 注意
+- 阴影分辨率跟随视口：**窗口越大越贵**（4096² 时 R32F+DS 约 112MB 显存）。性能不足可设 `TerrainShadowSize=2048`。
+- 覆盖范围跟随可见瓦片：**远视距场景覆盖会变大、分辨率相应下降**；远场更高质量需要 CSM/多级覆盖（后续可做）。
+- `TerrainShadowDebug` 是调试模式，正式运行应设 0。
+- 本次会话同时修复：D3D9Client.fx 的 ps_3_0 **bool 常量寄存器超限崩溃**（删除新增 `gShadowsEnabled2`/`gBaseBuilding` 分支，改用 `gSHDT2.w <= 0` 判断）；**地形消失**（shader 状态恢复）；覆盖范围从 6000m 扩到可见地形范围。
+---
+
+## 10. 地形加载策略 v2（2026-11-18，本会话）
+
+### 10.1 背景与需求
+用户要求：加载并行化 + 平滑过渡、提前一个层级加载并视野内统一、地形清晰度低于阈值时不加载高程、加载不过来时等待兜底。
+**平滑过渡/几何 morph 暂缓**（用户决定"最后来实现"）。
+
+### 10.2 已实现
+- **LOD 预加载（frontier prefetch）**：`Tilemgr2_imp.hpp` 的 `ProcessNode` 在判定"当前不需要细分"的渲染叶子上，若 `lvl < tgtres + Config->TerrainPreloadLevels`（默认 1）则提前加载 4 个子瓦片（`LoadChildNode`/`LoadTileAsync`），但**不切换渲染**；子瓦片加载后保持 Inactive 缓存，等渲染判据追上时零等待切换。阴影遍历（`SceneShadowCoverageNode`/`SceneShadowTerrainNode`）跳过 Inactive/非 ForRender 瓦片，避免把预取瓦片当渲染表示。
+- **LOD 滞回（解决抽搐）**：`ProcessNode` 用连续目标层级 `tgtresF` 判定，升级需 `tgtresF > lvl + 0.55`，已细分的瓦片需 `tgtresF > lvl + 0.35` 才保持；避免阈值附近每帧高低清切换（用户已验证抽搐消失）。
+- **高程 LOD 阈值（高空省加载）**：`SurfTile::LoadElevationData` 中，当相机高度 > `TerrainElevSkipAlt`（默认 50 km）且瓦片 `lvl < TerrainElevMinLevel`（默认 10）时**不读高程文件**，改走"祖先瓦片高程插值"路径（保留粗略地形，省掉高程文件 IO——瓦片加载的主要成本）；lvl 0 始终读文件以保留插值基准。
+- **飞行中加载兜底**：`TerrainLoadWait.inc` 在 state 3 每帧检测——相机快速下降（每帧高度下降 >2 m）且 pending 瓦片数 ≥ `TerrainLoadWaitPendingLimit`（默认 12）且冷却 10 s 后调用 `TriggerTerrainLoadWait("flying")` 暂停模拟等待加载（每会话最多 5 次）；复用已有等待状态机（含超时 `TerrainLoadWaitTimeout` 与最小等待 `TerrainLoadWaitMinMs`）。
+- **统计日志**：`DebugLvl > 1` 时每 300 帧输出 `TerrainStats: tiles= pending= queue= threads= alt=`（在 TerrainLoadWait.inc state 3）。
+- **加载线程数配置**：`TerrainLoadThreads`（1–4）。**默认 1（单线程）**：实测 Intel UHD 750 上多线程并发创建 D3D 纹理/网格会卡死（冒烟 hang）；多线程代码保留但慎用，真正并行需重构为"PreLoad（IO/解码）并行 + Load（D3D 资源）串行"。
+
+### 10.3 配置（install64\Orbiter\D3D9Client.cfg）
+| 键 | 默认 | 说明 |
+|---|---|---|
+| `TerrainPreloadLevels` | 1 | 提前加载级数（0=关闭，1=提前一级，2=两级） |
+| `TerrainTransitionMs` | 0 | 平滑过渡时长（0=关闭；交叉淡入代码保留但未调好，默认关） |
+| `TerrainElevMinLevel` | 10 | 高于 SkipAlt 时，LOD 低于此值的瓦片不读高程文件 |
+| `TerrainElevSkipAlt` | 50000 | 启用上述高程跳过的相机高度 [m] |
+| `TerrainLoadThreads` | 1 | 地形加载线程数（1–4；>1 有并发 D3D 卡死风险） |
+| `TerrainLoadWaitFlying` | 1 | 飞行中加载跟不上时暂停等待（0=关闭） |
+| `TerrainLoadWaitPendingLimit` | 12 | 触发飞行等待的 pending 瓦片阈值 |
+
+### 10.4 未完成 / 后续
+- **平滑过渡链路**（交叉淡入）：代码在 `Tilemgr2.cpp`（fadeTiles/RenderFadeTiles/UpdateFadeTiles）+ `SurfTile::Render`（TerrainTileFade alpha）+ `NewPlanet.hlsl`（`TerrainTileFade` 常量）里保留，默认关闭；之前测试出现父瓦片/子瓦片重影（深度问题，已给父瓦片 ZWrite off 但未调好），需要重新设计（或改几何 morph）。
+- **几何 morph**：未做（VERTEX_2TEX.e 已存顶点高程，可作为基础）。
+- **跨父节点的整屏批次统一**：当前批次粒度 = 父节点 4 子瓦片（原版行为）+ 预加载提前就绪；全局屏障未做。
+- **高程跳过的降高恢复**：高空跳过文件的瓦片在降回低空时不会自动重读音文件（保持粗略地形），直到被 LOD 细分替换；如需完全恢复需加"跳过标记 + 低空重建"。

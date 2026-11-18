@@ -49,6 +49,7 @@ Tile::Tile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
   last_used(0.0),
   state(Invalid),
   edgeok(false), owntex (true), ownoverlay(false)
+  , fadeAlpha(1.0f), fadeT0(0.0)
 {
 	double f = 1.0 / double(1<<lvl);
 	double x = PI * (0.5 - double(ilat+1) * f);
@@ -68,6 +69,7 @@ Tile::~Tile ()
 	D3D9Stats.TilesAllocated--;
 	mgr->TilesLoaded--;
 	state = Invalid;
+	if (mgr) mgr->RemoveFadeTile(this);
 	if (mesh) delete mesh;
 }
 
@@ -826,14 +828,24 @@ TileLoader::TileLoader (const oapi::D3D9Client *gclient)
 	// Initialize statics
 	nqueue = queue_in = queue_out = 0;
 	hLoadMutex = CreateMutex (0, FALSE, NULL);
-	hLoadThread = CreateThread (NULL, 32768, Load_ThreadProc, this, 0, &id);
+
+	// Terrain loading is parallelised over a small number of load threads. The
+	// D3D9 device is created with D3DCREATE_MULTITHREADED, so the texture / mesh
+	// creation in Tile::Load() is safe from several threads. The tile state
+	// machine and the queue are protected by hLoadMutex.
+	nLoadThreads = (Config ? Config->TerrainLoadThreads : 1);
+	if (nLoadThreads < 1) nLoadThreads = 1;
+	if (nLoadThreads > MAX_LOAD_THREADS) nLoadThreads = MAX_LOAD_THREADS;
+	for (int i = 0; i < MAX_LOAD_THREADS; i++)
+		hLoadThread[i] = (i < nLoadThreads) ? CreateThread (NULL, 32768, Load_ThreadProc, this, 0, &id) : NULL;
 }
 
 // -----------------------------------------------------------------------
 
 TileLoader::~TileLoader ()
 {
-	if (hLoadThread) LogErr("TileLoader() Not Yet ShutDown()");
+	for (int i = 0; i < MAX_LOAD_THREADS; i++)
+		if (hLoadThread[i]) LogErr("TileLoader() Not Yet ShutDown()");
 	TerminateLoadThread();
 	CloseHandle (hLoadMutex);
 	hLoadMutex = NULL;
@@ -843,7 +855,10 @@ TileLoader::~TileLoader ()
 
 bool TileLoader::ShutDown()
 {
-	if (hLoadThread) {
+	bool any = false;
+	for (int i = 0; i < MAX_LOAD_THREADS; i++)
+		if (hLoadThread[i]) { any = true; break; }
+	if (any) {
 		TerminateLoadThread();
 		return true;
 	}
@@ -854,14 +869,21 @@ bool TileLoader::ShutDown()
 
 void TileLoader::TerminateLoadThread()
 {
-	if (hLoadThread) {
-		// Signal thread to stop and wait for it to happen
+	bool any = false;
+	for (int i = 0; i < MAX_LOAD_THREADS; i++)
+		if (hLoadThread[i]) any = true;
+	if (any) {
+		// Signal the threads to stop and wait for them to finish
 		SetEvent(hStopThread);
-		WaitForSingleObject(hLoadThread, INFINITE); //4000);
+		for (int i = 0; i < MAX_LOAD_THREADS; i++) {
+			if (hLoadThread[i]) {
+				WaitForSingleObject(hLoadThread[i], INFINITE);
+				CloseHandle(hLoadThread[i]);
+				hLoadThread[i] = NULL;
+			}
+		}
 		// Clean up for next run
 		ResetEvent(hStopThread);
-		CloseHandle(hLoadThread);
-		hLoadThread = NULL;
 	}
 }
 
@@ -1224,3 +1246,82 @@ MATRIX4 TileManager2Base::WorldMatrix (int ilng, int nlng, int ilat, int nlat)
 	}
 }
 
+
+// =======================================================================
+// Terrain LOD cross fade support
+//
+// When a terrain tile is subdivided, the coarser parent tile stays rendered
+// (opaque) for a short transition period while the new tiles fade in. This
+// hides the LOD switch (texture resolution and geometry change) without any
+// waiting for the load: by the time the switch happens the child tiles have
+// already been preloaded (see ProcessNode).
+// =======================================================================
+
+void TileManager2Base::AddFadeTile (Tile *tile, double t0)
+{
+	if (!tile) return;
+	for (size_t i = 0; i < fadeTiles.size(); i++) {
+		if (fadeTiles[i].tile == tile) { fadeTiles[i].t0 = t0; return; }
+	}
+	FADETILE ft;
+	ft.tile = tile;
+	ft.t0   = t0;
+	fadeTiles.push_back(ft);
+}
+
+void TileManager2Base::RemoveFadeTile (Tile *tile)
+{
+	for (size_t i = 0; i < fadeTiles.size(); i++) {
+		if (fadeTiles[i].tile == tile) { fadeTiles.erase(fadeTiles.begin() + i); return; }
+	}
+}
+
+bool TileManager2Base::IsFadeTile (Tile *tile) const
+{
+	for (size_t i = 0; i < fadeTiles.size(); i++) {
+		if (fadeTiles[i].tile == tile) return true;
+	}
+	return false;
+}
+
+void TileManager2Base::RenderFadeTiles ()
+{
+	if (fadeTiles.empty()) return;
+	if (!Config) return;
+	if (Config->TerrainTransitionMs <= 0) return;
+
+	double dur = Config->TerrainTransitionMs * 0.001;
+	double now = oapiGetSysTime();
+
+	// The fading parent must not write depth: the new (finer) tiles are blended
+	// over it and their geometry differs slightly, so depth writing would make
+	// the parent show through where the new tiles end up behind it.
+	pDev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+
+	for (size_t i = 0; i < fadeTiles.size(); i++) {
+		Tile *tile = fadeTiles[i].tile;
+		if (!tile) continue;
+		if (tile->state != Tile::Active) continue;		// no longer a coarser parent
+		if (now - fadeTiles[i].t0 > dur) continue;		// transition finished
+		tile->fadeAlpha = 1.0f;							// the parent is rendered opaque
+		tile->fadeT0    = 0.0;
+		tile->Render();									// draw the coarser parent
+	}
+
+	pDev->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+}
+
+void TileManager2Base::UpdateFadeTiles ()
+{
+	if (fadeTiles.empty()) return;
+	double dur = (Config && Config->TerrainTransitionMs > 0) ? Config->TerrainTransitionMs * 0.001 : 0.0;
+	double now = oapiGetSysTime();
+	for (size_t i = 0; i < fadeTiles.size();) {
+		Tile *tile = fadeTiles[i].tile;
+		bool drop = (tile == NULL) || (tile->state != Tile::Active) ||
+			(dur <= 0.0) || (now - fadeTiles[i].t0 > dur);
+		if (drop) fadeTiles.erase(fadeTiles.begin() + i);
+		else i++;
+	}
+}
