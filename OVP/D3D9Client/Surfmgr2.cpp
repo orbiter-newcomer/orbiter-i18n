@@ -22,6 +22,7 @@
 #include "DebugControls.h"
 #include "gcCore.h"
 #include "D3D9Surface.h"
+#include "PerfStats.h"
 
 // =======================================================================
 extern void FilterElevationGraphics(OBJHANDLE hPlanet, int lvl, int ilat, int ilng, float *elev);
@@ -890,6 +891,9 @@ void SurfTile::Render ()
 	const Scene *scene = mgr->GetScene();
 	const D3D9Client *pClient = mgr->GetClient();
 
+	// Frame profiler: count the tile draw calls of the main scene
+	if (scene->GetRenderPass() == RENDERPASS_MAINSCENE) Perf_AddTerrainTile();
+
 	static const double rad0 = sqrt(2.0)*PI05;
 	double sdist, rad;
 	bool has_specular = false;
@@ -1565,6 +1569,10 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	int i;
 	class Scene *scene = GetClient()->GetScene();
 
+	// Frame profiler: only the main scene pass is profiled (the same tile manager
+	// is also rendered for the env map / irradiance probes).
+	const bool bPerf = scene && (scene->GetRenderPass() == RENDERPASS_MAINSCENE);
+
 	// adjust scaling parameters (can only be done if no z-buffering is in use)
 	if (!use_zbuf) {
 		double R = obj_size;
@@ -1657,9 +1665,11 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	// ------------------------------------------------------------------
 	// TODO: render full sphere for levels < 4
 
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_LOCK);
 	loader->WaitForMutex();
 
 	// update the tree
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_PROCESS);
 	for (i = 0; i < 2; i++)
 		ProcessNode (tiletree+i);
 
@@ -1671,6 +1681,7 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	// is rendered, so the terrain shader can sample it in the same frame.
 	// Implementation: TerrainRender.inc
 	// ------------------------------------------------------------------
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_SHADOW);
 	scene->RenderSceneShadow(vp);
 
 	// The scene shadow pass renders with its own shaders and changes the device
@@ -1688,12 +1699,14 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 
 	// Terrain LOD cross fade: draw the fading coarser parent tiles first (they are
 	// the background for the new tiles which fade in), then the current tree.
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_DRAW);
 	RenderFadeTiles();
 
 	// render the tree
 	for (i = 0; i < 2; i++)
 		RenderNode (tiletree+i);
 
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_TAIL);
 	UpdateFadeTiles();
 
 	loader->ReleaseMutex();

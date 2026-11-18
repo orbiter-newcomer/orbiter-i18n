@@ -42,6 +42,7 @@
 #include "CollisionCore.h"
 #include "elevmgr.h"
 #include "ContactModel.inc"   // contact force solver (project extension)
+#include "PerfDiag.h"         // TEMPORARY performance diagnostics (see PerfDiag.h)
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -3924,6 +3925,7 @@ double Vessel::GetGravityGradientDamping () const
 
 void Vessel::UpdateBodyForces ()
 {
+	double tBody = PerfDiag::Now();
 	Lift = Drag = SideForce = 0.0;
 
 	if (m_thruster.size()) UpdateThrustForces ();
@@ -3933,6 +3935,7 @@ void Vessel::UpdateBodyForces ()
 		if (rpressure) UpdateRadiationForces ();
 	}
 	bForceActive |= (Flin_add.x || Flin_add.y || Flin_add.z || Amom_add.x || Amom_add.y || Amom_add.z);
+	PerfDiag::Add(PerfDiag::g.vesBodyFor, tBody);
 }
 
 // =======================================================================
@@ -4364,6 +4367,8 @@ void Vessel::UpdateAerodynamicForces_OLD ()
 
 bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, double tfrac, double dt, bool allow_groundcontact) const
 {
+	PerfDiag::Scope _perfSurf(PerfDiag::g.vesSurf);
+	PerfDiag::g.surfCalls += 1.0;
 	nforcevec = 0; // should move higher up
 	for (int k = 0; k < nforcevec_col && nforcevec < forcevecbuf; k++) {
 		forcevec[nforcevec] = col_forcevec[k];
@@ -7296,19 +7301,26 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 }
 void Vessel::Update (bool force)
 {
-	// Relativity extension: the player vessel kept as a central wreck piece
-	// is frozen in place so the camera stays on the debris cloud.
-	// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
-	if (RelativityNumericalGuard (this)) return;
+	{
+		// diagnostic: relativity protection guards (PERFDIAG)
+		PerfDiag::Scope _perfGuard(PerfDiag::g.updGuard);
+		// Relativity extension: the player vessel kept as a central wreck piece
+		// is frozen in place so the camera stays on the debris cloud.
+		// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
+		if (RelativityNumericalGuard (this)) return;
 
-	// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
-	if (RelativityStrongFieldGuard (this)) return;
+		// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
+		if (RelativityStrongFieldGuard (this)) return;
 
-	// Relativistic FTL velocity protection (implementation in RelativityPhysics.inc)
-	if (RelativityFTLGuard (this, *s0, s1)) return;
+		// Relativistic FTL velocity protection (implementation in RelativityPhysics.inc)
+		if (RelativityFTLGuard (this, *s0, s1)) return;
+	}
 
 	// Relativity extension: atmospheric dynamic-pressure burn-up check
-	WreckAtmosphericBurnup (this);
+	{
+		PerfDiag::Scope _perfBurn(PerfDiag::g.updBurn);
+		WreckAtmosphericBurnup (this);
+	}
 
 	// if the vessel is part of a composite structure or passively attached
 	// to a parent vessel, its state is updated by the composite or parent
@@ -7317,6 +7329,7 @@ void Vessel::Update (bool force)
 
 	int i;
 
+	double perfStateT = PerfDiag::Now();
 	if (fstatus == FLIGHTSTATUS_FREEFLIGHT) {
 
 		if (!supervessel) {
@@ -7365,15 +7378,19 @@ void Vessel::Update (bool force)
 
 	} else { // should not get here
 	}
+	PerfDiag::Add(PerfDiag::g.updState, perfStateT);
 
 	// update surface parameters
+	double perfSurfT = PerfDiag::Now();
 	if (proxybody && fstatus != FLIGHTSTATUS_LANDED)
 		UpdateSurfParams();
+	PerfDiag::Add(PerfDiag::g.updSurfPrm, perfSurfT);
 
 	nforcevec_col = 0;
 	if (td.SimT1 >= m_colDebug.showTime)
 		m_colDebug.active = false;
 
+	double perfBaseT = PerfDiag::Now();
 	if (proxyplanet && fstatus != FLIGHTSTATUS_LANDED && !bFRplayback) {
 
 		// base-to-vessel mesh collision
@@ -7381,6 +7398,9 @@ void Vessel::Update (bool force)
 			CheckBaseCollisions((Planet*)proxyplanet);
 		}
 	}
+	PerfDiag::Add(PerfDiag::g.updBaseCol, perfBaseT);
+
+	double perfRestT = PerfDiag::Now();
 
 	if (proxyplanet)
 		m_hullCachePValid = false; // reset cache for this frame
@@ -7546,6 +7566,8 @@ void Vessel::Update (bool force)
 
 	// Now update all passively attached child vessels
 	UpdateAttachments();
+
+	PerfDiag::Add(PerfDiag::g.updRest, perfRestT);
 }
 
 void Vessel::UpdatePassive ()
@@ -7600,8 +7622,11 @@ void Vessel::PostUpdate ()
 	// Called after all vessels have been updated, but before
 	// module clbkPostStep is called for the vessel
 
+	double perfPostT = PerfDiag::Now();
 	VesselBase::PostUpdate ();
+	PerfDiag::Add(PerfDiag::g.postBase, perfPostT);
 
+	double perfCollT = PerfDiag::Now();
 	if (proxyplanet && !bFRplayback) {
 		// Vessel-to-vessel collisions
 		if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bVesselCollision) {
@@ -7612,9 +7637,11 @@ void Vessel::PostUpdate ()
 			}
 		}
 	}
+	PerfDiag::Add(PerfDiag::g.postColl, perfCollT);
 
 	DWORD j, k;
 
+	double perfDockT = PerfDiag::Now();
 	if (bFRplayback)
 		FRecorder_PlayEvent();
 
@@ -7687,8 +7714,11 @@ void Vessel::PostUpdate ()
 	}
 
 	// flight recorder
+	double perfRecT = PerfDiag::Now();
 	if (bFRrecord) FRecorder_Save();
 	//else if (bFRplayback) FRecorder_Play();
+	PerfDiag::Add(PerfDiag::g.postRec, perfRecT);
+	PerfDiag::Add(PerfDiag::g.postRest, perfDockT);
 }
 
 bool Vessel::CheckSurfaceContact () const

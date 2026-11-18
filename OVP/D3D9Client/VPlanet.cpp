@@ -36,6 +36,7 @@
 #include "VectorHelpers.h"
 #include "OapiExtension.h"
 #include "IProcess.h"
+#include "PerfStats.h"
 #include <filesystem>
 
 using namespace oapi;
@@ -942,6 +943,10 @@ bool vPlanet::Render(LPDIRECT3DDEVICE9 dev)
 
 	pCurrentVisual = this;
 
+	// Frame profiler (PerfStats.h): planet rendering stages, main scene only
+	const bool bPerf = (scn->GetRenderPass() == RENDERPASS_MAINSCENE);
+	if (bPerf) Perf_Mark(PERF_STAGE_PLANET_PRE);
+
 	if (renderpix) { // render as 2x2 pixel block
 		RenderDot (dev);
 	}
@@ -980,7 +985,9 @@ bool vPlanet::Render(LPDIRECT3DDEVICE9 dev)
 
 		SetupEclipse();
 
+		if (bPerf) Perf_Mark(PERF_STAGE_ATMO);
 		if (scn->GetRenderPass() == RENDERPASS_MAINSCENE) UpdateScatter();
+		if (bPerf) Perf_Mark(PERF_STAGE_PLANET_PRE);
 
 		if (ringmgr) {
 			ringmgr->Render(dev, mWorld, false);
@@ -1176,6 +1183,10 @@ void vPlanet::RenderSphere (LPDIRECT3DDEVICE9 dev)
 		surfmgr->Render (dev, mWorld, dist_scale, patchres, 0.0, prm.bFog); // surface
 		if (prm.bFog) D3D9Effect::FX->SetFloat(D3D9Effect::eFogDensity, fogfactor);
 	}
+
+	// Frame profiler: the surface/terrain rendering of the planet is finished;
+	// the following base/cloud/shadow work belongs to the planet tail stage.
+	if (scn->GetRenderPass() == RENDERPASS_MAINSCENE) Perf_Mark(PERF_STAGE_PLANET_POST);
 
 	// The unified scene shadow map (G1) has been regenerated inside the terrain
 	// rendering (TerrainRender.inc). Hand the fresh parameters to the scene

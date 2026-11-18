@@ -20,6 +20,7 @@
 #include "Element.h"
 #include "Astro.h"
 #include "Log.h"
+#include "PerfDiag.h"	// TEMPORARY performance diagnostics (see PerfDiag.h)
 
 using namespace std;
 
@@ -185,7 +186,9 @@ void RigidBody::SetPropagator (int &plevel, int &nstep) const
 
 void RigidBody::Update (bool force)
 {
+	double rbT0 = PerfDiag::Now();
 	if (bDynamicPosVel) {
+		PerfDiag::g.dynVessels++;		// diagnostic: dynamically propagated bodies per frame
 
 		// Update velocity and position according to
 		// graviational field.
@@ -251,12 +254,18 @@ void RigidBody::Update (bool force)
 				SetPropagator (PropLevel, nPropSubsteps);
 				double dt = td.SimDT/nPropSubsteps;
 
+				// diagnostic: count propagator substeps
+				PerfDiag::g.substeps += nPropSubsteps;
+				if (nPropSubsteps > PerfDiag::g.maxSubsteps) PerfDiag::g.maxSubsteps = nPropSubsteps;
+
 				// Perform step propagation with sub-steps
 				s1->Set (*s0);
 				acc = acc0, arot = arot0;
 				rpos_add = rpos_add0, rvel_add = rvel_add0;
 				for (i = 0; i < nPropSubsteps; i++) {
+					double tp = PerfDiag::Now();
 					((*this).*(PropMode[PropLevel].propagator)) (dt, nPropSubsteps, i);
+					PerfDiag::Add(PerfDiag::g.rbProp, tp);
 					s1->pos = rpos_base + rpos_add;
 					s1->vel = rvel_base + rvel_add;
 					s1->R.Set (s1->Q);
@@ -303,6 +312,8 @@ void RigidBody::Update (bool force)
 		cpos = s1->pos - cbody->s1->pos;
 		cvel = s1->vel - cbody->s1->vel;
 	}
+
+	PerfDiag::Add(PerfDiag::g.rbUpdate, rbT0);
 }
 
 // =======================================================================
@@ -343,9 +354,11 @@ void RigidBody::GetIntermediateMoments (Vector &acc, Vector &tau,
 	const StateVectors &state, double tfrac, double dt)
 {
 	// linear acceleration due to graviational field
+	double tg = PerfDiag::Now();
 	acc = g_psys->Gacc_intermediate (state.pos, tfrac, this, &gfielddata,
 		g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity ? &state.vel : NULL,
 		g_pOrbiter->Cfg()->CfgPhysicsPrm.RelativityGravityMethod);
+	PerfDiag::Add(PerfDiag::g.rbGrav, tg);
 
 	// angular acceleration due to gravity gradient torque
 	if (!cbody || bIgnoreGravTorque) {

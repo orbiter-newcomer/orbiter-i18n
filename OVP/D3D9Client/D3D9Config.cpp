@@ -49,6 +49,7 @@ void D3D9Config::Reset ()
 	Anisotrophy			= 4;
 	SceneAntialias		= 4;
 	DebugLvl			= 1;
+	PerfLog				= 0;
 	VCNearPlane			= 0.1;
 	LightConfig			= 2;
 	NearClipPlane		= 0;
@@ -211,6 +212,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_float (hFile, (char*)"StereoSeparation", d))		Separation = max(10.0, min(100.0, d));
 	if (oapiReadItem_float (hFile, (char*)"StereoConvergence", d))		Convergence = max(0.05, min(1.0, d));
 	if (oapiReadItem_int   (hFile, (char*)"DebugLvl", i))				DebugLvl = i;
+	if (oapiReadItem_int   (hFile, (char*)"PerfLog", i))				PerfLog = max(0, min(3, i));
 	if (oapiReadItem_float (hFile, (char*)"VCNearPlane", d))			VCNearPlane = max(-1.0, min(1.0, d));
 	if (oapiReadItem_int   (hFile, (char*)"LightCongiguration", i))	LightConfig = max(min(10, i), 0); // Old typo stored?
 	if (oapiReadItem_int   (hFile, (char*)"LightConfiguration", i))	LightConfig = max(min(10, i), 0); // ...this will override it anyhow
@@ -325,6 +327,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_float (hFile, (char*)"StereoSeparation", Separation);
 	oapiWriteItem_float (hFile, (char*)"StereoConvergence", Convergence);
 	oapiWriteItem_int   (hFile, (char*)"DebugLvl", DebugLvl);
+	oapiWriteItem_int   (hFile, (char*)"PerfLog", PerfLog);
 	oapiWriteItem_float (hFile, (char*)"VCNearPlane", VCNearPlane);
 	oapiWriteItem_int   (hFile, (char*)"LightConfiguration", LightConfig);
 	oapiWriteItem_int   (hFile, (char*)"DisableDrvMgm", DisableDriverManagement);

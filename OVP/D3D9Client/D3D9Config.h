@@ -63,6 +63,7 @@ public:
 	double OrbitalShadowMult;		///< Multiplier for cloud shadows for Orbital flight
 	int EnableLimiter;				///< Enable frame-rate limiter
 	int DebugLvl;					///< Level of debug output 'verbosity'. Higher values create more detailed output (0...4, default=1)
+	int PerfLog;					///< Frame profiler: 0=off, 1=CPU stage timings, 2=+GPU timings (logged to Orbiter.log every 2 s)
 	int LabelDisplayFlags;			///< Label display option flags. For example the "Record" and "Replay" labels (0=all disabled, 1=show record label, 2=show replay label, 3=show both \[default\])
 	int LightConfig;				///< Light emitter configuration
 	int NVPerfHUD;					///< ??? (0,1)

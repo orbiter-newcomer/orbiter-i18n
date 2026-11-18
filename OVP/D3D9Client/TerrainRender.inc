@@ -762,6 +762,9 @@ void Scene::RenderSceneShadow(vPlanet *vp)
 		}
 	}
 
+	// Frame profiler: number of terrain tiles rendered into the scene shadow map
+	Perf_ShadowTiles(nTiles);
+
 	PopPass();
 	gc->PopRenderTargets();
 
