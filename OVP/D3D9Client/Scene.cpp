@@ -2188,9 +2188,7 @@ void Scene::RenderMainScene()
 
 	if (pSketch) {
 		gc->MakeRenderProcCall(pSketch, RENDERPROC_HUD_1ST, NULL, NULL);
-		// Relativistic collision debris + wreck message (drawn with the same
-		// sketchpad; a second GetPooledSketchpad call can return NULL)
-		RenderWreckDebris (pSketch);
+		// wreck message (relativistic collision debris 2D drawing was removed)
 		RenderWreckMessage (pSketch);
 
 		pSketch->EndDrawing(); // SKETCHPAD_2D_OVERLAY

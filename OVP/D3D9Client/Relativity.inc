@@ -1123,61 +1123,9 @@ void Scene::RenderLensedBodyMarkers (oapi::Sketchpad *pSkp, vObject *vo, const c
 	RenderObjectMarker (pSkp, appPos, lensLabel, std::string(), 0, scale);
 }
 // -----------------------------------------------------------------------------
-// Relativistic collision debris: black polyhedra rendered as screen-space
-// filled polygons on the 2D overlay sketchpad. The debris state (position,
-// rotation, size, shape) is maintained by the main program and retrieved via
-// the extension API (oapiGetWreckDebrisCount/Get).
-// -----------------------------------------------------------------------------
-void Scene::RenderWreckDebris (oapi::Sketchpad *pSkp)
-{
-	if (!pSkp) return;
-	int n = oapiGetWreckDebrisCount ();
-	if (n <= 0) return;
-
-	static oapi::Brush *s_brush = 0;
-	static oapi::Pen   *s_pen   = 0;
-	if (!s_pen)   s_pen   = gc->clbkCreatePen (1, 0, 0x1070FF);   // orange (BGR)
-	if (!s_brush) s_brush = gc->clbkCreateBrush (0x1070FF);
-	pSkp->SetPen (s_pen);
-	pSkp->SetBrush (s_brush);
-
-	// manual projection using the camera basis (the D3DX projection matrix is
-	// not reliable in the 2D overlay pass)
-	VECTOR3 cam;
-	oapiCameraGlobalPos (&cam);
-	MATRIX3 gm;
-	oapiCameraRotationMatrix (&gm);
-	const double ap = oapiCameraAperture ();
-	const double W = (double)ViewW (), H = (double)ViewH ();
-	const double f = 1.0 / tan (ap);
-
-	for (int i = 0; i < n; i++) {
-		VECTOR3 pos, axis;
-		double angle, size;
-		int shape;
-		if (!oapiGetWreckDebris (i, &pos, &axis, &angle, &size, &shape)) continue;
-		VECTOR3 d = pos - cam;
-		double dist = sqrt (d.x*d.x + d.y*d.y + d.z*d.z);
-		if (dist < 1.0 || dist > 5e6) continue;
-		// world -> camera coordinates (third row points backwards)
-		double cx = gm.m11*d.x + gm.m12*d.y + gm.m13*d.z;
-		double cy = gm.m21*d.x + gm.m22*d.y + gm.m23*d.z;
-		double cz = -(gm.m31*d.x + gm.m32*d.y + gm.m33*d.z);
-		if (cz <= 0.01) continue;
-		double sx = W*0.5 + (cx/cz) * (W*0.5) * f;
-		double sy = H*0.5 - (cy/cz) * (H*0.5) * f;
-		if (sx < 0 || sx > W || sy < 0 || sy > H) continue;
-		double rad = f * (size / (2.0*dist)) * (H * 0.5);
-		if (rad < 2.0) rad = 2.0;
-		if (rad > H) rad = H;
-		int r = (int)rad;
-		pSkp->Rectangle ((int)sx - r, (int)sy - r, (int)sx + r, (int)sy + r);
-	}
-}
-
-// -----------------------------------------------------------------------------
-// Relativistic wreck message: large red text shown for a few seconds when the
-// player vessel is destroyed (message text comes from the main program).
+// Relativistic collision debris 2D overlay drawing REMOVED (the old screen-space
+// debris rectangles are gone; the debris visuals use the standard vessel path).
+// The wreck message (text shown when the player vessel is destroyed) is kept.
 // -----------------------------------------------------------------------------
 void Scene::RenderWreckMessage (oapi::Sketchpad *pSkp)
 {
@@ -1209,7 +1157,6 @@ void Scene::RenderWreckMessage (oapi::Sketchpad *pSkp)
 		pSkp->Text (12, 40, msg, (int)strlen (msg));   // the message already starts with the ship name
 	}
 }
-
 
 // -----------------------------------------------------------------------------
 #endif // REL_INC_SCENE
