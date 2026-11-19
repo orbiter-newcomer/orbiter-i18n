@@ -921,6 +921,8 @@ bool vPlanet::Render(LPDIRECT3DDEVICE9 dev)
 	_TRACE;
 	if (!active) return false;
 
+	const Scene::SHADOWMAPPARAM *shd = scn->GetSMapData();
+
 	if (DebugControls::IsActive()) {
 		// DWORD flags  = *(DWORD*)gc->GetConfigParam(CFGPRM_GETDEBUGFLAGS);
 		DWORD displ  = *(DWORD*)gc->GetConfigParam(CFGPRM_GETDISPLAYMODE);
@@ -959,10 +961,17 @@ bool vPlanet::Render(LPDIRECT3DDEVICE9 dev)
 		HR(D3D9Effect::FX->SetBool(D3D9Effect::eEnvMapEnable, false));
 		HR(D3D9Effect::FX->SetBool(D3D9Effect::eShadowToggle, false));
 
-		// Shadow group parameters for the base surfaces / base buildings /
-		// vessels (near field G0 and unified scene shadow G1). Implementation
-		// of the parameter setup and of the G1 map: TerrainRender.inc
-		scn->UpdateEffectShadows(this);
+		if (shd->pShadowMap && (scn->GetRenderPass() == RENDERPASS_MAINSCENE) && (Config->TerrainShadowing == 2)) {
+			if (scn->GetCameraAltitude() < 10e3 || IsMesh()) {
+				float s = float(shd->size);
+				float is = 1.0f / s;
+				float qw = 1.0f / float(Config->ShadowMapSize);
+				HR(D3D9Effect::FX->SetMatrix(D3D9Effect::eLVP, &shd->mViewProj));
+				HR(D3D9Effect::FX->SetTexture(D3D9Effect::eShadowMap, shd->pShadowMap));
+				HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHD, ptr(D3DXVECTOR4(s, is, qw, 0))));
+				HR(D3D9Effect::FX->SetBool(D3D9Effect::eShadowToggle, true));
+			}
+		}
 
 		DWORD amb = prm.amb0col;
 		float fogfactor;
@@ -1176,12 +1185,6 @@ void vPlanet::RenderSphere (LPDIRECT3DDEVICE9 dev)
 		surfmgr->Render (dev, mWorld, dist_scale, patchres, 0.0, prm.bFog); // surface
 		if (prm.bFog) D3D9Effect::FX->SetFloat(D3D9Effect::eFogDensity, fogfactor);
 	}
-
-	// The unified scene shadow map (G1) has been regenerated inside the terrain
-	// rendering (TerrainRender.inc). Hand the fresh parameters to the scene
-	// shadow receivers (base surfaces, base buildings, vessels) again, because
-	// the vessel shadow map pass of the G1 rendering has reset them.
-	scn->UpdateEffectShadows(this);
 
 	if (nbase) {
 		RenderBaseSurfaces (dev);                     // base surfaces

@@ -496,11 +496,6 @@ void vBase::RenderGroundShadow(LPDIRECT3DDEVICE9 dev, float alpha)
 	if (!IsVisible()) return;
 	if (Config->TerrainShadowing == 0) return;
 
-	// Unified scene shadow system: the base structures are rendered into the
-	// scene shadow map (G1) instead of the legacy projected ground shadow.
-	// The legacy path is kept as a fallback for the shadow map disabled case.
-	if (Config->TerrainSelfShadow != 0 && Config->ShadowMapMode != 0 && Config->TerrainShadowLegacy == 0) return;
-
 	pCurrentVisual = this;
 
 	VECTOR3 sd;
@@ -581,10 +576,3 @@ void vBase::RenderGroundShadow(LPDIRECT3DDEVICE9 dev, float alpha)
 	}
 }
 
-
-// ===========================================================================================
-// Unified scene shadow system (G1): base structure casters. Implementation is kept
-// in the shared TerrainRender.inc feature hook file (no additional source file).
-// ===========================================================================================
-#define TERRAINRENDER_BASE
-#include "TerrainRender.inc"

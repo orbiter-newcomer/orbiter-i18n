@@ -18,7 +18,6 @@
 #include "DebugControls.h"
 #include "D3D9Util.h"
 #include "MaterialMgr.h"
-#define TERRAINRENDER_VESSEL
 #include "TerrainRender.inc"   // feature hook: terrain/shadow rendering (projected ground shadow)
 
 using namespace oapi;

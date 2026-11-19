@@ -55,9 +55,6 @@ void D3D9Client::ResetTerrainLoadWait ()
 	focusLast           = 0;
 	camModeLast         = -1;
 	lastTargetValid     = false;
-	terrainWaitLastAlt    = 0.0;
-	terrainWaitFlyingCount = 0;
-	terrainStatsFrame     = 0;
 	lastTargetRefBody   = 0;
 }
 
@@ -108,47 +105,6 @@ void D3D9Client::UpdateTerrainLoadWait ()
 					terrainWaitFrames = 0;
 					terrainWaitPaused = false;
 					terrainWaitStable = 0;
-				}
-			}
-
-			// ---- terrain load stall detection while flying ---------------------
-			// On fast descents the tile loader can fall behind. Instead of showing
-			// missing or very coarse terrain for a while, briefly pause the
-			// simulation and let the loader catch up (rendering continues while
-			// paused, so the tiles keep loading).
-			if (Config->TerrainLoadWaitFlying != 0 && scene && !oapiGetPause() &&
-				terrainWaitFlyingCount < 3)
-			{
-				vPlanet *vp = scene->GetCameraProxyVisual();
-				if (vp && vp->SurfMgr2()) {
-					int pending = TerrainLoadPendingTileCount(vp->SurfMgr2());
-					double alt = scene->GetCameraAltitude();
-					if (terrainWaitLastAlt <= 0.0) {
-						terrainWaitLastAlt = alt;
-					}
-					else {
-						double drop = terrainWaitLastAlt - alt;
-						terrainWaitLastAlt = alt;
-						if (pending >= Config->TerrainLoadWaitPendingLimit && drop > 20.0 &&
-							oapiGetSysTime() - terrainWaitCooldown > 30.0)
-						{
-							oapiWriteLogV("TerrainLoadWait: flying stall (pending=%d, drop=%.0f m) - waiting for terrain",
-								pending, drop);
-							TriggerTerrainLoadWait("flying");
-							return;
-						}
-					}
-				}
-			}
-
-			// ---- periodic terrain load statistics -------------------------------
-			if (Config->DebugLvl > 1 && scene && ((++terrainStatsFrame) % 300) == 0) {
-				vPlanet *vp = scene->GetCameraProxyVisual();
-				if (vp && vp->SurfMgr2()) {
-					int pending = TerrainLoadPendingTileCount(vp->SurfMgr2());
-					oapiWriteLogV("TerrainStats: tiles=%d pending=%d queue=%d threads=%d alt=%.0f",
-						vp->SurfMgr2()->TilesLoaded, pending, TileLoader::GetQueueSize(),
-						Config->TerrainLoadThreads, scene->GetCameraAltitude());
 				}
 			}
 			return;
@@ -305,25 +261,4 @@ void D3D9Client::DrawTerrainLoadWaitLabel ()
 	pDevice->EndScene();
 }
 
-
-// ==============================================================
-// Explicit terrain load wait trigger (used by the flying stall detection)
-// ==============================================================
-
-void D3D9Client::TriggerTerrainLoadWait (const char *reason)
-{
-	if (!scene || !bRunning) return;
-	if (terrainWaitState == 1 || terrainWaitState == 2) return;	// already waiting
-	if (oapiGetPause()) return;
-
-	// Restart the state machine: the next frame pauses the simulation and
-	// waits until the pending terrain tiles have been loaded (same logic as the
-	// startup wait, including the timeout and the minimum wait duration).
-	terrainWaitState    = 0;
-	terrainWaitFrames   = 0;
-	terrainWaitPaused   = false;
-	terrainWaitStable   = 0;
-	terrainWaitFlyingCount++;
-	oapiWriteLogV("TerrainLoadWait: triggered (%s)", reason ? reason : "unknown");
-}
 #endif // D3D9CLIENT_TERRAINLOADWAIT_INC

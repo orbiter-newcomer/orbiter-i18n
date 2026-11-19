@@ -57,8 +57,6 @@ public:
 	bool RenderSurface (LPDIRECT3DDEVICE9 dev);
 	bool RenderStructures (LPDIRECT3DDEVICE9 dev);
 	void RenderGroundShadow (LPDIRECT3DDEVICE9 dev, float alpha);
-	// feature hook: render the base structures into the unified scene shadow map (G1)
-	void RenderShadowCasters (D3DXMATRIX mViewProj);
 
 	const SurftileSpec *GetTileDesc() const { return tspec; }
 

@@ -48,9 +48,6 @@ struct TileVS
 #if defined(_SHDMAP)
 	float4 shdH     : TEXCOORD3;
 #endif
-#if defined(_TERRSHD)
-	float4 shdH2    : TEXCOORD4;  // unified scene shadow (G1) coordinates
-#endif
 };
 
 struct CldVS
@@ -78,7 +75,6 @@ struct FlowControlPS
 	BOOL bBelowClouds;			// Camera is below cloud layer
 	BOOL bOverlay;				// Overlay on/off	
 	BOOL bShadows;				// Shadow Map on/off
-	BOOL bShadowsT;				// Unified scene shadow map (G1) on/off
 	BOOL bLocals;				// Local Lights on/off
 	BOOL bMicroNormals;			// Micro texture has normals
 	BOOL bCloudShd;				// Cloud shadow textures valid and enabled
@@ -113,18 +109,9 @@ struct PerObjectParams
 	float	 fAlpha;
 	float	 fBeta;
 	float	 fTgtScale;
-	float	 fPad0;				// alignment padding (keeps mLVP2 16-byte aligned)
-	float4x4 mLVP2;				// scene shadow (G1) light-view-projection
-	float4	 vSHD2;				// G1: texel world size, 1/size, 1/depth, unused
-	float4	 vSHDT;				// G1: coverage centre xyz, coverage radius
 };
 
 uniform extern PerObjectParams Prm;
-
-// Terrain LOD cross fade: transition alpha of the currently rendered tile
-uniform extern float TerrainTileFade;
-
-
 uniform extern FlowControlPS Flow;
 uniform extern FlowControlVS FlowVS;
 uniform extern _Light Lights;			// Note: DX9 doesn't tolerate structure arrays outside FX framework
@@ -164,32 +151,6 @@ float SampleShadows(float2 sp, float pd)
 
 	float2 dx = float2(Prm.vSHD[1], 0) * 1.5f;
 	float2 dy = float2(0, Prm.vSHD[1]) * 1.5f;
-	float  va = 0;
-
-	sp -= dy;
-	if ((tex2D(tShadowMap, sp - dx).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp + dx).r) > pd) va++;
-	sp += dy;
-	if ((tex2D(tShadowMap, sp - dx).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp + dx).r) > pd) va++;
-	sp += dy;
-	if ((tex2D(tShadowMap, sp - dx).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp).r) > pd) va++;
-	if ((tex2D(tShadowMap, sp + dx).r) > pd) va++;
-
-	return va * 0.1111111f;
-}
-
-// ---------------------------------------------------------------------------------------------------
-// Unified scene shadow map (G1) sampling (bound to the tShadowMap sampler). Same 9 tap pattern as the near
-// field map; the coverage border handling/fade is done by the caller.
-//
-float SampleShadowsT(float2 sp, float pd)
-{
-	float2 dx = float2(Prm.vSHD2.y, 0) * 1.5f;
-	float2 dy = float2(0, Prm.vSHD2.y) * 1.5f;
 	float  va = 0;
 
 	sp -= dy;
@@ -402,10 +363,6 @@ TileVS TerrainVS(TILEVERTEX vrt)
 	outVS.shdH = mul(float4(vPosW, 1.0f), Prm.mLVP);
 #endif
 
-#if defined(_TERRSHD)
-	outVS.shdH2 = mul(float4(vPosW + normalize(vNrmW) * (Prm.vSHD2.x * 1.5f), 1.0f), Prm.mLVP2);
-#endif
-
 	outVS.texUV.xy = vrt.tex0.xy;
 	outVS.camW = float4(-vPosW, dot(vVrt, vPlN));
 	outVS.nrmW = vNrmW;
@@ -483,57 +440,6 @@ float4 TerrainPS(TileVS frg) : COLOR
 		fShadow = 1.0f - SampleShadows(sp, pd);
 	}
 #endif
-
-#if defined(_TERRSHD)
-	// Unified scene shadow map (G1): terrain self shadowing and distant caster
-	// shadows. The map coverage edge is faded out so no hard border is visible.
-	if (Flow.bShadowsT) {
-		float4 shd2 = frg.shdH2;
-		shd2.xyz /= shd2.w;
-		shd2.z = 1 - shd2.z;
-		float2 sp = shd2.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-
-		if (sp.x > 0.0f && sp.y > 0.0f && sp.x < 1.0f && sp.y < 1.0f) {
-			float3 vPosC = -frg.camW.xyz;					// camera relative pixel position
-			float  dc = distance(vPosC, Prm.vSHDT.xyz);		// distance to map centre
-			float  fade = saturate((Prm.vSHDT.w - dc) / max(Prm.vSHDT.w * 0.12f, 1.0f));
-
-			if (fade > 0.0f) {
-				// slope scaled depth bias, normal offset is applied in the vertex shader
-				float dLN = saturate(dot(normalize(frg.nrmW), Const.toSun));
-				float kr = Prm.vSHD2.x * 1.5f;			// texel world size
-				float dxi = rsqrt(max(1.0f - dLN * dLN, 1e-4f));
-				float ofs = kr * dxi * (1.0f + dLN);
-				// The bias cap must scale with the map coverage: a fixed 0.5 (which is
-				// what the small near field map uses) is far too small for the large G1
-				// coverage and causes self shadowing (acne) on flat terrain / water.
-				float omxMax = max(0.5f, Prm.vSHD2.x * 4.0f);
-				float omx = min(0.05f + ofs, omxMax);
-				float pd = shd2.z + omx * Prm.vSHD2.z;
-				if (pd < 0) pd = 0;
-				if (pd > 1) pd = 1;
-				fShadow = min(fShadow, 1.0f - SampleShadowsT(sp, pd) * fade);
-			}
-		}
-	}
-#endif
-
-#if defined(_TERRSHDDBG)
-	// DIAGNOSTIC: scene shadow coverage visualisation (
-	// blue = outside map coverage, yellow = lit inside coverage, red = shadowed
-	if (Flow.bShadowsT) {
-		float4 d2 = frg.shdH2;
-		d2.xyz /= d2.w;
-		float2 sp2 = d2.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-		if (sp2.x > 0.0f && sp2.y > 0.0f && sp2.x < 1.0f && sp2.y < 1.0f) {
-			float3 dbg = lerp(float3(1.0f,0.0f,0.0f), float3(1.0f,1.0f,0.0f), fShadow);
-			return float4(dbg, 1.0f);
-		}
-		return float4(0.0f, 0.0f, 1.0f, 1.0f);
-	}
-#endif
-
-
 
 	float3 cFar, cMed, cLow;
 
@@ -772,16 +678,8 @@ float4 TerrainPS(TileVS frg) : COLOR
 	// Bake light and shadow terms
 	float3 cL = cSF * fD * fShadow * fShd;
 
-	// Shadowed areas also receive less ambient light, otherwise the direct light
-	// term alone is often too weak to make the shadow visible on the terrain.
-	// The ambient attenuation must only apply while the sun actually illuminates
-	// the surface: on the night side there is no direct light, and attenuating
-	// the (weak) ambient term with the terrain self-shadow map would reveal the
-	// shadow map pattern as dark stripes/cracks on the dark terrain.
-	float fShdA = lerp(1.0f, fShadow, 0.5f * saturate(fDPS * 4.0f));
-
 	// Lit the texture with various things
-	cTex.rgb *= cL * 2.0f + (cA + cDiffLocal + Const.cAmbient * Const.Ambient) * fShdA * saturate(1.0f + fG + fZ) + cNgt;
+	cTex.rgb *= cL * 2.0f + (cA + cDiffLocal + Const.cAmbient * Const.Ambient) * saturate(1.0f + fG + fZ) + cNgt;
 
 	cTex.rgb = max(float3(0, 0, 0), cTex.rgb);
 
@@ -1068,44 +966,3 @@ float4 GiantCloudPS(CldVS frg) : COLOR
 	return float4(HDR(cTex.rgb), saturate(cTex.a));
 }
 
-
-
-// ============================================================================
-// Unified scene shadow map (G1) caster rendering: depth only rendering of the
-// terrain tiles. The output convention matches the near field vessel shadow
-// map (NewMesh.hlsl ShdMapVS/ShdMapPS): the stored value is 1 - z/w, so a
-// larger value means "closer to the light".
-//
-// These entries are compiled by the ShadowSystem into a dedicated depth only
-// shader (see TerrainRender.inc) - keeping them here avoids an extra shader file.
-// ============================================================================
-
-uniform extern struct ShadowCasterConst {
-	float4x4 mVP;		// scene shadow light view projection
-	float4x4 mW;		// tile world matrix
-} shd_const;
-
-struct SHDVERTEX
-{
-	float3 posL : POSITION0;
-};
-
-struct SHDVSOUT
-{
-	float4 posH : POSITION0;
-	float2 dstW : TEXCOORD0;
-};
-
-SHDVSOUT ShadowVS(SHDVERTEX vrt)
-{
-	SHDVSOUT outVS = (SHDVSOUT)0;
-	float3 posW = mul(float4(vrt.posL, 1.0f), shd_const.mW).xyz;
-	outVS.posH = mul(float4(posW, 1.0f), shd_const.mVP);
-	outVS.dstW = outVS.posH.zw;
-	return outVS;
-}
-
-float4 ShadowPS(SHDVSOUT frg) : COLOR
-{
-	return 1 - (frg.dstW.x / frg.dstW.y);
-}
