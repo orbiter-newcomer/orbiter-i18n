@@ -88,6 +88,7 @@ private:
 	D3DXVECTOR2 MicroRep[3];
 	DWORD MaxRep;
 	LPDIRECT3DTEXTURE9 ltex;	///< landmask/nightlight texture, if applicable
+	bool ownltex;				///< true: ltex is owned by this tile (free on destruction), false: inherited from the parent tile
 	INT16 *elev_file;			///< elevation data [m]
 	float *elev;				///< elevation data [m] (8x subsampled)
 	mutable float *ggelev;		///< pointer to my elevation data in the great-grandparent

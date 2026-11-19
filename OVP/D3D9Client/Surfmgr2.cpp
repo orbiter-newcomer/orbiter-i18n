@@ -69,6 +69,7 @@ SurfTile::SurfTile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
 	ggelev = NULL;
 	elev_file = NULL;
 	ltex = NULL;
+	ownltex = true;
 	has_elevfile = false;
 	label = NULL;
 	morphLow = NULL;
@@ -94,7 +95,7 @@ SurfTile::~SurfTile ()
 	if (elev) g_pMemgr_f->Free(elev);
 	if (elev_file) g_pMemgr_i->Free(elev_file);	
 	if (tex && owntex) g_pTexmgr_tt->Free(tex);
-	if (ltex && owntex) g_pTexmgr_tt->Free(ltex);
+	if (ltex && ownltex) g_pTexmgr_tt->Free(ltex);
 		
 	DeleteLabels();
 }
@@ -161,10 +162,22 @@ void SurfTile::PreLoad()
 		}
 		
 		if (owntex) {
-			CreateTexture(pDev, pSysSrf, &ltex);			
+			// If the mask texture is not available (still loading, or the mask
+			// data is missing in the archive) fall back to the parent tile mask
+			// instead of leaving the tile without night lights: a tile without
+			// a mask texture appears as a dark patch/crack on the night side of
+			// the planet while its neighbours show the city lights.
+			if (!CreateTexture(pDev, pSysSrf, &ltex) || !ltex) {
+				ltex = NULL;
+				if (node && node->Parent()) {
+					ltex = getSurfParent()->ltex;
+					if (ltex) ownltex = false;
+				}
+			}
 		}
 		else if (node && node->Parent()) {
 			ltex = getSurfParent()->ltex;
+			if (ltex) ownltex = false;
 		}		
 		
 		SAFE_RELEASE(pSysSrf);
@@ -194,6 +207,11 @@ void SurfTile::Load ()
 	}
 
 	CreateLabels();
+	// A new tile mesh must be edge-matched against its neighbours before it is
+	// rendered: invalidate the cached neighbour signature so MatchEdges() does
+	// not skip the match because the neighbour LOD layout happens to be the
+	// same as it was for the previous mesh.
+	neighborSig = ~0ULL;
 }
 
 // -----------------------------------------------------------------------
@@ -916,7 +934,14 @@ void SurfTile::Render ()
 		sdist = acos(dotp(mgr->prm.sdir, cnt));
 		rad = rad0 / (double)(2 << lvl); // tile radius
 		has_specular = (ltex != NULL) && sdist < (1.75 + rad);
-		has_lights = (render_lights && ltex && sdist > 1.35);
+		// Do NOT switch the night lights off per tile with a sun-angle threshold:
+		// the tile centre angle jumps between neighbouring LOD tiles and produces
+		// a visible hard border (dark seam/crack) between tiles with and without
+		// night lights, most noticeable near the terminator. The night light
+		// intensity is faded continuously per pixel in the shader from the local
+		// sun direction (fNgt = saturate(-fDPS*4+0.05)*beta, i.e. it is zero on the
+		// day side), so the mask texture can safely be sampled on every tile.
+		has_lights = (render_lights && ltex);
 		has_shadows = (render_shadows && sdist < (PI05 + rad));
 	}
 	
@@ -1316,7 +1341,13 @@ void SurfTile::MatchEdges ()
 		static const int dofs[8][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}};
 		for (int k = 0; k < 8; k++) {
 			QuadTreeNode<SurfTile> *nn = smgr->FindNode(lvl, ilat + dofs[k][1]*nlat, ilng + dofs[k][0]*nlng);
-			unsigned __int64 nl = (nn && nn->Entry()) ? (unsigned __int64)(nn->Entry()->lvl + 1) : 0;
+			// Only tiles that are actually valid take part in the edge match (an
+			// invalid neighbour is treated like a missing one below). Include that
+			// state in the signature, otherwise a neighbour that becomes invalid
+			// without changing its LOD level would be ignored.
+			unsigned __int64 nl = 0;
+			if (nn && nn->Entry() && (nn->Entry()->state & TILE_VALID))
+				nl = (unsigned __int64)(nn->Entry()->lvl + 1);
 			sig |= (nl & 0x1F) << (k*5);
 		}
 		if (sig == neighborSig) { edgeok = true; return; }

@@ -48,7 +48,7 @@ Tile::Tile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
   mesh(NULL), tex(NULL), overlay(NULL),
   last_used(0.0),
   state(Invalid),
-  edgeok(false), owntex (true), ownoverlay(false)
+  edgeok(false), neighborSig(~0ULL), owntex (true), ownoverlay(false)
   , fadeAlpha(1.0f), fadeT0(0.0)
 {
 	double f = 1.0 / double(1<<lvl);

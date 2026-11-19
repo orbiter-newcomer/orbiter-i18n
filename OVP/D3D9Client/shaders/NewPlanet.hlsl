@@ -774,7 +774,11 @@ float4 TerrainPS(TileVS frg) : COLOR
 
 	// Shadowed areas also receive less ambient light, otherwise the direct light
 	// term alone is often too weak to make the shadow visible on the terrain.
-	float fShdA = lerp(1.0f, fShadow, 0.5f);
+	// The ambient attenuation must only apply while the sun actually illuminates
+	// the surface: on the night side there is no direct light, and attenuating
+	// the (weak) ambient term with the terrain self-shadow map would reveal the
+	// shadow map pattern as dark stripes/cracks on the dark terrain.
+	float fShdA = lerp(1.0f, fShadow, 0.5f * saturate(fDPS * 4.0f));
 
 	// Lit the texture with various things
 	cTex.rgb *= cL * 2.0f + (cA + cDiffLocal + Const.cAmbient * Const.Ambient) * fShdA * saturate(1.0f + fG + fZ) + cNgt;

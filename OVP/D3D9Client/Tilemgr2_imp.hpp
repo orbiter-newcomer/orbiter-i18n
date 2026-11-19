@@ -148,6 +148,15 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 	// that the switch decision can use a dead band (avoids flickering)
 	bool wasActive = (tile->state == Tile::Active);
 	tile->state = Tile::ForRender;
+	// Edge matching must be checked again every frame while the tile is
+	// rendered: the LOD layout of the neighbours can change at any time (they
+	// are subdivided/merged independently of this tile). MatchEdges() compares
+	// a cheap neighbour-LOD signature and only rewrites the shared edge
+	// vertices when the layout really changed, so this does not cost the full
+	// geometric match every frame - but the check itself is required, otherwise
+	// a tile keeps stale edge heights after a neighbour switched LOD and the
+	// seams between the tiles stay visible (dark cracks on the night side).
+	tile->edgeok = false;
 
 	// check if patch is visible from camera position
 	VECTOR3 &cnt = tile->cnt;                   // tile centre in unit planet frame
