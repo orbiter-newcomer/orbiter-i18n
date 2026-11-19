@@ -38,7 +38,6 @@ PBRData AdvancedVS(MESH_VERTEX vrt)
 
 #if SHDMAP > 0
 	outVS.shdH = mul(float4(posW, 1.0f), gLVP);
-	outVS.shdH2 = mul(float4(posW + nrmW * (gSHD2[0] * 1.5f), 1.0f), gLVP2);
 #endif
 
 	outVS.nrmW = nrmW;
@@ -125,8 +124,6 @@ float4 AdvancedPS(float4 sc : VPOS, PBRData frg) : COLOR
 
 #if SHDMAP > 0
 	cSun.rgb *= ComputeShadow(frg.shdH, dLN, sc);
-	// scene shadow (G1): applied to all meshes (no bool branch, ps_3_0 bool register limit)
-	cSun.rgb *= ComputeSceneShadow(frg.shdH2, -frg.camW, dLN);
 #endif
 
 
