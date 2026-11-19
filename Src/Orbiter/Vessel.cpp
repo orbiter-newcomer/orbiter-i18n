@@ -7839,6 +7839,16 @@ void Vessel::Timejump (double dt, int mode)
 		else                              // suborbital
 			mode = mode & PROP_SORBITAL;
 
+		// Relativistic scenarios: the Keplerian element extrapolation is not
+		// valid near relativistic compact bodies. Re-propagating the state with
+		// the two-body solution over a large time jump can produce non-finite
+		// states (and the subsequent guards would abort the vessel update every
+		// frame), so keep the current state instead.
+		if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) {
+			if (mode == PROP_ORBITAL_ELEMENTS)   mode = PROP_ORBITAL_FIXEDSTATE;
+			if (mode == PROP_SORBITAL_ELEMENTS)  mode = PROP_SORBITAL_FIXEDSTATE;
+		}
+
 		switch (mode) {
 		case PROP_ORBITAL_ELEMENTS:
 			el->PosVel (cpos, cvel, td.SimT0+g_pOrbiter->tjump.dt);
@@ -7849,6 +7859,14 @@ void Vessel::Timejump (double dt, int mode)
 			break;
 		case PROP_ORBITAL_FIXEDSURF:
 		case PROP_SORBITAL_FIXEDSURF: {
+			// A vessel without a planetary proximity reference (deep space, or a
+			// vessel in the process of being removed) has no surface frame to
+			// rotate with: keep its state unchanged instead of dereferencing a
+			// null planet pointer.
+			if (!proxyplanet) {
+				LOGOUT("Time jump: %s has no proxy planet, fixed-surface mode skipped.", Name());
+				break;
+			}
 			double dphi = Pi2*dt/proxyplanet->RotT(), cphi = cos(dphi), sphi = sin(dphi);
 			Matrix Rb (cphi,0,-sphi,  0,1,0,  sphi,0,cphi);
 			Vector cp = mul (proxyplanet->GRot(), mul (Rb, tmul (proxyplanet->GRot(), cpos)));
@@ -7870,6 +7888,13 @@ void Vessel::Timejump (double dt, int mode)
 
 	} else if (fstatus == FLIGHTSTATUS_LANDED) {
 
+		// A landed vessel is always associated with a planetary surface, but
+		// be defensive: a missing proxy planet must not crash the time jump.
+		if (!proxyplanet) {
+			LOGOUT("Time jump: landed vessel %s has no proxy planet, state kept.", Name());
+			undock_t = td.SimT0-1000;
+			return;
+		}
 		proxyplanet->LocalToGlobal (sp.ploc, s0->pos);
 		double vground = Pi2 * proxyplanet->Size() * sp.clat / proxyplanet->RotT();
 		s0->vel.Set (-vground*sp.slng, 0.0, vground*sp.clng);

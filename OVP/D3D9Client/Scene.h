@@ -41,6 +41,13 @@ class ShadowSystem;
 #define GBUF_REL				5
 #define GBUF_COUNT				6	// Buffer count
 
+// Sky brightness (0-1) above which the sky is bright enough to completely hide
+// the celestial background: the background image intensity is scaled by
+// exp(-brightness*12.5), so above this threshold its contribution is below the
+// display resolution. The (expensive) background image, star field and lensing
+// passes are skipped in daylight; they are re-rendered when the sky gets dark.
+#define SKY_BRIGHTNESS_DAY_CUTOFF	0.45
+
 #define SHM_LOD_COUNT			5
 
 #define TEX_NOISE				0
@@ -611,8 +618,29 @@ private:
 	LPDIRECT3DCUBETEXTURE9 pLensCube;
 	int				relLensCubeSize;
 	bool			bLensCubeReady;
-	float			relLensCubeBrightness;
 	class ShaderClass *pStarsLens;
+
+	// Relativity render cache (implementation in Relativity.inc): the cubemap
+	// and the star field composite are only re-rendered when their input
+	// parameters (sky brightness, observer velocity, lensing bodies, camera
+	// orientation) have changed noticeably. Near a black hole or at high speed
+	// these parameters change quickly, so the effect is refreshed every frame
+	// there; in normal flight conditions most frames can reuse the previous
+	// result.
+	struct REL_CACHE {
+		bool        valid;
+		float       brightness;
+		float       beta;			///< observer speed / c
+		D3DXVECTOR3 velDir;			///< observer velocity direction
+		int         nLens;
+		LENSBODY    lens[REL_MAX_LENS];
+		D3DXVECTOR3 camX, camY, camZ;	///< camera orientation (composite pass only)
+		float       tanW, tanH;		///< camera aperture (composite pass only)
+	};
+	REL_CACHE relCubeCache;
+	REL_CACHE relCompCache;
+	bool RelParamsChanged(REL_CACHE &cache, bool bIncludeCamera);
+	void RelParamsSave(REL_CACHE &cache, bool bIncludeCamera);
 
 	class vVessel *vFocus;
 	VOBJREC *vobjEnv, *vobjIrd;

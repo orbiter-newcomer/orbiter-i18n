@@ -931,6 +931,32 @@ void SurfTile::Render ()
 
 	sp->vCloudOff = FVECTOR4(0, 0, 1, 1);
 
+	// ----------------------------------------------------------------------
+	// Night side terrain simplification
+	// ----------------------------------------------------------------------
+	// The terrain renderer switches to a spherical (high altitude) mode when
+	// the camera is far away from the surface (see vPlanet::RenderSphere). In
+	// that mode the terrain texture detail is invisible on the dark side of the
+	// planet: the shader can skip the expensive surface shading and only keep
+	// the night lights. Near the surface (Elevated mode) the terrain must
+	// always be rendered in full quality, so the simplification is disabled
+	// there.
+	//
+	// The dark side test uses the sun altitude angle of the tile centre and a
+	// configurable cutoff. The default (-18 deg = astronomical twilight, the
+	// sky is completely dark) guarantees that the normal renderer would not
+	// show any terrain texture detail either, so the simplified and the full
+	// shading paths produce the same (dark) image and no block-shaped
+	// brightness differences between neighbouring tiles can appear.
+	bool bNightSimplify = false;
+	if (Config->NightTerrainSimplify && (mgr->ElevMode == eElevMode::Spherical) && ltex) {
+		double sdist0 = acos(dotp(mgr->prm.sdir, cnt));	// sun - tile centre angle [rad]
+		double sunAlt = PI05 - sdist0;					// sun altitude angle [rad]
+		double cutoff = Config->NightTerrainSimplifySunAlt * RAD;
+		bNightSimplify = (sunAlt < cutoff);
+	}
+	sp->fPad0 = bNightSimplify ? 1.0f : 0.0f;
+
 	D3DXVECTOR3 bs_pos;
 	D3DXVec3TransformCoord(&bs_pos, &mesh->bsCnt, &mWorld);
 

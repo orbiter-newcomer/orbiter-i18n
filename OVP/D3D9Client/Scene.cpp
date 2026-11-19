@@ -1529,8 +1529,7 @@ void Scene::RenderMainScene()
 	SetCameraFrustumLimits(0.1, 10);
 
 	// TEMP DIAGNOSTIC: cubemap tile wireframe, no lensing, billboard disabled
-	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady;
-	RelLog("Scene: cel sphere lenscube=%d aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", (int)bUseLensCube, Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
+	RelLog("Scene: cel sphere aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
 	// "hole" method: render the plain star field first (sharp, with kinematic
 	// aberration); the lensed cubemap is then rendered and composited on top,
 	// replacing the plain star field only where the gravitational apparent
@@ -1540,6 +1539,13 @@ void Scene::RenderMainScene()
 	Perf_Mark(PERF_STAGE_CELSPHERE);
 
 	m_celSphere->Render(pDevice, sky_color, false, false);
+
+	// In daylight the star field is hidden by the bright sky: skip the lensing
+	// cubemap render and the star field composite pass (see
+	// SKY_BRIGHTNESS_DAY_CUTOFF in Scene.h). Both are executed again when the
+	// sky gets dark; the strong-field regime always refreshes the cubemap.
+	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady
+		&& (m_celSphere->GetSkyBrightnessPublic() < SKY_BRIGHTNESS_DAY_CUTOFF);
 	if (bUseLensCube) RenderLensCubemap();
 	if (bUseLensCube) CompositeStarField();
 
