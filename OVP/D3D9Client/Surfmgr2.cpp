@@ -162,18 +162,12 @@ void SurfTile::PreLoad()
 		}
 		
 		if (owntex) {
-			// If the mask texture is not available (still loading, or the mask
-			// data is missing in the archive) fall back to the parent tile mask
-			// instead of leaving the tile without night lights: a tile without
-			// a mask texture appears as a dark patch/crack on the night side of
-			// the planet while its neighbours show the city lights.
-			if (!CreateTexture(pDev, pSysSrf, &ltex) || !ltex) {
-				ltex = NULL;
-				if (node && node->Parent()) {
-					ltex = getSurfParent()->ltex;
-					if (ltex) ownltex = false;
-				}
-			}
+			// Mask (night light / specular) texture. Note: no parent fallback
+			// here - the tile texture coordinates (vTexOff) describe the OWN
+			// texture range in this case, so sampling the parent mask texture
+			// with them would misplace the city lights. Without a mask the tile
+			// simply has no night lights / specular mask (official behaviour).
+			CreateTexture(pDev, pSysSrf, &ltex);
 		}
 		else if (node && node->Parent()) {
 			ltex = getSurfParent()->ltex;
@@ -1340,7 +1334,13 @@ void SurfTile::MatchEdges ()
 		const int nlat = (ilat & 1) ? 1 : -1;
 		static const int dofs[8][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}};
 		for (int k = 0; k < 8; k++) {
-			QuadTreeNode<SurfTile> *nn = smgr->FindNode(lvl, ilat + dofs[k][1]*nlat, ilng + dofs[k][0]*nlng);
+			// FindNode() takes (lvl, ilng, ilat) - NOT (lvl, ilat, ilng). The
+			// previous version passed the latitude as the second argument, so the
+			// signature was computed for the wrong neighbours and a required edge
+			// match could be skipped (visible as dark seams/cracks at the tile
+			// borders). Keep the same argument order as the official neighbour
+			// lookup below.
+			QuadTreeNode<SurfTile> *nn = smgr->FindNode(lvl, ilng + dofs[k][0]*nlng, ilat + dofs[k][1]*nlat);
 			// Only tiles that are actually valid take part in the edge match (an
 			// invalid neighbour is treated like a missing one below). Include that
 			// state in the signature, otherwise a neighbour that becomes invalid
@@ -1350,7 +1350,9 @@ void SurfTile::MatchEdges ()
 				nl = (unsigned __int64)(nn->Entry()->lvl + 1);
 			sig |= (nl & 0x1F) << (k*5);
 		}
-		if (sig == neighborSig) { edgeok = true; return; }
+		// The signature cache is disabled until it is validated: run the full edge
+		// match like the official code. (The per-frame "edgeok" flag already
+		// prevents duplicate matches within the same frame.)
 		neighborSig = sig;
 	}
 

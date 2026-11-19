@@ -168,13 +168,13 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (lvl == 0)
 			bstepdown = false;                // force render at lowest resolution
 		else {
-			// Keep the subtree allocated while the tile is only outside the current
-			// view: rotating the camera must not release and reload the terrain.
+			// DIAGNOSTIC: official behaviour - release the subtree immediately
+			// when the tile leaves the view. The previous version kept the
+			// subtree allocated for 10 s to speed up camera rotation; that is
+			// the currently suspected source of the terrain cracks.
+			if (scene->GetRenderPass() == RENDERPASS_MAINSCENE) node->DelChildren();
 			tile->state = Tile::Invisible;
 			tile->edgeok = false;
-			if (scene->GetRenderPass() == RENDERPASS_MAINSCENE &&
-				(oapiGetSysTime() - tile->last_used) > 10.0)
-				node->DelChildren();
 			return;                           // no need to continue
 		}
 	}
@@ -228,10 +228,9 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (tgtresF < 0.0) tgtresF = 0.0;
 		if (tgtresF > (double)maxlvl) tgtresF = (double)maxlvl;
 		tgtres = (int)tgtresF;
-		// LOD hysteresis (dead band around the switch threshold)
-		const double hystUp = 0.55;		// switch up threshold offset
-		const double hystDown = 0.35;	// switch down threshold offset
-		bstepdown = wasActive ? (tgtresF > lvl + hystDown) : (tgtresF > lvl + hystUp);
+		// DIAGNOSTIC: official LOD selection (hysteresis disabled) to find the
+		// terrain crack regression. Restore the hysteresis block below when done.
+		bstepdown = (lvl < tgtres);
 		tile->tgtscale = pow(2.0f, float(tgtres - lvl));
 	}
 
