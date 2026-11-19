@@ -2033,7 +2033,7 @@ VOID Orbiter::UpdateWorld ()
 	if (bRunning && td.SimDT) {
 		if (bPlayback) FRecorder_Play();
 		g_psys->Update (g_bForceUpdate);           // logical objects
-		// relativistic collision debris update (implementation in RelativityPhysics.inc)
+		// wreck camera/vessel state update (implementation in WreckDebris.inc)
 		WreckDebrisUpdate ();
 	}
 	if (pDlgMgr) pDlgMgr->UpdateDialogs(); // SHOULD BE DONE BY GRAPHICS CLIENT!

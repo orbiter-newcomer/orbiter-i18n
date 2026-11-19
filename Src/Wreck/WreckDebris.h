@@ -2,9 +2,10 @@
 // WreckDebris.h
 // Wreck/debris system: declarations.
 //
-// Debris are simulated in the main program (Newtonian motion + ground
-// contact) and rendered by the graphics client (D3D9Client) as simple
-// black polyhedra via oapiGetWreckDebris*().
+// Wrecks are real Orbiter vessels ("Wreck" class, generated meshes) created by
+// the main program when a vessel is destroyed; the graphics client renders them
+// through the standard vessel path. (The old 2D screen-space debris system was
+// removed.)
 // ==============================================================
 
 #ifndef __WRECKDEBRIS_H
@@ -14,8 +15,6 @@ class Vector;
 class Vessel;
 class StateVectors;
 
-// Spawn a cloud of debris at a global position, with a base velocity.
-void WreckDebrisSpawn (const Vector &pos, const Vector &vel, double scale);
 // Collision impact check: if |deltaV| exceeds the configured threshold the
 // vessel is destroyed and replaced by debris.
 void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *otherName, bool otherDestroyed = false);
@@ -23,11 +22,8 @@ void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *oth
 // is detected): if the normal approach speed exceeds the threshold, the vessel
 // is destroyed and replaced by debris.
 void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state);
-// Update all debris (called once per frame from Orbiter::UpdateWorld).
+// Update the wreck camera/vessel state (called once per frame from Orbiter::UpdateWorld).
 void WreckDebrisUpdate ();
-// Renderer access.
-int  WreckDebrisCount ();
-bool WreckDebrisGet (int idx, VECTOR3 &pos, VECTOR3 &axis, double &angle, double &size, int &shape);
 
 
 // Wreck reason codes (message shown to the player when a vessel is destroyed)

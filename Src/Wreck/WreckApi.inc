@@ -8,13 +8,8 @@
 
 #include "WreckDebris.h"
 
-DLLEXPORT int oapiGetWreckDebrisCount () { return WreckDebrisCount (); }
-
-DLLEXPORT bool oapiGetWreckDebris (int idx, VECTOR3 *pos, VECTOR3 *axis, double *angle, double *size, int *shape)
-{
-	if (!pos || !axis || !angle || !size || !shape) return false;
-	return WreckDebrisGet (idx, *pos, *axis, *angle, *size, *shape);
-}
+// (the old 2D visual debris API oapiGetWreckDebrisCount/oapiGetWreckDebris was
+// removed together with the screen-space debris drawing)
 
 DLLEXPORT bool oapiGetWreckMessageEx (char *buf, int n, double *age_ms, int *isFocus, char *ship, int shipN)
 {

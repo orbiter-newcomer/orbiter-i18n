@@ -537,8 +537,7 @@ static bool RelativityFTLGuard (Vessel *vessel, StateVectors &st0, StateVectors 
 	sprintf_s (msg, 512, "Relativistic FTL protection: |v| = %.4e m/s >= c. Vessel destroyed.", sqrt (v2));
 	LOGOUT_ERR (msg);
 	if (vessel) {
-		WreckDebrisSpawn (vessel->GPos(), vessel->GVel(), vessel->Size());
-	WreckDestroyVessel (vessel);
+		WreckDestroyVessel (vessel);
 	}
 	WreckMessageVessel (REL_WRECK_FTL, vessel, 0, 0, false);
 	return true;

@@ -9,25 +9,6 @@
 #include "WreckDebris.h"
 #include "Localization.h"
 
-struct REL_DEBRIS {
-	Vector pos, vel;        // global position/velocity
-	Vector axis;            // rotation axis
-	double angle, angVel;   // rotation state
-	double size;            // characteristic size [m]
-	int    shape;           // shape index for the renderer
-	double age;             // time since spawn [s]
-	double still;           // time spent resting on the surface [s]
-	bool   active;
-};
-
-static const int    REL_DEBRIS_MAX       = 200;
-static const int    REL_DEBRIS_PER_BURST = 12;
-static const double REL_DEBRIS_LIFE      = 30.0;   // max lifetime [s]
-static const double REL_DEBRIS_STILL_T   = 15.0;    // rest time before removal [s]
-static const double REL_DEBRIS_STILL_V   = 0.5;    // rest speed threshold [m/s]
-static const double REL_DEBRIS_RESTITUTION = 0.2;  // normal bounce factor
-static const double REL_DEBRIS_FRICTION  = 0.5;    // tangential factor
-
 // ---- wreck message (shown on screen by the graphics client) ----------------
 static char   g_relWreckMsg[1024] = "";
 static bool   g_relWreckMsgIsFocus = false;   // message belongs to the focus vessel
@@ -226,36 +207,6 @@ bool WreckSystemEnabled ()
 	return cfg->CfgPhysicsPrm.bWrecks && (cfg->CfgLogicPrm.DamageSetting != 0);
 }
 
-
-static REL_DEBRIS g_relDebris[REL_DEBRIS_MAX];
-static int g_relDebrisNext = 0;
-
-static double RelDebrisRand ()
-{
-	return (double)rand() / (double)RAND_MAX;
-}
-
-static Vector RelDebrisRandomDir ()
-{
-	double z = 2.0*RelDebrisRand() - 1.0;
-	double phi = 2.0*PI*RelDebrisRand();
-	double r = sqrt (fabs (1.0 - z*z));
-	return Vector (r*cos(phi), r*sin(phi), z);
-}
-
-static REL_DEBRIS *RelDebrisAlloc ()
-{
-	for (int i = 0; i < REL_DEBRIS_MAX; i++) {
-		int idx = (g_relDebrisNext + i) % REL_DEBRIS_MAX;
-		if (!g_relDebris[idx].active) {
-			g_relDebrisNext = (idx + 1) % REL_DEBRIS_MAX;
-			return &g_relDebris[idx];
-		}
-	}
-	REL_DEBRIS *d = &g_relDebris[g_relDebrisNext];
-	g_relDebrisNext = (g_relDebrisNext + 1) % REL_DEBRIS_MAX;
-	return d;
-}
 
 // ---- wreck vessels (real Orbiter vessels with generated meshes) --------------
 static int g_wreckVesselCounter = 0;
@@ -724,65 +675,10 @@ void WreckProcessPendingSafe ()
 	WreckCleanup ();          // housekeeping only (no state writes)
 }
 
-void WreckDebrisSpawn (const Vector &pos, const Vector &vel, double scale)
-{
-	if (scale <= 0.0) scale = 1.0;
-	for (int k = 0; k < REL_DEBRIS_PER_BURST; k++) {
-		REL_DEBRIS *d = RelDebrisAlloc();
-		d->active = true;
-		d->pos = pos;
-		d->vel = vel * 0.1 + RelDebrisRandomDir() * (scale * (0.5 + 1.5*RelDebrisRand()));
-		d->axis = RelDebrisRandomDir();
-		d->angle = 2.0*PI*RelDebrisRand();
-		d->angVel = (0.5 + 2.5*RelDebrisRand()) * (RelDebrisRand() < 0.5 ? -1.0 : 1.0);
-		d->size = 100.0;   // TEST: giant 100 m debris cubes to verify rendering
-		d->shape = (int)(RelDebrisRand()*4.0) % 4;
-		d->age = 0.0;
-		d->still = 0.0;
-	}
-}
-
 void WreckDebrisUpdate ()
 {
-	if (!g_pOrbiter || !g_psys) return;
-	double dt = td.SimDT;
-	if (dt <= 0.0 || dt > 0.1) return;   // only during real-time stepping
-
-	for (int k = 0; k < REL_DEBRIS_MAX; k++) {
-		REL_DEBRIS &d = g_relDebris[k];
-		if (!d.active) continue;
-
-		// dominant body = nearest gravitational body
-		CelestialBody *cb = RelNearestBody (d.pos);
-		double best = cb ? cb->GPos().dist (d.pos) : 0.0;
-
-		if (cb) {
-			double R = cb->Size();
-			Vector n = (d.pos - cb->GPos()).unit();
-			double r = best;
-			double gm = Ggrav * cb->Mass();
-			if (r > 1.0) d.vel -= n * (gm/(r*r));
-			d.pos += d.vel * dt;
-			r = d.pos.dist (cb->GPos());
-			if (r <= R + 1.0) {
-				// ground contact: bounce with damping, heavy friction
-				Vector n2 = (d.pos - cb->GPos()).unit();
-				double vn = dotp (d.vel, n2);
-				Vector vt = d.vel - n2*vn;
-				if (vn < 0.0)
-					d.vel = vt * REL_DEBRIS_FRICTION - n2 * (vn * REL_DEBRIS_RESTITUTION);
-				d.pos = cb->GPos() + n2 * (R + 1.0);
-				if (d.vel.length() < REL_DEBRIS_STILL_V) d.still += dt;
-				else d.still = 0.0;
-			} else {
-				d.still = 0.0;
-			}
-		}
-
-		d.angle += d.angVel * dt;
-		d.age += dt;
-		if (d.age > REL_DEBRIS_LIFE || d.still > REL_DEBRIS_STILL_T) d.active = false;
-	}
+	// The old 2D screen-space debris overlay system has been removed. This
+	// function only keeps the wreck camera/vessel state stable.
 
 	// keep the wreck frozen (zero angular velocity) so the camera is stable
 	if (g_relWreckVesselName[0] && g_psys) {
@@ -803,7 +699,6 @@ void WreckDebrisUpdate ()
 			g_bForceUpdate = true;
 		}
 	}
-
 }
 
 void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *otherName, bool otherDestroyed)
@@ -813,7 +708,6 @@ void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *oth
 	if (vessel->KillPending()) return;
 	double dv = deltaV.length();
 	if (dv <= g_pOrbiter->Cfg()->CfgPhysicsPrm.RelCollisionDVThreshold) return;
-		WreckDebrisSpawn (vessel->GPos(), vessel->GVel(), vessel->Size());
 	WreckDestroyVessel (vessel, REL_WRECK_COLLISION, otherName);
 	WreckMessageVessel (REL_WRECK_COLLISION, vessel, 0, otherName, otherDestroyed);
 }
@@ -934,29 +828,7 @@ void WreckAtmosphericBurnup (Vessel *vessel)
 	double q = 0.5 * density * v2;                    // dynamic pressure [Pa]
 	const double REL_BURNUP_Q = 1.0e5;                // threshold (10 kPa)
 	if (q <= REL_BURNUP_Q) return;
-		WreckDebrisSpawn (vessel->GPos(), vessel->GVel(), vessel->Size());
 	WreckDestroyVessel (vessel, REL_WRECK_BURNUP, 0);
 	WreckMessageVessel (REL_WRECK_BURNUP, vessel, 0, 0, false);
 }
 
-
-int WreckDebrisCount ()
-{
-	int n = 0;
-	for (int i = 0; i < REL_DEBRIS_MAX; i++)
-		if (g_relDebris[i].active) n++;
-	return n;
-}
-
-bool WreckDebrisGet (int idx, VECTOR3 &pos, VECTOR3 &axis, double &angle, double &size, int &shape)
-{
-	if (idx < 0 || idx >= REL_DEBRIS_MAX) return false;
-	REL_DEBRIS &d = g_relDebris[idx];
-	if (!d.active) return false;
-	pos = _V (d.pos.x, d.pos.y, d.pos.z);
-	axis = _V (d.axis.x, d.axis.y, d.axis.z);
-	angle = d.angle;
-	size = d.size;
-	shape = d.shape;
-	return true;
-}
