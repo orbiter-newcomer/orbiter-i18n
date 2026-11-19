@@ -906,6 +906,7 @@ void SurfTile::Render ()
 	fc->bOverlay = false;
 	fc->bMask = false;
 	fc->bShadows = false;
+	fc->bShadowsT = false;	// unified scene shadow system (G1): terrain only
 	fc->bInSpace = !vPlanet->CameraInAtmosphere();
 	fc->bPlanetShadow = vPlanet->SphericalShadow();
 	fcv->bElevOvrl = false;
@@ -1015,6 +1016,34 @@ void SurfTile::Render ()
 		}
 
 		pShader->SetTexture(pShader->tShadowMap, shd->pShadowMap);
+	}
+
+	// ---------------------------------------------------------------------
+	// Unified scene shadow system (G1): terrain receivers only.
+	// The G1 shadow map is generated from the terrain tiles (terrain self
+	// shadowing). Vessels and base structures keep using the official near
+	// field shadow map above; their receivers do not sample the G1 map.
+	// Implementation: TerrainRender.inc, receiving shader: NewPlanet.hlsl
+	// ---------------------------------------------------------------------
+
+	if (pShader->bSceneShadow && scene->IsSceneShadowValid())
+	{
+		const Scene::SHADOWMAPPARAM *shdT = scene->GetSMapDataT();
+
+		if (shdT->pShadowMap && (scene->GetRenderPass() == RENDERPASS_MAINSCENE))
+		{
+			float s = float(shdT->size);
+			float is = 1.0f / s;
+			float texel = 2.0f * shdT->rad * is;
+			float idepth = (shdT->depth > 1.0f ? 1.0f / shdT->depth : 0.0f);
+
+			sp->mLVP2 = shdT->mViewProj;
+			sp->vSHD2 = FVECTOR4(texel, is, idepth, 0.0f);
+			sp->vSHDT = FVECTOR4(shdT->pos.x, shdT->pos.y, shdT->pos.z, shdT->rad);
+			fc->bShadowsT = true;
+
+			pShader->SetTexture(pShader->tShadowMap, shdT->pShadowMap, IPF_CLAMP | IPF_POINT);
+		}
 	}
 
 	// ---------------------------------------------------------------------
@@ -1466,6 +1495,22 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 		ProcessNode (tiletree+i);
 
 	vp->tile_cache = NULL;
+
+	// ------------------------------------------------------------------
+	// Unified scene shadow system (G1): the terrain shadow map is generated
+	// right after the tile tree update (current tile world matrices) and
+	// before the terrain is rendered, so the terrain shader can sample it in
+	// the same frame. Implementation: TerrainRender.inc
+	// ------------------------------------------------------------------
+	scene->RenderSceneShadow(vp);
+
+	// The scene shadow pass renders with its own shaders and changes the device
+	// shader/viewport/render states. The terrain rendering below relies on the
+	// planet shader setup that was made at the beginning of this function, so it
+	// has to be restored here - otherwise the terrain would be drawn with the
+	// shadow depth shader (and disappear).
+	pShader->Setup(pPatchVertexDecl, bUseZ, 0);
+	pShader->GetDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 
 	// render the tree
 	for (i = 0; i < 2; i++)

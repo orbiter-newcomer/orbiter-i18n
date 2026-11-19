@@ -107,6 +107,8 @@ public:
 	inline bool HasOwnTex() const { return owntex; }
 	inline bool HasOwnElev() const { return has_elevfile; }
 	inline void GetWorldMatrix(void *pOut) const { memcpy(pOut, &mWorld, sizeof(D3DXMATRIX)); }
+	// feature hook: read access to the tile mesh for the unified scene shadow system
+	inline VBMESH *GetMesh() const { return mesh; }
 
 	bool PreDelete();
 	// Prepare tile for deletion. Return false if tile is locked

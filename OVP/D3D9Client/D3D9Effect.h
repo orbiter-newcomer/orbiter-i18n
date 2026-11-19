@@ -113,6 +113,7 @@ public:
 	static D3DXHANDLE	eVP;         ///< Combined View & Projection Matrix
 	static D3DXHANDLE	eW;          ///< World Matrix
 	static D3DXHANDLE	eLVP;        ///< Light view projection
+	static D3DXHANDLE	eLVP2;       ///< Scene shadow (G1) light view projection
 	static D3DXHANDLE	eGT;         ///< MeshGroup transformation matrix
 
 	// Lighting related parameters ------------------------------------
@@ -164,6 +165,8 @@ public:
 	static D3DXHANDLE	eAttennuate;
 	static D3DXHANDLE	eInScatter;
 	static D3DXHANDLE	eSHD;
+	static D3DXHANDLE	eSHD2;       ///< Scene shadow (G1) parameters
+	static D3DXHANDLE	eSHDT2;      ///< Scene shadow (G1) coverage centre/radius
 	static D3DXHANDLE	eNight;
 
 	// Textures --------------------------------------------------------
@@ -181,6 +184,7 @@ public:
 	static D3DXHANDLE	eTranslMap;
 	static D3DXHANDLE	eTransmMap;
 	static D3DXHANDLE	eShadowMap;
+	static D3DXHANDLE	eShadowMap2;  ///< Scene shadow (G1) map
 	static D3DXHANDLE	eIrradMap;
 
 	// Legacy Atmosphere -----------------------------------------------

@@ -48,6 +48,7 @@ public:
 	bool bLocals;
 	bool bMicrotex;
 	bool bShdMap;
+	bool bSceneShadow;		// unified scene shadow map (G1) receiver compiled in
 	bool bDevtools;
 	bool bAtmosphere;
 	bool bWater;
@@ -94,6 +95,10 @@ struct ShaderParams
 	float	 fAlpha;
 	float	 fBeta;
 	float	 fTgtScale;
+	float	 fPad0;				// alignment padding (keeps the following float4x4 16-byte aligned)
+	float4x4 mLVP2;				// Unified scene shadow (G1) light-view-projection
+	float4	 vSHD2;				// G1: texel world size, 1/size, 1/depth, unused
+	float4	 vSHDT;				// G1: coverage centre xyz, coverage radius
 };
 
 // Bools for NewPlanet.hlsl
@@ -103,6 +108,7 @@ struct FlowControlPS
 	BOOL bBelowClouds;			// Camera is below cloud layer
 	BOOL bOverlay;				// Overlay on/off	
 	BOOL bShadows;				// Shadow Map on/off
+	BOOL bShadowsT;				// Unified scene shadow map (G1) on/off
 	BOOL bLocals;				// Local Lights on/off
 	BOOL bMicroNormals;			// Micro texture has normals
 	BOOL bCloudShd;				// Cloud shadow textures valid and enabled
