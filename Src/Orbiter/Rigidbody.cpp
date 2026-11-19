@@ -211,8 +211,11 @@ void RigidBody::Update (bool force)
 		// Update the list of gravity field sources
 		if (force || !gfielddata.ngrav) {
 			ScanGFieldSources (g_psys);
-			gfielddata.updt = td.SimT0 + (gfielddata_updt_interval*rand())/RAND_MAX;
-			// randomize update times
+			// randomize update times (deterministic per object: rand() is not
+			// safe when the vessel update runs on worker threads, see
+			// ParallelUpdate.inc)
+			unsigned rnd = (unsigned)(((size_t)this) * 2654435761u);
+			gfielddata.updt = td.SimT0 + gfielddata_updt_interval * (double)(rnd & 0xFFFF) / 65535.0;
 		} else if (td.SimT0 > gfielddata.updt) {
 			UpdateGFieldSources (g_psys);
 			gfielddata.updt = td.SimT0 + gfielddata_updt_interval;

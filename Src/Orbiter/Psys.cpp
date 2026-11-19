@@ -26,6 +26,10 @@ extern char DBG_MSG[256];
 // Relative-gravity extension implementation (kept out of this official source file)
 #include "RelativityPhysics.inc"
 
+// Multi-core vessel update (performance extension, implementation in the
+// included file; official changes limited to the two Update loops below)
+#include "ParallelUpdate.inc"
+
 PlanetarySystem::PlanetarySystem (char *fname, const Config* config, OutputLoadStatusCallback outputLoadStatus, void* callbackContext)
 {
 	Read (fname, config, outputLoadStatus, callbackContext);
@@ -879,20 +883,24 @@ void PlanetarySystem::Update (bool force)
 	t = PerfDiag::Now();
 	for (i = 0; i < celestials  .size(); i++) celestials  [i]->Update (force);
 	PerfDiag::Add(PerfDiag::g.psyCelestials, t);
+
+	// Vessel updates: vessels that can physically interact (or are close to the
+	// planetary surface) are updated in sequence on the main thread; the
+	// independent vessels are updated on worker threads. See ParallelUpdate.inc.
+	static std::vector<Vessel*> parVessels, serVessels;
+	PerfParallelVesselSets (this, parVessels, serVessels);
+
 	t = PerfDiag::Now();
-	for (i = 0; i < vessels     .size(); i++) vessels     [i]->UpdateBodyForces ();
+	PerfParallelUpdateBodyForces (parVessels, serVessels);
 	PerfDiag::Add(PerfDiag::g.psyBodyForces, t);
+
 	t = PerfDiag::Now();
 	for (i = 0; i < supervessels.size(); i++) supervessels[i]->Update (force);
 	PerfDiag::Add(PerfDiag::g.psySuper, t);
+
 	t = PerfDiag::Now();
-	for (i = 0; i < vessels     .size(); i++) {
-		double tv = PerfDiag::Now();
-		vessels     [i]->Update (force);
-		double tv2 = PerfDiag::Now() - tv;
-		PerfDiag::g.psyVessels += tv2;
-		PerfDiag::Track(PerfDiag::worstUpdate, (int)i, tv2);
-	}
+	PerfParallelUpdateVessels (this, force, parVessels, serVessels);
+	PerfDiag::Add(PerfDiag::g.psyVessels, t);
 }
 
 void PlanetarySystem::FinaliseUpdate ()

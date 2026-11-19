@@ -96,6 +96,13 @@ inline Burst worstUpdate;
 inline Burst worstPost;
 inline Burst worstModule;
 
+// While the vessel update runs on worker threads the accumulators above must
+// not be written concurrently: the parallel sections suspend the diagnostics
+// and the wall-clock time of the parallel section is measured by the caller.
+inline bool g_suspended = false;
+inline void Suspend() { g_suspended = true; }
+inline void Resume() { g_suspended = false; }
+
 // ---------------------------------------------------------------------------
 inline double Now()
 {
@@ -106,18 +113,19 @@ inline double Now()
 	return double(c.QuadPart) * 1e6 / double(freq);
 }
 
-inline void Add(double &acc, double t0) { acc += Now() - t0; }
+inline void Add(double &acc, double t0) { if (!g_suspended) acc += Now() - t0; }
 
 // RAII scope timer: accumulates the lifetime of the scope into acc.
 struct Scope {
 	double t0;
 	double &acc;
 	Scope(double &a) : acc(a), t0(Now()) {}
-	~Scope() { acc += Now() - t0; }
+	~Scope() { if (!g_suspended) acc += Now() - t0; }
 };
 
 inline void Track(Burst &b, int idx, double us)
 {
+	if (g_suspended) return;
 	if (b.n < 8) {
 		b.cost[b.n] = us;
 		b.idx[b.n] = idx;
