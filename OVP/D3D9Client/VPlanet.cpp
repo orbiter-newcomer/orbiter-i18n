@@ -20,6 +20,7 @@
 #include <map>
 #include <sstream>
 #include <unordered_map>
+#include <mutex>
 
 #include "D3D9Client.h"
 #include "D3D9Config.h"
@@ -94,6 +95,13 @@ struct TilePixelPosition
 std::unordered_map<OBJHANDLE, std::unordered_map<int, std::unordered_map<int, std::unordered_map<int, std::vector<FlatShape*>>>>> g_ElevationFlatteningShapes;
 std::unordered_map<OBJHANDLE, std::vector<FlatShape*>> g_ShapeStore;
 std::unordered_map<OBJHANDLE, bool> g_ShapesLoaded;
+
+// Dual-thread support: the flattening shape tables are accessed from the tile
+// loader threads (FilterElevationGraphics) and, via the physics elevation
+// callback (clbkFilterElevation -> FilterElevationPhysics), from the Orbiter
+// physics thread. The lazy table build (ProcessPlanetFlats) must be
+// serialised, and queries must not race with it.
+static std::recursive_mutex g_shapeTableMutex;
 
 std::vector<std::string> EnumerateDirectory(std::string directory, std::string filter)
 {
@@ -245,6 +253,7 @@ void ProcessPlanetFlats(OBJHANDLE hPlanet)
 template <typename Type>
 bool FilterElevation(OBJHANDLE hPlanet, int lvl, int ilat, int ilng, double elev_res, Type* elev)
 {
+	std::lock_guard<std::recursive_mutex> shapeLk(g_shapeTableMutex);
 	if (!elev) return false;
 	if (g_ShapesLoaded.find(hPlanet) == g_ShapesLoaded.end()) ProcessPlanetFlats(hPlanet);
 	if (g_ElevationFlatteningShapes.find(hPlanet) == g_ElevationFlatteningShapes.end()) return false; // Nothing for planet
@@ -332,6 +341,7 @@ void vPlanet::GlobalExit()
 {
 	// Face's Cleanup ShapeStore -----------------------
 	//
+	std::lock_guard<std::recursive_mutex> shapeLk(g_shapeTableMutex);
 	for (auto store : g_ShapeStore)
 	{
 		for (auto shape : store.second)

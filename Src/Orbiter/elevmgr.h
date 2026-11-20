@@ -8,6 +8,7 @@
 #include "vecmat.h"
 #include "ZTreeMgr.h"
 #include <vector>
+#include <mutex>
 
 class CelestialBody;
 
@@ -85,6 +86,12 @@ private:
 	ZTreeMgr *treeMgr[5];
 	bool bDirExists, bModExists;
 	mutable std::vector<ElevationTile> *local_cache = nullptr;
+	// Dual-thread support: the elevation cache/tile loader is not thread-safe
+	// (per-planet mutable cache, shared FILE* in ZTreeMgr, callback into the
+	// graphics client). The physics thread and the main (render) thread may
+	// both query elevations, so Elevation() serialises on this mutex.
+	// recursive: the client callback may query elevations again.
+	mutable std::recursive_mutex elev_lock;
 };
 
 #endif // !__ELEVMGR_H

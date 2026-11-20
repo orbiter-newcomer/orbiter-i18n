@@ -320,6 +320,10 @@ bool ElevationManager::LoadElevationTile_mod (int lvl, int ilat, int ilng, doubl
 
 double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vector<ElevationTile> *tilecache, Vector *normal, int *reslvl) const
 {
+	// Dual-thread support: serialise elevation queries. The physics thread
+	// (vessel surface parameters/contact) and the main render thread (camera,
+	// base visuals, graphics client depth queries) both enter here.
+	std::lock_guard<std::recursive_mutex> elevLk (elev_lock);
 	double e = 0.0;
 	if (reslvl) *reslvl = 0;
 	reqlvl = (reqlvl ? min (max(0,reqlvl-7), maxlvl) : maxlvl);

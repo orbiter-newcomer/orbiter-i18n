@@ -17,6 +17,7 @@
 #define __PERF_DIAG_H
 
 #include <windows.h>
+#include <atomic>
 
 namespace PerfDiag {
 
@@ -99,9 +100,11 @@ inline Burst worstModule;
 // While the vessel update runs on worker threads the accumulators above must
 // not be written concurrently: the parallel sections suspend the diagnostics
 // and the wall-clock time of the parallel section is measured by the caller.
-inline bool g_suspended = false;
-inline void Suspend() { g_suspended = true; }
-inline void Resume() { g_suspended = false; }
+// atomic: in dual-thread mode the physics thread toggles it while the main
+// thread may execute timing scopes.
+inline std::atomic<bool> g_suspended = false;
+inline void Suspend() { g_suspended.store(true); }
+inline void Resume() { g_suspended.store(false); }
 
 // ---------------------------------------------------------------------------
 inline double Now()

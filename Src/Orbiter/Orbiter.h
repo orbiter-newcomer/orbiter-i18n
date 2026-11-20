@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <condition_variable>
 
 class DInput;
 class Config;
@@ -374,21 +375,50 @@ protected:
 	void ModulePostStep ();
 	VOID UpdateWorld ();
 
-	// ---- dual thread experiment: physics thread + render thread ----
+	// ---- dual thread route A: physics thread + main-thread rendering ----
 	// (disabled by default; enabled by DUAL_THREAD_EXPERIMENT in Orbiter.cpp)
-	void RenderThreadProc();
+	// Physics thread: UpdatePhysicsFrameDual() (PlanetarySystem::Update only).
+	// Main thread: StageA (pre-step), StageB (post-step/EndTimeStep) and the
+	// D3D9Client rendering. See PhysicsThread.inc and
+	// docs/handover/dual-thread-route-a.md.
+	void UpdatePhysicsFrameDual();
 	void PhysicsThreadProc();
+	void EnsurePhysicsThread();
+	void StopPhysicsThread();
+	bool WaitPhysicsFrame();
+	void ReleasePhysicsFrame();
+	void RunDualStageA();
+	void RunDualStageB();
+	void UpdateDualPerfLog();
+	void UpdateDualPhysicsLog();
+	INT  RunDualThread();
 	std::thread m_physicsThread;
-	std::thread m_renderThread;
 	std::mutex  m_dualMutex;
-	std::atomic<bool> m_dualQuit{false};
-	std::atomic<bool> m_dualRenderPending{false};
-	std::atomic<bool> m_dualRenderDone{false};
+	std::condition_variable m_dualCv;
+	bool m_dualThreadQuit = false;      // guarded by m_dualMutex
+	bool m_dualFrameReady = false;      // guarded by m_dualMutex
+	bool m_dualGateOpen = false;        // guarded by m_dualMutex
+	bool m_dualSessionActive = false;   // guarded by m_dualMutex
+	unsigned long long m_dualPhysCompleted = 0; // guarded by m_dualMutex
+	std::atomic<bool> m_dualPhysRunning{false};      // bRunning mirror
+	std::atomic<bool> m_dualPhysForceUpdate{false};  // g_bForceUpdate mirror
+	std::atomic<bool> m_dualPhysPlayback{false};     // bPlayback mirror
+	// per-frame performance counters (physics time is written by the physics
+	// thread and read by the main thread while the physics thread is parked)
+	double m_dualPhysFrameTime = 0.0;
+	double m_dualPhysTimeAcc = 0.0;
+	double m_dualSyncATime = 0.0, m_dualSyncBTime = 0.0;
+	double m_dualSyncAWait = 0.0, m_dualSyncBWait = 0.0;
+	double m_dualWaitTime = 0.0, m_dualWaitAcc = 0.0;
+	double m_dualRenderTime = 0.0, m_dualRenderAcc = 0.0;
+	double m_dualPerfStart = 0.0, m_dualPerfLast = 0.0;
+	double m_dualPhysLogT = 0.0;
+	int    m_dualPerfFrames = 0;
 
-	// render snapshot double buffer (physics side writes, render side reads)
+	// render snapshot double buffer (kept for diagnostics/future render-thread use)
 	RenderSnapshot m_renderSnap[2];
 	std::atomic<int> m_renderSnapIdx{0};      // latest complete snapshot (0/1)
-	void PublishRenderSnapshot();          // called at the end of UpdateWorld
+	void PublishRenderSnapshot();          // called at the end of the frame
 
 	void IncWarpFactor ();
 	void DecWarpFactor ();

@@ -125,9 +125,16 @@ void RigidBody::SetOrbitReference (CelestialBody *body)
 const Elements *RigidBody::Els () const
 {
 	extern bool g_bStateUpdate;
+	extern bool g_bDualThreadMode;
+	extern bool OrbiterIsMainThread();
 	if (cbody && el) {
 		if (!el_valid) {
-			el->Calculate (cpos, cvel, g_bStateUpdate ? td.SimT1 : td.SimT0);
+			// Dual-thread mode: the main (render/UI) thread always reads the
+			// stable state (SimT0), the physics thread uses the update state.
+			bool bUpd;
+			if (g_bDualThreadMode && OrbiterIsMainThread()) bUpd = false;
+			else bUpd = g_bStateUpdate;
+			el->Calculate (cpos, cvel, bUpd ? td.SimT1 : td.SimT0);
 			//el->Calculate (s0->pos-cbody->GPos(), s0->vel-cbody->GVel(), td.SimT0);
 			el_valid = true;
 		}
