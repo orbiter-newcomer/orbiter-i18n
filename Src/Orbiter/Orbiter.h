@@ -13,6 +13,9 @@
 #include "Mesh.h"
 #include "TimeData.h"
 #include <chrono>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 class DInput;
 class Config;
@@ -355,6 +358,17 @@ protected:
 	void ModulePreStep ();
 	void ModulePostStep ();
 	VOID UpdateWorld ();
+
+	// ---- dual thread experiment: physics thread + render thread ----
+	// (disabled by default; enabled by DUAL_THREAD_EXPERIMENT in Orbiter.cpp)
+	void RenderThreadProc();
+	void PhysicsThreadProc();
+	std::thread m_physicsThread;
+	std::thread m_renderThread;
+	std::mutex  m_dualMutex;
+	std::atomic<bool> m_dualQuit;
+	std::atomic<bool> m_dualRenderPending;
+	std::atomic<bool> m_dualRenderDone;
 
 	void IncWarpFactor ();
 	void DecWarpFactor ();

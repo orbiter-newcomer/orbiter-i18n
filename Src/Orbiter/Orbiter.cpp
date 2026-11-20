@@ -4,6 +4,10 @@
 #define STRICT 1
 #define OAPI_IMPLEMENTATION
 
+// Dual thread experiment: 0 = disabled (default, original single thread loop),
+// 1 = physics thread + render thread (see docs/handover/dual-thread-design.md)
+#define DUAL_THREAD_EXPERIMENT 0
+
 // Enable visual styles. Source: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773175(v=vs.85).aspx
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -1106,6 +1110,36 @@ void Orbiter::ScreenToClient (POINT *pt) const
 // Name: Run()
 // Desc: Message-processing loop. Idle time is used to render the scene.
 //-----------------------------------------------------------------------------
+#if DUAL_THREAD_EXPERIMENT
+// ---- render thread: executes render requests from the main/physics side ----
+void Orbiter::RenderThreadProc()
+{
+	while (!m_dualQuit.load()) {
+		if (m_dualRenderPending.load()) {
+			Render3DEnvironment();
+			m_dualRenderPending.store(false);
+			m_dualRenderDone.store(true);
+		} else {
+			std::this_thread::yield();
+		}
+	}
+}
+
+// ---- physics thread: runs the simulation update loop ----
+void Orbiter::PhysicsThreadProc()
+{
+	while (!m_dualQuit.load()) {
+		if (bSession && !bPaused) {
+			BeginTimeStep(bRunning);
+			UpdateWorld();
+			EndTimeStep(bRunning);
+		} else {
+			std::this_thread::yield();
+		}
+	}
+}
+#endif // DUAL_THREAD_EXPERIMENT
+
 INT Orbiter::Run ()
 {
     // Recieve and process Windows messages
