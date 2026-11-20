@@ -8,6 +8,10 @@
 #include <Windows.h>
 #include <Psapi.h>
 #include "Log.h"
+#include <mutex>
+
+// dual thread: the log file is written from the physics and render threads too
+static std::mutex g_logMutex;
 #include "Orbiter.h"
 
 using namespace std;
@@ -50,6 +54,7 @@ void LogOutFormat (const char *msg, ...)
 
 void LogOutVA(const char *format, va_list ap)
 {
+	std::lock_guard<std::mutex> lk(g_logMutex);
 	FILE *f = fopen(logname, "a+t");
 	if (f) {
 		fprintf(f, "%010.3f: ", (timeGetTime() - t0) * 1e-3);
@@ -440,4 +445,3 @@ double EndProf (DWORD *count)
 	if (count) *count = prof_count;
 	return prof_sum/(double)prof_count;
 }
-

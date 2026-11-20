@@ -1114,9 +1114,15 @@ void Orbiter::ScreenToClient (POINT *pt) const
 // ---- render thread: executes render requests from the main/physics side ----
 void Orbiter::RenderThreadProc()
 {
+	oapiWriteLogV("[DUAL] render thread started");
 	while (!m_dualQuit.load()) {
 		if (m_dualRenderPending.load()) {
-			Render3DEnvironment();
+			{
+				std::lock_guard<std::mutex> lk(m_dualMutex);
+				oapiWriteLogV("[DUAL] render frame begin");
+				Render3DEnvironment();
+				oapiWriteLogV("[DUAL] render frame end");
+			}
 			m_dualRenderPending.store(false);
 			m_dualRenderDone.store(true);
 		} else {
@@ -1128,14 +1134,16 @@ void Orbiter::RenderThreadProc()
 // ---- physics thread: runs the simulation update loop ----
 void Orbiter::PhysicsThreadProc()
 {
+	oapiWriteLogV("[DUAL] physics thread started");
 	while (!m_dualQuit.load()) {
-		if (bSession && !bPaused) {
-			BeginTimeStep(bRunning);
-			UpdateWorld();
-			EndTimeStep(bRunning);
-		} else {
-			std::this_thread::yield();
+		if (bSession) {
+			std::lock_guard<std::mutex> lk(m_dualMutex);
+			if (BeginTimeStep(bRunning)) {
+				UpdateWorld();
+				EndTimeStep(bRunning);
+			}
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 #endif // DUAL_THREAD_EXPERIMENT
@@ -1170,6 +1178,54 @@ void Orbiter::PublishRenderSnapshot()
 
 INT Orbiter::Run ()
 {
+#if DUAL_THREAD_EXPERIMENT
+	// ================= dual thread experiment =================
+	// physics thread + render thread; the main thread dispatches messages,
+	// reads input and coordinates the render frame requests.
+	// See docs/handover/dual-thread-design.md
+	if (!pConfig->CfgCmdlinePrm.LaunchScenario.empty())
+		Launch(pConfig->CfgCmdlinePrm.LaunchScenario.c_str());
+	m_dualQuit.store(false);
+	m_dualRenderPending.store(false);
+	m_dualRenderDone.store(false);
+	m_renderSnapIdx.store(0);
+	m_renderThread = std::thread(&Orbiter::RenderThreadProc, this);
+	m_physicsThread = std::thread(&Orbiter::PhysicsThreadProc, this);
+	{
+		MSG dmsg;
+		PeekMessage(&dmsg, NULL, 0U, 0U, PM_NOREMOVE);
+		while (WM_QUIT != dmsg.message) {
+			BOOL bGot = (bSession ? PeekMessage(&dmsg, NULL, 0U, 0U, PM_REMOVE) : GetMessage(&dmsg, NULL, 0U, 0U));
+			if (bGot) {
+				if (!m_pLaunchpad || !m_pLaunchpad->ConsumeMessage(&dmsg)) {
+					TranslateMessage(&dmsg);
+					DispatchMessage(&dmsg);
+				}
+			} else if (bSession && bVisible) {
+				if (bAllowInput) bActive = true, bAllowInput = false;
+				if (bActive) UserInput();
+				if (!m_dualRenderPending.load()) {
+					m_dualRenderDone.store(false);
+					m_dualRenderPending.store(true);
+				}
+				int waitMs = 0;
+				while (!m_dualRenderDone.load() && !m_dualQuit.load() && waitMs < 5000) {
+					MSG wmsg;
+std::this_thread::sleep_for(std::chrono::milliseconds(1));
+if (PeekMessage(&wmsg, NULL, 0U, 0U, PM_REMOVE)) { TranslateMessage(&wmsg); DispatchMessage(&wmsg); }
+waitMs++;
+				}
+				if (waitMs >= 5000) oapiWriteLogV("[DUAL] render wait timeout");
+			}
+		}
+	}
+	m_dualQuit.store(true);
+	if (m_renderThread.joinable()) m_renderThread.join();
+	if (m_physicsThread.joinable()) m_physicsThread.join();
+	oapiWriteLogV("[DUAL] dual thread loop exited");
+	return 0;
+#endif // DUAL_THREAD_EXPERIMENT
+
     // Recieve and process Windows messages
     BOOL  bGotMsg, bCanRender, bpCanRender = TRUE;
     MSG   msg;
@@ -1344,7 +1400,9 @@ void Orbiter::SingleFrame ()
 			EndTimeStep (bRunning);
 			if (bVisible) {
 				if (bActive) UserInput ();
+				oapiWriteLogV("[DUAL] render frame begin");
 				Render3DEnvironment();
+				oapiWriteLogV("[DUAL] render frame end");
 			}
 		}
 	}

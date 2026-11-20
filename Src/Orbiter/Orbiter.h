@@ -380,13 +380,13 @@ protected:
 	std::thread m_physicsThread;
 	std::thread m_renderThread;
 	std::mutex  m_dualMutex;
-	std::atomic<bool> m_dualQuit;
-	std::atomic<bool> m_dualRenderPending;
-	std::atomic<bool> m_dualRenderDone;
+	std::atomic<bool> m_dualQuit{false};
+	std::atomic<bool> m_dualRenderPending{false};
+	std::atomic<bool> m_dualRenderDone{false};
 
 	// render snapshot double buffer (physics side writes, render side reads)
 	RenderSnapshot m_renderSnap[2];
-	std::atomic<int> m_renderSnapIdx;      // latest complete snapshot (0/1)
+	std::atomic<int> m_renderSnapIdx{0};      // latest complete snapshot (0/1)
 	void PublishRenderSnapshot();          // called at the end of UpdateWorld
 
 	void IncWarpFactor ();
