@@ -271,6 +271,7 @@ public:
 	 * \brief Render the whole main scene
 	 */
 	void RenderMainScene();
+	void RenderMainScene2D();	// dual thread: HUD/2D overlay part of the main scene (main thread)
 
 	/**
 	 * \brief Returns screen space sun visual parameters for Lens Flare rendering.

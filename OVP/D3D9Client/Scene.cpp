@@ -1,4 +1,4 @@
-// ==============================================================
+﻿// ==============================================================
 // Scene.cpp
 // Part of the ORBITER VISUALISATION PROJECT (OVP)
 // Dual licensed under GPL v3 and LGPL v3
@@ -2210,6 +2210,21 @@ void Scene::RenderMainScene()
 	}*/
 
 	// -------------------------------------------------------------------------------------------------------
+	RenderMainScene2D();
+}
+
+// ---------------------------------------------------------------------------
+// Scene::RenderMainScene2D
+//
+// HUD/2D overlay part of the main scene, split out for the dual thread
+// experiment: the 3D part (RenderMainScene) can run on the render thread while
+// this 2D part runs on the main thread after the 3D frame is complete.
+// ---------------------------------------------------------------------------
+void Scene::RenderMainScene2D()
+{
+	D3D9Pad *pSketch = NULL;
+	LPDIRECT3DTEXTURE9 pShdMap = smap.pShadowMap;	// debug visualisation source (2D)
+
 	// Render HUD Overlay to backbuffer directly
 	// -------------------------------------------------------------------------------------------------------
 
