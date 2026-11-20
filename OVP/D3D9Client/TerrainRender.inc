@@ -741,6 +741,9 @@ void Scene::RenderSceneShadow(vPlanet *vp)
 
 	// 3) base structures: NOT rendered into the G1 shadow map (official path).
 
+	// Frame profiler: number of terrain tiles rendered into the scene shadow map
+	Perf_ShadowTiles(nTiles);
+
 	PopPass();
 	gc->PopRenderTargets();
 

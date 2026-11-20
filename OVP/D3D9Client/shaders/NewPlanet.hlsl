@@ -431,6 +431,36 @@ float GGX_NDF(float dHN, float rgh)
 
 float4 TerrainPS(TileVS frg) : COLOR
 {
+	// ------------------------------------------------------------------
+	// Night side terrain simplification
+	//
+	// In the spherical (high altitude) terrain rendering mode the terrain
+	// texture detail is invisible on the dark side of the planet. SurfTile::
+	// Render flags those tiles (Prm.fPad0 = 1): instead of the full surface,
+	// micro texture, water and cloud shadow shading only the night lights and
+	// a minimal ambient term are computed. Near the surface the flag is never
+	// set, so the terrain is always rendered in full quality.
+	// ------------------------------------------------------------------
+	if (Prm.fPad0 > 0.5f) {
+
+		float3 vPlN = normalize(Const.CamPos - frg.camW.xyz);
+		float  fDPS = dot(vPlN, Const.toSun);
+
+		float2 vUVSrfN = frg.texUV.xy * Prm.vTexOff.zw + Prm.vTexOff.xy;
+
+		// Night lights (the only surface detail that is visible in the dark)
+		float4 cMskN = Flow.bMask ? tex2D(tMask, vUVSrfN) : float4(0, 0, 0, 1);
+		cMskN.b = (cMskN.b > 0.15f ? cMskN.b : 0.0f);
+
+		float  fNgt  = saturate(-fDPS * 4.0f + 0.05f) * Prm.fBeta;
+		float3 cNgt  = cMskN.rgb * (1.0f - Const.CamSpace) * fNgt;
+		float3 cNgt2 = cMskN.rgb * Const.CamSpace * 4.0f * fNgt;
+
+		// Minimal ambient approximation of the dark surface
+		float3 col = Const.cAmbient * Const.Ambient * 0.02f + cNgt + cNgt2;
+
+		return float4(HDR(col), 1.0f);
+	}
 
 	float2 vUVSrf = frg.texUV.xy * Prm.vTexOff.zw + Prm.vTexOff.xy;
 	float2 vUVWtr = frg.texUV.xy * Prm.vMicroOff.zw + Prm.vMicroOff.xy;

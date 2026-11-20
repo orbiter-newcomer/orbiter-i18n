@@ -95,6 +95,8 @@ struct CFG_PHYSICSPRM {
 	double ContactHullStiffness;    // hull/body stiffness [N/m] (0 = original)
 	double ContactHullDampingRatio; // hull/body damping ratio zeta (0 = original damping)
 	double ContactHullFriction;     // hull/body friction coefficient (0 = original)
+	bool   bParallelVesselUpdate;   // multi-core vessel state update (project extension)
+	double ParallelVesselRange;     // vessels closer than this are updated in sequence [m]
 };
 
 struct CFG_LOGICPRM {
@@ -492,6 +494,10 @@ private:
 	void ContactLoad (std::istream &is);
 	void ContactWritePhysics (std::ostream &os, bool bEchoAll) const;
 	const void *GetContactParam (DWORD paramtype) const;
+
+	// Multi-core vessel update (implementation in ParallelUpdateConfig.inc)
+	void ParallelUpdateLoad (std::istream &is);
+	void ParallelUpdateWritePhysics (std::ostream &os, bool bEchoAll) const;
 
 	mutable char cfgpath[256];  // buffer for creating full path names
 	char mshpath[256];

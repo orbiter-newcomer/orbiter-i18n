@@ -61,6 +61,15 @@ void RelLog(const char *fmt, ...)
 
 static const double REL_C_LIGHT = 299792458.0;
 
+// Lensing cubemap cache: the source-frame star field is static in the inertial
+// frame, so the six cubemap faces only need to be re-rendered when the sky
+// brightness changes (day/night) - except in the strong-field / relativistic
+// regime, where the apparent star field changes on short time scales and the
+// cubemap is refreshed every frame (no caching). The strength of a lensing
+// source is mu/dist (gravitational radius over distance).
+static const double REL_LENS_CACHE_STRENGTH = 1e-6;	// mu/dist above which caching is disabled
+static const double REL_LENS_CACHE_BETA     = 1e-3;	// observer beta (v/c) above which caching is disabled
+
 // --------------------------------------------------------------------------
 // Observer velocity for the relativistic aberration.
 // The observer velocity is the velocity of the camera's *tracking target*
@@ -214,7 +223,8 @@ void Scene::InitLensCubemap()
 	pStarsLens = NULL;
 	relLensCubeSize = 0;
 	bLensCubeReady = false;
-	relLensCubeBrightness = -1.0f;
+	relCubeCache.valid = false;
+	relCompCache.valid = false;
 
 	int size = Config->LensCubemapSize;
 	if (size != 512 && size != 1024 && size != 2048) size = 1024;
@@ -237,6 +247,93 @@ void Scene::ExitLensCubemap()
 	SAFE_DELETE(pStarsLens);
 	SAFE_RELEASE(pLensCube);
 	bLensCubeReady = false;
+	relCubeCache.valid = false;
+	relCompCache.valid = false;
+}
+
+// --------------------------------------------------------------------------
+// Relativity render cache: compare the current input parameters with the saved
+// snapshot. Returns true if the star field rendering must be updated.
+// --------------------------------------------------------------------------
+bool Scene::RelParamsChanged(REL_CACHE &cache, bool bIncludeCamera)
+{
+	if (!Config->RelCacheEnabled) return true;
+	if (!cache.valid) return true;
+
+	// sky brightness (day/night blending of the star field)
+	if (fabsf((float)m_celSphere->GetSkyBrightnessPublic() - cache.brightness) > 0.005f) return true;
+
+	// observer velocity (relativistic aberration)
+	float beta = 0.0f;
+	D3DXVECTOR3 vdir(0.0f, 0.0f, 1.0f);
+	{
+		VECTOR3 ovel;
+		if (GetRelAberrationVel(ovel)) {
+			double vmag = sqrt(ovel.x*ovel.x + ovel.y*ovel.y + ovel.z*ovel.z);
+			beta = (float)min(vmag / REL_C_LIGHT, 0.9999);
+			vdir = D3DXVECTOR3((float)ovel.x, (float)ovel.y, (float)ovel.z);
+			D3DXVec3Normalize(&vdir, &vdir);
+		}
+	}
+	if (fabsf(beta - cache.beta) > 1e-5f) return true;
+	if (D3DXVec3Dot(&vdir, &cache.velDir) < 1.0f - 1e-5f) return true;
+
+	// lensing bodies (direction, distance, gravitational radius, spin)
+	const LENSBODY *bodies = NULL;
+	int n = GetLensBodies(&bodies);
+	if (n != cache.nLens) return true;
+	for (int i = 0; i < n; i++) {
+		const LENSBODY &a = bodies[i], &b = cache.lens[i];
+		if (fabsf(a.dist - b.dist) > b.dist * 1e-3f + 1.0f) return true;
+		if (fabsf(a.mu - b.mu) > 1e-6f + fabsf(b.mu) * 1e-3f) return true;
+		if (a.dir[0]*b.dir[0] + a.dir[1]*b.dir[1] + a.dir[2]*b.dir[2] < 1.0f - 1e-5f) return true;
+		if (fabsf(a.aM - b.aM) > 1e-6f) return true;
+	}
+
+	if (bIncludeCamera) {
+		// camera orientation (the composite pass maps the cubemap into the view)
+		D3DXVECTOR3 cx(Camera.x.x, Camera.x.y, Camera.x.z);
+		D3DXVECTOR3 cy(Camera.y.x, Camera.y.y, Camera.y.z);
+		D3DXVECTOR3 cz(Camera.z.x, Camera.z.y, Camera.z.z);
+		if (D3DXVec3Dot(&cx, &cache.camX) < 1.0f - 1e-5f) return true;
+		if (D3DXVec3Dot(&cy, &cache.camY) < 1.0f - 1e-5f) return true;
+		if (D3DXVec3Dot(&cz, &cache.camZ) < 1.0f - 1e-5f) return true;
+		if (fabsf(Camera.vw - cache.tanW) > 1e-5f || fabsf(Camera.vh - cache.tanH) > 1e-5f) return true;
+	}
+	return false;
+}
+
+void Scene::RelParamsSave(REL_CACHE &cache, bool bIncludeCamera)
+{
+	cache.brightness = (float)m_celSphere->GetSkyBrightnessPublic();
+
+	float beta = 0.0f;
+	D3DXVECTOR3 vdir(0.0f, 0.0f, 1.0f);
+	{
+		VECTOR3 ovel;
+		if (GetRelAberrationVel(ovel)) {
+			double vmag = sqrt(ovel.x*ovel.x + ovel.y*ovel.y + ovel.z*ovel.z);
+			beta = (float)min(vmag / REL_C_LIGHT, 0.9999);
+			vdir = D3DXVECTOR3((float)ovel.x, (float)ovel.y, (float)ovel.z);
+			D3DXVec3Normalize(&vdir, &vdir);
+		}
+	}
+	cache.beta = beta;
+	cache.velDir = vdir;
+
+	const LENSBODY *bodies = NULL;
+	int n = GetLensBodies(&bodies);
+	cache.nLens = n;
+	for (int i = 0; i < n; i++) cache.lens[i] = bodies[i];
+
+	if (bIncludeCamera) {
+		cache.camX = D3DXVECTOR3(Camera.x.x, Camera.x.y, Camera.x.z);
+		cache.camY = D3DXVECTOR3(Camera.y.x, Camera.y.y, Camera.y.z);
+		cache.camZ = D3DXVECTOR3(Camera.z.x, Camera.z.y, Camera.z.z);
+		cache.tanW = Camera.vw;
+		cache.tanH = Camera.vh;
+	}
+	cache.valid = true;
 }
 
 // --------------------------------------------------------------------------
@@ -246,6 +343,16 @@ void Scene::ExitLensCubemap()
 void Scene::RenderLensCubemap()
 {
 	if (!bLensCubeReady || !pLensCube || !m_celSphere) return;
+
+	// The source-frame star field (background image + star dots) is static in
+	// the inertial frame: the relativistic mapping (aberration, gravitational
+	// lensing, redshift) is applied by the per-frame composite pass. Rendering
+	// the six cubemap faces every frame is very expensive, especially on
+	// integrated GPUs, so the cubemap is only refreshed when one of the
+	// relativity input parameters (sky brightness, observer velocity, lensing
+	// bodies) has changed noticeably. Near a black hole or at high speed these
+	// parameters change quickly, so the cubemap is then refreshed every frame.
+	if (!Config->RelLensWireframe && !RelParamsChanged(relCubeCache, false)) return;
 
 	RelLog("LensCube: render start (brightness=%.3f)", m_celSphere->GetSkyBrightnessPublic());
 
@@ -263,6 +370,7 @@ void Scene::RenderLensCubemap()
 
 	D3DVIEWPORT9 vp = { 0, 0, (DWORD)relLensCubeSize, (DWORD)relLensCubeSize, 0.0f, 1.0f };
 
+	int facesDone = 0;
 	for (int f = 0; f < 6; f++) {
 		LPDIRECT3DSURFACE9 pFace = NULL;
 		if (pLensCube->GetCubeMapSurface((D3DCUBEMAP_FACES)f, 0, &pFace) != S_OK) break;
@@ -287,6 +395,7 @@ void Scene::RenderLensCubemap()
 		RelLog("LensCube: face %d done", f);
 
 		pFace->Release();
+		facesDone++;
 	}
 
 	HR(pDevice->SetRenderTarget(0, pOldRT));
@@ -297,6 +406,11 @@ void Scene::RenderLensCubemap()
 	D3DVIEWPORT9 vpMain = { 0, 0, (DWORD)viewW, (DWORD)viewH, 0.0f, 1.0f };
 	HR(pDevice->SetViewport(&vpMain));
 	RecallDefaultState();
+
+	// only cache the cubemap if all six faces were rendered completely
+	if (facesDone == 6) {
+		RelParamsSave(relCubeCache, false);
+	}
 	RelLog("LensCube: render done");
 }
 
@@ -308,6 +422,11 @@ void Scene::RenderLensCubemap()
 void Scene::CompositeStarField()
 {
 	if (!bLensCubeReady || !pLensCube || !pStarsLens) return;
+
+	// Render cache: skip the composite pass when the input parameters (camera
+	// orientation, observer velocity, lensing bodies, sky brightness) have not
+	// changed noticeably since the previous frame.
+	if (!RelParamsChanged(relCompCache, true)) return;
 
 	RelLog("Composite: start (bodies=%d)", relLensCount);
 
@@ -435,6 +554,7 @@ void Scene::CompositeStarField()
 
 	HR(pDevice->SetTexture(0, NULL));
 	RecallDefaultState();
+	RelParamsSave(relCompCache, true);
 	RelLog("Composite: done");
 }
 
@@ -768,7 +888,8 @@ void Scene::InitRelativityEffects()
 	pStarsLens = NULL;
 	relLensCubeSize = 0;
 	bLensCubeReady = false;
-	relLensCubeBrightness = -1.0f;
+	relCubeCache.valid = false;
+	relCompCache.valid = false;
 	relLensCount = 0;
 	relLensOn = 0.0f;
 	relLensModel = 0.0f;

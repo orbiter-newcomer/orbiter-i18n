@@ -49,6 +49,7 @@ void D3D9Config::Reset ()
 	Anisotrophy			= 4;
 	SceneAntialias		= 4;
 	DebugLvl			= 1;
+	PerfLog				= 0;
 	VCNearPlane			= 0.1;
 	LightConfig			= 2;
 	NearClipPlane		= 0;
@@ -106,7 +107,9 @@ void D3D9Config::Reset ()
 	TerrainElevSkipAlt = 50000;
 	TerrainLoadThreads = 1;
 	TerrainLoadWaitFlying = 1;
-	TerrainLoadWaitPendingLimit = 12;
+TerrainLoadWaitPendingLimit = 12;
+	NightTerrainSimplify = 1;
+	NightTerrainSimplifySunAlt = -18;
 	LabelDisplayFlags	= LABEL_DISPLAY_RECORD | LABEL_DISPLAY_REPLAY;
 	CloudMicro			= 1;
 	GDIOverlay			= 0;
@@ -203,7 +206,9 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevSkipAlt", i))	TerrainElevSkipAlt = max(0, min(1000000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadThreads", i))	TerrainLoadThreads = max(1, min(4, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitFlying", i))	TerrainLoadWaitFlying = max(0, min(1, i));
-	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitPendingLimit", i))	TerrainLoadWaitPendingLimit = max(4, min(64, i));
+
+	if (oapiReadItem_int   (hFile, (char*)"NightTerrainSimplify", i))	NightTerrainSimplify = max(0, min(1, i));
+	if (oapiReadItem_int   (hFile, (char*)"NightTerrainSimplifySunAlt", i))	NightTerrainSimplifySunAlt = max(-90, min(0, i));
 	if (oapiReadItem_int   (hFile, (char*)"EnableMeshDbg", i))			EnableMeshDbg = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TileMipmaps", i))			TileMipmaps = max(0, min(2, i));
 	if (oapiReadItem_int   (hFile, (char*)"TextureMips", i))			TextureMips = max(0, min(1, i));
@@ -211,6 +216,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_float (hFile, (char*)"StereoSeparation", d))		Separation = max(10.0, min(100.0, d));
 	if (oapiReadItem_float (hFile, (char*)"StereoConvergence", d))		Convergence = max(0.05, min(1.0, d));
 	if (oapiReadItem_int   (hFile, (char*)"DebugLvl", i))				DebugLvl = i;
+	if (oapiReadItem_int   (hFile, (char*)"PerfLog", i))				PerfLog = max(0, min(3, i));
 	if (oapiReadItem_float (hFile, (char*)"VCNearPlane", d))			VCNearPlane = max(-1.0, min(1.0, d));
 	if (oapiReadItem_int   (hFile, (char*)"LightCongiguration", i))	LightConfig = max(min(10, i), 0); // Old typo stored?
 	if (oapiReadItem_int   (hFile, (char*)"LightConfiguration", i))	LightConfig = max(min(10, i), 0); // ...this will override it anyhow
@@ -316,7 +322,9 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"TerrainElevSkipAlt", TerrainElevSkipAlt);
 	oapiWriteItem_int   (hFile, (char*)"TerrainLoadThreads", TerrainLoadThreads);
 	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitFlying", TerrainLoadWaitFlying);
-	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitPendingLimit", TerrainLoadWaitPendingLimit);
+
+	oapiWriteItem_int   (hFile, (char*)"NightTerrainSimplify", NightTerrainSimplify);
+	oapiWriteItem_int   (hFile, (char*)"NightTerrainSimplifySunAlt", NightTerrainSimplifySunAlt);
 	oapiWriteItem_int   (hFile, (char*)"EnableGlass", EnableGlass);
 	oapiWriteItem_int   (hFile, (char*)"EnableMeshDbg", EnableMeshDbg);
 	oapiWriteItem_int   (hFile, (char*)"TileMipmaps", TileMipmaps);
@@ -325,6 +333,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_float (hFile, (char*)"StereoSeparation", Separation);
 	oapiWriteItem_float (hFile, (char*)"StereoConvergence", Convergence);
 	oapiWriteItem_int   (hFile, (char*)"DebugLvl", DebugLvl);
+	oapiWriteItem_int   (hFile, (char*)"PerfLog", PerfLog);
 	oapiWriteItem_float (hFile, (char*)"VCNearPlane", VCNearPlane);
 	oapiWriteItem_int   (hFile, (char*)"LightConfiguration", LightConfig);
 	oapiWriteItem_int   (hFile, (char*)"DisableDrvMgm", DisableDriverManagement);

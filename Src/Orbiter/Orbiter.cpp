@@ -47,6 +47,7 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include <filesystem>
+#include "PerfDiag.h"	// TEMPORARY performance diagnostics (see PerfDiag.h)
 
 #include "Tracy.hpp"
 
@@ -1044,16 +1045,47 @@ void Orbiter::BroadcastGlobalInit ()
 // Render3DEnvironment()
 // Draws the scene
 
+// ---------------------------------------------------------------
+// TEMPORARY performance instrumentation (rendering performance tuning):
+// splits the frame time into the simulation update and the render step
+// and logs a "PERF CORE:" line into Orbiter.log every 2 seconds.
+// Remove when the performance work is finished.
+// ---------------------------------------------------------------
+static double PerfCoreTime ()
+{
+	static LONGLONG freq = 0;
+	LARGE_INTEGER c;
+	if (!freq) QueryPerformanceFrequency ((LARGE_INTEGER*)&freq);
+	QueryPerformanceCounter (&c);
+	return double(c.QuadPart) / double(freq);
+}
+
+static double perfCoreUpd = 0.0, perfCoreRnd = 0.0;
+static double perfCoreScene = 0.0, perfCoreOut2D = 0.0, perfCoreImGui = 0.0, perfCoreDisp = 0.0;
+static double perfCoreLogT = 0.0;
+static int    perfCoreFrames = 0;
+
 HRESULT Orbiter::Render3DEnvironment (bool hidedialogs)
 {
 	if (gclient) {
+		double perfT0 = PerfCoreTime ();
 		if(!hidedialogs)
 			pDlgMgr->ImGuiNewFrame();
+		double perfT1 = PerfCoreTime ();
 		gclient->clbkRenderScene ();
+		double perfT2 = PerfCoreTime ();
 		Output2DData ();
+		double perfT3 = PerfCoreTime ();
 		if(!hidedialogs)
 			gclient->clbkImGuiRenderDrawData();
+		double perfT4 = PerfCoreTime ();
 		gclient->clbkDisplayFrame ();
+		double perfT5 = PerfCoreTime ();
+		// --- temporary render step split (profiler) ---
+		perfCoreImGui += (perfT1 - perfT0) + (perfT4 - perfT3);
+		perfCoreScene += perfT2 - perfT1;
+		perfCoreOut2D += perfT3 - perfT2;
+		perfCoreDisp  += perfT5 - perfT4;
 	}
 	// Mark frame boundary for when using the profiler
 	FrameMark;
@@ -1088,6 +1120,8 @@ INT Orbiter::Run ()
 
 	while (WM_QUIT != msg.message) {
 
+		double perfT0 = 0.0, perfT1 = 0.0;
+
         // Use PeekMessage() if the app is active, so we can use idle time to
         // render the scene. Else, use GetMessage() to avoid eating CPU time.
 		if (bSession) {
@@ -1102,6 +1136,7 @@ INT Orbiter::Run ()
 			}
 		} else {
 			if (bSession) {
+				perfT0 = PerfCoreTime ();
 				if (bAllowInput) bActive = true, bAllowInput = false;
 				UpdateRelativityWarp();
 				if (BeginTimeStep (bRunning)) {
@@ -1117,12 +1152,112 @@ INT Orbiter::Run ()
 				}
 				if (m_pConsole)
 					m_pConsole->ParseCmd();
+				perfT1 = PerfCoreTime ();
 			}
         }
 		if (bRenderOnce && bVisible) {
+			double perfR0 = PerfCoreTime ();
 			if (FAILED (Render3DEnvironment ()))
 				if (hRenderWnd) DestroyWindow (hRenderWnd);
 			bRenderOnce = FALSE;
+			double perfR1 = PerfCoreTime ();
+			// --- temporary frame time split (simulation update / render) ---
+			if (bSession) {
+				PerfDiag::g.frames++;
+				perfCoreUpd += perfT1 - perfT0;
+				perfCoreRnd += perfR1 - perfR0;
+				perfCoreFrames++;
+				if (perfCoreLogT == 0.0) perfCoreLogT = perfR1;
+				else if (perfR1 - perfCoreLogT >= 2.0) {
+					double span = perfR1 - perfCoreLogT;
+					double fps = perfCoreFrames / span;
+					double upd = perfCoreUpd / perfCoreFrames * 1e3;
+					double rnd = perfCoreRnd / perfCoreFrames * 1e3;
+					double oth = span / perfCoreFrames * 1e3 - upd - rnd;
+					LogOutFormat ("PERF CORE: fps=%.1f upd=%.2f rnd=%.2f other=%.2f scene=%.2f out2d=%.2f imgui=%.2f disp=%.2f",
+						fps, upd, rnd, oth,
+						perfCoreScene / perfCoreFrames * 1e3,
+						perfCoreOut2D / perfCoreFrames * 1e3,
+						perfCoreImGui / perfCoreFrames * 1e3,
+						perfCoreDisp / perfCoreFrames * 1e3);
+					// --- detailed simulation update breakdown (PerfDiag.h) ---
+					if (PerfDiag::g.frames > 0) {
+						const int nf = PerfDiag::g.frames;
+						char buf[1400];
+						int n = 0;
+						n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE,
+							"PERF UPD: frames=%d | pre=%.2f psys=%.2f wreck=%.2f dlg=%.2f post=%.2f fin=%.2f clbk=%.2f tail=%.2f"
+							" | psy bod=%.2f cel=%.2f sup=%.2f ves=%.2f bfor=%.2f fBod=%.2f fSup=%.2f fVes=%.2f"
+							" | rb upd=%.2f grav=%.2f prop=%.2f contact=%.2f modPost=%.2f"
+							" | mPre=%.2f mPost=%.2f pPre=%.2f pPost=%.2f"
+							" | surf=%.2f nsurf=%.0f bfor=%.2f"
+							" | vUpd g=%.2f burn=%.2f st=%.2f sprm=%.2f bcol=%.2f rest=%.2f"
+							" | vPost base=%.2f coll=%.2f dock=%.2f rec=%.2f rest=%.2f"
+							" | subs=%.0f maxsub=%d dyn=%.1f | worst",
+							nf,
+							PerfDiag::g.preStep / nf * 1e-3, PerfDiag::g.psysUpdate / nf * 1e-3,
+							PerfDiag::g.wreck / nf * 1e-3, PerfDiag::g.dialogs / nf * 1e-3,
+							PerfDiag::g.postStep / nf * 1e-3, PerfDiag::g.finalise / nf * 1e-3,
+							PerfDiag::g.clbkUpdate / nf * 1e-3, PerfDiag::g.tail / nf * 1e-3,
+							PerfDiag::g.psyBodies / nf * 1e-3, PerfDiag::g.psyCelestials / nf * 1e-3,
+							PerfDiag::g.psySuper / nf * 1e-3, PerfDiag::g.psyVessels / nf * 1e-3,
+							PerfDiag::g.psyBodyForces / nf * 1e-3,
+							PerfDiag::g.psyFinalBodies / nf * 1e-3, PerfDiag::g.psyFinalSuper / nf * 1e-3,
+							PerfDiag::g.psyFinalVessels / nf * 1e-3,
+							PerfDiag::g.rbUpdate / nf * 1e-3, PerfDiag::g.rbGrav / nf * 1e-3,
+							PerfDiag::g.rbProp / nf * 1e-3, PerfDiag::g.rbContact / nf * 1e-3,
+							PerfDiag::g.modulePost / nf * 1e-3,
+							PerfDiag::g.modulePre / nf * 1e-3, PerfDiag::g.modulePost / nf * 1e-3,
+							PerfDiag::g.pluginPre / nf * 1e-3, PerfDiag::g.pluginPost / nf * 1e-3,
+							PerfDiag::g.vesSurf / nf * 1e-3, PerfDiag::g.surfCalls / nf,
+							PerfDiag::g.vesBodyFor / nf * 1e-3,
+							PerfDiag::g.updGuard / nf * 1e-3, PerfDiag::g.updBurn / nf * 1e-3,
+							PerfDiag::g.updState / nf * 1e-3, PerfDiag::g.updSurfPrm / nf * 1e-3,
+							PerfDiag::g.updBaseCol / nf * 1e-3, PerfDiag::g.updRest / nf * 1e-3,
+							PerfDiag::g.postBase / nf * 1e-3, PerfDiag::g.postColl / nf * 1e-3,
+							PerfDiag::g.postDock / nf * 1e-3, PerfDiag::g.postRec / nf * 1e-3,
+							PerfDiag::g.postRest / nf * 1e-3,
+							PerfDiag::g.substeps / nf, PerfDiag::g.maxSubsteps,
+							PerfDiag::g.dynVessels / nf);
+						for (int i = 0; i < PerfDiag::worstUpdate.n && n < (int)sizeof(buf) - 160; i++) {
+							int vi = PerfDiag::worstUpdate.idx[i];
+							const char *nm = "?";
+							if (g_psys && vi >= 0 && vi < (int)g_psys->nVessel())
+								nm = g_psys->GetVessel(vi)->Name();
+							n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE, " %s=%.2f",
+								nm, PerfDiag::worstUpdate.cost[i] * 1e-3);
+						}
+						if (PerfDiag::worstPost.n > 0 && n < (int)sizeof(buf) - 120) {
+							n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE, " | wrPost");
+							for (int i = 0; i < PerfDiag::worstPost.n && n < (int)sizeof(buf) - 60; i++) {
+								int vi = PerfDiag::worstPost.idx[i];
+								const char *nm = "?";
+								if (g_psys && vi >= 0 && vi < (int)g_psys->nVessel())
+									nm = g_psys->GetVessel(vi)->Name();
+								n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE, " %s=%.2f",
+									nm, PerfDiag::worstPost.cost[i] * 1e-3);
+							}
+						}
+						if (PerfDiag::worstModule.n > 0 && n < (int)sizeof(buf) - 120) {
+							n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE, " | wrMod");
+							for (int i = 0; i < PerfDiag::worstModule.n && n < (int)sizeof(buf) - 60; i++) {
+								int vi = PerfDiag::worstModule.idx[i];
+								const char *nm = "?";
+								if (g_psys && vi >= 0 && vi < (int)g_psys->nVessel())
+									nm = g_psys->GetVessel(vi)->Name();
+								n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE, " %s=%.2f",
+									nm, PerfDiag::worstModule.cost[i] * 1e-3);
+							}
+						}
+						LogOutFormat("%s", buf);
+						PerfDiag::Reset();
+					}
+					perfCoreUpd = perfCoreRnd = 0.0;
+					perfCoreScene = perfCoreOut2D = perfCoreImGui = perfCoreDisp = 0.0;
+					perfCoreFrames = 0;
+					perfCoreLogT = perfR1;
+				}
+			}
 		}
 
 		if (bSession) {
@@ -1855,10 +1990,15 @@ bool Orbiter::BeginTimeStep (bool running)
 void Orbiter::EndTimeStep (bool running)
 {
 	if (running) {
-		if (g_psys) g_psys->FinaliseUpdate ();
+		if (g_psys) {
+			double td0 = PerfDiag::Now();
+			g_psys->FinaliseUpdate ();
+			PerfDiag::Add(PerfDiag::g.finalise, td0);
+		}
 		//ModulePostStep();
 	}
 
+	double tb0 = PerfDiag::Now();
 	// Copy frame times from T1 to T0
 	td.EndStep (running);
 
@@ -1867,8 +2007,13 @@ void Orbiter::EndTimeStep (bool running)
 	if (g_pane) g_pane->Update (td.SimT1, td.SysT1);
 
 	// Update visual states
-	if (gclient) gclient->clbkUpdate (bRunning);
+	if (gclient) {
+		double tc0 = PerfDiag::Now();
+		gclient->clbkUpdate (bRunning);
+		PerfDiag::Add(PerfDiag::g.clbkUpdate, tc0);
+	}
 	g_bForceUpdate = false;                        // clear flag
+	PerfDiag::Add(PerfDiag::g.tail, tb0);
 
 	// check for termination of demo mode
 	if (SessionLimitReached())
@@ -1996,12 +2141,17 @@ void Orbiter::UnregisterMenuCmd (int cmdId)
 void Orbiter::ModulePreStep ()
 {
 	// broadcast to modules
+	double tPre = PerfDiag::Now();
 	for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 		it->pModule->clbkPreStep(td.SimT0, td.SimDT, td.MJD0);
+	PerfDiag::Add(PerfDiag::g.pluginPre, tPre);
 
 	// broadcast to vessels
-	for (DWORD i = 0; i < g_psys->nVessel(); i++)
+	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
+		double tp = PerfDiag::Now();
 		g_psys->GetVessel(i)->ModulePreStep (td.SimT0, td.SimDT, td.MJD0);
+		PerfDiag::Add(PerfDiag::g.modulePre, tp);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2011,12 +2161,19 @@ void Orbiter::ModulePreStep ()
 void Orbiter::ModulePostStep ()
 {
 	// broadcast to vessels
-	for (DWORD i = 0; i < g_psys->nVessel(); i++)
+	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
+		double tp = PerfDiag::Now();
 		g_psys->GetVessel(i)->ModulePostStep (td.SimT1, td.SimDT, td.MJD1);
+		double dt = PerfDiag::Now() - tp;
+		PerfDiag::g.modulePost += dt;
+		PerfDiag::Track(PerfDiag::worstModule, (int)i, dt);
+	}
 
 	// broadcast to modules
+	double tPlug = PerfDiag::Now();
 	for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 		it->pModule->clbkPostStep(td.SimT1, td.SimDT, td.MJD1);
+	PerfDiag::Add(PerfDiag::g.pluginPost, tPlug);
 }
 
 //-----------------------------------------------------------------------------
@@ -2025,30 +2182,43 @@ void Orbiter::ModulePostStep ()
 //-----------------------------------------------------------------------------
 VOID Orbiter::UpdateWorld ()
 {
+	double t = PerfDiag::Now();
 	// module pre-timestep callbacks
 	if (bRunning) ModulePreStep ();
+	PerfDiag::Add(PerfDiag::g.preStep, t);
 
 	// update world
 	g_bStateUpdate = true;
 	if (bRunning && td.SimDT) {
 		if (bPlayback) FRecorder_Play();
+		t = PerfDiag::Now();
 		g_psys->Update (g_bForceUpdate);           // logical objects
 		// wreck camera/vessel state update (implementation in WreckDebris.inc)
+		PerfDiag::Add(PerfDiag::g.psysUpdate, t);
+		// relativistic collision debris update (implementation in RelativityPhysics.inc)
+		t = PerfDiag::Now();
 		WreckDebrisUpdate ();
+		PerfDiag::Add(PerfDiag::g.wreck, t);
 	}
+	t = PerfDiag::Now();
 	if (pDlgMgr) pDlgMgr->UpdateDialogs(); // SHOULD BE DONE BY GRAPHICS CLIENT!
+	PerfDiag::Add(PerfDiag::g.dialogs, t);
 
 	// module post-timestep callbacks
+	t = PerfDiag::Now();
 	if (bRunning) ModulePostStep ();
+	PerfDiag::Add(PerfDiag::g.postStep, t);
 
 	g_bStateUpdate = false;
 
+	t = PerfDiag::Now();
 	// create queued wreck vessels outside the state-update phase (creating a
 	// vessel during the update phase is not valid and loses its state)
 	WreckProcessPendingSafe ();
 
 	if (!KillVessels())  // kill any vessels marked for deletion
 		if (hRenderWnd) DestroyWindow (hRenderWnd);
+	PerfDiag::Add(PerfDiag::g.tail, t);
 
 	//g_texmanager->OutputInfo();
 }

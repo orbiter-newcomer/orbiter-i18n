@@ -42,6 +42,7 @@
 #include "CollisionCore.h"
 #include "elevmgr.h"
 #include "ContactModel.inc"   // contact force solver (project extension)
+#include "PerfDiag.h"         // TEMPORARY performance diagnostics (see PerfDiag.h)
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -3924,6 +3925,7 @@ double Vessel::GetGravityGradientDamping () const
 
 void Vessel::UpdateBodyForces ()
 {
+	double tBody = PerfDiag::Now();
 	Lift = Drag = SideForce = 0.0;
 
 	if (m_thruster.size()) UpdateThrustForces ();
@@ -3933,6 +3935,7 @@ void Vessel::UpdateBodyForces ()
 		if (rpressure) UpdateRadiationForces ();
 	}
 	bForceActive |= (Flin_add.x || Flin_add.y || Flin_add.z || Amom_add.x || Amom_add.y || Amom_add.z);
+	PerfDiag::Add(PerfDiag::g.vesBodyFor, tBody);
 }
 
 // =======================================================================
@@ -4364,6 +4367,8 @@ void Vessel::UpdateAerodynamicForces_OLD ()
 
 bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, double tfrac, double dt, bool allow_groundcontact) const
 {
+	PerfDiag::Scope _perfSurf(PerfDiag::g.vesSurf);
+	PerfDiag::g.surfCalls += 1.0;
 	nforcevec = 0; // should move higher up
 	for (int k = 0; k < nforcevec_col && nforcevec < forcevecbuf; k++) {
 		forcevec[nforcevec] = col_forcevec[k];
@@ -7296,27 +7301,65 @@ void Vessel::ResolveCollisionWith(Vessel *v) {
 }
 void Vessel::Update (bool force)
 {
-	// Relativity extension: the player vessel kept as a central wreck piece
-	// is frozen in place so the camera stays on the debris cloud.
-	// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
-	if (RelativityNumericalGuard (this)) return;
+	// The protection guards may create/destroy objects and therefore always run
+	// on the main thread (multi-core update: see ParallelUpdate.inc).
+	if (!RunUpdateGuards()) return;
 
-	// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
-	if (RelativityStrongFieldGuard (this)) return;
+	UpdateCore (force);
+}
 
-	// Relativistic FTL velocity protection (implementation in RelativityPhysics.inc)
-	if (RelativityFTLGuard (this, *s0, s1)) return;
+// =======================================================================
+
+bool Vessel::RunUpdateGuards ()
+{
+	{
+		// diagnostic: relativity protection guards (PERFDIAG)
+		PerfDiag::Scope _perfGuard(PerfDiag::g.updGuard);
+		// Relativity extension: the player vessel kept as a central wreck piece
+		// is frozen in place so the camera stays on the debris cloud.
+		// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
+		if (RelativityNumericalGuard (this)) return false;
+
+		// Relativistic strong-field protection (implementation in RelativityPhysics.inc)
+		if (RelativityStrongFieldGuard (this)) return false;
+
+		// Relativistic FTL velocity protection (implementation in RelativityPhysics.inc)
+		if (RelativityFTLGuard (this, *s0, s1)) return false;
+	}
 
 	// Relativity extension: atmospheric dynamic-pressure burn-up check
-	WreckAtmosphericBurnup (this);
+	{
+		PerfDiag::Scope _perfBurn(PerfDiag::g.updBurn);
+		WreckAtmosphericBurnup (this);
+	}
+	return true;
+}
 
+// =======================================================================
+
+void Vessel::UpdateCore (bool force)
+{
 	// if the vessel is part of a composite structure or passively attached
 	// to a parent vessel, its state is updated by the composite or parent
 	if (attach)
 		return;
 
+	UpdatePropagate (force);
+	UpdateFinish ();
+}
+
+// =======================================================================
+
+void Vessel::UpdatePropagate (bool force)
+{
+	// State propagation part of the vessel update. This part only depends on
+	// the vessel's own state and on read-only celestial body data (no module
+	// callbacks, no terrain/atmosphere queries for the vessels that are updated
+	// on worker threads), so it can run concurrently. See ParallelUpdate.inc.
+
 	int i;
 
+	double perfStateT = PerfDiag::Now();
 	if (fstatus == FLIGHTSTATUS_FREEFLIGHT) {
 
 		if (!supervessel) {
@@ -7365,15 +7408,30 @@ void Vessel::Update (bool force)
 
 	} else { // should not get here
 	}
+	PerfDiag::Add(PerfDiag::g.updState, perfStateT);
+}
+
+// =======================================================================
+
+void Vessel::UpdateFinish ()
+{
+	// Remainder of the vessel update, executed on the main thread after the
+	// propagation phase (surface/atmosphere queries, base collisions, touchdown
+	// handling, comms and module-independent bookkeeping).
+
+	int i;
 
 	// update surface parameters
+	double perfSurfT = PerfDiag::Now();
 	if (proxybody && fstatus != FLIGHTSTATUS_LANDED)
 		UpdateSurfParams();
+	PerfDiag::Add(PerfDiag::g.updSurfPrm, perfSurfT);
 
 	nforcevec_col = 0;
 	if (td.SimT1 >= m_colDebug.showTime)
 		m_colDebug.active = false;
 
+	double perfBaseT = PerfDiag::Now();
 	if (proxyplanet && fstatus != FLIGHTSTATUS_LANDED && !bFRplayback) {
 
 		// base-to-vessel mesh collision
@@ -7381,6 +7439,9 @@ void Vessel::Update (bool force)
 			CheckBaseCollisions((Planet*)proxyplanet);
 		}
 	}
+	PerfDiag::Add(PerfDiag::g.updBaseCol, perfBaseT);
+
+	double perfRestT = PerfDiag::Now();
 
 	if (proxyplanet)
 		m_hullCachePValid = false; // reset cache for this frame
@@ -7528,11 +7589,8 @@ void Vessel::Update (bool force)
 	cpos = s1->pos - cbody->s1->pos;
  	cvel = s1->vel - cbody->s1->vel;
 
-	// module interface calls
-	if (hVis && animcount) {
-		if (modIntf.v->Version() >= 1)
-			((VESSEL2*)modIntf.v)->clbkAnimate (td.SimT1);
-	}
+	// module interface calls (animation callbacks are executed by
+	// UpdateAnimate() on the main thread, see ParallelUpdate.inc)
 
 	Flin.Set (Flin_add);    // store current linear force
 	Amom.Set (Amom_add);    // store current torque
@@ -7546,6 +7604,60 @@ void Vessel::Update (bool force)
 
 	// Now update all passively attached child vessels
 	UpdateAttachments();
+
+	PerfDiag::Add(PerfDiag::g.updRest, perfRestT);
+}
+
+// =======================================================================
+
+void Vessel::UpdateAnimate ()
+{
+	// module interface calls (visual animation of the vessel: plugin code runs
+	// on the main thread only, see Src/Orbiter/ParallelUpdate.inc)
+	if (hVis && animcount) {
+		if (modIntf.v->Version() >= 1)
+			((VESSEL2*)modIntf.v)->clbkAnimate (td.SimT1);
+	}
+}
+
+// =======================================================================
+
+bool Vessel::IsParallelUpdateCandidate () const
+{
+	// Multi-core vessel update classification (Src/Orbiter/ParallelUpdate.inc).
+	//
+	// Only vessels that cannot interact with anything else during the
+	// propagation phase are eligible: no attachments or composite structures,
+	// free flight, no playback, above the terrain elevation query range (so no
+	// elevation/contact queries are executed during the integration) and no
+	// complex (Pines) gravity solver, whose internal state is mutable. The
+	// distance test against all other vessels is done by the caller.
+	//
+	// The state update itself only requires read-only celestial body data; the
+	// atmosphere/surface parameter queries, touchdown handling and comms setup
+	// are deferred to the main thread (Vessel::UpdateFinish).
+	if (!proxybody) return false;
+	if (attach || supervessel || ncattach) return false;
+	if (fstatus != FLIGHTSTATUS_FREEFLIGHT) return false;
+	if (bFRplayback) return false;
+	if (sp.alt < 1.1e5) return false;	// terrain elevation queries below ~100 km
+	if (g_pOrbiter && g_pOrbiter->Cfg()->CfgPhysicsPrm.bNonsphericalGrav)
+		return false;					// Pines gravity solver is not re-entrant
+	return true;
+}
+
+// =======================================================================
+
+bool Vessel::IsParallelForcesCandidate () const
+{
+	// The body-force update calls the vessel module navigation callback
+	// (clbkNavProcess) for vessels with an active nav mode, and the atmosphere
+	// parameter query may call into the atmosphere model module; both must stay
+	// on the main thread.
+	if (!IsParallelUpdateCandidate()) return false;
+	if (navmode != 0) return false;
+	if (sp.is_in_atm) return false;
+	return true;
 }
 
 void Vessel::UpdatePassive ()
@@ -7600,8 +7712,11 @@ void Vessel::PostUpdate ()
 	// Called after all vessels have been updated, but before
 	// module clbkPostStep is called for the vessel
 
+	double perfPostT = PerfDiag::Now();
 	VesselBase::PostUpdate ();
+	PerfDiag::Add(PerfDiag::g.postBase, perfPostT);
 
+	double perfCollT = PerfDiag::Now();
 	if (proxyplanet && !bFRplayback) {
 		// Vessel-to-vessel collisions
 		if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bVesselCollision) {
@@ -7612,9 +7727,11 @@ void Vessel::PostUpdate ()
 			}
 		}
 	}
+	PerfDiag::Add(PerfDiag::g.postColl, perfCollT);
 
 	DWORD j, k;
 
+	double perfDockT = PerfDiag::Now();
 	if (bFRplayback)
 		FRecorder_PlayEvent();
 
@@ -7687,8 +7804,11 @@ void Vessel::PostUpdate ()
 	}
 
 	// flight recorder
+	double perfRecT = PerfDiag::Now();
 	if (bFRrecord) FRecorder_Save();
 	//else if (bFRplayback) FRecorder_Play();
+	PerfDiag::Add(PerfDiag::g.postRec, perfRecT);
+	PerfDiag::Add(PerfDiag::g.postRest, perfDockT);
 }
 
 bool Vessel::CheckSurfaceContact () const
@@ -7719,6 +7839,16 @@ void Vessel::Timejump (double dt, int mode)
 		else                              // suborbital
 			mode = mode & PROP_SORBITAL;
 
+		// Relativistic scenarios: the Keplerian element extrapolation is not
+		// valid near relativistic compact bodies. Re-propagating the state with
+		// the two-body solution over a large time jump can produce non-finite
+		// states (and the subsequent guards would abort the vessel update every
+		// frame), so keep the current state instead.
+		if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bRelativity) {
+			if (mode == PROP_ORBITAL_ELEMENTS)   mode = PROP_ORBITAL_FIXEDSTATE;
+			if (mode == PROP_SORBITAL_ELEMENTS)  mode = PROP_SORBITAL_FIXEDSTATE;
+		}
+
 		switch (mode) {
 		case PROP_ORBITAL_ELEMENTS:
 			el->PosVel (cpos, cvel, td.SimT0+g_pOrbiter->tjump.dt);
@@ -7729,6 +7859,14 @@ void Vessel::Timejump (double dt, int mode)
 			break;
 		case PROP_ORBITAL_FIXEDSURF:
 		case PROP_SORBITAL_FIXEDSURF: {
+			// A vessel without a planetary proximity reference (deep space, or a
+			// vessel in the process of being removed) has no surface frame to
+			// rotate with: keep its state unchanged instead of dereferencing a
+			// null planet pointer.
+			if (!proxyplanet) {
+				LOGOUT("Time jump: %s has no proxy planet, fixed-surface mode skipped.", Name());
+				break;
+			}
 			double dphi = Pi2*dt/proxyplanet->RotT(), cphi = cos(dphi), sphi = sin(dphi);
 			Matrix Rb (cphi,0,-sphi,  0,1,0,  sphi,0,cphi);
 			Vector cp = mul (proxyplanet->GRot(), mul (Rb, tmul (proxyplanet->GRot(), cpos)));
@@ -7750,6 +7888,13 @@ void Vessel::Timejump (double dt, int mode)
 
 	} else if (fstatus == FLIGHTSTATUS_LANDED) {
 
+		// A landed vessel is always associated with a planetary surface, but
+		// be defensive: a missing proxy planet must not crash the time jump.
+		if (!proxyplanet) {
+			LOGOUT("Time jump: landed vessel %s has no proxy planet, state kept.", Name());
+			undock_t = td.SimT0-1000;
+			return;
+		}
 		proxyplanet->LocalToGlobal (sp.ploc, s0->pos);
 		double vground = Pi2 * proxyplanet->Size() * sp.clat / proxyplanet->RotT();
 		s0->vel.Set (-vground*sp.slng, 0.0, vground*sp.clng);

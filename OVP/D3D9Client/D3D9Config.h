@@ -63,6 +63,7 @@ public:
 	double OrbitalShadowMult;		///< Multiplier for cloud shadows for Orbital flight
 	int EnableLimiter;				///< Enable frame-rate limiter
 	int DebugLvl;					///< Level of debug output 'verbosity'. Higher values create more detailed output (0...4, default=1)
+	int PerfLog;					///< Frame profiler: 0=off, 1=CPU stage timings, 2=+GPU timings (logged to Orbiter.log every 2 s)
 	int LabelDisplayFlags;			///< Label display option flags. For example the "Record" and "Replay" labels (0=all disabled, 1=show record label, 2=show replay label, 3=show both \[default\])
 	int LightConfig;				///< Light emitter configuration
 	int NVPerfHUD;					///< ??? (0,1)
@@ -90,6 +91,8 @@ public:
 	int TerrainLoadThreads;			///< Terrain tile loader threads (1...4, default=2)
 	int TerrainLoadWaitFlying;		///< Pause the simulation when the terrain loader falls behind while flying (0=off, 1=on, default=1)
 	int TerrainLoadWaitPendingLimit;	///< Pending tile count that triggers the flying terrain load wait (4...64, default=12)
+	int NightTerrainSimplify;		///< Skip the terrain texture shading on the night side when the terrain renderer is in spherical (high altitude) mode (0=off, 1=on, default=1)
+	int NightTerrainSimplifySunAlt;	///< Sun altitude \[deg\] below which the night side terrain simplification is allowed (-90..0, default=-18; -18 = astronomical twilight, sky completely dark)
 	int CustomCamMode;				///< Custom Camera Mode
 	int TileMipmaps;				///< Enable surface tile mipmaps
 	int ShaderDebug;				///< Shader Debug Logging enable flag (0=disabled, 1=enabled)
@@ -115,6 +118,7 @@ public:
 	double LensBlendEnd;			///< lensing: apparent shift [deg] above which the lensed cubemap replaces the plain star field
 	double LensBrightness;			///< lensing: brightness gain applied to the lensed star field cubemap
 	bool RelLensWireframe;			///< debug: render the lensing source field as a tile wireframe
+	int  RelCacheEnabled;			///< Relativity render cache: skip the cubemap/composite rendering when the input parameters are unchanged (0=off, 1=on, default=1)
 	int MicroMode;					///< Surface micro textures enable flag (0=disabled, 1=enabled)
 	int MicroFilter;				///< Surface micro texture filter mode (0=Point, 1=Linear ,2=Anisotropic 2x ,3=Anisotropic 4x, 4=Anisotropic 8x, Anisotropic 16x)
 	int BlendMode;					///< Surface micro texture light blend mode (0=Soft, 1=Normal, 2=Hard)

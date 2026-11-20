@@ -28,6 +28,7 @@
 #include "VPlanet.h"
 #include "Surfmgr2.h"
 #include "TerrainLoadWait.inc"   // feature hook: terrain load wait (Tilemgr2/TerrainLoadWait.inc)
+#include "PerfStats.inc"         // feature hook: frame profiler (PerfStats.h/.inc)
 #include "Mesh.h"
 #include "VVessel.h"
 #include "VStar.h"
@@ -1201,6 +1202,7 @@ void D3D9Client::clbkUpdate(bool running)
 	double tot_update = D3D9GetTime();
 	if (bFailed==false && bRunning) scene->Update();
 	D3D9SetTime(D3D9Stats.Timer.Update, tot_update);
+	Perf_AddUpdate(D3D9GetTime() - tot_update);
 }
 
 // ==============================================================
@@ -1220,6 +1222,11 @@ void D3D9Client::clbkRenderScene()
 
 	if (Config->PresentLocation == 1) PresentScene();
 
+	// Frame profiler: the frame begins here, so that the present of this frame
+	// (which happens above, at the end of the previous frame's slot) is included
+	// in the measured frame interval. See PerfStats.h.
+	Perf_BeginFrame(pDevice, scene ? scene->GetCameraAltitude() : 0.0);
+
 	scene_time = D3D9GetTime();
 
 	if (pDevice->TestCooperativeLevel()!=S_OK) {
@@ -1232,6 +1239,7 @@ void D3D9Client::clbkRenderScene()
 	if (mem<32) TileBuffer::HoldThread(true);
 
 	scene->RenderMainScene();		// Render the main scene
+	Perf_Mark(PERF_STAGE_SCENE_OTHER);	// remaining clbkRenderScene work (labels etc.)
 
 	// Relativity: diagnostic screen brightness monitor (detects camera flashes)
 
@@ -1270,6 +1278,8 @@ void D3D9Client::clbkRenderScene()
 	// terrain around the camera has been loaded (see UpdateTerrainLoadWait).
 	UpdateTerrainLoadWait();
 	DrawTerrainLoadWaitLabel();
+
+	Perf_EndFrame();	// frame profiler: log the window / poll GPU queries
 }
 
 // ==============================================================
@@ -1310,6 +1320,7 @@ void D3D9Client::PresentScene()
 	}
 
 	D3D9SetTime(D3D9Stats.Timer.Display, time);
+	Perf_AddPresent(D3D9GetTime() - time);
 }
 
 // ==============================================================

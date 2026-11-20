@@ -125,6 +125,15 @@ public:
 	bool IsPointInTile(double lng, double lat);
 
 	virtual void MatchEdges () {}
+
+	/**
+	 * \brief Prepare a geometric LOD morph (CPU vertex interpolation).
+	 * Called on the new child tiles when their parent is about to be subdivided.
+	 */
+	virtual void PrepareMorph () {}
+
+	/// \brief True while a geometric LOD morph is running (vertex positions change every frame).
+	virtual bool IsMorphing () const { return false; }
 	// Match edges with neighbour tiles
 
 	float GetBoundingSphereRad() const;
@@ -206,6 +215,7 @@ protected:
 	VECTOR3 cnt;               // tile centre in local planet coords
 	VECTOR3 vtxshift;          // tile frame shift of origin from planet centre
 	bool edgeok;               // edges have been checked in this frame
+	unsigned __int64 neighborSig; // LOD layout of the 8 neighbours the last time edges were matched
 	TileState state;           // tile load/active/render state flags
 	int lngnbr_lvl, latnbr_lvl, dianbr_lvl; // neighbour levels to which edges have been adapted
 	double last_used;		   // time when this tile was last used as a part of active tile chain
@@ -217,6 +227,9 @@ public:
 	D3DXMATRIX mWorld;
 	MATRIX4 dmWorld;
 	TILEBOUNDS bnd;
+	// Terrain LOD cross fade state (render side)
+	float  fadeAlpha;		// current transition alpha (1 = fully visible)
+	double fadeT0;			// transition start time (0 = no transition)
 };
 
 // =======================================================================
@@ -241,6 +254,7 @@ public:
 	void Unqueue (TileManager2Base *mgr);
 	// removes all tiles of a manager from the load queue (caller must own hLoadMutex)
 
+	inline static int GetQueueSize() { return nqueue; }
 	inline static DWORD WaitForMutex() { return ::WaitForSingleObject (hLoadMutex, INFINITE); }
 	inline static BOOL ReleaseMutex() { return ::ReleaseMutex (hLoadMutex); }
 
@@ -253,7 +267,9 @@ private:
 
 	const oapi::D3D9Client *gc; // the client
 	static int nqueue, queue_in, queue_out;
-	HANDLE hLoadThread; // Load ThreadProc handle
+	static const int MAX_LOAD_THREADS = 4;
+	HANDLE hLoadThread[MAX_LOAD_THREADS];	// Load ThreadProc handles
+	int nLoadThreads;						// number of load threads in use
 	HANDLE hStopThread; // Thread kill signal handle
 	static HANDLE hLoadMutex;
 	static DWORD WINAPI Load_ThreadProc (void*);
@@ -321,6 +337,15 @@ public:
 	int ElevMode, ElevModeLvl;
 	int TilesLoaded;
 
+	// Terrain LOD cross fade (see ProcessNode / RenderFadeTiles)
+	struct FADETILE { Tile *tile; double t0; };
+	std::vector<FADETILE> fadeTiles;	///< parent tiles which are kept rendered for a short transition
+	void AddFadeTile (Tile *tile, double t0);
+	void RemoveFadeTile (Tile *tile);
+	bool IsFadeTile (Tile *tile) const;
+	void RenderFadeTiles ();				///< render the fading parent tiles (opaque, before the new tiles)
+	void UpdateFadeTiles ();				///< drop finished fade entries
+
 	/**
 	 * \brief Constructs a new tile manager object
 	 * \param vplanet planet instance pointer
@@ -353,7 +378,7 @@ public:
 	static HFONT GetDebugFont() { return hFont; }
 
 	template<class TileType>
-	QuadTreeNode<TileType> *FindNode (QuadTreeNode<TileType> root[2], int lvl, int ilat, int ilng);
+	QuadTreeNode<TileType> *FindNode (QuadTreeNode<TileType> root[2], int lvl, int ilat, int ilng, bool bIncludeInvisible = false);
 	// Returns the node at the specified position, or 0 if it doesn't exist
 
 	template<class TileType>
@@ -451,8 +476,8 @@ public:
 	void RenderLabels(D3D9Pad *skp, oapi::Font **labelfont, int *fontidx);
 	void SetSubtreeLabels(QuadTreeNode<TileType> *node, bool activate);
 
-	QuadTreeNode<TileType> *FindNode (int lvl, int ilat, int ilng)
-	{ return TileManager2Base::FindNode<TileType> (tiletree, lvl, ilat, ilng); }
+	QuadTreeNode<TileType> *FindNode (int lvl, int ilat, int ilng, bool bIncludeInvisible = false)
+	{ return TileManager2Base::FindNode<TileType> (tiletree, lvl, ilat, ilng, bIncludeInvisible); }
 	// Returns the node at the specified position, or 0 if it doesn't exist
 
 	// feature hook: read access to the tile quad-tree roots for terrain load

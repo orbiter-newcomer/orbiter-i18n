@@ -25,6 +25,7 @@ void RelLog(const char *fmt, ...);
 #include "DebugControls.h"
 #include "IProcess.h"
 #include "VectorHelpers.h"
+#include "PerfStats.h"
 #include <algorithm>
 #include <sstream>
 #include <vector>
@@ -1309,6 +1310,7 @@ void Scene::RenderMainScene()
 	// Begin a Scene ------------------------------------------------------------------------------------
 	//
 	if (FAILED (gc->BeginScene())) return;
+	Perf_Mark(PERF_STAGE_SECSCENE);
 
 
 
@@ -1414,6 +1416,8 @@ void Scene::RenderMainScene()
 	// Init. camera setup and create a render list
 	// ---------------------------------------------------------------------------------------------
 
+	Perf_Mark(PERF_STAGE_SETUP);
+
 	VOBJREC* pv = NULL;
 	LPDIRECT3DTEXTURE9 pShdMap = NULL;
 
@@ -1440,6 +1444,8 @@ void Scene::RenderMainScene()
 	// ---------------------------------------------------------------------------------------------
 	// Start Rendering of Normal and Depth Buffer for SSAO and (point in scene) visibility checks
 	// ---------------------------------------------------------------------------------------------
+
+	Perf_Mark(PERF_STAGE_GBUFFER);
 
 	if (psgBuffer[GBUF_DEPTH] && pDepthNormalDS)
 	{
@@ -1523,15 +1529,23 @@ void Scene::RenderMainScene()
 	SetCameraFrustumLimits(0.1, 10);
 
 	// TEMP DIAGNOSTIC: cubemap tile wireframe, no lensing, billboard disabled
-	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady;
-	RelLog("Scene: cel sphere lenscube=%d aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", (int)bUseLensCube, Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
+	RelLog("Scene: cel sphere aberr=%d lensing=%d ready=%d (CUBEMAP WIREFRAME)", Config->RelAberration, Config->RelLensing, (int)bLensCubeReady);
 	// "hole" method: render the plain star field first (sharp, with kinematic
 	// aberration); the lensed cubemap is then rendered and composited on top,
 	// replacing the plain star field only where the gravitational apparent
 	// shift is large. Rendering the plain field first keeps the background
 	// image manager state clean (the cubemap face rendering leaves internal
 	// state behind that would otherwise suppress the plain background image).
+	Perf_Mark(PERF_STAGE_CELSPHERE);
+
 	m_celSphere->Render(pDevice, sky_color, false, false);
+
+	// In daylight the star field is hidden by the bright sky: skip the lensing
+	// cubemap render and the star field composite pass (see
+	// SKY_BRIGHTNESS_DAY_CUTOFF in Scene.h). Both are executed again when the
+	// sky gets dark; the strong-field regime always refreshes the cubemap.
+	bool bUseLensCube = (Config->RelAberration || Config->RelLensing) && bLensCubeReady
+		&& (m_celSphere->GetSkyBrightnessPublic() < SKY_BRIGHTNESS_DAY_CUTOFF);
 	if (bUseLensCube) RenderLensCubemap();
 	if (bUseLensCube) CompositeStarField();
 
@@ -1544,6 +1558,8 @@ void Scene::RenderMainScene()
 	// ---------------------------------------------------------------------------------------------
 	// Create a caster list for shadow mapping
 	// ---------------------------------------------------------------------------------------------
+
+	Perf_Mark(PERF_STAGE_SHADOWG0);
 
 	Casters.clear();
 
@@ -1648,6 +1664,8 @@ void Scene::RenderMainScene()
 	// ---------------------------------------------------------------------------------------------
 	// Render Planets
 	// ---------------------------------------------------------------------------------------------
+
+	Perf_Mark(PERF_STAGE_PLANET_PRE);
 
 	DWORD plnmode = *(DWORD*)gc->GetConfigParam(CFGPRM_PLANETARIUMFLAG);
 	DWORD mkrmode = *(DWORD*)gc->GetConfigParam(CFGPRM_SURFMARKERFLAG);
@@ -1770,6 +1788,8 @@ void Scene::RenderMainScene()
 	// render a user defined planetarium art
 	// -------------------------------------------------------------------------------------------------------
 
+	Perf_Mark(PERF_STAGE_MARKERS);
+
 	if (plnmode & PLN_ENABLE) {
 		D3D9Pad *pSketch = GetPooledSketchpad(SKETCHPAD_PLANETARIUM);
 		gc->MakeRenderProcCall(pSketch, RENDERPROC_PLANETARIUM, GetViewMatrix(), GetProjectionMatrix());
@@ -1837,6 +1857,8 @@ void Scene::RenderMainScene()
 	// -------------------------------------------------------------------------------------------------------
 	// render the vessel objects
 	// -------------------------------------------------------------------------------------------------------
+
+	Perf_Mark(PERF_STAGE_SHADOWG0B);
 
 	// Set near clip plane for vessel exterior rendering
 	if (bClearZBuffer) {
@@ -1925,6 +1947,8 @@ void Scene::RenderMainScene()
 	}
 
 
+	Perf_Mark(PERF_STAGE_VESSELS);
+
 	// Render the remaining vessels those are not yet renderred
 	//
 	smap.pShadowMap = NULL;
@@ -1953,6 +1977,8 @@ void Scene::RenderMainScene()
 		}
 	}
 
+
+	Perf_Mark(PERF_STAGE_SUBSYS);
 
 	// -------------------------------------------------------------------------------------------------------
 	// render the vessel sub-systems
@@ -2019,6 +2045,8 @@ void Scene::RenderMainScene()
 
 
 
+	Perf_Mark(PERF_STAGE_COCKPIT);
+
 	// -------------------------------------------------------------------------------------------------------
 	// render the internal parts of the focus object in a separate render pass
 	// -------------------------------------------------------------------------------------------------------
@@ -2059,6 +2087,8 @@ void Scene::RenderMainScene()
 
 
 
+
+	Perf_Mark(PERF_STAGE_POSTFX);
 
 	// -------------------------------------------------------------------------------------------------------
 	// Copy Offscreen render target to backbuffer
@@ -2150,6 +2180,8 @@ void Scene::RenderMainScene()
 	gc->PopRenderTargets();
 
 
+	Perf_Mark(PERF_STAGE_HUD);
+
 	// -------------------------------------------------------------------------------------------------------
 	// Render GDI Overlay to backbuffer directly
 	// -------------------------------------------------------------------------------------------------------
@@ -2207,6 +2239,8 @@ void Scene::RenderMainScene()
 	if (bFreezeEnable) bFreeze = true;
 
 	
+	Perf_Mark(PERF_STAGE_DEBUGOVL);
+
 	// -------------------------------------------------------------------------------------------------------
 	// EnvMap Debugger  TODO: Should be allowed to visualize other maps as well, not just index 0
 	// -------------------------------------------------------------------------------------------------------
@@ -2375,6 +2409,8 @@ void Scene::RenderMainScene()
 		pSketch->EndDrawing(); // SKETCHPAD_DEBUG_TEXT
 	}
 
+
+	Perf_Mark(PERF_STAGE_SCENE_OTHER);
 
 	gc->PopRenderTargets();	// Overlay
 	gc->PopRenderTargets();	// Main Scene

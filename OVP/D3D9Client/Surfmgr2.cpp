@@ -22,6 +22,7 @@
 #include "DebugControls.h"
 #include "gcCore.h"
 #include "D3D9Surface.h"
+#include "PerfStats.h"
 
 // =======================================================================
 extern void FilterElevationGraphics(OBJHANDLE hPlanet, int lvl, int ilat, int ilng, float *elev);
@@ -769,6 +770,9 @@ void SurfTile::Render ()
 	const Scene *scene = mgr->GetScene();
 	const D3D9Client *pClient = mgr->GetClient();
 
+	// Frame profiler: count the tile draw calls of the main scene
+	if (scene->GetRenderPass() == RENDERPASS_MAINSCENE) Perf_AddTerrainTile();
+
 	static const double rad0 = sqrt(2.0)*PI05;
 	double sdist, rad;
 	bool has_specular = false;
@@ -805,6 +809,32 @@ void SurfTile::Render ()
 	has_atmosphere &= pShader->bAtmosphere;
 
 	sp->vCloudOff = FVECTOR4(0, 0, 1, 1);
+
+	// ----------------------------------------------------------------------
+	// Night side terrain simplification
+	// ----------------------------------------------------------------------
+	// The terrain renderer switches to a spherical (high altitude) mode when
+	// the camera is far away from the surface (see vPlanet::RenderSphere). In
+	// that mode the terrain texture detail is invisible on the dark side of the
+	// planet: the shader can skip the expensive surface shading and only keep
+	// the night lights. Near the surface (Elevated mode) the terrain must
+	// always be rendered in full quality, so the simplification is disabled
+	// there.
+	//
+	// The dark side test uses the sun altitude angle of the tile centre and a
+	// configurable cutoff. The default (-18 deg = astronomical twilight, the
+	// sky is completely dark) guarantees that the normal renderer would not
+	// show any terrain texture detail either, so the simplified and the full
+	// shading paths produce the same (dark) image and no block-shaped
+	// brightness differences between neighbouring tiles can appear.
+	bool bNightSimplify = false;
+	if (Config->NightTerrainSimplify && (mgr->ElevMode == eElevMode::Spherical) && ltex) {
+		double sdist0 = acos(dotp(mgr->prm.sdir, cnt));	// sun - tile centre angle [rad]
+		double sunAlt = PI05 - sdist0;					// sun altitude angle [rad]
+		double cutoff = Config->NightTerrainSimplifySunAlt * RAD;
+		bNightSimplify = (sunAlt < cutoff);
+	}
+	sp->fPad0 = bNightSimplify ? 1.0f : 0.0f;
 
 	D3DXVECTOR3 bs_pos;
 	D3DXVec3TransformCoord(&bs_pos, &mesh->bsCnt, &mWorld);
@@ -1396,6 +1426,10 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	int i;
 	class Scene *scene = GetClient()->GetScene();
 
+	// Frame profiler: only the main scene pass is profiled (the same tile manager
+	// is also rendered for the env map / irradiance probes).
+	const bool bPerf = scene && (scene->GetRenderPass() == RENDERPASS_MAINSCENE);
+
 	// adjust scaling parameters (can only be done if no z-buffering is in use)
 	if (!use_zbuf) {
 		double R = obj_size;
@@ -1488,9 +1522,11 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	// ------------------------------------------------------------------
 	// TODO: render full sphere for levels < 4
 
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_LOCK);
 	loader->WaitForMutex();
 
 	// update the tree
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_PROCESS);
 	for (i = 0; i < 2; i++)
 		ProcessNode (tiletree+i);
 
@@ -1502,6 +1538,7 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	// before the terrain is rendered, so the terrain shader can sample it in
 	// the same frame. Implementation: TerrainRender.inc
 	// ------------------------------------------------------------------
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_SHADOW);
 	scene->RenderSceneShadow(vp);
 
 	// The scene shadow pass renders with its own shaders and changes the device
@@ -1512,9 +1549,22 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	pShader->Setup(pPatchVertexDecl, bUseZ, 0);
 	pShader->GetDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 
+	// default transition alpha (1 = fully visible); individual tiles override it
+	// while they fade in after a LOD switch
+	float fadeOne = 1.0f;
+	pShader->SetPSConstants("TerrainTileFade", &fadeOne, sizeof(float));
+
+	// Terrain LOD cross fade: draw the fading coarser parent tiles first (they are
+	// the background for the new tiles which fade in), then the current tree.
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_DRAW);
+	RenderFadeTiles();
+
 	// render the tree
 	for (i = 0; i < 2; i++)
 		RenderNode (tiletree+i);
+
+	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_TAIL);
+	UpdateFadeTiles();
 
 	loader->ReleaseMutex();
 
@@ -1925,4 +1975,3 @@ float* TileManager2<SurfTile>::BrowseElevationData(int lvl, int ilat, int ilng, 
 
 	return elev;
 }
-

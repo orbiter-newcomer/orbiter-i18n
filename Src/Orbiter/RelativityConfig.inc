@@ -5,20 +5,58 @@
 // that file). Declarations live in Config.h.
 // -----------------------------------------------------------------------------
 
+// The official Config::GetString() matches configuration keys by prefix, so a
+// query for "Relativity" also matches "RelativityDoppler", "RelativityLensing",
+// ... depending on the line order in the file. The relativity parameters are
+// therefore loaded with an exact key comparison.
+static bool RelativityGetStringExact (std::istream &ifs, const char *key, char *val, size_t valsz)
+{
+	char line[512];
+	int i, last;
+	val[0] = 0;
+	ifs.clear();
+	ifs.seekg (0, std::ios::beg);
+	while (ifs.getline (line, sizeof(line))) {
+		for (i = 0; line[i] && line[i] != ';'; i++);	// cut comment
+		line[i] = 0;
+		for (i = 0; line[i] && line[i] != '='; i++);	// split key/value
+		if (!line[i]) continue;
+		line[i] = 0;
+		i++;											// value start
+		for (last = (int)strlen(line)-1; last >= 0 && (line[last]==' '||line[last]=='\t'); last--);
+		line[last+1] = 0;
+		if (_stricmp (line, key)) continue;
+		while (line[i] == ' ' || line[i] == '\t') i++;
+		snprintf (val, valsz, "%s", line+i);
+		return true;
+	}
+	ifs.clear();
+	return false;
+}
+
+static bool RelativityGetBoolExact (std::istream &ifs, const char *key, bool &val)
+{
+	char buf[64];
+	if (!RelativityGetStringExact (ifs, key, buf, sizeof(buf))) return false;
+	if (!_strnicmp (buf, "true", 4)) { val = true;  return true; }
+	if (!_strnicmp (buf, "false", 5)) { val = false; return true; }
+	return false;
+}
+
 void Config::RelativityLoad (std::istream &ifs)
 {
-	GetBool (ifs, "Relativity", CfgPhysicsPrm.bRelativity);
+	RelativityGetBoolExact (ifs, "Relativity", CfgPhysicsPrm.bRelativity);
 	GetInt (ifs, "RelativityGravityMethod", CfgPhysicsPrm.RelativityGravityMethod);
 	GetInt (ifs, "RelativityFTLMode", CfgPhysicsPrm.RelativityFTLMode);
-	GetBool (ifs, "RelativityCharge", CfgPhysicsPrm.bRelativisticCharge);
+	RelativityGetBoolExact (ifs, "RelativityCharge", CfgPhysicsPrm.bRelativisticCharge);
 	double d;
 	// relativistic visual effects
-	GetBool (ifs, "RelativityDoppler", CfgVisualPrm.bRelDoppler);
-	GetBool (ifs, "RelativityAberration", CfgVisualPrm.bRelAberration);
-	GetBool (ifs, "RelativityLensing", CfgVisualPrm.bRelLensing);
-	GetBool (ifs, "RelativityLensWireframe", CfgVisualPrm.bRelLensWireframe);
-	GetBool (ifs, "RelativityGravRedshift", CfgVisualPrm.bRelGravRedshift);
-	GetBool (ifs, "RelativityBodyMarkers", CfgVisualPrm.bRelBodyMarkers);
+	RelativityGetBoolExact (ifs, "RelativityDoppler", CfgVisualPrm.bRelDoppler);
+	RelativityGetBoolExact (ifs, "RelativityAberration", CfgVisualPrm.bRelAberration);
+	RelativityGetBoolExact (ifs, "RelativityLensing", CfgVisualPrm.bRelLensing);
+	RelativityGetBoolExact (ifs, "RelativityLensWireframe", CfgVisualPrm.bRelLensWireframe);
+	RelativityGetBoolExact (ifs, "RelativityGravRedshift", CfgVisualPrm.bRelGravRedshift);
+	RelativityGetBoolExact (ifs, "RelativityBodyMarkers", CfgVisualPrm.bRelBodyMarkers);
 	if (GetReal (ifs, "RelativityChargeRatio", d))
 		CfgPhysicsPrm.RelChargeRatio = max (0.0, min (1.0, d));
 	// Wreck system parameters (collision impact threshold, gas-giant crushing

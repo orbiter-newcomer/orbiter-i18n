@@ -78,7 +78,9 @@ CFG_PHYSICSPRM CfgPhysicsPrm_default = {
 	0.0,		// ContactGearFriction (0 = original gear friction)
 	0.0,		// ContactHullStiffness (0 = original hull stiffness)
 	0.0,		// ContactHullDampingRatio (0 = original hull damping)
-	0.0			// ContactHullFriction (0 = original hull friction)
+	0.0,		// ContactHullFriction (0 = original hull friction)
+	true,		// bParallelVesselUpdate (multi-core vessel state update, project extension)
+	50000.0		// ParallelVesselRange (vessels closer than this are updated in sequence)
 };
 
 CFG_LOGICPRM CfgLogicPrm_default = {
@@ -634,6 +636,7 @@ bool Config::Load(const char *fname)
 	RelativityLoad (ifs);
 	WreckLoad (ifs);
 	ContactLoad (ifs);
+	ParallelUpdateLoad (ifs);
 	GetReal (ifs, "StabilisePLimit", CfgPhysicsPrm.Stabilise_PLimit);
 	GetReal (ifs, "StabiliseSLimit", CfgPhysicsPrm.Stabilise_SLimit);
 	if (GetString (ifs, "PertPropSubsampling", cbuf, sizeof(cbuf)))
@@ -1214,6 +1217,7 @@ BOOL Config::Write (const char *fname) const
 		RelativityWritePhysics (ofs, bEchoAll);
 		WreckWritePhysics (ofs, bEchoAll);
 		ContactWritePhysics (ofs, bEchoAll);
+		ParallelUpdateWritePhysics (ofs, bEchoAll);
 		if (CfgPhysicsPrm.Stabilise_PLimit != CfgPhysicsPrm_default.Stabilise_PLimit || bEchoAll)
 			ofs << "StabilisePLimit = " << CfgPhysicsPrm.Stabilise_PLimit << '\n';
 		if (CfgPhysicsPrm.Stabilise_SLimit != CfgPhysicsPrm_default.Stabilise_SLimit || bEchoAll)
@@ -1646,3 +1650,6 @@ bool Config::GetVector (const char *category, Vector &val)
 // Wreck/debris system configuration handling (implementation, Src/Wreck)
 #include "WreckConfig.inc"
 #include "ContactConfig.inc"
+
+// Multi-core vessel update configuration handling (implementation)
+#include "ParallelUpdateConfig.inc"

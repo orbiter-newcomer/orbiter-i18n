@@ -318,11 +318,17 @@ void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCo
 {
 	SetSkyColour(skyCol);
 
+	// During daylight the sky is bright enough to completely hide the celestial
+	// background (see SKY_BRIGHTNESS_DAY_CUTOFF in Scene.h): skip the expensive
+	// background image and star field rendering in that case. They are rendered
+	// again automatically when the sky gets dark.
+	const bool bDaySky = (GetSkyBrightness() >= SKY_BRIGHTNESS_DAY_CUTOFF);
+
 	// Get celestial sphere render flags
 	DWORD renderFlag = *(DWORD*)m_gc->GetConfigParam(CFGPRM_PLANETARIUMFLAG);
 
 	// celestial sphere background image
-	if (!bOverlaysOnly) RenderBkgImage(pDevice);
+	if (!bOverlaysOnly && !bDaySky) RenderBkgImage(pDevice);
 
 	if (renderFlag & PLN_ENABLE) {
 
@@ -442,7 +448,7 @@ void D3D9CelestialSphere::Render(LPDIRECT3DDEVICE9 pDevice, const VECTOR3& skyCo
 
 	// render stars (the gravitational lensing composite pass renders the
 	// lensed stars instead, so the plain star rendering is skipped)
-	if (!bOverlaysOnly && !bSkipStars) {
+	if (!bOverlaysOnly && !bSkipStars && !bDaySky) {
 		HR(s_FX->SetTechnique(s_eStar));
 		HR(s_FX->SetMatrix(s_eWVP, m_scene->GetProjectionViewMatrix()));
 		RenderStars(s_FX);

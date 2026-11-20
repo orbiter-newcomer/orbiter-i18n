@@ -15,6 +15,7 @@
 #include "Vessel.h"
 #include "SuperVessel.h"
 #include "Log.h"
+#include "PerfDiag.h"	// TEMPORARY performance diagnostics (see PerfDiag.h)
 
 using namespace std;
 
@@ -24,6 +25,10 @@ extern char DBG_MSG[256];
 
 // Relative-gravity extension implementation (kept out of this official source file)
 #include "RelativityPhysics.inc"
+
+// Multi-core vessel update (performance extension, implementation in the
+// included file; official changes limited to the two Update loops below)
+#include "ParallelUpdate.inc"
 
 PlanetarySystem::PlanetarySystem (char *fname, const Config* config, OutputLoadStatusCallback outputLoadStatus, void* callbackContext)
 {
@@ -869,21 +874,53 @@ Vector PlanetarySystem::GetMomentumFlux (const Vector &gpos) const
 void PlanetarySystem::Update (bool force)
 {
 	DWORD i;
+	double t;
+	t = PerfDiag::Now();
 	for (i = 0; i < bodies      .size(); i++) bodies      [i]->BeginStateUpdate ();
+	PerfDiag::Add(PerfDiag::g.psyBodies, t);
 	for (i = 0; i < stars       .size(); i++) stars       [i]->RelTrueAndBaryState();
 	for (i = 0; i < stars       .size(); i++) stars       [i]->AbsTrueState();
+	t = PerfDiag::Now();
 	for (i = 0; i < celestials  .size(); i++) celestials  [i]->Update (force);
-	for (i = 0; i < vessels     .size(); i++) vessels     [i]->UpdateBodyForces ();
+	PerfDiag::Add(PerfDiag::g.psyCelestials, t);
+
+	// Vessel updates: vessels that can physically interact (or are close to the
+	// planetary surface) are updated in sequence on the main thread; the
+	// independent vessels are updated on worker threads. See ParallelUpdate.inc.
+	static std::vector<Vessel*> parVessels, serVessels;
+	PerfParallelVesselSets (this, parVessels, serVessels);
+
+	t = PerfDiag::Now();
+	PerfParallelUpdateBodyForces (parVessels, serVessels);
+	PerfDiag::Add(PerfDiag::g.psyBodyForces, t);
+
+	t = PerfDiag::Now();
 	for (i = 0; i < supervessels.size(); i++) supervessels[i]->Update (force);
-	for (i = 0; i < vessels     .size(); i++) vessels     [i]->Update (force);
+	PerfDiag::Add(PerfDiag::g.psySuper, t);
+
+	t = PerfDiag::Now();
+	PerfParallelUpdateVessels (this, force, parVessels, serVessels);
+	PerfDiag::Add(PerfDiag::g.psyVessels, t);
 }
 
 void PlanetarySystem::FinaliseUpdate ()
 {
 	DWORD i;
+	double t;
+	t = PerfDiag::Now();
 	for (i = 0; i < bodies.size(); i++) bodies[i]->EndStateUpdate ();
+	PerfDiag::Add(PerfDiag::g.psyFinalBodies, t);
+	t = PerfDiag::Now();
 	for (i = 0; i < supervessels.size(); i++) supervessels[i]->PostUpdate ();
-	for (i = 0; i < vessels.size(); i++) vessels[i]->PostUpdate ();
+	PerfDiag::Add(PerfDiag::g.psyFinalSuper, t);
+	t = PerfDiag::Now();
+	for (i = 0; i < vessels.size(); i++) {
+		double tv = PerfDiag::Now();
+		vessels[i]->PostUpdate ();
+		double tv2 = PerfDiag::Now() - tv;
+		PerfDiag::g.psyFinalVessels += tv2;
+		PerfDiag::Track(PerfDiag::worstPost, (int)i, tv2);
+	}
 }
 
 void PlanetarySystem::Timejump (const TimeJumpData& jump)
