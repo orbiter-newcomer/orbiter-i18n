@@ -1210,6 +1210,44 @@ void D3D9Client::clbkUpdate(bool running)
 double frame_time = 0.0;
 double scene_time = 0.0;
 
+// ---------------------------------------------------------------------------
+// Dual thread scene rendering split (see docs/handover/dual-thread-design.md).
+// The original clbkRenderScene() above keeps the single threaded behaviour.
+// clbkRenderScene3D() renders the 3D main scene (render thread), the 2D/UI
+// part including present is done by clbkRenderScene2D() (main thread).
+// ---------------------------------------------------------------------------
+void D3D9Client::clbkRenderScene3D()
+{
+	_TRACE;
+	if (pDevice==NULL || scene==NULL) return;
+	if (bFailed) return;
+	if (!bRunning) return;
+	Perf_BeginFrame(pDevice, scene ? scene->GetCameraAltitude() : 0.0);
+	scene_time = D3D9GetTime();
+	if (pDevice->TestCooperativeLevel()!=S_OK) { bFailed=true; return; }
+	UINT mem = pDevice->GetAvailableTextureMem()>>20;
+	if (mem<32) TileBuffer::HoldThread(true);
+	scene->RenderMainScene();		// 3D main scene
+	Perf_Mark(PERF_STAGE_SCENE_OTHER);
+}
+
+void D3D9Client::clbkRenderScene2D()
+{
+	if (pDevice==NULL || scene==NULL) return;
+	if (bFailed) return;
+	if (!bRunning) return;
+	if (pWM) pWM->Animate();
+	if (Config->PresentLocation == 1) PresentScene();	// present the 3D frame
+	scene->RenderMainScene2D();		// HUD / 2D overlays / EndScene
+	D3D9SetTime(D3D9Stats.Timer.Scene, scene_time);
+	if (bControlPanel) RenderControlPanel();
+	D3D9SetTime(D3D9Stats.Timer.FrameTotal, frame_time);
+	frame_time = D3D9GetTime();
+	UpdateTerrainLoadWait();
+	DrawTerrainLoadWaitLabel();
+	Perf_EndFrame();
+}
+
 void D3D9Client::clbkRenderScene()
 {
 	_TRACE;
@@ -3389,4 +3427,3 @@ VisObject::VisObject(OBJHANDLE hObj) : hObj(hObj)
 VisObject::~VisObject ()
 {
 }
-

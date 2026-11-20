@@ -81,6 +81,7 @@ public:
 	void ScreenToClient (POINT *pt) const;
     LRESULT MsgProc (HWND, UINT, WPARAM, LPARAM);
 	HRESULT Render3DEnvironment(bool hidedialogs = false);
+	void Render2DEnvironment();	// dual thread: 2D/UI/Present on the main thread
 	VOID Output2DData ();
 	void OutputLoadStatus (const char *msg, int line);
 	void OutputLoadTick (int line, bool ok = true);

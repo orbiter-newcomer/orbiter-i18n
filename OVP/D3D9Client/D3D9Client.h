@@ -1191,6 +1191,9 @@ protected:
 	 *   panel, HUD, etc.)
 	 */
 	void clbkRenderScene ();
+	// dual thread: split scene rendering (3D part -> render thread, 2D/UI part -> main thread)
+	virtual void clbkRenderScene3D();
+	virtual void clbkRenderScene2D();
 
 	/**
 	 * \brief React to a discontinous jump in simulation time.
@@ -1501,4 +1504,3 @@ public:
 };
 
 #endif // !__D3D9CLIENT_H
-
