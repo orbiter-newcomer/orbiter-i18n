@@ -24,6 +24,20 @@ class Body;
 class Vessel;
 class ScreenNote;
 class DialogManager;
+// ---- dual thread: render snapshot (physics thread -> render thread) ----
+// Stage 1: camera + simulation time only. See docs/handover/dual-thread-design.md
+struct RenderSnapshot {
+	double  simt, simdt, mjd;
+	Vector  cam_gpos;
+	Vector  cam_gspos;
+	Matrix  cam_grot;
+	Vector  cam_rpos;
+	double  cam_tan_ap, cam_aspect, cam_w05, cam_h05;
+	double  cam_alt_proxy, cam_far, cam_near;
+	bool    cam_external;
+	OBJHANDLE cam_target;
+};
+
 class OrbiterGraphics;
 class OrbiterConnect;
 class OrbiterServer;
@@ -369,6 +383,11 @@ protected:
 	std::atomic<bool> m_dualQuit;
 	std::atomic<bool> m_dualRenderPending;
 	std::atomic<bool> m_dualRenderDone;
+
+	// render snapshot double buffer (physics side writes, render side reads)
+	RenderSnapshot m_renderSnap[2];
+	std::atomic<int> m_renderSnapIdx;      // latest complete snapshot (0/1)
+	void PublishRenderSnapshot();          // called at the end of UpdateWorld
 
 	void IncWarpFactor ();
 	void DecWarpFactor ();

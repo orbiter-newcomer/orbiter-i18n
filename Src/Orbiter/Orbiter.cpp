@@ -1,4 +1,4 @@
-// Copyright (c) Martin Schweiger
+﻿// Copyright (c) Martin Schweiger
 // Licensed under the MIT License
 
 #define STRICT 1
@@ -1140,6 +1140,34 @@ void Orbiter::PhysicsThreadProc()
 }
 #endif // DUAL_THREAD_EXPERIMENT
 
+// ---- render snapshot: publish the current camera/time state for the render
+// thread (double buffered; the render side reads m_renderSnapIdx).
+void Orbiter::PublishRenderSnapshot()
+{
+	extern Camera *g_camera;
+	if (!g_camera) return;
+	Camera *cam = g_camera;
+	int idx = 1 - m_renderSnapIdx.load();
+	RenderSnapshot &snap = m_renderSnap[idx];
+	snap.simt  = td.SimT1;
+	snap.simdt = td.SimDT;
+	snap.mjd   = td.MJD1;
+	snap.cam_gpos   = cam->gpos;
+	snap.cam_gspos  = cam->gspos;
+	snap.cam_grot   = cam->grot;
+	snap.cam_rpos   = cam->rpos;
+	snap.cam_tan_ap = cam->tan_ap;
+	snap.cam_aspect = cam->aspect;
+	snap.cam_w05 = cam->w05;
+	snap.cam_h05 = cam->h05;
+	snap.cam_alt_proxy = cam->alt_proxy;
+	snap.cam_far = cam->farplane;
+	snap.cam_near = cam->nearplane;
+	snap.cam_external = cam->external_view;
+	snap.cam_target = NULL;	// (body handle resolved on the render side in stage 2)
+	m_renderSnapIdx.store(idx);
+}
+
 INT Orbiter::Run ()
 {
     // Recieve and process Windows messages
@@ -2253,6 +2281,9 @@ VOID Orbiter::UpdateWorld ()
 	if (!KillVessels())  // kill any vessels marked for deletion
 		if (hRenderWnd) DestroyWindow (hRenderWnd);
 	PerfDiag::Add(PerfDiag::g.tail, t);
+
+	// publish the render snapshot for the (future) render thread
+	PublishRenderSnapshot();
 
 	//g_texmanager->OutputInfo();
 }
