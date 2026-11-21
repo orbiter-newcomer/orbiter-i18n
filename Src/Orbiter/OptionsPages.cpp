@@ -17,6 +17,7 @@
 #include "resource.h"
 #include "Uxtheme.h"
 #include "Localization.h"
+#include "OptionsVisualZh.inc"   // 汉化扩展：Options→Visual 页中文布局偏置（原版布局 + 偏置）
 
 using std::min;
 using std::max;
@@ -447,6 +448,8 @@ const HELPCONTEXT* OptionsPage_Visual::HelpContext() const
 void OptionsPage_Visual::UpdateControls(HWND hPage)
 {
 	char cbuf[256];
+
+	ZhAdjustOptionsVisualLayout(hPage);   // 汉化扩展：中文模式应用布局偏置
 
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_CLOUD, BM_SETCHECK,
 		Cfg()->CfgVisualPrm.bClouds ? BST_CHECKED : BST_UNCHECKED, 0);
