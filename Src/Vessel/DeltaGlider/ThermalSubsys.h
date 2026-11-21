@@ -29,7 +29,6 @@ public:
 	void OpenRadiator ();
 	void CloseRadiator ();
 	const AnimState2 &RadiatorState() const;
-	void clbkPostCreation ();
 	void clbkPreStep (double simt, double simdt, double mjd);
 	void clbkSaveState (FILEHANDLE scn);
 	bool clbkParseScenarioLine (const char *line);
@@ -76,36 +75,6 @@ private:
 		double T;    // compartment temperature [K]
 	} cprm[13];
 
-	// Structural equivalent masses of the dynamically loaded compartments
-	// (CABIN and the propellant tanks). Each compartment holds a share of the
-	// vessel's true empty mass as structural mass; that mass is converted to an
-	// equivalent mass for the compartment's own specific heat:
-	//     m_equiv = m_struct * c_struct / cp_compartment
-	// so that m_equiv*cp_compartment = m_struct*c_struct (physical structural
-	// heat capacity, independent of the load). Fixed compartments keep their
-	// structural mass directly.
-	double mass_struct_equiv[13];
-	double m0_struct;   // cached true empty mass the current masses were derived from
-
-	// Recompute all compartment masses from the vessel's true empty mass.
-	// Called from clbkPostCreation and whenever the empty mass changes (passenger
-	// changes, SCRAM conversion).
-	void UpdateStructuralMasses ();
-	void InitCompartmentParams ();
-
-	// Update the thermal state for one simulation step (explicit or half-implicit,
-	// depending on the step size).
-	void UpdateThermalStep (double simt, double simdt, double mjd);
-
-	// Accumulate the current net heat fluxes [W] for all compartments.
-	void ComputeHeatFlux (double *compartmentQ, bool includeCoolant);
-
-
-	// Detect non-finite / out-of-range temperatures. Repairs them and reports a
-	// numerical failure to the wreck/destruction system (once per vessel).
-	bool CheckTemperatureSanity ();
-	void ReportNumericFailure (double Tmax, int compartment);
-
 	// some DG-specific thermal parameters
 	static const double Ax_fuselage;     // fuselage x-cross section
 	static const double Ay_fuselage;     // fuselage y-cross section
@@ -125,13 +94,6 @@ private:
 	static const double k_cabin;         // heat conductivity between fuselage and cabin
 	static const double k_convect;       // atmospheric convection coefficient from the surface surface 
 
-	// Structural and numerical parameters for the compartment mass model and the
-	// integration path (implemented in ThermalSolver.inc).
-	static const double c_struct_ref;    // structural reference specific heat [J/kg/K]
-	static const double THERMAL_DT_STABLE; // explicit integration step limit [s]; larger
-	                                       // steps use the half-implicit solver
-	static const double T_MAX_SANE;      // upper sanity bound for compartment temperature [K]
-
 	double eps;     // IR emissivity
 	double sr_updt;
 	double atm_p;   // ambient pressure [Pa]
@@ -141,27 +103,10 @@ private:
 	VECTOR3 sdir;   // current sun direction in vessel frame
 	VECTOR3 pdir;   // current planet direction in vessel frame
 
-	// location of the sun (global frame). The sun is not necessarily at the global
-	// origin, so all solar computations use its actual position.
-	OBJHANDLE hSun;
-	VECTOR3 Spos;
-	void UpdateSun ();   // locate the sun and cache its global position
-	OBJHANDLE hSunRef;   // surface reference used for the last sun search
-
-	bool bNumericFailureReported;   // numerical failure already reported to the wreck system
-	int  nQuasiFail;                // consecutive failed implicit steps
-
-	// simulation time up to which the thermal state has been integrated
-	// (used to advance the thermal state over large simulation steps)
-	double t_thermal;
-
-	// half-implicit (backward Euler) integration of one step (ThermalSolver.inc)
-	bool SolveImplicitStep (double dt);
-	void AssembleImplicitSystem (double dt, double *Amat, double *bvec);
-	bool SolveLinear13 (const double *Amat, const double *bvec, double *x);
-
 	CoolantLoop *coolantloop;
 	RadiatorControl *radiatorctrl;
+
+#include "ThermalModelMembers_ThermalSubsystem.inc"
 };
 
 // ==============================================================
@@ -187,20 +132,6 @@ public:
 	bool clbkLoadVC (int vcid);
 	void clbkSaveState (FILEHANDLE scn);
 	bool clbkParseScenarioLine (const char *line);
-	// Coolant loop support (project extension, implemented in ThermalSolver.inc).
-	// ComputeSplits: control of the reference temperature
-	// UpdateExplicit: update the node temperatures and reservoir temperatures
-	// UpdateQuasiStatic: update node temperatures and exchanger heat flows only
-	// AddHeatFlux: add the exchanger heat flows to the compartment heat flux array
-	// GetEffectiveConductance: NTU-based linear coupling for the implicit solver
-	void ComputeSplits ();
-	void UpdateExplicit (double dt);
-	void UpdateQuasiStatic ();
-	void AddHeatFlux (double *compartmentQ) const;
-	void GetEffectiveConductance (double *g_eff, double *T_in);
-	// scenario save/load of the node temperatures
-	void SaveNodeTemperatures (FILEHANDLE scn);
-	void ParseNodeTemperatures (const char *line);
 
 private:
 	ThermalSubsystem *ssys_th;
@@ -233,9 +164,6 @@ private:
 		// splitter parameters
 		double split;       // downstream flow split: outflow[0] = inflow*(1-split); outflow[1] = inflow*split
 
-		double Q;           // exchanger heat flow from the reservoir into the coolant [W]
-		                    // (computed by Update; used by the quasi-static path)
-
 		double Flowrate(const NodeParam *dn=0); // outgoing flowrate (only splitters use branch!=0)
 		void Update (double simdt);             // update node
 	} node[12];
@@ -255,6 +183,8 @@ private:
 	int ELID_REFTEMPDIAL;
 	UINT anim_vc_pumpdial;
 	UINT anim_vc_reftempdial;
+
+#include "ThermalModelMembers_CoolantLoop.inc"
 };
 
 // ==============================================================

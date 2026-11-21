@@ -80,7 +80,6 @@ struct CFG_PHYSICSPRM {
 	int    PropSubMax;			// max number of subsampling steps
 	double APropCouplingLimit;	// angle step limit for cross term suppresion
 	double APropTorqueLimit;	// angle step limit for torque suppression
-	bool   bWrecks;              // wreck/debris system enable flag (independent of relativity)
 	bool   bRelativity;		    // enable relativistic effects (default false)
 	int    RelativityGravityMethod; // gravity field solver: 0=1PN weak field, 1=Kerr exact
 	int    RelativityFTLMode;       // FTL velocity handling: 0=report error, 1=clamp to 0.99c
@@ -88,15 +87,8 @@ struct CFG_PHYSICSPRM {
 	double RelChargeRatio;          // charge ratio q = r_Q/r_s (0..1)
 	double RelCollisionDVThreshold; // collision impact delta-v [m/s] above which a vessel explodes
 	double RelGasGiantFactor;       // radius factor R for gas-giant crushing (r < factor*R)
-	int    ContactSolver;           // contact force solver: 0=explicit, 1=implicit damping, 2=fully implicit
-	double ContactGearStiffness;    // landing gear stiffness [N/m] (0 = original)
-	double ContactGearDampingRatio; // landing gear damping ratio zeta (0 = original damping)
-	double ContactGearFriction;     // landing gear friction coefficient (0 = original)
-	double ContactHullStiffness;    // hull/body stiffness [N/m] (0 = original)
-	double ContactHullDampingRatio; // hull/body damping ratio zeta (0 = original damping)
-	double ContactHullFriction;     // hull/body friction coefficient (0 = original)
-	bool   bParallelVesselUpdate;   // multi-core vessel state update (project extension)
-	double ParallelVesselRange;     // vessels closer than this are updated in sequence [m]
+
+#include "ProjectConfigMembers_CFG_PHYSICSPRM.inc"
 };
 
 struct CFG_LOGICPRM {
@@ -485,20 +477,6 @@ private:
 	void RelativityWritePhysics (std::ostream &os, bool bEchoAll) const;
 	const void *GetRelativityParam (DWORD paramtype) const;
 
-	// Wreck/debris system (implementation in WreckConfig.inc, Src/Wreck)
-	void WreckLoad (std::istream &is);
-	void WreckWritePhysics (std::ostream &os, bool bEchoAll) const;
-	const void *GetWreckParam (DWORD paramtype) const;
-
-	// Contact model (implementation in ContactConfig.inc)
-	void ContactLoad (std::istream &is);
-	void ContactWritePhysics (std::ostream &os, bool bEchoAll) const;
-	const void *GetContactParam (DWORD paramtype) const;
-
-	// Multi-core vessel update (implementation in ParallelUpdateConfig.inc)
-	void ParallelUpdateLoad (std::istream &is);
-	void ParallelUpdateWritePhysics (std::ostream &os, bool bEchoAll) const;
-
 	mutable char cfgpath[256];  // buffer for creating full path names
 	char mshpath[256];
 	char texpath[256];
@@ -509,6 +487,8 @@ private:
 	bool found_config_file;
 
 	std::list<std::string> m_activeModules; ///< list of active modules
+
+#include "ProjectConfigMembers_Config.inc"
 };
 
 #endif // !__CONFIG_H

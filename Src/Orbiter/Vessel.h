@@ -293,13 +293,6 @@ public:
 	inline bool KillPending() const
 	{ return kill_pending; }
 
-	// Internal-damage interface: the player can no longer control this vessel
-	// (camera/view switching is not affected). See WreckDisableControl().
-	inline void SetControlDisabled (bool b)
-	{ bControlDisabled = b; }
-	inline bool IsControlDisabled() const
-	{ return bControlDisabled; }
-
 	inline bool bPlayback() const
 	{ return bFRplayback; }
 
@@ -1160,19 +1153,6 @@ public:
 
 	void Update_old (bool force = false); // legacy method
 
-	// Multi-core vessel update (implementation in Vessel.cpp, driven by
-	// Src/Orbiter/ParallelUpdate.inc): the protection guards, the main-thread
-	// part of the state update and the module animation callbacks run on the
-	// main thread; UpdatePropagate() (state integration) of independent vessels
-	// runs on worker threads.
-	void UpdateCore (bool force);
-	void UpdatePropagate (bool force);
-	void UpdateFinish ();
-	bool RunUpdateGuards ();
-	void UpdateAnimate ();
-	bool IsParallelUpdateCandidate () const;
-	bool IsParallelForcesCandidate () const;
-
 	void Timejump (double dt, int mode);
 	// propagate vessel state to a new time (discontinuous)
 
@@ -1233,10 +1213,6 @@ public:
 
 	inline FlightStatus GetStatus () const { return fstatus; }
 	// vessel's flight status
-
-	inline void SetShadowMode (int mode) { shadowMode = mode; }
-	inline int  GetShadowMode () const { return shadowMode; }
-	// shadow rendering mode (SHADOWMODE_*), used by graphics clients
 
 	bool isOrbitStabilised () const;
 	// true if vessel uses 2-body analytic update to stabilise orbit
@@ -1477,8 +1453,6 @@ protected:
 	TOUCHDOWN_VTX *HullvtxNext ();
 
 private:
-	int shadowMode;         // shadow rendering mode (SHADOWMODE_*)
-
 	void UpdateMass ();
 	// update vessel mass (empty + sum of all fuel resources)
 
@@ -1719,7 +1693,7 @@ private:
 		double alt;            //   hover hold target altitude
 		double palt;           //   hover hold previous altitude
 		double valt;
-		double valt_f;         //   low-pass filtered vertical acceleration (autopilot D-term)
+		double valt_f;         // low-pass filtered vertical acceleration (autopilot D-term)
 		double T;
 		bool terrain;          //   hold true altitude?
 	} hoverhold;
@@ -1856,7 +1830,6 @@ protected:
 
 	int killrot_delay;   // delay counter for killrot terminate
 	bool kill_pending;
-	bool bControlDisabled;   // player control disabled (internal damage, see WreckDamageVessel)
 	static bool rpressure;      // flag for applying radiation pressure effects
 	int orthoaxis;       // auxiliary flag
 	int animcount;       // animation request ref count
@@ -2002,6 +1975,8 @@ private:
 	// API interface functions
 	friend OAPIFUNC double oapiGetMaxFuelMass (OBJHANDLE hVessel);
 	friend OAPIFUNC PROPELLANT_HANDLE oapiGetPropellantHandle (OBJHANDLE hVessel, DWORD idx);
+
+#include "VesselMembers_Vessel.inc"
 };
 
 #endif // !__VESSEL_H

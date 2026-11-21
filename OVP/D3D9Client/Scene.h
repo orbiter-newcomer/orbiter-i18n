@@ -188,12 +188,6 @@ public:
 		int			size;
 	} smap;
 
-	// Unified scene shadow system (G1): parameters of the scene shadow group
-	// (terrain self shadowing, distant vessel/base shadows). Implementation in
-	// TerrainRender.inc (included at the end of Scene.cpp).
-	SHADOWMAPPARAM smapT;
-	bool smapTValid;
-
 	static void D3D9TechInit(LPDIRECT3DDEVICE9 pDev, const char *folder);
 
 	/**
@@ -242,8 +236,6 @@ public:
 
 	inline DWORD GetStencilDepth() const { return stencilDepth; }
 	inline const SHADOWMAPPARAM * GetSMapData() const { return &smap; }
-	inline const SHADOWMAPPARAM * GetSMapDataT() const { return &smapT; }
-	inline bool IsSceneShadowValid() const { return smapTValid; }
 	/**
 	 * \brief Get the ambient background colour
 	 */
@@ -271,7 +263,6 @@ public:
 	 * \brief Render the whole main scene
 	 */
 	void RenderMainScene();
-	void RenderMainScene2D();	// dual thread: HUD/2D overlay part of the main scene (main thread)
 
 	/**
 	 * \brief Returns screen space sun visual parameters for Lens Flare rendering.
@@ -288,11 +279,6 @@ public:
 	 */
 	void RenderSecondaryScene(std::set<class vVessel*> &RndList, std::set<class vVessel*> &AdditionalLightsList, DWORD flags = 0xFF);
 	int RenderShadowMap(D3DXVECTOR3 &pos, D3DXVECTOR3 &ld, float rad, bool bInternal = false, bool bListExists = false);
-
-	// Unified scene shadow system (implementation: TerrainRender.inc)
-	void RenderSceneShadow(class vPlanet *vp);
-	void InitShadowSystem();
-	void ExitShadowSystem();
 
 	bool IntegrateIrradiance(vVessel *vV, LPDIRECT3DCUBETEXTURE9 pSrc, LPDIRECT3DTEXTURE9 pOut);
 	bool RenderBlurredMap(LPDIRECT3DDEVICE9 pDev, LPDIRECT3DCUBETEXTURE9 pSrc);
@@ -591,9 +577,6 @@ private:
 	class ImageProcessing *pLightBlur, *pBlur, *pGDIOverlay, *pIrradiance, *pVisDepth, *pCreateGlare, *pRelativity;
 	class ShaderClass *pLocalCompute, *pRenderGlares;
 
-	// Unified scene shadow system (G1), implementation in TerrainRender.inc
-	class ShadowSystem *pShadows;
-
 	// Relativistic visual effects state for the Sun glare (Relativity.inc)
 	VECTOR3			relSunDirVis;	///< aberration-shifted direction to the Sun (global frame)
 	D3DXVECTOR4		relSunTint;		///< Doppler colour tint for the Sun glare
@@ -615,28 +598,6 @@ private:
 	int				relLensCubeSize;
 	bool			bLensCubeReady;
 	class ShaderClass *pStarsLens;
-
-	// Relativity render cache (implementation in Relativity.inc): the cubemap
-	// and the star field composite are only re-rendered when their input
-	// parameters (sky brightness, observer velocity, lensing bodies, camera
-	// orientation) have changed noticeably. Near a black hole or at high speed
-	// these parameters change quickly, so the effect is refreshed every frame
-	// there; in normal flight conditions most frames can reuse the previous
-	// result.
-	struct REL_CACHE {
-		bool        valid;
-		float       brightness;
-		float       beta;			///< observer speed / c
-		D3DXVECTOR3 velDir;			///< observer velocity direction
-		int         nLens;
-		LENSBODY    lens[REL_MAX_LENS];
-		D3DXVECTOR3 camX, camY, camZ;	///< camera orientation (composite pass only)
-		float       tanW, tanH;		///< camera aperture (composite pass only)
-	};
-	REL_CACHE relCubeCache;
-	REL_CACHE relCompCache;
-	bool RelParamsChanged(REL_CACHE &cache, bool bIncludeCamera);
-	void RelParamsSave(REL_CACHE &cache, bool bIncludeCamera);
 
 	class vVessel *vFocus;
 	VOBJREC *vobjEnv, *vobjIrd;
@@ -676,6 +637,8 @@ private:
 	static D3DXHANDLE	eColor;
 	static D3DXHANDLE	eTex0;
 
+
+#include "SceneMembers_Scene.inc"
 };
 
 #endif // !__SCENE_H

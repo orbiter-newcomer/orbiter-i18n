@@ -36,10 +36,6 @@ public:
 	int Enable9On12;				///< Enable DX9 through DX12
 	int PlanetPreloadMode;			///< Planet preload mode setting (0=load on demand, 1=preload)
 	int PlanetLoadFrequency;		///< Load frequency for on-demand textures \[Hz\] (1...1000)
-	int TerrainLoadWait;			///< Wait for terrain tiles to load before the simulation starts (0=off, 1=on)
-	int TerrainLoadWaitTimeout;		///< Maximum wait time for the terrain load \[s\] (1...120)
-	int TerrainLoadWaitMinMs;		///< Minimum duration of the terrain load wait \[ms\] (0...5000), makes the wait visible even when the tiles are cached
-	int WaitTerrainLoadCamera;		///< Re-run the terrain load wait when the camera target changes (0=off, 1=on)
 	int Anisotrophy;				///< Anisotropic filtering setting \[factor\] (1...16)
 	int SceneAntialias;				///< Antialiasing setting \[factor\] (0...)
 	int DisableDriverManagement;	///< Disable the D3D9 driver management \[sets the D3DCREATE_DISABLE_DRIVER_MANAGEMENT behavior flag\]  (0=default, 1:disabled)
@@ -63,7 +59,6 @@ public:
 	double OrbitalShadowMult;		///< Multiplier for cloud shadows for Orbital flight
 	int EnableLimiter;				///< Enable frame-rate limiter
 	int DebugLvl;					///< Level of debug output 'verbosity'. Higher values create more detailed output (0...4, default=1)
-	int PerfLog;					///< Frame profiler: 0=off, 1=CPU stage timings, 2=+GPU timings (logged to Orbiter.log every 2 s)
 	int LabelDisplayFlags;			///< Label display option flags. For example the "Record" and "Replay" labels (0=all disabled, 1=show record label, 2=show replay label, 3=show both \[default\])
 	int LightConfig;				///< Light emitter configuration
 	int NVPerfHUD;					///< ??? (0,1)
@@ -76,18 +71,6 @@ public:
 	int ShadowFilter;				///< Shadow Mapping Filter
 	int ShadowMapSize;				///< Shadow Map size
 	int TerrainShadowing;			///< Terrain Shadowing mode (0=None, 1=Stencil, 2=Projected, default=1)
-	int TerrainSelfShadow;			///< Unified scene shadow system: terrain self shadowing (G1) (0=off, 1=on, default=1)
-	int TerrainShadowSize;			///< Scene shadow map size (0 = same as ShadowMapSize, 512...4096)
-	int TerrainShadowRange;			///< Scene shadow coverage radius \[m\] (0 = automatic from camera altitude, 300...20000)
-	int TerrainShadowMaxAlt;		///< Disable scene shadows above this camera altitude \[m\] (100...100000, default=100000)
-	int TerrainShadowUpdate;		///< Scene shadow map update interval \[frames\] (1...8, default=1)
-	int TerrainShadowLegacy;		///< Keep legacy projected shadows when scene shadows are enabled (0=off, 1=on, default=0)
-	int TerrainShadowDebug;			///< Scene shadow debug visualisation (0=off, 1=coverage/shadows, default=0)
-	int TerrainPreloadLevels;		///< Terrain LOD preloading: load tiles this many levels ahead of the render requirement (0=off, 1=default, 2)
-	int TerrainTransitionMs;		///< Terrain LOD cross fade transition time \[ms\] (0=off, 50...2000, default=0)
-	int TerrainElevMinLevel;		///< Terrain elevation loading: above TerrainElevSkipAlt do not read elevation files for tiles below this LOD level (0=off, default=10)
-	int TerrainElevSkipAlt;			///< Camera altitude \[m\] above which the elevation files are skipped for the low LOD tiles (0=always apply, default=50000)
-	int TerrainLoadThreads;			///< Terrain tile loader threads (1...4, default=1)
 	int CustomCamMode;				///< Custom Camera Mode
 	int TileMipmaps;				///< Enable surface tile mipmaps
 	int ShaderDebug;				///< Shader Debug Logging enable flag (0=disabled, 1=enabled)
@@ -113,7 +96,6 @@ public:
 	double LensBlendEnd;			///< lensing: apparent shift [deg] above which the lensed cubemap replaces the plain star field
 	double LensBrightness;			///< lensing: brightness gain applied to the lensed star field cubemap
 	bool RelLensWireframe;			///< debug: render the lensing source field as a tile wireframe
-	int  RelCacheEnabled;			///< Relativity render cache: skip the cubemap/composite rendering when the input parameters are unchanged (0=off, 1=on, default=1)
 	int MicroMode;					///< Surface micro textures enable flag (0=disabled, 1=enabled)
 	int MicroFilter;				///< Surface micro texture filter mode (0=Point, 1=Linear ,2=Anisotropic 2x ,3=Anisotropic 4x, 4=Anisotropic 8x, Anisotropic 16x)
 	int BlendMode;					///< Surface micro texture light blend mode (0=Soft, 1=Normal, 2=Hard)
@@ -148,6 +130,8 @@ public:
 
 private:
 
+
+#include "TerrainRenderMembers_D3D9Config.inc"
 };
 
 #endif // !__D3D9CONFIG_H
