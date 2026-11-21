@@ -49,7 +49,7 @@ Tile::Tile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
   last_used(0.0),
   state(Invalid),
   edgeok(false), owntex (true), ownoverlay(false)
-  , fadeAlpha(1.0f), fadeT0(0.0), mergeReqT0(0.0)
+  , fadeT0(0.0), mergeReqT0(0.0)
 {
 	double f = 1.0 / double(1<<lvl);
 	double x = PI * (0.5 - double(ilat+1) * f);
@@ -1103,7 +1103,7 @@ TileManager2Base::TileManager2Base (vPlanet *vplanet, int _maxres, int _gridres)
 	TilesLoaded = 0;
 	tileCountSmooth = -1.0;	// initialised on the first UpdateTileCountSmooth call
 	tileCountT = 0.0;
-	tilesRenderedCur = tilesRenderedPrev = 0;
+	tilesRenderedCur = 0;
 	prm.maxlvl = max (0, _maxres-4);
 	obj = vp->Object();
 	obj_size = oapiGetSize (obj);
@@ -1147,7 +1147,6 @@ void TileManager2Base::UpdateTileCountSmooth ()
 
 	int rendered = tilesRenderedCur;
 	tilesRenderedCur = 0;	// start counting the next main scene pass
-	tilesRenderedPrev = rendered;
 
 	double now = oapiGetSysTime();
 	double dt = now - tileCountT;
@@ -1323,33 +1322,6 @@ bool TileManager2Base::IsFadeTile (Tile *tile) const
 	return false;
 }
 
-void TileManager2Base::RenderFadeTiles ()
-{
-	if (fadeTiles.empty()) return;
-	if (!Config) return;
-	if (Config->TerrainTransitionMs <= 0) return;
-
-	double dur = Config->TerrainTransitionMs * 0.001;
-	double now = oapiGetSysTime();
-
-	// The fading parent must not write depth: the new (finer) tiles are blended
-	// over it and their geometry differs slightly, so depth writing would make
-	// the parent show through where the new tiles end up behind it.
-	pDev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-
-	for (size_t i = 0; i < fadeTiles.size(); i++) {
-		Tile *tile = fadeTiles[i].tile;
-		if (!tile) continue;
-		if (tile->state != Tile::Active) continue;		// no longer a coarser parent
-		if (now - fadeTiles[i].t0 > dur) continue;		// transition finished
-		tile->fadeAlpha = 1.0f;							// the parent is rendered opaque
-		tile->fadeT0    = 0.0;
-		tile->Render();									// draw the coarser parent
-	}
-
-	pDev->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-}
 
 void TileManager2Base::UpdateFadeTiles ()
 {

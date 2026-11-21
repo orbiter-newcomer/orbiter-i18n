@@ -1608,22 +1608,6 @@ protected:
 	 */
 	virtual void clbkRenderScene () = 0;
 
-	/**
-	 * \brief Render the 3D part of the scene (dual thread support).
-	 * The default implementation renders the whole scene via clbkRenderScene(),
-	 * so clients that do not implement the split keep the single threaded
-	 * behaviour. Clients that can separate 3D and 2D (e.g. D3D9Client) override
-	 * this and clbkRenderScene2D() and keep the official clbkRenderScene()
-	 * unused by the dual-threaded host.
-	 */
-	virtual void clbkRenderScene3D () { clbkRenderScene(); }
-
-	/**
-	 * \brief Render the 2D/UI part of the scene (dual thread support).
-	 * Called on the main thread after the 3D frame has been rendered.
-	 * \default None (single threaded clients render everything in clbkRenderScene).
-	 */
-	virtual void clbkRenderScene2D () {}
 
 	/**
 	 * \brief Display a scene on screen after rendering it.

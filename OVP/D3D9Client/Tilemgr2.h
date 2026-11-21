@@ -224,7 +224,6 @@ protected:
 	VECTOR3 cnt;               // tile centre in local planet coords
 	VECTOR3 vtxshift;          // tile frame shift of origin from planet centre
 	bool edgeok;               // edges have been checked in this frame
-	unsigned __int64 neighborSig; // LOD layout of the 8 neighbours the last time edges were matched
 	TileState state;           // tile load/active/render state flags
 	int lngnbr_lvl, latnbr_lvl, dianbr_lvl; // neighbour levels to which edges have been adapted
 	double last_used;		   // time when this tile was last used as a part of active tile chain
@@ -237,7 +236,6 @@ public:
 	MATRIX4 dmWorld;
 	TILEBOUNDS bnd;
 	// Terrain LOD cross fade state (render side)
-	float  fadeAlpha;		// current transition alpha (1 = fully visible)
 	double fadeT0;			// transition start time (0 = no transition)
 	double mergeReqT0;		// time the tile started requesting a merge (0 = none); anti-flapping
 };
@@ -264,7 +262,6 @@ public:
 	void Unqueue (TileManager2Base *mgr);
 	// removes all tiles of a manager from the load queue (caller must own hLoadMutex)
 
-	inline static int GetQueueSize() { return nqueue; }
 	inline static DWORD WaitForMutex() { return ::WaitForSingleObject (hLoadMutex, INFINITE); }
 	inline static BOOL ReleaseMutex() { return ::ReleaseMutex (hLoadMutex); }
 
@@ -355,20 +352,18 @@ public:
 	double tileCountSmooth;
 	double tileCountT;		///< time of the last UpdateTileCountSmooth() call
 	int tilesRenderedCur;	///< rendered leaf tiles counted in the current main scene pass
-	int tilesRenderedPrev;	///< rendered leaf tiles of the previous main scene pass
 
 	/// True for tile managers that render surface tiles with the LOD cross fade
 	/// (set by SurfTile; the CloudTile manager shares this template but has no
 	/// fade renderer, so it must not collect fade tiles).
 	bool bFadeTiles;
 
-	// Terrain LOD cross fade (see ProcessNode / RenderFadeTiles)
+	// Terrain LOD cross fade (see ProcessNode)
 	struct FADETILE { Tile *tile; double t0; };
 	std::vector<FADETILE> fadeTiles;	///< parent tiles which are kept rendered for a short transition
 	void AddFadeTile (Tile *tile, double t0);
 	void RemoveFadeTile (Tile *tile);
 	bool IsFadeTile (Tile *tile) const;
-	void RenderFadeTiles ();				///< render the fading parent tiles (opaque, before the new tiles)
 	void UpdateFadeTiles ();				///< drop finished fade entries
 
 	/**

@@ -230,7 +230,7 @@ bool D3D9Client::ShouldWaitForCameraLoad ()
 
 void D3D9Client::UpdateCameraTargetRecord ()
 {
-	lastTarget      = oapiCameraTarget ();
+	OBJHANDLE lastTarget = oapiCameraTarget ();
 	lastTargetValid = false;
 	VESSEL *v = (lastTarget ? oapiGetVesselInterface (lastTarget) : NULL);
 	if (!v) return;

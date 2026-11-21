@@ -100,16 +100,11 @@ void D3D9Config::Reset ()
 	TerrainShadowUpdate	= 1;
 	TerrainShadowLegacy	= 0;
 	TerrainShadowDebug	= 0;
-	TerrainShadowStrength = 100;
 	TerrainPreloadLevels = 1;
 	TerrainTransitionMs = 0;
 	TerrainElevMinLevel = 10;
 	TerrainElevSkipAlt = 50000;
 	TerrainLoadThreads = 1;
-	TerrainLoadWaitFlying = 1;
-TerrainLoadWaitPendingLimit = 12;
-	NightTerrainSimplify = 1;
-	NightTerrainSimplifySunAlt = -18;
 	LabelDisplayFlags	= LABEL_DISPLAY_RECORD | LABEL_DISPLAY_REPLAY;
 	CloudMicro			= 1;
 	GDIOverlay			= 0;
@@ -199,16 +194,12 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainShadowUpdate", i))	TerrainShadowUpdate = max(1, min(8, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainShadowLegacy", i))	TerrainShadowLegacy = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainShadowDebug", i))	TerrainShadowDebug = max(0, min(1, i));
-	if (oapiReadItem_int   (hFile, (char*)"TerrainShadowStrength", i))	TerrainShadowStrength = max(0, min(100, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainPreloadLevels", i))	TerrainPreloadLevels = max(0, min(2, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainTransitionMs", i))	TerrainTransitionMs = max(0, min(2000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevMinLevel", i))	TerrainElevMinLevel = max(0, min(20, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevSkipAlt", i))	TerrainElevSkipAlt = max(0, min(1000000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadThreads", i))	TerrainLoadThreads = max(1, min(4, i));
-	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadWaitFlying", i))	TerrainLoadWaitFlying = max(0, min(1, i));
 
-	if (oapiReadItem_int   (hFile, (char*)"NightTerrainSimplify", i))	NightTerrainSimplify = max(0, min(1, i));
-	if (oapiReadItem_int   (hFile, (char*)"NightTerrainSimplifySunAlt", i))	NightTerrainSimplifySunAlt = max(-90, min(0, i));
 	if (oapiReadItem_int   (hFile, (char*)"EnableMeshDbg", i))			EnableMeshDbg = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TileMipmaps", i))			TileMipmaps = max(0, min(2, i));
 	if (oapiReadItem_int   (hFile, (char*)"TextureMips", i))			TextureMips = max(0, min(1, i));
@@ -315,16 +306,12 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"TerrainShadowUpdate", TerrainShadowUpdate);
 	oapiWriteItem_int   (hFile, (char*)"TerrainShadowLegacy", TerrainShadowLegacy);
 	oapiWriteItem_int   (hFile, (char*)"TerrainShadowDebug", TerrainShadowDebug);
-	oapiWriteItem_int   (hFile, (char*)"TerrainShadowStrength", TerrainShadowStrength);
 	oapiWriteItem_int   (hFile, (char*)"TerrainPreloadLevels", TerrainPreloadLevels);
 	oapiWriteItem_int   (hFile, (char*)"TerrainTransitionMs", TerrainTransitionMs);
 	oapiWriteItem_int   (hFile, (char*)"TerrainElevMinLevel", TerrainElevMinLevel);
 	oapiWriteItem_int   (hFile, (char*)"TerrainElevSkipAlt", TerrainElevSkipAlt);
 	oapiWriteItem_int   (hFile, (char*)"TerrainLoadThreads", TerrainLoadThreads);
-	oapiWriteItem_int   (hFile, (char*)"TerrainLoadWaitFlying", TerrainLoadWaitFlying);
 
-	oapiWriteItem_int   (hFile, (char*)"NightTerrainSimplify", NightTerrainSimplify);
-	oapiWriteItem_int   (hFile, (char*)"NightTerrainSimplifySunAlt", NightTerrainSimplifySunAlt);
 	oapiWriteItem_int   (hFile, (char*)"EnableGlass", EnableGlass);
 	oapiWriteItem_int   (hFile, (char*)"EnableMeshDbg", EnableMeshDbg);
 	oapiWriteItem_int   (hFile, (char*)"TileMipmaps", TileMipmaps);

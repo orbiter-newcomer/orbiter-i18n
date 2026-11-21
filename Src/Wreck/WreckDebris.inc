@@ -203,12 +203,6 @@ bool WreckIsVessel (Vessel *vessel)
 
 
 
-void WreckDestroyVessel (Vessel *vessel, int reason, const char *otherName)
-{
-	// Legacy entry point: state-failure removal (immediate, no debris).
-	// All damage sources use the unified WreckDamageVessel() dispatch below.
-	WreckDamageVessel (vessel, WRECK_DAMAGE_FAILURE, reason, otherName);
-}
 
 
 // ---- numerical-failure reports (queued for the vessel destruction code) ----
@@ -221,7 +215,7 @@ void WreckReportNumericFailure (Vessel *vessel, double maxTemp, int compartment)
 {
 	if (!vessel) return;
 	// Queue only (REL_WRECK_NUMERIC). The destruction policy is handled by the
-	// vessel destruction code in the safe phase; WreckDestroyVessel is currently
+	// vessel destruction code in the safe phase; vessel destruction is currently
 	// a stub, so nothing is destroyed here.
 	strncpy_s (g_pendingNumericName, 64, vessel->Name (), 63);
 	g_pendingNumericName[63] = 0;

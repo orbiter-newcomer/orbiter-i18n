@@ -304,7 +304,7 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (subcomplete) {
 			// Terrain LOD cross fade: keep the coarser parent tile rendered as
 			// an opaque background for the transition period while the new child
-			// tiles fade in (see TileManager2Base::RenderFadeTiles and the
+			// tiles fade in (see SurfTile::Render and the
 			// per-tile alpha in SurfTile::Render). Only a real switch may start
 			// the transition - AddFadeTile resets the start time, so calling it
 			// every frame would restart the fade and it would never finish.

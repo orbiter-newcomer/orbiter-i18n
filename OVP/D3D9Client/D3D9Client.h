@@ -1191,9 +1191,6 @@ protected:
 	 *   panel, HUD, etc.)
 	 */
 	void clbkRenderScene ();
-	// dual thread: split scene rendering (3D part -> render thread, 2D/UI part -> main thread)
-	virtual void clbkRenderScene3D();
-	virtual void clbkRenderScene2D();
 
 	/**
 	 * \brief React to a discontinous jump in simulation time.
@@ -1361,7 +1358,6 @@ private:
 	void ResetTerrainLoadWait ();
 	bool ShouldWaitForCameraLoad ();
 	void UpdateCameraTargetRecord ();
-	void TriggerTerrainLoadWait (const char *reason);
 
 	int    terrainWaitState;   // 0=idle, 1=warm-up, 2=waiting for terrain, 3=done
 	int    terrainWaitFrames;  // frames rendered since the simulation start
@@ -1371,15 +1367,11 @@ private:
 	OBJHANDLE camTargetLast;   // camera target handle at the previous frame
 	OBJHANDLE focusLast;       // focus object handle at the previous frame
 	int    camModeLast;        // camera mode at the previous frame
-	OBJHANDLE lastTarget;      // camera target vessel of the previous frame
 	OBJHANDLE lastTargetRefBody; // central body of that target
 	double lastTargetLng, lastTargetLat, lastTargetAlt; // target position (planet-relative)
 	bool   lastTargetValid;    // whether the previous-target record is valid
 	double terrainWaitCooldown; // earliest time for the next camera-triggered wait [s]
 	double lastSimTime;         // simulation time of the previous frame (new-sim detection)
-	double terrainWaitLastAlt;  // camera altitude at the previous frame (stall detection)
-	int    terrainWaitFlyingCount; // number of flying-time terrain waits in this session
-	DWORD  terrainStatsFrame;   // frame counter for the periodic terrain statistics log
 
 	DWORD loadd_x, loadd_y, loadd_w, loadd_h;
 	int LabelPos;

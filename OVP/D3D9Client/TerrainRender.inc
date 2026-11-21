@@ -519,56 +519,6 @@ static void SceneShadowTerrainNode(const QuadTreeNode<SurfTile> *node, ShadowSys
 }
 
 
-// ---------------------------------------------------------------------------
-// Scene::UpdateEffectShadows
-//
-// Hands the shadow group parameters over to the D3D9Effect receivers (vessel
-// hull self shadowing G0, base surfaces / base buildings / vessels G0+G1).
-// Replaces the inline parameter setup that used to live in vPlanet::Render().
-// ---------------------------------------------------------------------------
-
-void Scene::UpdateEffectShadows(vPlanet *vp)
-{
-	if (!D3D9Effect::FX) return;
-
-	const bool bMainScene = (GetRenderPass() == RENDERPASS_MAINSCENE);
-
-	// ---- G0 near-field vessel self shadow (existing behaviour) -----------------
-	bool bG0 = (smap.pShadowMap != NULL) && bMainScene && (Config->TerrainShadowing == 2) && (Config->ShadowMapMode != 0);
-	if (bG0) {
-		if (!((GetCameraAltitude() < 10e3) || (vp && vp->IsMesh()))) bG0 = false;
-	}
-
-	if (bG0) {
-		float s = float(smap.size);
-		float is = 1.0f / s;
-		float qw = 1.0f / float(Config->ShadowMapSize);
-		HR(D3D9Effect::FX->SetMatrix(D3D9Effect::eLVP, &smap.mViewProj));
-		HR(D3D9Effect::FX->SetTexture(D3D9Effect::eShadowMap, smap.pShadowMap));
-		HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHD, ptr(D3DXVECTOR4(s, is, qw, 0))));
-		HR(D3D9Effect::FX->SetBool(D3D9Effect::eShadowToggle, true));
-	}
-	else {
-		HR(D3D9Effect::FX->SetBool(D3D9Effect::eShadowToggle, false));
-	}
-
-	// ---- G1 scene shadow (terrain self shadowing, distant vessel/base shadows) -
-	bool bG1 = smapTValid && (smapT.pShadowMap != NULL) && pShadows && pShadows->IsEnabled() && bMainScene;
-	if (bG1) {
-		float s = float(smapT.size);
-		float is = 1.0f / s;
-		float texel = 2.0f * smapT.rad * is;
-		float idepth = (smapT.depth > 1.0f ? 1.0f / smapT.depth : 0.0f);
-		HR(D3D9Effect::FX->SetMatrix(D3D9Effect::eLVP2, &smapT.mViewProj));
-		HR(D3D9Effect::FX->SetTexture(D3D9Effect::eShadowMap2, smapT.pShadowMap));
-		HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHD2, ptr(D3DXVECTOR4(texel, is, idepth, 0))));
-		HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHDT2, ptr(D3DXVECTOR4(smapT.pos.x, smapT.pos.y, smapT.pos.z, smapT.rad))));
-	}
-	else {
-		// coverage radius 0 = disabled (checked by the shader, saves a bool constant)
-		HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHDT2, ptr(D3DXVECTOR4(0, 0, 0, 0))));
-	}
-}
 
 
 // ---------------------------------------------------------------------------
@@ -703,20 +653,7 @@ void Scene::RenderSceneShadow(vPlanet *vp)
 	// ---- render the scene shadow map -----------------------------------------
 	DWORD tStart = GetTickCount();
 	int nTiles = 0;
-	int nVessels = 0;
-	int nBases = 0;
 
-	// Present the G1 parameters to the vessel/base shadow casters (they use the
-	// near field shadow parameters from D3D9Effect while rendering)
-	{
-		float cs = float(smapT.size);
-		float cis = 1.0f / cs;
-		float cqw = 1.0f / float(Config->ShadowMapSize);
-		HR(D3D9Effect::FX->SetMatrix(D3D9Effect::eLVP, &smapT.mViewProj));
-		HR(D3D9Effect::FX->SetTexture(D3D9Effect::eShadowMap, smapT.pShadowMap));
-		HR(D3D9Effect::FX->SetVector(D3D9Effect::eSHD, ptr(D3DXVECTOR4(cs, cis, cqw, 0))));
-		HR(D3D9Effect::FX->SetBool(D3D9Effect::eShadowToggle, true));
-	}
 
 	gc->PushRenderTarget(pShadows->GetRT(), pShadows->GetDS(), RENDERPASS_SHADOWMAP);
 	HR(pDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0));
@@ -756,18 +693,14 @@ void Scene::RenderSceneShadow(vPlanet *vp)
 	smapTValid = true;
 
 
-	// The G1 parameters are NOT handed to the mesh receivers here: vessels and
-	// base structures keep receiving the official near field shadow map (G0).
-	// Only the terrain shader samples the G1 shadow map (see _TERRSHD).
-	// UpdateEffectShadows(vp);
 
 	// ---- diagnostics ----------------------------------------------------------
 	if (Config->DebugLvl > 2) {
 		DWORD tEnd = GetTickCount();
 		static int nLogCount = 0;
 		if (nLogCount++ % 120 == 0) {
-			oapiWriteLogV("SceneShadow: R=%.0f size=%d tiles=%d vessels=%d bases=%d time=%u ms",
-				R, smapT.size, nTiles, nVessels, nBases, (unsigned)(tEnd - tStart));
+			oapiWriteLogV("SceneShadow: R=%.0f size=%d tiles=%d time=%u ms",
+				R, smapT.size, nTiles, (unsigned)(tEnd - tStart));
 		}
 	}
 }

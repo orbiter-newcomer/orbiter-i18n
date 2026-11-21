@@ -72,9 +72,6 @@ OBJHANDLE WreckGetVessel ();
 // Restore the cockpit view when the player switches to another vessel
 void WreckOnFocusChanged (class Vessel *newFocus);
 void WreckProcessPendingSafe ();
-// Legacy entry point kept for compatibility: maps to WRECK_DAMAGE_FAILURE
-// (state failure, immediate removal without debris).
-void WreckDestroyVessel (class Vessel *vessel, int reason = 0, const char *otherName = 0);
 bool WreckIsVessel (class Vessel *vessel);
 bool WreckIsObserver (class Vessel *vessel);
 // Atmospheric dynamic-pressure check (vessel burns up as a meteor).

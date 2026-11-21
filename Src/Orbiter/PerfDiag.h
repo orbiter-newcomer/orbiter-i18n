@@ -49,7 +49,6 @@ struct Accum {
 	double rbUpdate;		// whole dynamic part
 	double rbGrav;			// gravity acceleration evaluations (GetIntermediateMoments)
 	double rbProp;			// propagator steps (incl. nested gravity)
-	double rbContact;		// surface contact / touchdown handling
 
 	// vessel module callbacks
 	double modulePost;		// per-vessel module clbkPostStep (DG, Shuttle, ...)

@@ -291,7 +291,6 @@ public:
 
 	// Unified scene shadow system (implementation: TerrainRender.inc)
 	void RenderSceneShadow(class vPlanet *vp);
-	void UpdateEffectShadows(class vPlanet *vp = NULL);
 	void InitShadowSystem();
 	void ExitShadowSystem();
 

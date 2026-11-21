@@ -100,9 +100,6 @@ private:
 	// Accumulate the current net heat fluxes [W] for all compartments.
 	void ComputeHeatFlux (double *compartmentQ, bool includeCoolant);
 
-	// Equilibrium solver (monotonic per-compartment root search). Used as a
-	// fallback / reference for the quasi-static state.
-	bool BuildEquilibrium (double *Teq);
 
 	// Detect non-finite / out-of-range temperatures. Repairs them and reports a
 	// numerical failure to the wreck/destruction system (once per vessel).

@@ -31,16 +31,6 @@
 
 // --- API functions -----------------------------------------------------
 
-/** Number of active wreck debris particles (rendered by the graphics client). */
-OAPIFUNC int oapiGetWreckDebrisCount ();
-
-/**
- * \brief Retrieve a wreck debris particle for rendering.
- * \param idx debris index (0 .. oapiGetWreckDebrisCount()-1)
- * \param pos global position, axis/angle orientation, size radius, shape index
- * \return true if the entry is active.
- */
-OAPIFUNC bool oapiGetWreckDebris (int idx, VECTOR3 *pos, VECTOR3 *axis, double *angle, double *size, int *shape);
 
 /** Retrieve the current wreck message (UTF-8) and its age in milliseconds. */
 OAPIFUNC bool oapiGetWreckMessageEx (char *buf, int n, double *age_ms, int *isFocus, char *ship, int shipN);

@@ -25,19 +25,6 @@ class Body;
 class Vessel;
 class ScreenNote;
 class DialogManager;
-// ---- dual thread: render snapshot (physics thread -> render thread) ----
-// Stage 1: camera + simulation time only. See docs/handover/dual-thread-design.md
-struct RenderSnapshot {
-	double  simt, simdt, mjd;
-	Vector  cam_gpos;
-	Vector  cam_gspos;
-	Matrix  cam_grot;
-	Vector  cam_rpos;
-	double  cam_tan_ap, cam_aspect, cam_w05, cam_h05;
-	double  cam_alt_proxy, cam_far, cam_near;
-	bool    cam_external;
-	OBJHANDLE cam_target;
-};
 
 class OrbiterGraphics;
 class OrbiterConnect;
@@ -82,7 +69,6 @@ public:
 	void ScreenToClient (POINT *pt) const;
     LRESULT MsgProc (HWND, UINT, WPARAM, LPARAM);
 	HRESULT Render3DEnvironment(bool hidedialogs = false);
-	void Render2DEnvironment();	// dual thread: 2D/UI/Present on the main thread
 	VOID Output2DData ();
 	void OutputLoadStatus (const char *msg, int line);
 	void OutputLoadTick (int line, bool ok = true);
@@ -376,7 +362,7 @@ protected:
 	VOID UpdateWorld ();
 
 	// ---- dual thread route A: physics thread + main-thread rendering ----
-	// (disabled by default; enabled by DUAL_THREAD_EXPERIMENT in Orbiter.cpp)
+	// (enabled by DUAL_THREAD_EXPERIMENT in Orbiter.cpp; 0 = single-threaded fallback)
 	// Physics thread: UpdatePhysicsFrameDual() (PlanetarySystem::Update only).
 	// Main thread: StageA (pre-step), StageB (post-step/EndTimeStep) and the
 	// D3D9Client rendering. See PhysicsThread.inc and
@@ -399,26 +385,19 @@ protected:
 	bool m_dualFrameReady = false;      // guarded by m_dualMutex
 	bool m_dualGateOpen = false;        // guarded by m_dualMutex
 	bool m_dualSessionActive = false;   // guarded by m_dualMutex
-	unsigned long long m_dualPhysCompleted = 0; // guarded by m_dualMutex
 	std::atomic<bool> m_dualPhysRunning{false};      // bRunning mirror
 	std::atomic<bool> m_dualPhysForceUpdate{false};  // g_bForceUpdate mirror
 	std::atomic<bool> m_dualPhysPlayback{false};     // bPlayback mirror
 	// per-frame performance counters (physics time is written by the physics
 	// thread and read by the main thread while the physics thread is parked)
-	double m_dualPhysFrameTime = 0.0;
 	double m_dualPhysTimeAcc = 0.0;
-	double m_dualSyncATime = 0.0, m_dualSyncBTime = 0.0;
 	double m_dualSyncAWait = 0.0, m_dualSyncBWait = 0.0;
-	double m_dualWaitTime = 0.0, m_dualWaitAcc = 0.0;
-	double m_dualRenderTime = 0.0, m_dualRenderAcc = 0.0;
+	double m_dualWaitAcc = 0.0;
+	double m_dualRenderAcc = 0.0;
 	double m_dualPerfStart = 0.0, m_dualPerfLast = 0.0;
 	double m_dualPhysLogT = 0.0;
 	int    m_dualPerfFrames = 0;
 
-	// render snapshot double buffer (kept for diagnostics/future render-thread use)
-	RenderSnapshot m_renderSnap[2];
-	std::atomic<int> m_renderSnapIdx{0};      // latest complete snapshot (0/1)
-	void PublishRenderSnapshot();          // called at the end of the frame
 
 	void IncWarpFactor ();
 	void DecWarpFactor ();

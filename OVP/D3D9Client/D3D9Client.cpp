@@ -282,7 +282,6 @@ D3D9Client::D3D9Client (HINSTANCE hInstance) :
 	camTargetLast      (NULL),
 	focusLast          (NULL),
 	camModeLast        (0),
-	lastTarget         (NULL),
 	lastTargetRefBody  (NULL),
 	lastTargetLng      (0.0),
 	lastTargetLat      (0.0),
@@ -1210,142 +1209,6 @@ void D3D9Client::clbkUpdate(bool running)
 double frame_time = 0.0;
 double scene_time = 0.0;
 
-// ---------------------------------------------------------------------------
-// Dual thread scene rendering split (see docs/handover/dual-thread-design.md).
-// The original clbkRenderScene() above keeps the single threaded behaviour.
-// clbkRenderScene3D() renders the 3D main scene (render thread), the 2D/UI
-// part including present is done by clbkRenderScene2D() (main thread).
-// ---------------------------------------------------------------------------
-void D3D9Client::clbkRenderScene3D()
-{
-	_TRACE;
-	if (pDevice==NULL || scene==NULL) return;
-	if (bFailed) return;
-	if (!bRunning) return;
-	Perf_BeginFrame(pDevice, scene ? scene->GetCameraAltitude() : 0.0);
-	scene_time = D3D9GetTime();
-	if (pDevice->TestCooperativeLevel()!=S_OK) { bFailed=true; return; }
-	UINT mem = pDevice->GetAvailableTextureMem()>>20;
-	if (mem<32) TileBuffer::HoldThread(true);
-	scene->RenderMainScene();		// 3D main scene
-	Perf_Mark(PERF_STAGE_SCENE_OTHER);
-}
-
-void D3D9Client::clbkRenderScene2D()
-{
-	if (pDevice==NULL || scene==NULL) return;
-	if (bFailed) return;
-	if (!bRunning) return;
-	if (pWM) pWM->Animate();
-	if (Config->PresentLocation == 1) PresentScene();	// present the 3D frame
-	scene->RenderMainScene2D();		// HUD / 2D overlays / EndScene
-	D3D9SetTime(D3D9Stats.Timer.Scene, scene_time);
-	if (bControlPanel) RenderControlPanel();
-	D3D9SetTime(D3D9Stats.Timer.FrameTotal, frame_time);
-	frame_time = D3D9GetTime();
-	UpdateTerrainLoadWait();
-	DrawTerrainLoadWaitLabel();
-	Perf_EndFrame();
-}
-
-// ---------------------------------------------------------------------------
-// Temporary dual-thread jitter diagnostics (physics/render sync investigation).
-// While the camera follows the focus vessel, the camera-relative position of
-// the vessel in the rendered scene should change smoothly. A rendered "ship
-// jump" shows up as a large second difference of that relative position.
-// Set D3D_DIAG_RENDER_JITTER to 0 to disable the diagnostics.
-// ---------------------------------------------------------------------------
-#define D3D_DIAG_RENDER_JITTER 1
-
-#if D3D_DIAG_RENDER_JITTER
-static void DiagRenderJitter ()
-{
-	static bool init = false;
-	static double prevSimt = 0.0, prevSimt2 = 0.0;
-	static VECTOR3 prevShip, prevShip2, prevCam, prevCam2, prevRel, prevRel2;
-	static bool relValid = false;
-	static double logT = 0.0;
-	static unsigned long long frames = 0, shipJumps = 0, camJumps = 0, relJumps = 0;
-
-	OBJHANDLE hFocus = oapiGetFocusObject();
-	if (!hFocus) { init = false; relValid = false; return; }
-
-	VECTOR3 ship, cam;
-	oapiGetGlobalPos(hFocus, &ship);
-	oapiCameraGlobalPos(&cam);
-	double simt = oapiGetSimTime();
-	frames++;
-
-	if (init) {
-		double dt = simt - prevSimt;
-		// --- focus vessel: second difference of the rendered global position
-		double sx = ship.x - 2.0*prevShip.x + prevShip2.x;
-		double sy = ship.y - 2.0*prevShip.y + prevShip2.y;
-		double sz = ship.z - 2.0*prevShip.z + prevShip2.z;
-		double shipD2 = sqrt(sx*sx + sy*sy + sz*sz);
-		double psx = ship.x - prevShip.x, psy = ship.y - prevShip.y, psz = ship.z - prevShip.z;
-		double speed = sqrt(psx*psx + psy*psy + psz*psz) / (dt > 1e-9 ? dt : 1.0);
-		// variable-step change alone can create a second difference of
-		// speed*|dt-dtPrev|; allow for that plus a generous margin
-		double expShipD2 = 200.0 + 2.0*speed*fabs(dt - (prevSimt - prevSimt2));
-		if (shipD2 > expShipD2) {
-			shipJumps++;
-			oapiWriteLogV("[RJDIAG] SHIP-JUMP frame=%llu simt=%.3f d2=%.1f exp=%.1f speed=%.1f dt=%.4f pos=(%.1f %.1f %.1f)",
-				frames, simt, shipD2, expShipD2, speed, dt, ship.x, ship.y, ship.z);
-		}
-		// --- camera: same test
-		double cx = cam.x - 2.0*prevCam.x + prevCam2.x;
-		double cy = cam.y - 2.0*prevCam.y + prevCam2.y;
-		double cz = cam.z - 2.0*prevCam.z + prevCam2.z;
-		double camD2 = sqrt(cx*cx + cy*cy + cz*cz);
-		double pcx = cam.x - prevCam.x, pcy = cam.y - prevCam.y, pcz = cam.z - prevCam.z;
-		double camSpeed = sqrt(pcx*pcx + pcy*pcy + pcz*pcz) / (dt > 1e-9 ? dt : 1.0);
-		double expCamD2 = 500.0 + 2.0*camSpeed*fabs(dt - (prevSimt - prevSimt2));
-		if (camD2 > expCamD2) {
-			camJumps++;
-			oapiWriteLogV("[RJDIAG] CAM-JUMP frame=%llu simt=%.3f d2=%.1f exp=%.1f speed=%.1f dt=%.4f pos=(%.1f %.1f %.1f)",
-				frames, simt, camD2, expCamD2, camSpeed, dt, cam.x, cam.y, cam.z);
-		}
-		// --- camera-relative vessel position (camera tracks the focus vessel):
-		// should be constant in a smooth tracking camera
-		if (relValid && oapiCameraTarget() == hFocus) {
-			double rx = ship.x - cam.x, ry = ship.y - cam.y, rz = ship.z - cam.z;
-			double d2x = rx - 2.0*prevRel.x + prevRel2.x;
-			double d2y = ry - 2.0*prevRel.y + prevRel2.y;
-			double d2z = rz - 2.0*prevRel.z + prevRel2.z;
-			double relD2 = sqrt(d2x*d2x + d2y*d2y + d2z*d2z);
-			if (relD2 > 50.0) {
-				relJumps++;
-				oapiWriteLogV("[RJDIAG] REL-JUMP frame=%llu simt=%.3f d2=%.1f rel=(%.1f %.1f %.1f) dt=%.4f",
-					frames, simt, relD2, rx, ry, rz, dt);
-			}
-			prevRel2 = prevRel;
-			prevRel.x = rx; prevRel.y = ry; prevRel.z = rz;
-			relValid = true;
-		}
-		else relValid = false;
-		prevShip2 = prevShip;
-		prevCam2 = prevCam;
-	}
-	prevShip = ship;
-	prevCam = cam;
-	prevSimt2 = prevSimt;
-	prevSimt = simt;
-	init = true;
-
-	LARGE_INTEGER freq, c;
-	QueryPerformanceFrequency(&freq);
-	QueryPerformanceCounter(&c);
-	double now = double(c.QuadPart)/double(freq.QuadPart);
-	if (logT == 0.0) logT = now;
-	else if (now - logT >= 2.0) {
-		oapiWriteLogV("[RJDIAG] frames=%llu shipJumps=%llu camJumps=%llu relJumps=%llu rel=(%.1f %.1f %.1f)",
-			frames, shipJumps, camJumps, relJumps,
-			prevRel.x, prevRel.y, prevRel.z);
-		logT = now;
-	}
-}
-#endif // D3D_DIAG_RENDER_JITTER
 
 void D3D9Client::clbkRenderScene()
 {
@@ -1416,9 +1279,6 @@ void D3D9Client::clbkRenderScene()
 	UpdateTerrainLoadWait();
 	DrawTerrainLoadWaitLabel();
 
-#if D3D_DIAG_RENDER_JITTER
-	DiagRenderJitter();
-#endif
 	Perf_EndFrame();	// frame profiler: log the window / poll GPU queries
 }
 

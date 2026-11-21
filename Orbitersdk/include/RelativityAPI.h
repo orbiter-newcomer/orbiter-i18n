@@ -117,7 +117,5 @@ OAPIFUNC double oapiGetRelativityGravTimeFactor ();
  */
 OAPIFUNC double oapiGetRelativityVelTimeFactor ();
 
-/** Wreck/debris system API (oapiGetWreckDebrisCount, oapiGetWreckDebris,
- *  oapiGetWreckMessageEx, oapiGetWreckAnchorVessel) moved to WreckAPI.h. */
 
 #endif // !__RELATIVITYAPI_H

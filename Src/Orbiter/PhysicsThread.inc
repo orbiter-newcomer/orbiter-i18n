@@ -23,7 +23,7 @@
 // StageB (main thread, physics thread parked):
 //   WreckDebrisUpdate, pDlgMgr->UpdateDialogs, ModulePostStep,
 //   g_bStateUpdate=false, WreckProcessPendingSafe, KillVessels,
-//   PublishRenderSnapshot, EndTimeStep (FinaliseUpdate, td.EndStep,
+//   EndTimeStep (FinaliseUpdate, td.EndStep,
 //   camera/panel/graphics-client update, session limit check)
 //
 // StageA (main thread, physics thread parked):
@@ -223,12 +223,10 @@ void Orbiter::PhysicsThreadProc()
 			UpdatePhysicsFrameDual();
 			QueryPerformanceCounter(&c1);
 			double dt = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
-			m_dualPhysFrameTime = dt;
 			m_dualPhysTimeAcc += dt;
 		}
 
 		lk.lock();
-		m_dualPhysCompleted++;
 		m_dualFrameReady = true;
 		lk.unlock();
 		m_dualCv.notify_all();
@@ -251,13 +249,10 @@ void Orbiter::EnsurePhysicsThread()
 		m_dualPhysRunning.store(bRunning);
 		m_dualPhysForceUpdate.store(g_bForceUpdate);
 		m_dualPhysPlayback.store(bPlayback);
-		m_dualPhysCompleted = 0;
-		m_dualPhysFrameTime = 0.0;
 		m_dualPhysTimeAcc = 0.0;
-		m_dualSyncATime = m_dualSyncBTime = 0.0;
 		m_dualSyncAWait = m_dualSyncBWait = 0.0;
-		m_dualWaitTime = m_dualWaitAcc = 0.0;
-		m_dualRenderTime = m_dualRenderAcc = 0.0;
+		m_dualWaitAcc = 0.0;
+		m_dualRenderAcc = 0.0;
 		m_dualPerfFrames = 0;
 		m_dualPerfStart = 0.0;
 		m_dualPerfLast = 0.0;
@@ -317,8 +312,7 @@ bool Orbiter::WaitPhysicsFrame()
 	}
 	lk.unlock();
 	QueryPerformanceCounter(&c1);
-	m_dualWaitTime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
-	m_dualWaitAcc += m_dualWaitTime;
+	m_dualWaitAcc += double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
 	return true;
 }
 
@@ -362,8 +356,6 @@ void Orbiter::RunDualStageB()
 	WreckProcessPendingSafe();
 	// kill vessels marked for deletion (also notifies the graphics client)
 	SBE_BEGIN(); if (!KillVessels()) if (hRenderWnd) DestroyWindow(hRenderWnd); SBE_END(s_sbeKill);
-	// publish the render snapshot (originally the last step of UpdateWorld)
-	SBE_BEGIN(); PublishRenderSnapshot(); SBE_END(s_sbePublish);
 	// finalise update, advance time, camera/panel/visual update, session limits
 	SBE_BEGIN(); EndTimeStep(bRunning); SBE_END(s_sbeEnd);
 	s_sbeFrames++;
@@ -379,8 +371,7 @@ void Orbiter::RunDualStageB()
 #endif
 
 	QueryPerformanceCounter(&c1);
-	m_dualSyncBTime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
-	m_dualSyncBWait += m_dualSyncBTime;
+	m_dualSyncBWait += double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
 }
 
 // ---- physics breakdown log (main thread, physics parked) ----
@@ -462,8 +453,7 @@ void Orbiter::RunDualStageA()
 	m_dualPhysPlayback.store(bPlayback);
 
 	QueryPerformanceCounter(&c1);
-	m_dualSyncATime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
-	m_dualSyncAWait += m_dualSyncATime;
+	m_dualSyncAWait += double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
 }
 
 // ---- per-frame performance log (main thread, physics parked) ----
@@ -570,8 +560,7 @@ INT Orbiter::RunDualThread()
 			if (FAILED(Render3DEnvironment()))
 				if (hRenderWnd) DestroyWindow(hRenderWnd);
 			QueryPerformanceCounter(&c1);
-			m_dualRenderTime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
-			m_dualRenderAcc += m_dualRenderTime;
+			m_dualRenderAcc += double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
 #if DUAL_THREAD_DIAG
 			DualDiagRenderWindowEnd();
 #endif

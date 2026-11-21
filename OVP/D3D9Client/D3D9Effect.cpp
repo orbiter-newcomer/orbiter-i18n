@@ -60,7 +60,6 @@ D3DXHANDLE D3D9Effect::eEmissiveTech = 0;
 D3DXHANDLE D3D9Effect::eVP = 0;			// Combined View & Projection Matrix
 D3DXHANDLE D3D9Effect::eW = 0;			// World matrix
 D3DXHANDLE D3D9Effect::eLVP = 0;		// Light view projection
-D3DXHANDLE D3D9Effect::eLVP2 = 0;		// Scene shadow (G1) light view projection
 D3DXHANDLE D3D9Effect::eGT = 0;			// Mesh group transformation matrix
 D3DXHANDLE D3D9Effect::eMat = 0;		// Material
 D3DXHANDLE D3D9Effect::eWater = 0;		// Water
@@ -82,7 +81,6 @@ D3DXHANDLE D3D9Effect::eRghnMap = 0;
 D3DXHANDLE D3D9Effect::eMetlMap = 0;
 D3DXHANDLE D3D9Effect::eHeatMap = 0;
 D3DXHANDLE D3D9Effect::eShadowMap = 0;
-D3DXHANDLE D3D9Effect::eShadowMap2 = 0;		// Scene shadow (G1) map
 D3DXHANDLE D3D9Effect::eTranslMap = 0;
 D3DXHANDLE D3D9Effect::eTransmMap = 0;
 D3DXHANDLE D3D9Effect::eIrradMap = 0;
@@ -97,8 +95,6 @@ D3DXHANDLE D3D9Effect::eMix = 0;		// FLOAT Auxiliary factor/multiplier
 D3DXHANDLE D3D9Effect::eFogDensity = 0;	// 
 D3DXHANDLE D3D9Effect::ePointScale = 0;
 D3DXHANDLE D3D9Effect::eSHD = 0;
-D3DXHANDLE D3D9Effect::eSHD2 = 0;		// Scene shadow (G1) parameters
-D3DXHANDLE D3D9Effect::eSHDT2 = 0;		// Scene shadow (G1) coverage centre/radius
 
 D3DXHANDLE D3D9Effect::eAtmColor = 0;
 D3DXHANDLE D3D9Effect::eProxySize = 0;
@@ -453,15 +449,12 @@ void D3D9Effect::D3D9TechInit(D3D9Client *_gc, LPDIRECT3DDEVICE9 _pDev, const ch
 	eMtrlAlpha	  = FX->GetParameterByName(0,"gMtrlAlpha");
 	eGlowConst    = FX->GetParameterByName(0,"gGlowConst");
 	eSHD		  = FX->GetParameterByName(0,"gSHD");
-	eSHD2		  = FX->GetParameterByName(0,"gSHD2");
-	eSHDT2		  = FX->GetParameterByName(0,"gSHDT2");
 	eKernel		  = FX->GetParameterByName(0,"kernel");
 	eAtmoParams	  = FX->GetParameterByName(0,"gAtmo");
 	// ----------------------------------------------------------------------
 	eVP			  = FX->GetParameterByName(0,"gVP");
 	eW			  = FX->GetParameterByName(0,"gW");
 	eLVP		  = FX->GetParameterByName(0,"gLVP");
-	eLVP2		  = FX->GetParameterByName(0,"gLVP2");
 	eGT			  = FX->GetParameterByName(0,"gGrpT");
 	// ----------------------------------------------------------------------
 	eSun		  = FX->GetParameterByName(0,"gSun");
@@ -482,7 +475,6 @@ void D3D9Effect::D3D9TechInit(D3D9Client *_gc, LPDIRECT3DDEVICE9 _pDev, const ch
 	eMetlMap	  = FX->GetParameterByName(0,"gMetlMap");
 	eHeatMap	  = FX->GetParameterByName(0,"gHeatMap");
 	eShadowMap	  = FX->GetParameterByName(0,"gShadowMap");
-	eShadowMap2	  = FX->GetParameterByName(0,"gShadowMap2");
 	eTranslMap	  = FX->GetParameterByName(0, "gTranslMap");
 	eTransmMap	  = FX->GetParameterByName(0, "gTransmMap");
 	eIrradMap     = FX->GetParameterByName(0,"gIrradianceMap");

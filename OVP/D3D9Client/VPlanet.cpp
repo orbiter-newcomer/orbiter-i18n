@@ -1211,7 +1211,6 @@ void vPlanet::RenderSphere (LPDIRECT3DDEVICE9 dev)
 	// rendering (TerrainRender.inc). Hand the fresh parameters to the scene
 	// shadow receivers (base surfaces, base buildings, vessels) again, because
 	// the vessel shadow map pass of the G1 rendering has reset them.
-	// (removed) scn->UpdateEffectShadows(this);  -- G1 no longer feeds vessel/base shadows
 	// (vessels and bases keep the official near field shadow system)
 
 	if (nbase) {
