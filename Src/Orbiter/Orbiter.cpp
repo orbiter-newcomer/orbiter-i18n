@@ -2216,9 +2216,7 @@ HRESULT Orbiter::UserInput ()
 	DIJOYSTATE2 js;
 	if (pDI->PollJoystick (&js)) {
 		UserJoyInput_System (&js);                  // general joystick functions
-		// internal-damage interface: no vessel control (the coolie hat camera /
-		// panel functions in UserJoyInput_System stay active)
-		if (bRunning && !(g_focusobj && g_focusobj->IsControlDisabled()))
+		if (bRunning)
 			UserJoyInput_OnRunning (&js); // joystick vessel control functions
 		for (i = 0; i < 15; i++) ctrlTotal[i] += ctrlJoystick[i]; // update thrust requests
 	}
@@ -2384,14 +2382,7 @@ void Orbiter::KbdInputImmediate_System (char *kstate)
 //-----------------------------------------------------------------------------
 void Orbiter::KbdInputImmediate_OnRunning (char *kstate)
 {
-	// Internal-damage interface: a vessel whose player control is disabled does
-	// not receive control input. View/camera and MFD keys are handled elsewhere
-	// (System/buffered handlers) and stay active.
-	const bool ctrlDis = (g_focusobj && g_focusobj->IsControlDisabled());
-
-	if (!ctrlDis && g_focusobj->ConsumeDirectKey (kstate)) return;  // key is consumed by focus vessel
-
-	if (!ctrlDis) {
+	if (g_focusobj->ConsumeDirectKey (kstate)) return;  // key is consumed by focus vessel
 	// main/retro/hover thruster settings
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_IncMainThrust))   g_focusobj->IncMainRetroLevel ( 0.2*td.SimDT);
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_DecMainThrust))   g_focusobj->IncMainRetroLevel (-0.2*td.SimDT);
@@ -2439,7 +2430,6 @@ void Orbiter::KbdInputImmediate_OnRunning (char *kstate)
 	// Wheel brake control
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_WheelbrakeLeft))  g_focusobj->SetWBrakeLevel (1.0, 1, false);
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_WheelbrakeRight)) g_focusobj->SetWBrakeLevel (1.0, 2, false);
-	} // end of the player-control block
 
 	// left/right MFD control (interface only: not affected by damage)
 	if (KEYMOD_SHIFT (kstate)) {
@@ -2522,10 +2512,7 @@ void Orbiter::KbdInputBuffered_OnRunning (char *kstate, DIDEVICEOBJECTDATA *dod,
 		DWORD key = dod[i].dwOfs;
 		bool bdown = (dod[i].dwData & 0x80) != 0;
 
-		// Internal-damage interface: no vessel control input for a damaged vessel
-		// (the simulation-speed and interface keys below stay active).
-		if (!g_focusobj->IsControlDisabled() &&
-		    g_focusobj->ConsumeBufferedKey (key, bdown, kstate)) // offer key to vessel for processing
+		if (g_focusobj->ConsumeBufferedKey (key, bdown, kstate)) // offer key to vessel for processing
 			continue;
 		if (!bdown) // only process key down events
 			continue;

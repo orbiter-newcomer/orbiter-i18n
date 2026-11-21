@@ -37,48 +37,9 @@ static char g_relWreckVesselName[64] = "";   // focus vessel kept as large wreck
 static bool g_relWreckCamActive = false;   // our wreck camera is currently active
 static bool g_relWreckGroundCamActive = false;   // ground camera control active
 
-// ---- delayed vessel removal (WRECK_DAMAGE_INTERNAL) ------------------------
-// A vessel damaged from the internal environment is kept in the simulation (so
-// the player can see it) until the player switches the view (F3 focus change).
-static char g_delayedKill[32][64];
-static int  g_delayedKillCount = 0;
-
-static void WreckQueueDelayedKill (Vessel *vessel)
-{
-	if (!vessel) return;
-	for (int i = 0; i < g_delayedKillCount; i++)
-		if (strcmp (g_delayedKill[i], vessel->Name()) == 0) return;   // already queued
-	if (g_delayedKillCount >= 32) { vessel->RequestDestruct(); return; }   // fallback
-	strcpy_s (g_delayedKill[g_delayedKillCount++], 64, vessel->Name());
-}
-
-// Process the delayed-removal list: a vessel is removed once it is no longer the
-// focus object, i.e. after the player switched the view with F3.
-static void WreckProcessDelayedKills (const Vessel *newFocus)
-{
-	if (g_delayedKillCount <= 0) return;
-	const char *focusName = (newFocus ? newFocus->Name() : 0);
-	for (int i = g_delayedKillCount-1; i >= 0; i--) {
-		if (focusName && strcmp (focusName, g_delayedKill[i]) == 0) continue;   // still focused
-		if (g_psys) {
-			Vessel *dv = g_psys->GetVessel (g_delayedKill[i]);
-			if (dv) {
-				LOGOUT ("Internal damage: %s removed after view switch.", g_delayedKill[i]);
-				dv->RequestDestruct ();
-			}
-		}
-		g_delayedKill[i][0] = 0;
-		g_delayedKillCount--;
-		if (i < g_delayedKillCount)
-			strcpy_s (g_delayedKill[i], 64, g_delayedKill[g_delayedKillCount]);
-	}
-}
 
 void WreckOnFocusChanged (Vessel *newFocus)
 {
-	// Delayed removal of internally damaged vessels: executed on the F3 view /
-	// focus switch, before the camera handling below.
-	WreckProcessDelayedKills (newFocus);
 
 	if (!newFocus || !g_camera) return;
 	// wreck vessels have no cockpit: always use the external view, otherwise the
@@ -828,8 +789,6 @@ void WreckAtmosphericBurnup (Vessel *vessel)
 // Destruction policy per failure class:
 //   WRECK_DAMAGE_FAILURE  : immediate removal, no debris (state has failed)
 //   WRECK_DAMAGE_IMPACT   : immediate removal + wreck debris (flight accident)
-//   WRECK_DAMAGE_INTERNAL : keep the vessel visible, disable player control,
-//                           remove it after the player switches the view (F3)
 // -----------------------------------------------------------------------------
 
 // Queue a debris burst for a flight accident at the vessel's current state.
@@ -859,12 +818,6 @@ static void WreckQueueImpactDebris (Vessel *vessel)
 	g_pendingWreckReleaseT = td.SimT1;   // create the debris in the same safe phase
 }
 
-void WreckDisableControl (Vessel *vessel)
-{
-	// Reserved interface for the internal-environment damage sources: the vessel
-	// stays in the simulation but the player can no longer control it.
-	if (vessel) vessel->SetControlDisabled (true);
-}
 
 void WreckDamageVessel (Vessel *vessel, int damageType, int reason, const char *otherName)
 {
@@ -919,12 +872,6 @@ static void WreckProcessDamageRequests ()
 				vessel->RequestDestruct ();
 				if (isFocus) g_focusDebrisOnSpawn = true;
 			}
-			break;
-		case WRECK_DAMAGE_INTERNAL:
-			// Internal environment failure: keep the vessel, disable the player
-			// control, remove it after the player switches the view (F3).
-			vessel->SetControlDisabled (true);
-			WreckQueueDelayedKill (vessel);
 			break;
 		}
 	}

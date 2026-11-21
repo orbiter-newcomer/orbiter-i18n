@@ -769,7 +769,6 @@ void Vessel::Setup ()
 	UpdateMass ();
 	orthoaxis = 0;
 	kill_pending = false;
-	bControlDisabled = false;
 	if (bFRplayback = bRequestPlayback) {
 		const char *playbackdir = g_pOrbiter->PState()->PlaybackDir();
 		//if (!playbackdir) playbackdir = ScenarioName;
@@ -2091,9 +2090,6 @@ void Vessel::ApplyUserAttitudeControls (DWORD *ctrl)
 	if (bFRplayback) return;
 	// ignore user controls during playback 
 
-	// internal-damage interface: the player can no longer control this vessel
-	// (camera/view switching is handled elsewhere and is not affected)
-	if (bControlDisabled) return;
 
 	if (attmode) { // RCS thrusters
 		if (attmode == 1) { // rotational mode

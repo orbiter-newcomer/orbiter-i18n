@@ -48,19 +48,10 @@ enum WreckDamageType {
 	// Flight accident (vessel collision, surface crash, atmospheric burn-up):
 	// the vessel is removed IMMEDIATELY and replaced by wreck debris.
 	WRECK_DAMAGE_IMPACT   = 2,
-	// Internal environment failure (thermal / life support etc.): the vessel is
-	// NOT removed immediately. It stays visible but can no longer be controlled
-	// by the player; it is removed once the player switches the view (F3 focus
-	// change). No debris.
-	// This is a reserved interface for the internal-environment systems.
-	WRECK_DAMAGE_INTERNAL = 3
 };
 
 // Unified damage entry point used by all damage sources.
 void WreckDamageVessel (class Vessel *vessel, int damageType, int reason, const char *otherName = 0);
-// Reserved internal-damage interface: disable the player control of a vessel
-// without destroying it (see WRECK_DAMAGE_INTERNAL).
-void WreckDisableControl (class Vessel *vessel);
 
 // Sets the on-screen wreck message (bodyName/otherName may be null).
 void WreckMessage (int reason, const char *bodyName, const char *otherName, bool otherDestroyed = false);

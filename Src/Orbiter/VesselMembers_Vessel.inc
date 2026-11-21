@@ -6,12 +6,6 @@
 
 public:
 
-	// Internal-damage interface: the player can no longer control this vessel
-	// (camera/view switching is not affected). See WreckDisableControl().
-	inline void SetControlDisabled (bool b)
-	{ bControlDisabled = b; }
-	inline bool IsControlDisabled() const
-	{ return bControlDisabled; }
 
 public:
 	// Multi-core vessel update (implementation in Vessel.cpp, driven by
@@ -37,5 +31,4 @@ private:
 private:
 
 protected:
-	bool bControlDisabled;   // player control disabled (internal damage, see WreckDamageVessel)
 
