@@ -710,7 +710,7 @@ bool ElevationSampler::Init (const std::string &dataRoot, double rplanet, double
 	rp = rplanet;
 	elevRes = _elevRes;
 	fineLvl = -1;
-	cacheLimit = 48;
+	cacheLimit = 128;
 	lastTile = NULL;
 	lastKey = Key();
 
@@ -979,51 +979,43 @@ static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<floa
 
 	out.assign((size_t)R * R * K, 0.0f);
 
-	const double tileSize = max(job.latmax - job.latmin, job.lngmax - job.lngmin) * rp;
-	const double texelWorld = tileSize / double(R);
-	const double dNear0 = min(dmax, max(8.0 * tileSize, 3000.0));
+	// Unified ray sampling: the sample sequence must be identical for every tile
+	// (independent of the tile size / LOD), otherwise the horizon angle differs
+	// on the two sides of a tile border and a low sun turns that difference into
+	// visible straight-edged shadow steps (the "tile by tile" look). A fixed
+	// world-space sequence makes the field continuous across neighbouring tiles.
+	static const double STEP0 = 2.0;		// first ray sample distance [m]
+	static const double DNEAR = 3000.0;		// near/far segment switch distance [m]
+	const int hiLvl = job.nearLvl;
 
 	const double latStep = (job.latmax - job.latmin) / double(R);
 	const double lngStep = (job.lngmax - job.lngmin) / double(R);
-	const double step0 = max(texelWorld * 0.5, 1.0);
 
 	for (int i = 0; i < R; i++) {
 		double lat = job.latmin + (i + 0.5) * latStep;
 		double coslat = max(cos(lat), 0.02);
 		for (int j = 0; j < R; j++) {
 			double lng = job.lngmin + (j + 0.5) * lngStep;
-			float h0 = es.Sample(lat, lng, job.nearLvl);
+			float h0 = es.Sample(lat, lng, hiLvl);
 
 			for (int k = 0; k < K; k++) {
 				double phi = PI2 * double(k) / double(K);
 				double dy = cos(phi), dx = sin(phi);
 				double best = 0.0;			// negative horizon angle = no self occlusion
 
-				// near field: per field point ray march
-				double d = step0;
-				while (d < dNear0) {
-					double dlat = d * dy / rp;
-					double dlng = d * dx / (rp * coslat);
-					float h = es.Sample(lat + dlat, lng + dlng, job.nearLvl);
-					double drop = d * d / (2.0 * rp);
-					double ang = atan2((double)h - (double)h0 - drop, d);
-					if (ang > best) best = ang;
-					d += max(step0, d * 0.15);
-				}
-
-				// far field: also computed per field point. A shared tile-centre
-				// profile would make the horizon (and with a low sun the shadow
-				// boundary) discontinuous between neighbouring tiles, which showed
-				// up as straight-edged shadow steps at the tile borders.
-				double df = dNear0;
-				while (df < dmax) {
-					double dlat = df * dy / rp;
-					double dlng = df * dx / (rp * coslat);
-					float h = es.Sample(lat + dlat, lng + dlng, job.farLvl);
-					double drop = df * df / (2.0 * rp);
-					double ang = atan2((double)h - (double)h0 - drop, df);
-					if (ang > best) best = ang;
-					df += max(400.0, df * 0.25);
+				for (int seg = 0; seg < 2; seg++) {
+					double d = (seg == 0) ? STEP0 : DNEAR;
+					const double dend = (seg == 0) ? DNEAR : dmax;
+					const double growth = (seg == 0) ? 0.15 : 0.25;
+					while (d < dend) {
+						double dlat = d * dy / rp;
+						double dlng = d * dx / (rp * coslat);
+						float h = es.Sample(lat + dlat, lng + dlng, hiLvl);
+						double drop = d * d / (2.0 * rp);
+						double ang = atan2((double)h - (double)h0 - drop, d);
+						if (ang > best) best = ang;
+						d += max(STEP0, d * growth);
+					}
 				}
 
 				if (best < 0.0) best = 0.0;
@@ -1112,6 +1104,7 @@ private:
 	int               statReady;
 	int               bakeCount;
 	long long         bakeMs;
+	int               m_hiLvl;		// finest elevation level, used for every tile
 
 	void StartWorkers ();
 	void StopWorkers ();
@@ -1138,6 +1131,7 @@ System::System ()
 	bFilter = false;
 	hPlanet = NULL;
 	planetR = 0.0;
+	m_hiLvl = 4;
 	elevRes = 1.0;
 	cacheBytes = 0;
 	quit = false;
@@ -1255,18 +1249,24 @@ bool System::EnsurePlanet (TileManager2<SurfTile> *mgr, vPlanet *vp)
 
 	if (dataRoot.empty() || planetR <= 0.0) return false;
 
-	// Bodies without an elevation archive cannot have a horizon field.
-	ZTreeMgr *probe = ZTreeMgr::CreateFromFile(dataRoot.c_str(), ZTreeMgr::LAYER_ELEV);
-	if (!probe) {
-		oapiWriteLogV("TerrainHorizon: no elevation archive for %s -> overlay disabled", dataRoot.c_str());
-		hPlanet = NULL;
-		return false;
+	// Bodies without an elevation archive cannot have a horizon field. Also
+	// determine the finest elevation level: every tile is baked against this
+	// same level (with per-position fallback to coarser levels), so that the
+	// horizon angle is continuous across the borders of neighbouring tiles.
+	{
+		ElevationSampler probe;
+		if (!probe.Init(dataRoot, planetR, elevRes)) {
+			oapiWriteLogV("TerrainHorizon: no elevation archive for %s -> overlay disabled", dataRoot.c_str());
+			hPlanet = NULL;
+			return false;
+		}
+		m_hiLvl = probe.FinestLevel();
+		probe.Exit();
 	}
-	delete probe;
 
 	StartWorkers();
-	oapiWriteLogV("TerrainHorizon: body [%s], R=%.0f m, elevRes=%.2f m, field %dx%d, dirs %d",
-		dataRoot.c_str(), planetR, elevRes, g_cfg.fieldSize, g_cfg.fieldSize, g_cfg.dirs);
+	oapiWriteLogV("TerrainHorizon: body [%s], R=%.0f m, elevRes=%.2f m, field %dx%d, dirs %d, hiLvl %d",
+		dataRoot.c_str(), planetR, elevRes, g_cfg.fieldSize, g_cfg.fieldSize, g_cfg.dirs, m_hiLvl);
 	return true;
 }
 
@@ -1480,7 +1480,6 @@ void System::Request (SurfTile *tile)
 	if (tileSize <= 0.0) return;
 
 	const int R = g_cfg.fieldSize;
-	const double texelWorld = tileSize / double(R);
 
 	BakeJob job;
 	job.key = k;
@@ -1492,8 +1491,7 @@ void System::Request (SurfTile *tile)
 	job.rangeM = g_cfg.rangeM;
 	job.R = R;
 	job.K = g_cfg.dirs;
-	job.nearLvl = LevelForResolution(planetR, texelWorld * 0.5, 14);
-	job.farLvl  = LevelForResolution(planetR, max(1000.0, texelWorld * 16.0), 12);
+	job.nearLvl = job.farLvl = (m_hiLvl >= 4 ? m_hiLvl : 4);
 	job.priority = -lvl;
 	job.dataRoot = dataRoot;
 	job.elevRes = elevRes;
