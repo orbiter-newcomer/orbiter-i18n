@@ -45,7 +45,6 @@ enum PerfStage {
 	PERF_STAGE_ATMO,			// atmosphere scatter table generation
 	PERF_STAGE_TERRAIN_LOCK,	// terrain: waiting for the tile loader mutex
 	PERF_STAGE_TERRAIN_PROCESS,	// terrain: tile tree update (LOD, preload)
-	PERF_STAGE_TERRAIN_SHADOW,	// terrain: scene shadow map (G1) generation
 	PERF_STAGE_TERRAIN_DRAW,	// terrain: tile drawing (+ fade tiles)
 	PERF_STAGE_TERRAIN_TAIL,	// terrain: fade bookkeeping, mutex release
 	PERF_STAGE_PLANET_POST,		// planet: base surfaces, clouds, remaining planets
@@ -73,10 +72,8 @@ void Perf_EndFrame();
 void Perf_AddUpdate(double us);		// clbkUpdate (scene/visual update) duration
 void Perf_AddPresent(double us);	// Present duration
 void Perf_AddTerrainTileInternal();
-void Perf_ShadowTilesInternal(int n);
 
 inline void Perf_Mark(int stage)			{ if (PerfActive) Perf_MarkInternal(stage); }
 inline void Perf_AddTerrainTile()			{ if (PerfActive) Perf_AddTerrainTileInternal(); }
-inline void Perf_ShadowTiles(int n)			{ if (PerfActive) Perf_ShadowTilesInternal(n); }
 
 #endif // __PERF_STATS_H

@@ -2929,29 +2929,6 @@ OAPIFUNC OBJHANDLE oapiGetFocusObject ();
  */
 OAPIFUNC OBJHANDLE oapiSetFocusObject (OBJHANDLE hVessel);
 
-// Vessel shadow rendering modes (see oapiSetVesselShadowMode)
-#define SHADOWMODE_DEFAULT   0   ///< default: legacy projected shadow and/or shadow map, as configured
-#define SHADOWMODE_NONE      1   ///< no ground shadow at all (e.g. invisible reference objects)
-#define SHADOWMODE_SHADOWMAP 2   ///< shadow-map only: skip the legacy projected ground shadow
-
-/**
- * \brief Sets the shadow rendering mode of a vessel.
- * \param hVessel vessel handle
- * \param mode one of SHADOWMODE_DEFAULT, SHADOWMODE_NONE, SHADOWMODE_SHADOWMAP
- * \note The mode is a hint for graphics clients. It allows plugins (e.g. wreck
- *   debris) to opt out of the legacy projected ground shadow without the
- *   rendering client having to know anything about the plugin.
- * \sa oapiGetVesselShadowMode
- */
-OAPIFUNC void oapiSetVesselShadowMode (OBJHANDLE hVessel, int mode);
-
-/**
- * \brief Returns the shadow rendering mode of a vessel.
- * \param hVessel vessel handle
- * \return shadow mode (SHADOWMODE_DEFAULT for non-vessel handles)
- * \sa oapiSetVesselShadowMode
- */
-OAPIFUNC int oapiGetVesselShadowMode (OBJHANDLE hVessel);
 
 /**
  * \brief Returns a VESSEL class instance for a vessel.

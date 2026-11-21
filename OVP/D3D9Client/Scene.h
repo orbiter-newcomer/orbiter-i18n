@@ -31,7 +31,6 @@ class vPlanet;
 class D3D9ParticleStream;
 class D3D9Text;
 class D3D9Pad;
-class ShadowSystem;
 
 #define GBUF_COLOR				0
 #define GBUF_BLUR				1

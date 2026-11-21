@@ -5,30 +5,18 @@
 // ==============================================================
 
 public:
-	// Unified scene shadow system (G1): parameters of the scene shadow group
 	// (terrain self shadowing, distant vessel/base shadows). Implementation in
-	// TerrainRender.inc (included at the end of Scene.cpp).
-	SHADOWMAPPARAM smapT;
-	bool smapTValid;
 
 
 public:
-	inline const SHADOWMAPPARAM * GetSMapDataT() const { return &smapT; }
-	inline bool IsSceneShadowValid() const { return smapTValid; }
 
 public:
 	void RenderMainScene2D();	// dual thread: HUD/2D overlay part of the main scene (main thread)
 
 public:
 
-	// Unified scene shadow system (implementation: TerrainRender.inc)
-	void RenderSceneShadow(class vPlanet *vp);
-	void InitShadowSystem();
-	void ExitShadowSystem();
 
 private:
-	// Unified scene shadow system (G1), implementation in TerrainRender.inc
-	class ShadowSystem *pShadows;
 
 
 private:

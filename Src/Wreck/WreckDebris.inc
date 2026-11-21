@@ -543,7 +543,6 @@ static void WreckProcessPending ()
 		if (!h) { LOGOUT_ERR ("Wreck vessel creation failed: %s", name); continue; }
 		// feature tag: wreck debris is rendered into the shadow map (the terrain samples
 		// it), so the legacy projected ground shadow must be skipped for it.
-		oapiSetVesselShadowMode (h, SHADOWMODE_SHADOWMAP);
 		// initialise and commit the wreck state vectors once (the vessel is frozen
 		// afterwards, so without this GPos() would stay at zero)
 		{

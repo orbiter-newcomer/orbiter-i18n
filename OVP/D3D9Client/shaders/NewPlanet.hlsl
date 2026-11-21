@@ -48,9 +48,6 @@ struct TileVS
 #if defined(_SHDMAP)
 	float4 shdH     : TEXCOORD3;
 #endif
-#if defined(_TERRSHD)
-	float4 shdH2    : TEXCOORD4;  // unified scene shadow (G1) coordinates
-#endif
 };
 
 struct CldVS
@@ -78,7 +75,6 @@ struct FlowControlPS
 	BOOL bBelowClouds;			// Camera is below cloud layer
 	BOOL bOverlay;				// Overlay on/off	
 	BOOL bShadows;				// Shadow Map on/off
-	BOOL bShadowsT;				// Unified scene shadow map (G1) on/off
 	BOOL bLocals;				// Local Lights on/off
 	BOOL bMicroNormals;			// Micro texture has normals
 	BOOL bCloudShd;				// Cloud shadow textures valid and enabled
@@ -113,13 +109,13 @@ struct PerObjectParams
 	float	 fAlpha;
 	float	 fBeta;
 	float	 fTgtScale;
-	float	 fPad0;				// alignment padding (keeps mLVP2 16-byte aligned)
-	float4x4 mLVP2;				// scene shadow (G1) light-view-projection
-	float4	 vSHD2;				// G1: texel world size, 1/size, 1/depth, unused
-	float4	 vSHDT;				// G1: coverage centre xyz, coverage radius
 };
 
 uniform extern PerObjectParams Prm;
+
+// Terrain LOD cross fade: 1 = fully sharp (normal rendering), 0 = maximum
+// low-pass (start of the transition), sampled per tile.
+uniform extern float TerrainTileFade;
 
 
 
@@ -142,7 +138,6 @@ sampler	tMicroB;
 sampler	tMicroC;
 sampler tGlare;
 sampler	tShadowMap;
-#include "TerrainRender.inc.hlsl"   // project extension: terrain shadow / LOD shader code
 
 sampler	tOverlay;
 sampler	tMskOverlay;
@@ -377,9 +372,6 @@ TileVS TerrainVS(TILEVERTEX vrt)
 	outVS.shdH = mul(float4(vPosW, 1.0f), Prm.mLVP);
 #endif
 
-#if defined(_TERRSHD)
-	outVS.shdH2 = mul(float4(vPosW + normalize(vNrmW) * (Prm.vSHD2.x * 1.5f), 1.0f), Prm.mLVP2);
-#endif
 
 	outVS.texUV.xy = vrt.tex0.xy;
 	outVS.camW = float4(-vPosW, dot(vVrt, vPlN));
@@ -488,54 +480,7 @@ float4 TerrainPS(TileVS frg) : COLOR
 	}
 #endif
 
-#if defined(_TERRSHD)
-	// Unified scene shadow map (G1): terrain self shadowing and distant caster
-	// shadows. The map coverage edge is faded out so no hard border is visible.
-	if (Flow.bShadowsT) {
-		float4 shd2 = frg.shdH2;
-		shd2.xyz /= shd2.w;
-		shd2.z = 1 - shd2.z;
-		float2 sp = shd2.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
 
-		if (sp.x > 0.0f && sp.y > 0.0f && sp.x < 1.0f && sp.y < 1.0f) {
-			float3 vPosC = -frg.camW.xyz;					// camera relative pixel position
-			float  dc = distance(vPosC, Prm.vSHDT.xyz);		// distance to map centre
-			float  fade = saturate((Prm.vSHDT.w - dc) / max(Prm.vSHDT.w * 0.12f, 1.0f));
-
-			if (fade > 0.0f) {
-				// slope scaled depth bias, normal offset is applied in the vertex shader
-				float dLN = saturate(dot(normalize(frg.nrmW), Const.toSun));
-				float kr = Prm.vSHD2.x * 1.5f;			// texel world size
-				float dxi = rsqrt(max(1.0f - dLN * dLN, 1e-4f));
-				float ofs = kr * dxi * (1.0f + dLN);
-				// The bias cap must scale with the map coverage: a fixed 0.5 (which is
-				// what the small near field map uses) is far too small for the large G1
-				// coverage and causes self shadowing (acne) on flat terrain / water.
-				float omxMax = max(0.5f, Prm.vSHD2.x * 4.0f);
-				float omx = min(0.05f + ofs, omxMax);
-				float pd = shd2.z + omx * Prm.vSHD2.z;
-				if (pd < 0) pd = 0;
-				if (pd > 1) pd = 1;
-				fShadow = min(fShadow, 1.0f - SampleShadowsT(sp, pd) * fade);
-			}
-		}
-	}
-#endif
-
-#if defined(_TERRSHDDBG)
-	// DIAGNOSTIC: scene shadow coverage visualisation (
-	// blue = outside map coverage, yellow = lit inside coverage, red = shadowed
-	if (Flow.bShadowsT) {
-		float4 d2 = frg.shdH2;
-		d2.xyz /= d2.w;
-		float2 sp2 = d2.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-		if (sp2.x > 0.0f && sp2.y > 0.0f && sp2.x < 1.0f && sp2.y < 1.0f) {
-			float3 dbg = lerp(float3(1.0f,0.0f,0.0f), float3(1.0f,1.0f,0.0f), fShadow);
-			return float4(dbg, 1.0f);
-		}
-		return float4(0.0f, 0.0f, 1.0f, 1.0f);
-	}
-#endif
 
 
 
@@ -778,10 +723,9 @@ float4 TerrainPS(TileVS frg) : COLOR
 
 	// Shadowed areas also receive less ambient light, otherwise the direct light
 	// term alone is often too weak to make the shadow visible on the terrain.
-	float fShdA = lerp(1.0f, fShadow, 0.5f);
 
 	// Lit the texture with various things
-	cTex.rgb *= cL * 2.0f + (cA + cDiffLocal + Const.cAmbient * Const.Ambient) * fShdA * saturate(1.0f + fG + fZ) + cNgt;
+	cTex.rgb *= cL * 2.0f + (cA + cDiffLocal + Const.cAmbient * Const.Ambient) * saturate(1.0f + fG + fZ) + cNgt;
 
 	cTex.rgb = max(float3(0, 0, 0), cTex.rgb);
 

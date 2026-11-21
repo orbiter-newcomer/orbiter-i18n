@@ -30,12 +30,8 @@ public:
 
 public:
 
-	inline void SetShadowMode (int mode) { shadowMode = mode; }
-	inline int  GetShadowMode () const { return shadowMode; }
-	// shadow rendering mode (SHADOWMODE_*), used by graphics clients
 
 private:
-	int shadowMode;         // shadow rendering mode (SHADOWMODE_*)
 
 
 private:

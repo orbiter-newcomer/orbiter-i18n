@@ -68,7 +68,6 @@ float Rand()
 	return float(rand()) / 32768.0f;
 }
 
-// ===========================================================================================
 //
 Scene::Scene(D3D9Client *_gc, DWORD w, DWORD h)
 {
@@ -136,9 +135,6 @@ Scene::Scene(D3D9Client *_gc, DWORD w, DWORD h)
 	
 	memset(&sunLight, 0, sizeof(D3D9Sun));
 	memset(&smap, 0, sizeof(smap));
-	memset(&smapT, 0, sizeof(smapT));
-	smapTValid = false;
-	pShadows = NULL;
 
 	CLEARARRAY(pBlrTemp);
 	CLEARARRAY(pTextures);
@@ -239,9 +235,6 @@ Scene::Scene(D3D9Client *_gc, DWORD w, DWORD h)
 		smap.pShadowMap = ptShmRT[0];
 	}
 
-	// Unified scene shadow system (G1): resources and terrain caster shader.
-	// Implementation in TerrainRender.inc (included at the end of this file).
-	InitShadowSystem();
 
 
 
@@ -368,8 +361,6 @@ Scene::~Scene ()
 	SAFE_DELETE(pRenderGlares);
 	SAFE_DELETE(pCreateGlare);
 
-	// Unified scene shadow system (G1), implementation in TerrainRender.inc
-	ExitShadowSystem();
 
 	SAFE_RELEASE(pOffscreenTarget);
 	SAFE_RELEASE(pEnvDS);
@@ -2395,7 +2386,6 @@ int Scene::RenderShadowMap(D3DXVECTOR3 &pos, D3DXVECTOR3 &ld, float rad, bool bI
 			if (pv->type != OBJTP_VESSEL) continue;
 			vVessel *vV = (vVessel *)pv->vobj;
 			if (!vV->IsActive()) continue;
-			if (oapiGetVesselShadowMode (vV->Object()) == SHADOWMODE_NONE) continue;	// no shadow casters
 			if (vV->IntersectShadowVolume()) {
 				SmapRenderList.push_back(vV);
 				vV->GetMinMaxLightDist(&mnd, &mxd);
@@ -3874,11 +3864,7 @@ int distcomp (const void *arg1, const void *arg2)
 
 
 // ===========================================================================================
-// Unified scene shadow system (G1). The implementation is kept in TerrainRender.inc
-// (shared feature hook file) so the official scene code only keeps the call sites.
 // ===========================================================================================
-#define TERRAINRENDER_SCENE
-#include "TerrainRender.inc"
 
 
 // ===========================================================================================

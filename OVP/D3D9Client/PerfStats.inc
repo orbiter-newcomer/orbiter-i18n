@@ -41,7 +41,6 @@ static const char *PerfStageName[PERF_STAGE_COUNT] = {
 	"atmo",		// PERF_STAGE_ATMO
 	"tLock",	// PERF_STAGE_TERRAIN_LOCK
 	"tProc",	// PERF_STAGE_TERRAIN_PROCESS
-	"tShd",		// PERF_STAGE_TERRAIN_SHADOW
 	"tDraw",	// PERF_STAGE_TERRAIN_DRAW
 	"tTail",	// PERF_STAGE_TERRAIN_TAIL
 	"plPost",	// PERF_STAGE_PLANET_POST
@@ -69,7 +68,6 @@ public:
 	void AddUpdate(double us)  { if (enabled) updAcc += us; }
 	void AddPresent(double us) { if (enabled) presAcc += us; }
 	void AddTerrainTile()      { if (enabled) tileCount += 1.0; }
-	void SetShadowTiles(int n) { if (enabled && n > 0) shadowTiles += (double)n; }
 
 private:
 	void EnsureQueries(IDirect3DDevice9 *dev);
@@ -105,7 +103,7 @@ private:
 	double gpuAcc[PERF_STAGE_COUNT];
 	int    gpuFrames;			// number of profiled frames in the window
 
-	double tileCount, shadowTiles;
+	double tileCount;
 	DWORD  meshGrpLast, meshVertLast;
 	double grpSum, vertSum;
 	double updSum, presSum;
@@ -130,7 +128,6 @@ void Perf_EndFrame()											{ g_Perf.EndFrame(); }
 void Perf_AddUpdate(double us)									{ g_Perf.AddUpdate(us); }
 void Perf_AddPresent(double us)									{ g_Perf.AddPresent(us); }
 void Perf_AddTerrainTileInternal()								{ g_Perf.AddTerrainTile(); }
-void Perf_ShadowTilesInternal(int n)							{ g_Perf.SetShadowTiles(n); }
 
 
 // ---------------------------------------------------------------------------
@@ -159,7 +156,7 @@ PerfStatsSystem::PerfStatsSystem()
 	gpuOK = false;
 	memset(gpuAcc, 0, sizeof(gpuAcc));
 	gpuFrames = 0;
-	tileCount = shadowTiles = 0.0;
+	tileCount = 0.0;
 	meshGrpLast = meshVertLast = 0;
 	grpSum = vertSum = 0.0;
 	updSum = presSum = 0.0;
@@ -360,9 +357,9 @@ void PerfStatsSystem::LogWindow(double now)
 	double ms = (fpsFrames > 0) ? fpsDtSum / double(fpsFrames) * 1e-3 : 0.0;
 
 	n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE,
-		"PERF fps=%.1f ms=%.1f alt=%.0f cfg aa=%d pp=%d tss=%d tsu=%d smm=%d sms=%d env=%d irr=%d atmo=%d trd=%d | cpu",
-		fps, ms, camAlt, Config->SceneAntialias, Config->PostProcess, Config->TerrainSelfShadow,
-		Config->TerrainShadowUpdate, Config->ShadowMapMode, Config->ShadowMapSize,
+		"PERF fps=%.1f ms=%.1f alt=%.0f cfg aa=%d pp=%d smm=%d sms=%d env=%d irr=%d atmo=%d trd=%d | cpu",
+		fps, ms, camAlt, Config->SceneAntialias, Config->PostProcess,
+		Config->ShadowMapMode, Config->ShadowMapSize,
 		Config->EnvMapMode, Config->bIrradiance, Config->bAtmoQuality, Config->TerrainTransitionMs);
 
 	for (int i = 0; i < PERF_STAGE_COUNT && n < (int)sizeof(buf) - 32; i++) {
@@ -380,8 +377,8 @@ void PerfStatsSystem::LogWindow(double now)
 	}
 
 	n += _snprintf_s(buf + n, sizeof(buf) - n, _TRUNCATE,
-		" | cnt tile=%.0f sht=%.0f grp=%.0f vtx=%.0f upd=%.1f pres=%.1f",
-		tileCount / double(winFrames), shadowTiles / double(winFrames),
+		" | cnt tile=%.0f grp=%.0f vtx=%.0f upd=%.1f pres=%.1f",
+		tileCount / double(winFrames),
 		grpSum / double(winFrames), vertSum / double(winFrames),
 		updAcc / double(winFrames) * 1e-3, presAcc / double(winFrames) * 1e-3);
 
@@ -393,7 +390,7 @@ void PerfStatsSystem::LogWindow(double now)
 	gpuFrames = 0;
 	updAcc = presAcc = 0.0;
 	updSum = presSum = 0.0;
-	tileCount = shadowTiles = 0.0;
+	tileCount = 0.0;
 	grpSum = vertSum = 0.0;
 	fpsDtSum = profDtSum = 0.0;
 	fpsFrames = profFrames = 0;

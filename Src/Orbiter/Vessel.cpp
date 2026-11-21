@@ -105,7 +105,6 @@ Vessel::Vessel (const PlanetarySystem *psys, const char *_name, const char *_cla
 	// Set defaults
 	DefaultGenericCaps ();
 	SetDefaultState ();
-	shadowMode = SHADOWMODE_DEFAULT;
 
 	// Load class DLL module if available
 	LoadModule (classf);
@@ -140,7 +139,6 @@ Vessel::Vessel (const PlanetarySystem *psys, const char *_name, const char *_cla
 	// Set defaults
 	DefaultGenericCaps ();
 	SetDefaultState ();
-	shadowMode = SHADOWMODE_DEFAULT;
 
 	// Load class DLL module if available
 	LoadModule (classf);
@@ -183,7 +181,6 @@ Vessel::Vessel (const PlanetarySystem *psys, const char *_name, const char *_cla
 	// Set defaults
 	DefaultGenericCaps ();
 	SetDefaultState ();
-	shadowMode = SHADOWMODE_DEFAULT;
 
 	// Load class DLL module if available
 	LoadModule (classf);

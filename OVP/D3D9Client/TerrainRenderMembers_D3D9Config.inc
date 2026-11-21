@@ -14,13 +14,6 @@ public:
 	int PerfLog;					///< Frame profiler: 0=off, 1=CPU stage timings, 2=+GPU timings (logged to Orbiter.log every 2 s)
 
 public:
-	int TerrainSelfShadow;			///< Unified scene shadow system: terrain self shadowing (G1) (0=off, 1=on, default=1)
-	int TerrainShadowSize;			///< Scene shadow map size (0 = same as ShadowMapSize, 512...4096)
-	int TerrainShadowRange;			///< Scene shadow coverage radius \[m\] (0 = automatic from camera altitude, 300...20000)
-	int TerrainShadowMaxAlt;		///< Disable scene shadows above this camera altitude \[m\] (100...100000, default=100000)
-	int TerrainShadowUpdate;		///< Scene shadow map update interval \[frames\] (1...8, default=1)
-	int TerrainShadowLegacy;		///< Keep legacy projected shadows when scene shadows are enabled (0=off, 1=on, default=0)
-	int TerrainShadowDebug;			///< Scene shadow debug visualisation (0=off, 1=coverage/shadows, default=0)
 	int TerrainPreloadLevels;		///< Terrain LOD preloading: load tiles this many levels ahead of the render requirement (0=off, 1=default, 2)
 	int TerrainTransitionMs;		///< Terrain LOD cross fade transition time \[ms\] (0=off, 50...2000, default=0)
 	int TerrainElevMinLevel;		///< Terrain elevation loading: above TerrainElevSkipAlt do not read elevation files for tiles below this LOD level (0=off, default=10)

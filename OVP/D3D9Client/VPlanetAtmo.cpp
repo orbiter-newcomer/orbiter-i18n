@@ -32,7 +32,6 @@ PlanetShader::PlanetShader(LPDIRECT3DDEVICE9 pDev, const char* file, const char*
 	bLocals = false;
 	bMicrotex = false;
 	bShdMap = false;
-	bSceneShadow = false;
 	bDevtools = false;
 	bAtmosphere = true;
 	bWater = false;
@@ -43,7 +42,6 @@ PlanetShader::PlanetShader(LPDIRECT3DDEVICE9 pDev, const char* file, const char*
 	if (string(options).find("_LOCALLIGHTS") != string::npos) bLocals = true;
 	if (string(options).find("_MICROTEX") != string::npos) bMicrotex = true;
 	if (string(options).find("_SHDMAP") != string::npos) bShdMap = true;
-	if (string(options).find("_TERRSHD") != string::npos) bSceneShadow = true;
 	if (string(options).find("_DEVTOOLS") != string::npos) bDevtools = true;
 	if (string(options).find("_NO_ATMOSPHERE") != string::npos) bAtmosphere = false;
 	if (string(options).find("_WATER") != string::npos) bWater = true;
@@ -143,15 +141,8 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 
 	if (bLocals) flags += "_LOCALLIGHTS ";
 	if (Config->MicroMode) flags += "_MICROTEX ";
-	// Terrain shadow receivers: the OFFICIAL near-field shadow map (G0) is the
-	// default path again (it receives the vessel ground shadows). The unified
-	// scene shadow map (G1, config TerrainSelfShadow) is the optional alternative.
-	// Both feed the same tShadowMap sampler (no extra sampler slot), so exactly
-	// one of the two variants is compiled in.
-	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
-	else if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	if (Config->ShadowMapMode) flags += "_SHDMAP ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
-	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";
 
 	pRender[PLT_MARS] = new PlanetShader(pDev, "Modules/D3D9Client/NewPlanet.hlsl", "TerrainVS", "TerrainPS", "Mars", (flags + blend).c_str());
@@ -170,12 +161,8 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 	if (bNightLights) flags += "_NIGHTLIGHTS ";
 	if (bLocals) flags += "_LOCALLIGHTS ";
 
-	// terrain receivers: see the PLT_MARS comment above (official G0 by default,
-	// optional G1 scene shadow map)
-	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
-	else if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	if (Config->ShadowMapMode) flags += "_SHDMAP ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
-	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";
 
 	pRender[PLT_EARTH] = new PlanetShader(pDev, "Modules/D3D9Client/NewPlanet.hlsl", "TerrainVS", "TerrainPS", "Earth", (flags + blend).c_str());
