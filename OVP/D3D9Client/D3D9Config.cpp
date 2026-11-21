@@ -103,7 +103,7 @@ void D3D9Config::Reset ()
 	TerrainHorizonFieldSize = 32;
 	TerrainHorizonDirs = 16;
 	TerrainHorizonRangeKm = 300;
-	TerrainHorizonStrength = 100;
+	TerrainHorizonStrength = 75;
 	TerrainHorizonThreads = 1;
 	TerrainHorizonCacheMB = 64;
 	TerrainHorizonMaxAlt = 50000;
