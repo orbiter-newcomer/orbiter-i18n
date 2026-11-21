@@ -109,6 +109,7 @@ void D3D9Config::Reset ()
 	TerrainHorizonMaxAlt = 50000;
 	TerrainHorizonMinLevel = 4;
 	TerrainHorizonUpdate = 4;
+	TerrainHorizonContour = 200;
 	LabelDisplayFlags	= LABEL_DISPLAY_RECORD | LABEL_DISPLAY_REPLAY;
 	CloudMicro			= 1;
 	GDIOverlay			= 0;
@@ -197,7 +198,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevSkipAlt", i))	TerrainElevSkipAlt = max(0, min(1000000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadThreads", i))	TerrainLoadThreads = max(1, min(4, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonShadow", i))		TerrainHorizonShadow = max(0, min(1, i));
-	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonDebug", i))			TerrainHorizonDebug = max(0, min(2, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonDebug", i))			TerrainHorizonDebug = max(0, min(3, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonFieldSize", i))	TerrainHorizonFieldSize = max(16, min(128, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonDirs", i))			TerrainHorizonDirs = max(8, min(32, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonRangeKm", i))		TerrainHorizonRangeKm = max(50, min(500, i));
@@ -207,6 +208,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonMaxAlt", i))		TerrainHorizonMaxAlt = max(0, min(1000000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonMinLevel", i))		TerrainHorizonMinLevel = max(0, min(20, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonUpdate", i))		TerrainHorizonUpdate = max(1, min(16, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonContour", i))		TerrainHorizonContour = max(0, min(5000, i));
 
 	if (oapiReadItem_int   (hFile, (char*)"EnableMeshDbg", i))			EnableMeshDbg = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TileMipmaps", i))			TileMipmaps = max(0, min(2, i));
@@ -323,6 +325,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonMaxAlt", TerrainHorizonMaxAlt);
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonMinLevel", TerrainHorizonMinLevel);
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonUpdate", TerrainHorizonUpdate);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonContour", TerrainHorizonContour);
 
 	oapiWriteItem_int   (hFile, (char*)"EnableGlass", EnableGlass);
 	oapiWriteItem_int   (hFile, (char*)"EnableMeshDbg", EnableMeshDbg);

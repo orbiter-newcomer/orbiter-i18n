@@ -1027,6 +1027,7 @@ float4 GiantCloudPS(CldVS frg) : COLOR
 
 uniform extern float4x4 HorizonWorld;	// tile world matrix
 uniform extern float4 HorizonPrm0;		// x=field size R, y=dirs K, z=strength(0..1), w=debug mode
+uniform extern float4 HorizonPrm1;		// x=debug contour line interval [m] (0=off)
 uniform extern float HorizonReady;		// 1 = horizon field texture ready for this tile
 sampler tHorizon;						// horizon angle field [rad] (R32F), layout: width R, height R*K
 
@@ -1059,6 +1060,35 @@ float HorizonAngleAt (float2 uv, float k, float R, float K)
 	return tex2D(tHorizon, tuv).r;
 }
 
+// Debug aid: terrain altitude contour lines. Returns the line intensity (0..1).
+// Every 5th contour is drawn as a major (thicker) line. The implementation uses
+// the screen-space altitude gradient for the line width and fades the contours
+// out both where they become denser than a few pixels (aliasing) and where they
+// become so sparse that they would flood a flat area (e.g. sea level).
+float HorizonContour (float alt)
+{
+	float spacing = HorizonPrm1.x;
+	if (spacing < 1.0f) return 0.0f;
+
+	float mpp = fwidth(alt);						// world metres per screen pixel
+	if (!(mpp > 0.0f)) return 0.0f;					// also rejects NaN/Inf
+
+	float a = alt / spacing;
+	float d = abs(frac(a + 0.5f) - 0.5f) * spacing;	// distance to nearest contour [m]
+	float lineW = mpp * 0.8f;						// about one pixel wide
+	float ln = 1.0f - smoothstep(lineW * 0.35f, lineW, d);
+
+	float idx = floor(a + 0.5f);
+	float major = (fmod(abs(idx), 5.0f) < 0.5f) ? 1.0f : 0.0f;
+	ln = max(ln * (1.0f - major) * 0.6f, ln * major);
+
+	// Fade out in the dense regime (contour spacing < ~3 pixels) and in the
+	// sparse regime (contour spacing > ~100 pixels, i.e. flat terrain).
+	float dense  = saturate(1.0f - mpp / (spacing * 0.33f));
+	float sparse = saturate((mpp - spacing * 0.01f) / (spacing * 0.02f));
+	return ln * dense * sparse;
+}
+
 float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 {
 	const float PI2 = 6.28318530718f;
@@ -1068,14 +1098,28 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	float debug = HorizonPrm0.w;
 	float2 uv = frg.texUV;
 
+	float3 vVrt = Const.CamPos + frg.posW;
+	float altPx = length(vVrt) - Const.PlanetRad;
+
+	// Debug contour overlay (altitude contours; replaces the old tile/field grid)
+	float cline = 0.0f;
+	if (debug >= 0.5f) cline = HorizonContour(altPx);
+
 	// No horizon field (not baked yet / disabled for this tile)
 	if (HorizonReady < 0.5f) {
-		if (debug >= 0.5f) return float4(0.0f, 0.0f, 1.0f, 1.0f);	// blue = no field
+		if (debug >= 2.5f) {	// debug 3: normal shading + contours (multiplicative)
+			float g = 1.0f - cline * 0.85f;
+			return float4(g, g, g, 1.0f);
+		}
+		if (debug >= 0.5f) {
+			float3 c = lerp(float3(0.0f, 0.0f, 1.0f), float3(0.02f, 0.02f, 0.02f), cline);	// blue = no field
+			return float4(c, 1.0f);
+		}
 		return float4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
 	// Local east/north frame of the surface point
-	float3 up = normalize(Const.CamPos + frg.posW);
+	float3 up = normalize(vVrt);
 	float3 polar = Const.vPolarAxis;
 	float3 north = polar - up * dot(polar, up);
 	north = normalize(north + float3(0.0f, 0.0f, 1e-5f));
@@ -1095,25 +1139,25 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	float sunAlt = asin(clamp(dot(up, Const.toSun), -1.0f, 1.0f));
 	float vis = saturate((sunAlt - h) / (2.0f * 0.0047f) + 0.5f);	// 0.27 deg sun radius
 
+	// Debug 3: normal shading with the contour lines burnt in (multiplicative
+	// blend) - the view for checking the shadow physics against the terrain.
+	if (debug >= 2.5f) {
+		float fV = 1.0f - (1.0f - vis) * strength;
+		if (sunAlt <= 0.0f) fV = 1.0f;
+		float g = fV * (1.0f - cline * 0.85f);
+		return float4(g, g, g, 1.0f);
+	}
 	if (debug >= 1.5f) {
 		// horizon angle field: blue = 0 rad, red = 90 deg
 		float q = saturate(h * 0.63661977f);
 		float3 col = float3(q, 0.1f, 1.0f - q);
-		float2 fg = frac(uv * R);
-		float fe = min(min(fg.x, fg.y), min(1.0f - fg.x, 1.0f - fg.y));
-		if (fe < 0.02f) col = lerp(col, float3(0.2f, 0.2f, 0.2f), 0.5f);
+		col = lerp(col, float3(0.02f, 0.02f, 0.02f), cline);
 		return float4(col, 1.0f);
 	}
 	if (debug >= 0.5f) {
 		// sun visibility: red = dark (shadow), yellow = lit
 		float3 col = lerp(float3(1.0f, 0.0f, 0.0f), float3(1.0f, 1.0f, 0.0f), vis);
-		float edge = min(min(uv.x, uv.y), min(1.0f - uv.x, 1.0f - uv.y));
-		if (edge < 0.006f) col = float3(0.0f, 0.0f, 0.0f);
-		else {
-			float2 fg = frac(uv * R);
-			float fe = min(min(fg.x, fg.y), min(1.0f - fg.x, 1.0f - fg.y));
-			if (fe < 0.02f) col = lerp(col, float3(0.35f, 0.35f, 0.35f), 0.6f);
-		}
+		col = lerp(col, float3(0.02f, 0.02f, 0.02f), cline);
 		return float4(col, 1.0f);
 	}
 

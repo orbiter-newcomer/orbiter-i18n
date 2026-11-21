@@ -28,7 +28,7 @@ public:
 	// part TERRAINRENDER_HORIZON). The overlay is a second terrain pass that
 	// multiplies the sun visibility of each terrain pixel (0=shadow, 1=lit).
 	int TerrainHorizonShadow;		///< Enable terrain horizon field self shadowing overlay (0=off, 1=on, default=1)
-	int TerrainHorizonDebug;		///< Debug view: 0=off, 1=sun visibility red(dark)/yellow(lit) + tile grid, 2=horizon angle field, default=1
+	int TerrainHorizonDebug;		///< Debug view: 0=off, 1=sun visibility red(dark)/yellow(lit) + altitude contours, 2=horizon angle field + contours, 3=normal shading + contours, default=1
 	int TerrainHorizonFieldSize;	///< Horizon field resolution per tile edge (16...128, default 32)
 	int TerrainHorizonDirs;			///< Number of horizon azimuth directions (8...32, default 16)
 	int TerrainHorizonRangeKm;		///< Maximum horizon search distance \[km\] (50...500, default 300)
@@ -38,4 +38,5 @@ public:
 	int TerrainHorizonMaxAlt;		///< Camera altitude above which the overlay is disabled \[m\] (default 50000)
 	int TerrainHorizonMinLevel;		///< Only bake tiles at this LOD level or finer (default 4)
 	int TerrainHorizonUpdate;		///< Tile requirement scan interval \[frames\] (1...16, default 4)
+	int TerrainHorizonContour;		///< Debug contour line interval \[m\] in the overlay debug views (0=off, 10...2000, default 200)
 

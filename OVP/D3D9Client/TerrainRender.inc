@@ -565,6 +565,7 @@ struct Cfg {
 	double maxAlt;
 	int    minLevel;
 	int    updateFrames;
+	double contourM;		// debug contour line interval [m] (0=off)
 };
 
 static Cfg  g_cfg;
@@ -585,6 +586,7 @@ static void ReadCfg ()
 	c.maxAlt      = double(Config->TerrainHorizonMaxAlt);
 	c.minLevel    = Config->TerrainHorizonMinLevel;
 	c.updateFrames = Config->TerrainHorizonUpdate;
+	c.contourM    = double(Config->TerrainHorizonContour);
 	if (c.fieldSize < 16)  c.fieldSize = 16;
 	if (c.fieldSize > 128) c.fieldSize = 128;
 	if (c.dirs < 8)  c.dirs = 8;
@@ -1065,7 +1067,7 @@ private:
 
 	LPDIRECT3DDEVICE9 pDev;
 	ShaderClass      *pMask;
-	HANDLE            hMaskWorld, hHorPrm, hReady, hTex, hConstVS, hConstPS;
+	HANDLE            hMaskWorld, hHorPrm, hHorPrm1, hReady, hTex, hConstVS, hConstPS;
 	LPDIRECT3DTEXTURE9 pMissing;
 	bool              bDeviceValid;
 	bool              bDisabled;
@@ -1120,7 +1122,7 @@ System::System ()
 {
 	pDev = NULL;
 	pMask = NULL;
-	hMaskWorld = hHorPrm = hReady = hTex = hConstVS = hConstPS = NULL;
+	hMaskWorld = hHorPrm = hHorPrm1 = hReady = hTex = hConstVS = hConstPS = NULL;
 	pMissing = NULL;
 	bDeviceValid = false;
 	bDisabled = false;
@@ -1191,9 +1193,10 @@ bool System::Init (LPDIRECT3DDEVICE9 dev)
 	hConstVS   = pMask->GetVSHandle("Const");
 	hConstPS   = pMask->GetPSHandle("Const");
 	hHorPrm    = pMask->GetPSHandle("HorizonPrm0");
+	hHorPrm1   = pMask->GetPSHandle("HorizonPrm1");
 	hReady     = pMask->GetPSHandle("HorizonReady");
 	hTex       = pMask->GetPSHandle("tHorizon");
-	if (!hMaskWorld || !hConstVS || !hConstPS || !hHorPrm || !hReady || !hTex) {
+	if (!hMaskWorld || !hConstVS || !hConstPS || !hHorPrm || !hHorPrm1 || !hReady || !hTex) {
 		oapiWriteLogV("TerrainHorizon: mask shader constants missing -> disabled");
 		SAFE_DELETE(pMask);
 		bDisabled = true;
@@ -1212,7 +1215,7 @@ void System::Exit ()
 	Clear();
 	SAFE_RELEASE(pMissing);
 	SAFE_DELETE(pMask);
-	hMaskWorld = hHorPrm = hReady = hTex = hConstVS = hConstPS = NULL;
+	hMaskWorld = hHorPrm = hHorPrm1 = hReady = hTex = hConstVS = hConstPS = NULL;
 	bDeviceValid = false;
 	bDisabled = false;
 	hPlanet = NULL;
@@ -1563,6 +1566,8 @@ void System::BeginPass (LPDIRECT3DDEVICE9 dev, vPlanet *vp)
 	pMask->SetPSConstants(hConstPS, cp, sizeof(ConstParams));
 	float prm[4] = { (float)g_cfg.fieldSize, (float)g_cfg.dirs, (float)g_cfg.strength, (float)g_cfg.debug };
 	pMask->SetPSConstants(hHorPrm, prm, sizeof(prm));
+	float prm1[4] = { (float)g_cfg.contourM, 0.0f, 0.0f, 0.0f };
+	pMask->SetPSConstants(hHorPrm1, prm1, sizeof(prm1));
 
 	dev->SetRenderState(D3DRS_ZENABLE, TRUE);
 	dev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
@@ -1573,7 +1578,8 @@ void System::BeginPass (LPDIRECT3DDEVICE9 dev, vPlanet *vp)
 	dev->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
 	dev->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
 	dev->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
-	if (g_cfg.debug > 0) {
+	const bool bDebugOverlay = (g_cfg.debug >= 1 && g_cfg.debug <= 2);
+	if (bDebugOverlay) {
 		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
 		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 	}
