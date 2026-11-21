@@ -699,6 +699,7 @@ private:
 
 	TileData *GetTile (int lvl, int ilat, int ilng);
 	int  FindLevel (double lat, double lng, int lvlFrom);
+	static float InterpolateElev (const ELEVFILEHEADER &h, const float *grid, double lat, double lng);
 	static bool ParseElev (const BYTE *buf, DWORD nbytes, ELEVFILEHEADER &hdr, std::vector<float> &data);
 	static void ApplyElevMod (const BYTE *buf, DWORD nbytes, std::vector<float> &data);
 };
@@ -878,48 +879,49 @@ int ElevationSampler::FindLevel (double lat, double lng, int lvlFrom)
 	return -1;
 }
 
+// Bilinear height interpolation. Uses the same scheme and the same padded
+// TILE_ELEVSTRIDE grid as the terrain renderer's
+// SurfTile::GetElevation(..., bFilter=true) in Surfmgr2.cpp, so the elevation
+// used for the horizon field is consistent with the elevation that is actually
+// drawn: x runs along the latitude, y along the longitude, grid rows are offset
+// by one (padding), interpolation is lerp along x first and then along y.
+float ElevationSampler::InterpolateElev (const ELEVFILEHEADER &h, const float *grid, double lat, double lng)
+{
+	float x = float((lat - h.latmin) / (h.latmax - h.latmin)) * float(TILE_FILERES) + 1.0f;
+	float y = float((lng - h.lngmin) / (h.lngmax - h.lngmin)) * float(TILE_FILERES) + 1.0f;
+	if (x < 1.0f) x = 1.0f; if (x > float(TILE_FILERES)) x = float(TILE_FILERES);
+	if (y < 1.0f) y = 1.0f; if (y > float(TILE_FILERES)) y = float(TILE_FILERES);
+	float fx = x - floorf(x);
+	float fy = y - floorf(y);
+	int i0 = int(x) * TILE_ELEVSTRIDE;
+	int i1 = i0 + TILE_ELEVSTRIDE;
+	int j0 = int(y);
+	float q = grid[j0 + i0] * (1.0f - fx) + grid[j0 + i1] * fx;
+	float w = grid[j0 + 1 + i0] * (1.0f - fx) + grid[j0 + 1 + i1] * fx;
+	return q * (1.0f - fy) + w * fy;
+}
+
 float ElevationSampler::Sample (double lat, double lng, int lvl)
 {
 	// Fast path: the last tile covers the requested position
 	if (lastTile && lastTile->valid) {
 		const ELEVFILEHEADER &h = lastTile->hdr;
-		if (lng >= h.lngmin && lng <= h.lngmax && lat >= h.latmin && lat <= h.latmax) {
-			double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
-			double v = (lat - h.latmin) / (h.latmax - h.latmin);
-			if (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0) {
-				double fx = u * 256.0, fy = v * 256.0;
-				int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
-				int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
-				float ax = (float)(fx - ix), ay = (float)(fy - iy);
-				const float *d = lastTile->data.data();
-				int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
-				float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
-				return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
-			}
-		}
+		if (lng >= h.lngmin && lng <= h.lngmax && lat >= h.latmin && lat <= h.latmax)
+			return InterpolateElev(h, lastTile->data.data(), lat, lng);
 	}
 
+	// Find the finest level that has elevation data at this position and read it
+	// there. If a tile cannot be read (node without own data) the next coarser
+	// level is used, i.e. the height is interpolated from the ancestor data just
+	// like the renderer does in SurfTile::LoadElevationData().
 	int level = FindLevel(lat, lng, lvl);
 	while (level >= 4) {
 		int ilat, ilng;
 		TileIdx(lat, lng, level, ilat, ilng);
 		TileData *t = GetTile(level, ilat, ilng);
-		if (t && t->valid) {
-			const ELEVFILEHEADER &h = t->hdr;
-			double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
-			double v = (lat - h.latmin) / (h.latmax - h.latmin);
-			if (u < 0.0) u = 0.0; if (u > 1.0) u = 1.0;
-			if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
-			double fx = u * 256.0, fy = v * 256.0;
-			int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
-			int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
-			float ax = (float)(fx - ix), ay = (float)(fy - iy);
-			const float *d = t->data.data();
-			int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
-			float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
-			return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
-		}
-		level--;
+		if (t && t->valid)
+			return InterpolateElev(t->hdr, t->data.data(), lat, lng);
+		level = FindLevel(lat, lng, level - 1);
 	}
 	return 0.0f;
 }
