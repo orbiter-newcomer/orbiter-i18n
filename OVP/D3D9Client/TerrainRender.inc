@@ -879,26 +879,43 @@ int ElevationSampler::FindLevel (double lat, double lng, int lvlFrom)
 	return -1;
 }
 
-// Bilinear height interpolation. Uses the same scheme and the same padded
-// TILE_ELEVSTRIDE grid as the terrain renderer's
-// SurfTile::GetElevation(..., bFilter=true) in Surfmgr2.cpp, so the elevation
-// used for the horizon field is consistent with the elevation that is actually
-// drawn: x runs along the latitude, y along the longitude, grid rows are offset
-// by one (padding), interpolation is lerp along x first and then along y.
+// Height interpolation identical to the terrain renderer's cubic elevation
+// interpolation (ElevationManager::ElevationGrid with mode==2, which is the
+// Orbiter default "cubic spline" setting of the "elevation sampling" option):
+// a separable Catmull-Rom spline over a 4x4 stencil of the TILE_ELEVSTRIDE
+// padded elevation grid. Row = latitude, column = longitude (same layout as
+// SurfTile::GetElevation()); the +1/+2 stencil taps stay inside the 259x259
+// padded grid because the sample coordinates are clamped to the valid range.
 float ElevationSampler::InterpolateElev (const ELEVFILEHEADER &h, const float *grid, double lat, double lng)
 {
-	float x = float((lat - h.latmin) / (h.latmax - h.latmin)) * float(TILE_FILERES) + 1.0f;
-	float y = float((lng - h.lngmin) / (h.lngmax - h.lngmin)) * float(TILE_FILERES) + 1.0f;
-	if (x < 1.0f) x = 1.0f; if (x > float(TILE_FILERES)) x = float(TILE_FILERES);
-	if (y < 1.0f) y = 1.0f; if (y > float(TILE_FILERES)) y = float(TILE_FILERES);
-	float fx = x - floorf(x);
-	float fy = y - floorf(y);
-	int i0 = int(x) * TILE_ELEVSTRIDE;
-	int i1 = i0 + TILE_ELEVSTRIDE;
-	int j0 = int(y);
-	float q = grid[j0 + i0] * (1.0f - fx) + grid[j0 + i1] * fx;
-	float w = grid[j0 + 1 + i0] * (1.0f - fx) + grid[j0 + 1 + i1] * fx;
-	return q * (1.0f - fy) + w * fy;
+	float x = float((lat - h.latmin) / (h.latmax - h.latmin)) * float(TILE_FILERES);
+	float y = float((lng - h.lngmin) / (h.lngmax - h.lngmin)) * float(TILE_FILERES);
+	if (x < 0.0f) x = 0.0f; if (x > float(TILE_FILERES) - 1.0e-3f) x = float(TILE_FILERES) - 1.0e-3f;
+	if (y < 0.0f) y = 0.0f; if (y > float(TILE_FILERES) - 1.0e-3f) y = float(TILE_FILERES) - 1.0e-3f;
+	int i0 = (int)floorf(x), j0 = (int)floorf(y);
+	float tlat = x - (float)i0, tlng = y - (float)j0;
+
+	// p points to the (i0, j0) sample inside the +1 padded grid
+	const float *p = grid + (i0 + 1) * TILE_ELEVSTRIDE + (j0 + 1);
+	float b_m1 = 0.0f, b_0 = 0.0f, b_p1 = 0.0f, b_p2 = 0.0f;
+
+	// interpolate along the longitude (columns) for the 4 latitude rows
+	for (int r = -1; r <= 2; r++) {
+		const float *row = p + r * TILE_ELEVSTRIDE;
+		float a_m1 = row[-1], a_0 = row[0], a_p1 = row[1], a_p2 = row[2];
+		float b = 0.5f * (2.0f*a_0 + tlng*(-a_m1 + a_p1) +
+			tlng*tlng*(2.0f*a_m1 - 5.0f*a_0 + 4.0f*a_p1 - a_p2) +
+			tlng*tlng*tlng*(-a_m1 + 3.0f*a_0 - 3.0f*a_p1 + a_p2));
+		if (r == -1) b_m1 = b;
+		else if (r == 0) b_0 = b;
+		else if (r == 1) b_p1 = b;
+		else b_p2 = b;
+	}
+
+	// interpolate along the latitude (rows)
+	return 0.5f * (2.0f*b_0 + tlat*(-b_m1 + b_p1) +
+		tlat*tlat*(2.0f*b_m1 - 5.0f*b_0 + 4.0f*b_p1 - b_p2) +
+		tlat*tlat*tlat*(-b_m1 + 3.0f*b_0 - 3.0f*b_p1 + b_p2));
 }
 
 float ElevationSampler::Sample (double lat, double lng, int lvl)
