@@ -19,8 +19,6 @@ protected:
 	void ReleasePhysicsFrame();
 	void RunDualStageA();
 	void RunDualStageB();
-	void UpdateDualPerfLog();
-	void UpdateDualPhysicsLog();
 	INT  RunDualThread();
 	std::thread m_physicsThread;
 	std::mutex  m_dualMutex;

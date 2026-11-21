@@ -5,7 +5,6 @@ bool Vessel::RunUpdateGuards ()
 {
 	{
 		// diagnostic: relativity protection guards (PERFDIAG)
-		PerfDiag::Scope _perfGuard(PerfDiag::g.updGuard);
 		// Relativity extension: the player vessel kept as a central wreck piece
 		// is frozen in place so the camera stays on the debris cloud.
 		// Relativistic numeric protection (NaN/inf fallback; implementation in RelativityPhysics.inc)
@@ -20,7 +19,6 @@ bool Vessel::RunUpdateGuards ()
 
 	// Relativity extension: atmospheric dynamic-pressure burn-up check
 	{
-		PerfDiag::Scope _perfBurn(PerfDiag::g.updBurn);
 		WreckAtmosphericBurnup (this);
 	}
 	return true;
@@ -46,7 +44,6 @@ void Vessel::UpdatePropagate (bool force)
 
 	int i;
 
-	double perfStateT = PerfDiag::Now();
 	if (fstatus == FLIGHTSTATUS_FREEFLIGHT) {
 
 		if (!supervessel) {
@@ -95,7 +92,6 @@ void Vessel::UpdatePropagate (bool force)
 
 	} else { // should not get here
 	}
-	PerfDiag::Add(PerfDiag::g.updState, perfStateT);
 }
 
 void Vessel::UpdateFinish ()
@@ -107,16 +103,13 @@ void Vessel::UpdateFinish ()
 	int i;
 
 	// update surface parameters
-	double perfSurfT = PerfDiag::Now();
 	if (proxybody && fstatus != FLIGHTSTATUS_LANDED)
 		UpdateSurfParams();
-	PerfDiag::Add(PerfDiag::g.updSurfPrm, perfSurfT);
 
 	nforcevec_col = 0;
 	if (td.SimT1 >= m_colDebug.showTime)
 		m_colDebug.active = false;
 
-	double perfBaseT = PerfDiag::Now();
 	if (proxyplanet && fstatus != FLIGHTSTATUS_LANDED && !bFRplayback) {
 
 		// base-to-vessel mesh collision
@@ -124,9 +117,7 @@ void Vessel::UpdateFinish ()
 			CheckBaseCollisions((Planet*)proxyplanet);
 		}
 	}
-	PerfDiag::Add(PerfDiag::g.updBaseCol, perfBaseT);
 
-	double perfRestT = PerfDiag::Now();
 
 	if (proxyplanet)
 		m_hullCachePValid = false; // reset cache for this frame
@@ -290,7 +281,6 @@ void Vessel::UpdateFinish ()
 	// Now update all passively attached child vessels
 	UpdateAttachments();
 
-	PerfDiag::Add(PerfDiag::g.updRest, perfRestT);
 }
 
 void Vessel::UpdateAnimate ()

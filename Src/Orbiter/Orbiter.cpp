@@ -9,13 +9,8 @@
 // docs/handover/dual-thread-route-a.md)
 #define DUAL_THREAD_EXPERIMENT 1
 
-// ---- temporary diagnostics for the physics/render jitter investigation ----
-// DUAL_THREAD_DIAG: log vessel state discontinuities between physics frames
 //                   and check whether the stable state changes during a render.
-// DUAL_THREAD_SERIAL_EXPERIMENT: 1 = render while the physics thread is parked
 //                   (removes the render/physics overlap window; diagnosis only)
-#define DUAL_THREAD_DIAG 1
-#define DUAL_THREAD_SERIAL_EXPERIMENT 0
 
 // Enable visual styles. Source: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773175(v=vs.85).aspx
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -60,7 +55,6 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include <filesystem>
-#include "PerfDiag.h"	// TEMPORARY performance diagnostics (see PerfDiag.h)
 
 #include "Tracy.hpp"
 
@@ -1912,14 +1906,11 @@ void Orbiter::EndTimeStep (bool running)
 {
 	if (running) {
 		if (g_psys) {
-			double td0 = PerfDiag::Now();
 			g_psys->FinaliseUpdate ();
-			PerfDiag::Add(PerfDiag::g.finalise, td0);
 		}
 		//ModulePostStep();
 	}
 
-	double tb0 = PerfDiag::Now();
 	// Copy frame times from T1 to T0
 	td.EndStep (running);
 
@@ -1929,12 +1920,9 @@ void Orbiter::EndTimeStep (bool running)
 
 	// Update visual states
 	if (gclient) {
-		double tc0 = PerfDiag::Now();
 		gclient->clbkUpdate (bRunning);
-		PerfDiag::Add(PerfDiag::g.clbkUpdate, tc0);
 	}
 	g_bForceUpdate = false;                        // clear flag
-	PerfDiag::Add(PerfDiag::g.tail, tb0);
 
 	// check for termination of demo mode
 	if (SessionLimitReached())
@@ -2062,16 +2050,12 @@ void Orbiter::UnregisterMenuCmd (int cmdId)
 void Orbiter::ModulePreStep ()
 {
 	// broadcast to modules
-	double tPre = PerfDiag::Now();
 	for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 		it->pModule->clbkPreStep(td.SimT0, td.SimDT, td.MJD0);
-	PerfDiag::Add(PerfDiag::g.pluginPre, tPre);
 
 	// broadcast to vessels
 	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
-		double tp = PerfDiag::Now();
 		g_psys->GetVessel(i)->ModulePreStep (td.SimT0, td.SimDT, td.MJD0);
-		PerfDiag::Add(PerfDiag::g.modulePre, tp);
 	}
 }
 
@@ -2083,18 +2067,12 @@ void Orbiter::ModulePostStep ()
 {
 	// broadcast to vessels
 	for (DWORD i = 0; i < g_psys->nVessel(); i++) {
-		double tp = PerfDiag::Now();
 		g_psys->GetVessel(i)->ModulePostStep (td.SimT1, td.SimDT, td.MJD1);
-		double dt = PerfDiag::Now() - tp;
-		PerfDiag::g.modulePost += dt;
-		PerfDiag::Track(PerfDiag::worstModule, (int)i, dt);
 	}
 
 	// broadcast to modules
-	double tPlug = PerfDiag::Now();
 	for (auto it = m_Plugin.begin(); it != m_Plugin.end(); it++)
 		it->pModule->clbkPostStep(td.SimT1, td.SimDT, td.MJD1);
-	PerfDiag::Add(PerfDiag::g.pluginPost, tPlug);
 }
 
 //-----------------------------------------------------------------------------
@@ -2103,43 +2081,31 @@ void Orbiter::ModulePostStep ()
 //-----------------------------------------------------------------------------
 VOID Orbiter::UpdateWorld ()
 {
-	double t = PerfDiag::Now();
 	// module pre-timestep callbacks
 	if (bRunning) ModulePreStep ();
-	PerfDiag::Add(PerfDiag::g.preStep, t);
 
 	// update world
 	g_bStateUpdate = true;
 	if (bRunning && td.SimDT) {
 		if (bPlayback) FRecorder_Play();
-		t = PerfDiag::Now();
 		g_psys->Update (g_bForceUpdate);           // logical objects
 		// wreck camera/vessel state update (implementation in WreckDebris.inc)
-		PerfDiag::Add(PerfDiag::g.psysUpdate, t);
 		// relativistic collision debris update (implementation in RelativityPhysics.inc)
-		t = PerfDiag::Now();
 		WreckDebrisUpdate ();
-		PerfDiag::Add(PerfDiag::g.wreck, t);
 	}
-	t = PerfDiag::Now();
 	if (pDlgMgr) pDlgMgr->UpdateDialogs(); // SHOULD BE DONE BY GRAPHICS CLIENT!
-	PerfDiag::Add(PerfDiag::g.dialogs, t);
 
 	// module post-timestep callbacks
-	t = PerfDiag::Now();
 	if (bRunning) ModulePostStep ();
-	PerfDiag::Add(PerfDiag::g.postStep, t);
 
 	g_bStateUpdate = false;
 
-	t = PerfDiag::Now();
 	// create queued wreck vessels outside the state-update phase (creating a
 	// vessel during the update phase is not valid and loses its state)
 	WreckProcessPendingSafe ();
 
 	if (!KillVessels())  // kill any vessels marked for deletion
 		if (hRenderWnd) DestroyWindow (hRenderWnd);
-	PerfDiag::Add(PerfDiag::g.tail, t);
 
 
 	//g_texmanager->OutputInfo();

@@ -42,7 +42,6 @@
 #include "CollisionCore.h"
 #include "elevmgr.h"
 #include "ContactModel.inc"   // contact force solver (project extension)
-#include "PerfDiag.h"         // TEMPORARY performance diagnostics (see PerfDiag.h)
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -3924,7 +3923,6 @@ double Vessel::GetGravityGradientDamping () const
 
 void Vessel::UpdateBodyForces ()
 {
-	double tBody = PerfDiag::Now();
 	Lift = Drag = SideForce = 0.0;
 
 	if (m_thruster.size()) UpdateThrustForces ();
@@ -3934,7 +3932,6 @@ void Vessel::UpdateBodyForces ()
 		if (rpressure) UpdateRadiationForces ();
 	}
 	bForceActive |= (Flin_add.x || Flin_add.y || Flin_add.z || Amom_add.x || Amom_add.y || Amom_add.z);
-	PerfDiag::Add(PerfDiag::g.vesBodyFor, tBody);
 }
 
 // =======================================================================
@@ -4379,8 +4376,6 @@ void Vessel::UpdateAerodynamicForces_OLD ()
 
 bool Vessel::AddSurfaceForces (Vector *F, Vector *M, const StateVectors *s, double tfrac, double dt, bool allow_groundcontact) const
 {
-	PerfDiag::Scope _perfSurf(PerfDiag::g.vesSurf);
-	PerfDiag::g.surfCalls += 1.0;
 	nforcevec = 0; // should move higher up
 	for (int k = 0; k < nforcevec_col && nforcevec < forcevecbuf; k++) {
 		forcevec[nforcevec] = col_forcevec[k];
@@ -7393,11 +7388,8 @@ void Vessel::PostUpdate ()
 	// Called after all vessels have been updated, but before
 	// module clbkPostStep is called for the vessel
 
-	double perfPostT = PerfDiag::Now();
 	VesselBase::PostUpdate ();
-	PerfDiag::Add(PerfDiag::g.postBase, perfPostT);
 
-	double perfCollT = PerfDiag::Now();
 	if (proxyplanet && !bFRplayback) {
 		// Vessel-to-vessel collisions
 		if (g_pOrbiter->Cfg()->CfgPhysicsPrm.bVesselCollision) {
@@ -7408,11 +7400,9 @@ void Vessel::PostUpdate ()
 			}
 		}
 	}
-	PerfDiag::Add(PerfDiag::g.postColl, perfCollT);
 
 	DWORD j, k;
 
-	double perfDockT = PerfDiag::Now();
 	if (bFRplayback)
 		FRecorder_PlayEvent();
 
@@ -7485,11 +7475,8 @@ void Vessel::PostUpdate ()
 	}
 
 	// flight recorder
-	double perfRecT = PerfDiag::Now();
 	if (bFRrecord) FRecorder_Save();
 	//else if (bFRplayback) FRecorder_Play();
-	PerfDiag::Add(PerfDiag::g.postRec, perfRecT);
-	PerfDiag::Add(PerfDiag::g.postRest, perfDockT);
 }
 
 bool Vessel::CheckSurfaceContact () const

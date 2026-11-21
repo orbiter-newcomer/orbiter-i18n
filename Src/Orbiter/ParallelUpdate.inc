@@ -104,11 +104,9 @@ static void PerfParallelUpdateBodyForces (std::vector<Vessel*> &par, std::vector
 	}
 
 	if (fpar.size() >= 2) {
-		PerfDiag::Suspend();	// accumulators are not thread-safe
 		concurrency::parallel_for(size_t(0), fpar.size(), [&](size_t i) {
 			fpar[i]->UpdateBodyForces();
 		});
-		PerfDiag::Resume();
 	}
 	else {
 		for (size_t i = 0; i < fpar.size(); i++) fpar[i]->UpdateBodyForces();
@@ -134,11 +132,9 @@ static void PerfParallelUpdateVessels (PlanetarySystem *psys, bool force,
 
 	// state propagation on the worker threads
 	if (cand.size() >= 2) {
-		PerfDiag::Suspend();	// accumulators are not thread-safe
 		concurrency::parallel_for(size_t(0), cand.size(), [&](size_t i) {
 			cand[i]->UpdatePropagate (force);
 		});
-		PerfDiag::Resume();
 	}
 	else {
 		for (size_t i = 0; i < cand.size(); i++) cand[i]->UpdatePropagate (force);
