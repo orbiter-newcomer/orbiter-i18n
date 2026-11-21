@@ -223,16 +223,6 @@ private:
 	double tCheckLight;		// time for next lighting check
 	float ExhaustLength;
 
-	// cached reference plane for the projected ground shadow (in the global frame).
-	// Avoids re-sampling the terrain every frame for (nearly) stationary vessels.
-	void    UpdateShadowPlane (OBJHANDLE hPlanet);	// feature hook: TerrainRender.inc
-	bool    shd_plane_valid;
-	double  shd_plane_t;	// sim time of the last update
-	VECTOR3 shd_plane_pos;	// vessel global position at the last update
-	VECTOR3 shd_plane_nrm;	// reference plane normal (global frame)
-	VECTOR3 shd_plane_pnt;	// reference point on the plane (global frame)
-	double  shd_plane_elev;	// surface elevation used for the plane
-
 	static class SurfNative *defreentrytex, *defexhausttex;
 };
 

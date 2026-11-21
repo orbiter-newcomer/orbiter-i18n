@@ -143,13 +143,13 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 
 	if (bLocals) flags += "_LOCALLIGHTS ";
 	if (Config->MicroMode) flags += "_MICROTEX ";
-	// Terrain receivers use the unified scene shadow map (G1) only: the near field
-	// vessel self shadow map (G0) would need an additional sampler and the terrain
-	// pixel shader is already at the ps_3_0 sampler limit (16). The scene shadow
-	// map contains the vessels as casters, so the terrain still receives their
-	// shadows (with a somewhat coarser resolution than the near field map).
-	// if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	// Terrain shadow receivers: the OFFICIAL near-field shadow map (G0) is the
+	// default path again (it receives the vessel ground shadows). The unified
+	// scene shadow map (G1, config TerrainSelfShadow) is the optional alternative.
+	// Both feed the same tShadowMap sampler (no extra sampler slot), so exactly
+	// one of the two variants is compiled in.
 	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
+	else if (Config->ShadowMapMode) flags += "_SHDMAP ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
 	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";
@@ -170,9 +170,10 @@ void vPlanet::GlobalInitAtmosphere(oapi::D3D9Client* gc)
 	if (bNightLights) flags += "_NIGHTLIGHTS ";
 	if (bLocals) flags += "_LOCALLIGHTS ";
 
-	// terrain receivers: see the PLT_MARS comment above (G1 only, sampler limit)
-	// if (Config->ShadowMapMode) flags += "_SHDMAP ";
+	// terrain receivers: see the PLT_MARS comment above (official G0 by default,
+	// optional G1 scene shadow map)
 	if (Config->TerrainSelfShadow && Config->ShadowMapMode) flags += "_TERRSHD ";
+	else if (Config->ShadowMapMode) flags += "_SHDMAP ";
 	if (Config->EnableMeshDbg) flags += "_DEVTOOLS ";
 	if (Config->TerrainShadowDebug) flags += "_TERRSHDDBG ";
 	if (!Config->bAtmoQuality) flags += "_PERFORMANCE ";

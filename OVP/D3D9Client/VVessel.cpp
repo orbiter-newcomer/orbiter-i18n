@@ -18,8 +18,6 @@
 #include "DebugControls.h"
 #include "D3D9Util.h"
 #include "MaterialMgr.h"
-#define TERRAINRENDER_VESSEL
-#include "TerrainRender.inc"   // feature hook: terrain/shadow rendering (projected ground shadow)
 
 using namespace oapi;
 
@@ -1162,11 +1160,95 @@ void vVessel::RenderGrapplePoints (LPDIRECT3DDEVICE9 dev)
 
 // ============================================================================================
 //
-// The projected ground shadow implementation has been moved to TerrainRender.inc:
-// the reference plane is taken from the surface that is actually rendered (base
-// plane or terrain elevation) instead of a mean-sphere tangent plane, and the
-// vessel shadow mode tags (oapiGetVesselShadowMode) are honoured.
-// void vVessel::RenderGroundShadow (LPDIRECT3DDEVICE9 dev, OBJHANDLE hPlanet, float alpha) -> TerrainRender.inc
+void vVessel::RenderGroundShadow(LPDIRECT3DDEVICE9 dev, OBJHANDLE hPlanet, float alpha)
+{
+	if (!bStencilShadow && scn->GetRenderPass() == RENDERPASS_MAINSCENE) return;
+	if (Config->TerrainShadowing == 0) return;
+
+	static const double eps = 1e-2;
+	static const double shadow_elev_limit = 0.07;
+	double d, alt, R;
+	VECTOR3 pp, sd, pvr;
+	oapiGetGlobalPos(hPlanet, &pp); // planet global pos
+	vessel->GetGlobalPos(sd);       // vessel global pos
+	pvr = sd - pp;                     // planet-relative vessel position
+	d = length(pvr);                 // vessel-planet distance
+	R = oapiGetSize(hPlanet);       // planet mean radius
+	R += vessel->GetSurfaceElevation();
+	alt = d - R;                       // altitude above surface
+	if (alt*eps > vessel->GetSize()) return; // too high to cast a shadow
+
+	normalise(sd);                  // shadow projection direction
+
+									// calculate the intersection of the vessel's shadow with the planet surface
+	double fac1 = dotp(sd, pvr);
+	if (fac1 > 0.0) return;          // shadow doesn't intersect planet surface
+	double csun = -fac1 / d;           // sun elevation above horizon
+	if (csun < shadow_elev_limit) return;   // sun too low to cast shadow
+	double arg = fac1*fac1 - (dotp(pvr, pvr) - R*R);
+	if (arg <= 0.0) return;                 // shadow doesn't intersect with planet surface
+	double a = -fac1 - sqrt(arg);
+
+	MATRIX3 vR;
+	vessel->GetRotationMatrix(vR);
+	VECTOR3 sdv = tmul(vR, sd);     // projection direction in vessel frame
+	VECTOR3 shp = sdv*a;             // projection point
+	VECTOR3 hn, hnp = vessel->GetSurfaceNormal();
+	vessel->HorizonInvRot(hnp, hn);
+
+	// perform projections
+	//double nr0 = dotp(hn, shp);
+	float nr0 = float(-alt);
+	double nd = dotp(hn, sdv);
+	VECTOR3 sdvs = sdv / nd;
+
+	D3DXVECTOR4 nrml = D3DXVECTOR4(float(hn.x), float(hn.y), float(hn.z), float(alt));
+	
+	// build shadow projection matrix
+	D3DXMATRIX mProj, mProjWorld, mProjWorldShift;
+
+	mProj._11 = 1.0f - (float)(sdvs.x*hn.x);
+	mProj._12 = -(float)(sdvs.y*hn.x);
+	mProj._13 = -(float)(sdvs.z*hn.x);
+	mProj._14 = 0;
+	mProj._21 = -(float)(sdvs.x*hn.y);
+	mProj._22 = 1.0f - (float)(sdvs.y*hn.y);
+	mProj._23 = -(float)(sdvs.z*hn.y);
+	mProj._24 = 0;
+	mProj._31 = -(float)(sdvs.x*hn.z);
+	mProj._32 = -(float)(sdvs.y*hn.z);
+	mProj._33 = 1.0f - (float)(sdvs.z*hn.z);
+	mProj._34 = 0;
+	mProj._41 = (float)(sdvs.x*nr0);
+	mProj._42 = (float)(sdvs.y*nr0);
+	mProj._43 = (float)(sdvs.z*nr0);
+	mProj._44 = 1;
+
+	D3DXMatrixMultiply(&mProjWorld, &mProj, &mWorld);
+
+	float scale = (csun - shadow_elev_limit) * 25.0f;
+	alpha = (1.0f - alpha) * saturate(scale);
+
+	// project all vessel meshes. This should be replaced by a dedicated shadow mesh
+
+	for (UINT i = 0; i<nmesh; i++) {
+
+		if (meshlist[i].mesh == NULL) continue;
+		if (!(meshlist[i].vismode & MESHVIS_EXTERNAL)) continue; // only render shadows for externally visible meshes
+		if (meshlist[i].mesh->HasShadow() == false) continue;
+
+		D3D9Mesh *mesh = meshlist[i].mesh;
+
+		if (meshlist[i].trans) {
+			VECTOR3 of;	
+			vessel->GetMeshOffset(i, of);
+			nrml.w += float(dotp(of, hn));	// Sift a local groung level
+			D3DXMatrixMultiply(&mProjWorldShift, meshlist[i].trans, &mProjWorld);
+			mesh->RenderStencilShadows(alpha, &mWorld, &mProjWorldShift, false, &nrml);
+		}
+		else mesh->RenderStencilShadows(alpha, &mWorld, &mProjWorld, false, &nrml);
+	}
+}
 
 // ============================================================================================
 // Return true if it's time to move to a next vessel
