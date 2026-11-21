@@ -27,7 +27,9 @@
 #include "Scene.h"
 #include "VPlanet.h"
 #include "Surfmgr2.h"
-#include "TerrainLoadWait.inc"   // feature hook: terrain load wait (Tilemgr2/TerrainLoadWait.inc)
+// terrain rendering features (load wait etc.): TerrainRender.inc (project extension)
+#define TERRAINRENDER_LOADWAIT
+#include "TerrainRender.inc"
 #include "PerfStats.inc"         // feature hook: frame profiler (PerfStats.h/.inc)
 #include "Mesh.h"
 #include "VVessel.h"

@@ -1127,38 +1127,6 @@ TileManager2Base::~TileManager2Base ()
 
 // -----------------------------------------------------------------------
 
-void TileManager2Base::UpdateTileCountSmooth ()
-{
-	// Dynamic LOD limiter input. The limiter must limit the number of tiles that
-	// are actually rendered - using the number of ALLOCATED tile objects
-	// (TilesLoaded) was wrong: it is dominated by cached/preloaded tiles and
-	// changes in big steps while the terrain streams in. That injected a step of
-	// up to ~0.7 LOD levels into the target level, enough to push tiles across
-	// the hysteresis dead band, so they flipped back and forth between the
-	// coarse parent and the refined children (visible as pumping / flicker).
-	//
-	// This function is called once per render pass (from the templated Render
-	// methods). The rendered leaf tile count is collected in ProcessNode during
-	// the main scene pass only, so the update and the reset are also restricted
-	// to the main scene pass (other passes render different views / env maps and
-	// must not distort the count).
-	Scene *scene = GetScene();
-	if (!scene || scene->GetRenderPass() != RENDERPASS_MAINSCENE) return;
-
-	int rendered = tilesRenderedCur;
-	tilesRenderedCur = 0;	// start counting the next main scene pass
-
-	double now = oapiGetSysTime();
-	double dt = now - tileCountT;
-	if (tileCountSmooth < 0.0 || dt <= 0.0 || dt > 1.0) {
-		tileCountSmooth = (double)rendered;
-		tileCountT = now;
-		return;
-	}
-	double a = (dt > 0.25 ? 0.25 : dt);	// ~1 s time constant at frame rate
-	tileCountSmooth += a * ((double)rendered - tileCountSmooth);
-	tileCountT = now;
-}
 
 // -----------------------------------------------------------------------
 
@@ -1295,44 +1263,11 @@ MATRIX4 TileManager2Base::WorldMatrix (int ilng, int nlng, int ilat, int nlat)
 // already been preloaded (see ProcessNode).
 // =======================================================================
 
-void TileManager2Base::AddFadeTile (Tile *tile, double t0)
-{
-	if (!tile) return;
-	for (size_t i = 0; i < fadeTiles.size(); i++) {
-		if (fadeTiles[i].tile == tile) { fadeTiles[i].t0 = t0; return; }
-	}
-	FADETILE ft;
-	ft.tile = tile;
-	ft.t0   = t0;
-	fadeTiles.push_back(ft);
-}
-
-void TileManager2Base::RemoveFadeTile (Tile *tile)
-{
-	for (size_t i = 0; i < fadeTiles.size(); i++) {
-		if (fadeTiles[i].tile == tile) { fadeTiles.erase(fadeTiles.begin() + i); return; }
-	}
-}
-
-bool TileManager2Base::IsFadeTile (Tile *tile) const
-{
-	for (size_t i = 0; i < fadeTiles.size(); i++) {
-		if (fadeTiles[i].tile == tile) return true;
-	}
-	return false;
-}
 
 
-void TileManager2Base::UpdateFadeTiles ()
-{
-	if (fadeTiles.empty()) return;
-	double dur = (Config && Config->TerrainTransitionMs > 0) ? Config->TerrainTransitionMs * 0.001 : 0.0;
-	double now = oapiGetSysTime();
-	for (size_t i = 0; i < fadeTiles.size();) {
-		Tile *tile = fadeTiles[i].tile;
-		bool drop = (tile == NULL) || (tile->state != Tile::Active) ||
-			(dur <= 0.0) || (now - fadeTiles[i].t0 > dur);
-		if (drop) fadeTiles.erase(fadeTiles.begin() + i);
-		else i++;
-	}
-}
+
+
+
+// Terrain rendering implementation: TerrainRender.inc (project extension)
+#define TERRAINRENDER_TILES
+#include "TerrainRender.inc"
