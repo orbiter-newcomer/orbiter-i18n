@@ -772,6 +772,7 @@ void Vessel::Setup ()
 	UpdateMass ();
 	orthoaxis = 0;
 	kill_pending = false;
+	bControlDisabled = false;
 	if (bFRplayback = bRequestPlayback) {
 		const char *playbackdir = g_pOrbiter->PState()->PlaybackDir();
 		//if (!playbackdir) playbackdir = ScenarioName;
@@ -2092,6 +2093,10 @@ void Vessel::ApplyUserAttitudeControls (DWORD *ctrl)
 {
 	if (bFRplayback) return;
 	// ignore user controls during playback 
+
+	// internal-damage interface: the player can no longer control this vessel
+	// (camera/view switching is handled elsewhere and is not affected)
+	if (bControlDisabled) return;
 
 	if (attmode) { // RCS thrusters
 		if (attmode == 1) { // rotational mode
@@ -3790,6 +3795,7 @@ void Vessel::SetHoverHoldAltitude (double alt, bool terrainalt)
 	hoverhold.alt = hoverhold.palt = alt;
 	hoverhold.terrain = terrainalt;
 	hoverhold.valt = sp.vspd; // 0.0;
+	hoverhold.valt_f = 0.0;
 	hoverhold.T = td.SimT1; // td.SimT0 + holdaltDT;
 	FRecorder_SaveEventInt ("NAVMODE", NAVMODE_HOLDALT);
 }
@@ -4128,14 +4134,27 @@ void Vessel::HoverHoldAltitude ()
 	double ah = (vh-hoverhold.valt)/dt;
 	hoverhold.valt = vh;
 
+	// Tuning (autopilot gains): the raw numerical derivative of the vertical
+	// velocity is noisy and fed the D-term straight into the hover throttle.
+	// Low-pass filter the acceleration feedback instead.
+	hoverhold.valt_f = 0.8*hoverhold.valt_f + 0.2*ah;
+	ah = hoverhold.valt_f;
+
+	// outer loop: altitude error -> target vertical velocity (unchanged)
 	double vh_tgt = -dh*0.1;
 	if (fabs (vh_tgt) > vh_max) vh_tgt = -vh_max*sgn;
+	// deadband: while the vessel is already in position, do not keep dithering
+	// the hover throttle because of measurement noise
+	if (fabs(dh) < 0.5 && fabs(vh) < 0.3) vh_tgt = 0.0;
 	double dvh = vh_tgt-vh;
-	double a_tgt = dvh;     // this is the acceleration we need to reach target velocity in 1s
+	// Tuning (autopilot gains): was 1.0 (reach target velocity in 1 s); reduced
+	// to damp the loop against the hover thruster response delay.
+	double a_tgt = dvh*0.3;
 	double da = a_tgt - ah; // this is the required change in acceleration
 	double a_max = GetThrusterGroupMaxth (THGROUP_HOVER)/mass;
 	double dlvl = da/a_max;
-	double dlvl_max = dt;
+	// Tuning (autopilot gains): was dt (full range per update); halved.
+	double dlvl_max = dt*0.5;
 	if (fabs(dlvl) > dlvl_max)
 		dlvl = (dlvl > 0.0 ? dlvl_max : -dlvl_max);
 

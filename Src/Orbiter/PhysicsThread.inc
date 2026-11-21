@@ -46,6 +46,151 @@ bool OrbiterIsMainThread();
 void WreckDebrisUpdate ();
 void WreckProcessPendingSafe ();
 
+// ============================================================================
+// Temporary diagnostics for the physics/render jitter investigation
+// (DUAL_THREAD_DIAG, see Orbiter.cpp). Records the stable (s0) vessel states
+// seen by the main thread between two physics frames and logs discontinuities
+// that are physically impossible (a velocity/position jump larger than the
+// applied acceleration/time step can explain). Also verifies that the stable
+// state does not change while the physics thread is running next to a render.
+// ============================================================================
+#if DUAL_THREAD_DIAG
+#include <vector>
+#include <string>
+
+namespace {
+
+	struct DualDiagRec {
+		OBJHANDLE h;
+		Vector pos, vel;
+		std::string name;
+	};
+
+	std::vector<DualDiagRec> g_diagPrev;    // stable state of the previous physics frame
+	std::vector<DualDiagRec> g_diagRender;  // stable state sampled when the render started
+	unsigned long long g_diagFrames = 0;
+	unsigned long long g_diagJumps = 0;
+	unsigned long long g_diagRenderChanges = 0;
+	double g_diagLogT = 0.0;
+
+	void DualDiagCapture (std::vector<DualDiagRec> &out)
+	{
+		out.clear();
+		if (!g_psys) return;
+		DWORD n = g_psys->nVessel();
+		out.reserve(n);
+		for (DWORD i = 0; i < n; i++) {
+			Vessel *v = g_psys->GetVessel(i);
+			if (!v) continue;
+			DualDiagRec r;
+			r.h = (OBJHANDLE)v;
+			r.pos = v->GPos();
+			r.vel = v->GVel();
+			// full class name (e.g. "ISS") for the log
+			const char *nm = v->Name();
+			r.name = (nm ? nm : "?");
+			out.push_back(r);
+		}
+	}
+
+	const DualDiagRec *DualDiagFind (const std::vector<DualDiagRec> &v, OBJHANDLE h)
+	{
+		for (size_t i = 0; i < v.size(); i++)
+			if (v[i].h == h) return &v[i];
+		return 0;
+	}
+
+	// called at the end of StageB (main thread, physics thread parked)
+	void DualDiagStageSample ()
+	{
+		std::vector<DualDiagRec> cur;
+		DualDiagCapture(cur);
+		g_diagFrames++;
+
+		if (!g_diagPrev.empty()) {
+			for (size_t i = 0; i < cur.size(); i++) {
+				const DualDiagRec &c = cur[i];
+				const DualDiagRec *p = DualDiagFind(g_diagPrev, c.h);
+				if (!p) continue;   // new vessel
+				Vector dv = c.vel - p->vel;
+				double dvmag = dv.length();
+				double dpmag = (c.pos - p->pos).length();
+				double vmean = (c.vel.length() + p->vel.length()) * 0.5;
+				bool bad = false;
+				double expv = 0.0;
+				if (!g_pOrbiter->IsRunning()) {
+					// paused: the state must not change at all
+					bad = (dpmag > 1.0 || dvmag > 1.0);
+				} else if (td.SimDT0 > 0.0) {
+					double dt = td.SimDT0;
+					expv = vmean * dt;
+					// A physically explainable change: |dV| <= a_max*dt and
+					// |dP| roughly v*dt. The linear estimate is only
+					// approximate for relativistic/rotating frames and for
+					// variable step sizes, hence the generous position margin;
+					// the velocity jump is the reliable indicator.
+					double dev = fabs(dpmag - expv);
+					bad = (dvmag > 50.0) || (dev > 0.30*expv + 500.0);
+				}
+				if (bad) {
+					g_diagJumps++;
+					oapiWriteLogV("[DIAG] STAGEB-JUMP frame=%llu vessel=%s dt=%.4f dP=%.1f expP=%.1f dV=%.2f | pos=(%.1f %.1f %.1f) vel=(%.2f %.2f %.2f)",
+						g_diagFrames, c.name.c_str(), td.SimDT0, dpmag, expv, dvmag,
+						c.pos.x, c.pos.y, c.pos.z, c.vel.x, c.vel.y, c.vel.z);
+				}
+			}
+		}
+		g_diagPrev.swap(cur);
+	}
+
+	// called immediately before / after the render call: the stable state must
+	// not change while the physics thread computes the next frame
+	bool DualDiagRenderWindowBegin ()
+	{
+		DualDiagCapture(g_diagRender);
+		return !g_diagRender.empty();
+	}
+
+	void DualDiagRenderWindowEnd ()
+	{
+		if (g_diagRender.empty()) return;
+		std::vector<DualDiagRec> cur;
+		DualDiagCapture(cur);
+		for (size_t i = 0; i < cur.size(); i++) {
+			const DualDiagRec &c = cur[i];
+			const DualDiagRec *p = DualDiagFind(g_diagRender, c.h);
+			if (!p) continue;
+			double dpmag = (c.pos - p->pos).length();
+			double dvmag = (c.vel - p->vel).length();
+			if (dpmag > 1.0 || dvmag > 0.01) {
+				g_diagRenderChanges++;
+				// rate-limited: at most ~1 log line per 20 occurrences
+				if (g_diagRenderChanges < 20 || (g_diagRenderChanges % 1000) == 0)
+					oapiWriteLogV("[DIAG] RENDER-WINDOW CHANGE vessel=%s dP=%.2f dV=%.3f | pos=(%.1f %.1f %.1f)",
+						c.name.c_str(), dpmag, dvmag, c.pos.x, c.pos.y, c.pos.z);
+			}
+		}
+		g_diagRender.clear();
+	}
+
+	// periodic summary so that the absence of jumps is distinguishable from
+	// the diagnostics not running at all
+	void DualDiagLog ()
+	{
+		LARGE_INTEGER freq, c;
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&c);
+		double now = double(c.QuadPart) / double(freq.QuadPart);
+		if (g_diagLogT == 0.0) { g_diagLogT = now; return; }
+		if (now - g_diagLogT < 2.0) return;
+		oapiWriteLogV("[DIAG] frames=%llu jumps=%llu renderChanges=%llu",
+			g_diagFrames, g_diagJumps, g_diagRenderChanges);
+		g_diagLogT = now;
+	}
+
+} // namespace
+#endif // DUAL_THREAD_DIAG
+
 // ---- physics thread: one simulation state update ----
 void Orbiter::UpdatePhysicsFrameDual()
 {
@@ -189,35 +334,49 @@ void Orbiter::ReleasePhysicsFrame()
 }
 
 // ---- StageB: finish the physics frame (main thread, physics parked) ----
+// TEMPORARY per-phase timers for the main-thread frame time diagnostics
+static double s_sbeWreck = 0.0, s_sbeDlg = 0.0, s_sbeModule = 0.0;
+static double s_sbeKill = 0.0, s_sbePublish = 0.0, s_sbeEnd = 0.0;
+static int    s_sbeFrames = 0;
+
 void Orbiter::RunDualStageB()
 {
 	LARGE_INTEGER freq, c0, c1;
 	QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&c0);
 
+	LARGE_INTEGER p0, p1;
+#define SBE_BEGIN() QueryPerformanceCounter(&p0)
+#define SBE_END(acc) do { QueryPerformanceCounter(&p1); acc += double(p1.QuadPart - p0.QuadPart) * 1e3 / double(freq.QuadPart); } while (0)
+
 	// camera/state part of WreckDebrisUpdate (originally after g_psys->Update)
-	WreckDebrisUpdate();
+	SBE_BEGIN(); WreckDebrisUpdate(); SBE_END(s_sbeWreck);
 	// dialog updates (main thread only)
-	if (pDlgMgr) pDlgMgr->UpdateDialogs();
+	SBE_BEGIN(); if (pDlgMgr) pDlgMgr->UpdateDialogs(); SBE_END(s_sbeDlg);
 	// module post-step callbacks: plugin/vessel code may create or delete
 	// vessels, touch panels or the graphics client, so keep them here
-	if (bRunning) ModulePostStep();
+	SBE_BEGIN(); if (bRunning) ModulePostStep(); SBE_END(s_sbeModule);
 	// close the state update window (original position: end of UpdateWorld)
 	g_bStateUpdate = false;
 	// queued wreck vessel creation (needs the graphics client/main thread)
 	WreckProcessPendingSafe();
 	// kill vessels marked for deletion (also notifies the graphics client)
-	if (!KillVessels())
-		if (hRenderWnd) DestroyWindow(hRenderWnd);
+	SBE_BEGIN(); if (!KillVessels()) if (hRenderWnd) DestroyWindow(hRenderWnd); SBE_END(s_sbeKill);
 	// publish the render snapshot (originally the last step of UpdateWorld)
-	PublishRenderSnapshot();
+	SBE_BEGIN(); PublishRenderSnapshot(); SBE_END(s_sbePublish);
 	// finalise update, advance time, camera/panel/visual update, session limits
-	EndTimeStep(bRunning);
+	SBE_BEGIN(); EndTimeStep(bRunning); SBE_END(s_sbeEnd);
+	s_sbeFrames++;
+#undef SBE_BEGIN
+#undef SBE_END
 
 	// physics diagnostics: the accumulators are only read while the physics
 	// thread is parked, so no locking is required
 	PerfDiag::g.frames++;
 	UpdateDualPhysicsLog();
+#if DUAL_THREAD_DIAG
+	DualDiagStageSample();
+#endif
 
 	QueryPerformanceCounter(&c1);
 	m_dualSyncBTime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
@@ -252,6 +411,22 @@ void Orbiter::UpdateDualPhysicsLog()
 			PerfDiag::g.rbProp / nf * 1e-3, PerfDiag::g.psyBodyForces / nf * 1e-3,
 			PerfDiag::g.substeps / nf, PerfDiag::g.dynVessels / nf);
 		oapiWriteLogV("%s", buf);
+
+		// TEMPORARY diagnostics: Vessel::Update / PostUpdate breakdown [ms/frame]
+		oapiWriteLogV("[PT] UPD2: guard=%.2f burn=%.2f state=%.2f surfPrm=%.2f baseCol=%.2f rest=%.2f"
+			" | vesSurf=%.2f surfCalls=%.1f bodyFor=%.2f simT=%.4f"
+			" | postBase=%.2f postColl=%.2f postDock=%.2f postRec=%.2f postRest=%.2f finVes=%.2f"
+			" | modPost=%.2f modPre=%.2f plugPost=%.2f plugPre=%.2f",
+			PerfDiag::g.updGuard / nf * 1e-3, PerfDiag::g.updBurn / nf * 1e-3,
+			PerfDiag::g.updState / nf * 1e-3, PerfDiag::g.updSurfPrm / nf * 1e-3,
+			PerfDiag::g.updBaseCol / nf * 1e-3, PerfDiag::g.updRest / nf * 1e-3,
+			PerfDiag::g.vesSurf / nf * 1e-3, PerfDiag::g.surfCalls / nf,
+			PerfDiag::g.vesBodyFor / nf * 1e-3, td.SimDT0,
+			PerfDiag::g.postBase / nf * 1e-3, PerfDiag::g.postColl / nf * 1e-3,
+			PerfDiag::g.postDock / nf * 1e-3, PerfDiag::g.postRec / nf * 1e-3,
+			PerfDiag::g.postRest / nf * 1e-3, PerfDiag::g.psyFinalVessels / nf * 1e-3,
+			PerfDiag::g.modulePost / nf * 1e-3, PerfDiag::g.modulePre / nf * 1e-3,
+			PerfDiag::g.pluginPost / nf * 1e-3, PerfDiag::g.pluginPre / nf * 1e-3);
 	}
 	PerfDiag::Reset();
 	m_dualPhysLogT = now;
@@ -317,6 +492,14 @@ void Orbiter::UpdateDualPerfLog()
 	double rnd = m_dualRenderAcc / nf;
 	oapiWriteLogV("[PT] PERF: fps=%.1f phys=%.2f sA=%.2f sB=%.2f wait=%.2f rnd=%.2f frames=%d",
 		fifo, phys, syncA, syncB, wait, rnd, nf);
+	if (s_sbeFrames > 0) {
+		double inv = 1.0 / double(s_sbeFrames);
+		oapiWriteLogV("[PT] SBE: wreck=%.2f dlg=%.2f mod=%.2f kill=%.2f pub=%.2f end=%.2f frames=%d",
+			s_sbeWreck * inv, s_sbeDlg * inv, s_sbeModule * inv,
+			s_sbeKill * inv, s_sbePublish * inv, s_sbeEnd * inv, s_sbeFrames);
+		s_sbeWreck = s_sbeDlg = s_sbeModule = s_sbeKill = s_sbePublish = s_sbeEnd = 0.0;
+		s_sbeFrames = 0;
+	}
 	m_dualPhysTimeAcc = m_dualSyncAWait = m_dualSyncBWait = 0.0;
 	m_dualWaitAcc = m_dualRenderAcc = 0.0;
 	m_dualPerfFrames = 0;
@@ -373,23 +556,48 @@ INT Orbiter::RunDualThread()
 		// post-physics phase (main thread, physics parked)
 		RunDualStageB();
 		if (!bSession) continue;
-		// prepare the next physics frame (main thread, physics parked)
-		RunDualStageA();
-		// let the physics thread run the next frame ...
-		ReleasePhysicsFrame();
 
-		// ... and render the previous frame in parallel
-		if (bVisible) {
+		// render the finished frame (timed); DUAL_THREAD_DIAG checks that the
+		// stable state seen by the renderer does not change during the render
+		auto RenderFinishedFrame = [this]() {
+			if (!bVisible) return;
 			LARGE_INTEGER freq, c0, c1;
 			QueryPerformanceFrequency(&freq);
 			QueryPerformanceCounter(&c0);
+#if DUAL_THREAD_DIAG
+			DualDiagRenderWindowBegin();
+#endif
 			if (FAILED(Render3DEnvironment()))
 				if (hRenderWnd) DestroyWindow(hRenderWnd);
 			QueryPerformanceCounter(&c1);
 			m_dualRenderTime = double(c1.QuadPart - c0.QuadPart) * 1e3 / double(freq.QuadPart);
 			m_dualRenderAcc += m_dualRenderTime;
-		}
+#if DUAL_THREAD_DIAG
+			DualDiagRenderWindowEnd();
+#endif
+		};
+
+#if DUAL_THREAD_SERIAL_EXPERIMENT
+		// diagnosis: render while the physics thread is parked (no overlap).
+		// If the jitter/phantom-momentum disappears here, it is caused by the
+		// main thread racing the physics thread during the render.
+		RenderFinishedFrame();
+		// prepare the next physics frame, then let the physics thread run
+		RunDualStageA();
 		UpdateDualPerfLog();
+		ReleasePhysicsFrame();
+#else
+		// prepare the next physics frame (main thread, physics parked)
+		RunDualStageA();
+		// let the physics thread run the next frame ...
+		ReleasePhysicsFrame();
+		// ... and render the previous frame in parallel
+		RenderFinishedFrame();
+		UpdateDualPerfLog();
+#endif
+#if DUAL_THREAD_DIAG
+		DualDiagLog();
+#endif
 	}
 
 	StopPhysicsThread();

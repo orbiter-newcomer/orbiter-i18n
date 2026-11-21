@@ -136,6 +136,15 @@ public:
 	virtual bool IsMorphing () const { return false; }
 	// Match edges with neighbour tiles
 
+	// Geometric LOD morph: implemented in SurfTile (restored from commit
+	// 04fe67f5, see OVP/D3D9Client/Surfmgr2.cpp: SurfTile::PrepareMorph /
+	// SurfTile::UpdateMorph). Keep the hooks in this header even if the
+	// implementation is ever disabled again: the call site in Tilemgr2_imp.hpp
+	// and the IsMorphing() guard in RenderNode (skip edge matching while a
+	// morph is running) depend on them. Known pitfalls (pulsating / jittery
+	// terrain) are documented at the PrepareMorph call site in
+	// Tilemgr2_imp.hpp.
+
 	float GetBoundingSphereRad() const;
 	D3DXVECTOR3 GetBoundingSpherePos() const;
 	bool Pick(const LPD3DXMATRIX pW, const D3DXVECTOR3 *vDir, TILEPICK &result);
@@ -230,6 +239,7 @@ public:
 	// Terrain LOD cross fade state (render side)
 	float  fadeAlpha;		// current transition alpha (1 = fully visible)
 	double fadeT0;			// transition start time (0 = no transition)
+	double mergeReqT0;		// time the tile started requesting a merge (0 = none); anti-flapping
 };
 
 // =======================================================================
@@ -336,6 +346,21 @@ public:
 
 	int ElevMode, ElevModeLvl;
 	int TilesLoaded;
+	/// Time-smoothed tile count for the dynamic LOD limiter. The limiter uses
+	/// the number of LEAF TILES ACTUALLY RENDERED (not the number of allocated
+	/// tile objects): TilesLoaded is dominated by cached/preloaded tiles and
+	/// fluctuates strongly while the terrain streams in, which used to push the
+	/// target LOD around (tiles flipping between resolution levels). See
+	/// UpdateTileCountSmooth().
+	double tileCountSmooth;
+	double tileCountT;		///< time of the last UpdateTileCountSmooth() call
+	int tilesRenderedCur;	///< rendered leaf tiles counted in the current main scene pass
+	int tilesRenderedPrev;	///< rendered leaf tiles of the previous main scene pass
+
+	/// True for tile managers that render surface tiles with the LOD cross fade
+	/// (set by SurfTile; the CloudTile manager shares this template but has no
+	/// fade renderer, so it must not collect fade tiles).
+	bool bFadeTiles;
 
 	// Terrain LOD cross fade (see ProcessNode / RenderFadeTiles)
 	struct FADETILE { Tile *tile; double t0; };
@@ -386,7 +411,6 @@ public:
 
 	template<class TileType>
 	void ProcessNode (QuadTreeNode<TileType> *node);
-
 	template<class TileType>
 	void RenderNode (QuadTreeNode<TileType> *node);
 
@@ -398,6 +422,11 @@ public:
 	void RenderNodeLabels(QuadTreeNode<TileType> *node, D3D9Pad *skp, oapi::Font **labelfont, int *fontidx);
 
 	void SetRenderPrm (MATRIX4 &dwmat, double prerot, bool use_zbuf, const vPlanet::RenderPrm &rprm);
+
+	/// \brief Update the time-smoothed tile count used by the dynamic LOD limiter.
+	/// Must be called once per render pass (from the templated Render methods),
+	/// NOT once per tree node: TilesLoaded must be sampled once per frame.
+	void UpdateTileCountSmooth ();
 
 	inline class Scene * GetScene() const { return gc->GetScene(); }
 	inline oapi::D3D9Client *GetClient() const { return gc; }

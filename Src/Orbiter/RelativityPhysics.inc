@@ -513,8 +513,8 @@ static bool RelativityNumericalGuard (Vessel *vessel)
 	    std::isfinite (vel.x) && std::isfinite (vel.y) && std::isfinite (vel.z))
 		return false;
 	LOGOUT_ERR ("Relativistic mode: non-finite vessel state (numerical failure). Vessel removed.");
+	WreckDamageVessel (vessel, WRECK_DAMAGE_FAILURE, REL_WRECK_NUMERIC, 0);
 	WreckMessageVessel (REL_WRECK_NUMERIC, vessel, 0, 0, false);
-	WreckDestroyVessel (vessel);
 	return true;
 }
 
@@ -537,7 +537,7 @@ static bool RelativityFTLGuard (Vessel *vessel, StateVectors &st0, StateVectors 
 	sprintf_s (msg, 512, "Relativistic FTL protection: |v| = %.4e m/s >= c. Vessel destroyed.", sqrt (v2));
 	LOGOUT_ERR (msg);
 	if (vessel) {
-		WreckDestroyVessel (vessel);
+		WreckDamageVessel (vessel, WRECK_DAMAGE_FAILURE, REL_WRECK_FTL, 0);
 	}
 	WreckMessageVessel (REL_WRECK_FTL, vessel, 0, 0, false);
 	return true;
@@ -591,7 +591,7 @@ static bool RelativityStrongFieldGuard (Vessel *vessel)
 	else
 		sprintf_s (msg, 512, "Relativistic mode: vessel entered the strong-field region (r = %.4e m, rs = %.4e m, r/rs = %.2f, 1PN ratio = %.3f). Vessel removed.", domR, domRs, domRatio, domPn);
 	LOGOUT_ERR (msg);
-	WreckDestroyVessel (vessel, REL_WRECK_STRONGFIELD, 0);
+	WreckDamageVessel (vessel, WRECK_DAMAGE_FAILURE, REL_WRECK_STRONGFIELD, 0);
 	WreckMessageVessel (REL_WRECK_STRONGFIELD, vessel, dom ? dom->Name() : 0, 0, false);
 	return true;
 }

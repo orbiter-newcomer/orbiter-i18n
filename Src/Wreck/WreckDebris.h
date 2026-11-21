@@ -38,6 +38,30 @@ enum {
 	REL_WRECK_BURNUP			// dynamic pressure exceeded: became a meteor
 };
 
+// Damage event classes (reworked wreck/damage system).
+//
+// The destruction policy depends on the failure class:
+enum WreckDamageType {
+	// FTL / numerical / strong-field failure: the simulation state has failed,
+	// so the vessel must leave the update loop IMMEDIATELY. No debris.
+	WRECK_DAMAGE_FAILURE  = 1,
+	// Flight accident (vessel collision, surface crash, atmospheric burn-up):
+	// the vessel is removed IMMEDIATELY and replaced by wreck debris.
+	WRECK_DAMAGE_IMPACT   = 2,
+	// Internal environment failure (thermal / life support etc.): the vessel is
+	// NOT removed immediately. It stays visible but can no longer be controlled
+	// by the player; it is removed once the player switches the view (F3 focus
+	// change). No debris.
+	// This is a reserved interface for the internal-environment systems.
+	WRECK_DAMAGE_INTERNAL = 3
+};
+
+// Unified damage entry point used by all damage sources.
+void WreckDamageVessel (class Vessel *vessel, int damageType, int reason, const char *otherName = 0);
+// Reserved internal-damage interface: disable the player control of a vessel
+// without destroying it (see WRECK_DAMAGE_INTERNAL).
+void WreckDisableControl (class Vessel *vessel);
+
 // Sets the on-screen wreck message (bodyName/otherName may be null).
 void WreckMessage (int reason, const char *bodyName, const char *otherName, bool otherDestroyed = false);
 // Retrieves the current wreck message (UTF-8) and its age in milliseconds.
@@ -48,9 +72,8 @@ OBJHANDLE WreckGetVessel ();
 // Restore the cockpit view when the player switches to another vessel
 void WreckOnFocusChanged (class Vessel *newFocus);
 void WreckProcessPendingSafe ();
-// Player-vessel destruction: the focus vessel is kept as a "large wreck" so
-// that the camera can stay locked on the debris field; other vessels are
-// removed as before.
+// Legacy entry point kept for compatibility: maps to WRECK_DAMAGE_FAILURE
+// (state failure, immediate removal without debris).
 void WreckDestroyVessel (class Vessel *vessel, int reason = 0, const char *otherName = 0);
 bool WreckIsVessel (class Vessel *vessel);
 bool WreckIsObserver (class Vessel *vessel);

@@ -6,8 +6,26 @@
 // ==============================================================
 
 #include <stdlib.h>
+#include <mutex>
 #include "WreckDebris.h"
 #include "Localization.h"
+
+// ---- damage request queue (thread-safe) ------------------------------------
+// The protection guards (FTL / numeric / strong field) and the flight-accident
+// checks may run on the physics thread in dual-thread mode, while the wreck
+// system state (pending debris parameters, delayed-kill list, kill flags) must
+// only be touched by the main thread. Damage events are therefore queued here
+// (mutex protected) and applied in the safe phase by WreckProcessDamageRequests().
+struct WreckDamageRequest {
+	char name[64];
+	int  damageType;
+	int  reason;
+};
+static WreckDamageRequest g_damageReq[64];
+static int g_damageReqCount = 0;
+static std::mutex g_damageReqMutex;
+
+static void WreckProcessDamageRequests ();
 
 // ---- wreck message (shown on screen by the graphics client) ----------------
 static char   g_relWreckMsg[1024] = "";
@@ -19,8 +37,49 @@ static char g_relWreckVesselName[64] = "";   // focus vessel kept as large wreck
 static bool g_relWreckCamActive = false;   // our wreck camera is currently active
 static bool g_relWreckGroundCamActive = false;   // ground camera control active
 
+// ---- delayed vessel removal (WRECK_DAMAGE_INTERNAL) ------------------------
+// A vessel damaged from the internal environment is kept in the simulation (so
+// the player can see it) until the player switches the view (F3 focus change).
+static char g_delayedKill[32][64];
+static int  g_delayedKillCount = 0;
+
+static void WreckQueueDelayedKill (Vessel *vessel)
+{
+	if (!vessel) return;
+	for (int i = 0; i < g_delayedKillCount; i++)
+		if (strcmp (g_delayedKill[i], vessel->Name()) == 0) return;   // already queued
+	if (g_delayedKillCount >= 32) { vessel->RequestDestruct(); return; }   // fallback
+	strcpy_s (g_delayedKill[g_delayedKillCount++], 64, vessel->Name());
+}
+
+// Process the delayed-removal list: a vessel is removed once it is no longer the
+// focus object, i.e. after the player switched the view with F3.
+static void WreckProcessDelayedKills (const Vessel *newFocus)
+{
+	if (g_delayedKillCount <= 0) return;
+	const char *focusName = (newFocus ? newFocus->Name() : 0);
+	for (int i = g_delayedKillCount-1; i >= 0; i--) {
+		if (focusName && strcmp (focusName, g_delayedKill[i]) == 0) continue;   // still focused
+		if (g_psys) {
+			Vessel *dv = g_psys->GetVessel (g_delayedKill[i]);
+			if (dv) {
+				LOGOUT ("Internal damage: %s removed after view switch.", g_delayedKill[i]);
+				dv->RequestDestruct ();
+			}
+		}
+		g_delayedKill[i][0] = 0;
+		g_delayedKillCount--;
+		if (i < g_delayedKillCount)
+			strcpy_s (g_delayedKill[i], 64, g_delayedKill[g_delayedKillCount]);
+	}
+}
+
 void WreckOnFocusChanged (Vessel *newFocus)
 {
+	// Delayed removal of internally damaged vessels: executed on the F3 view /
+	// focus switch, before the camera handling below.
+	WreckProcessDelayedKills (newFocus);
+
 	if (!newFocus || !g_camera) return;
 	// wreck vessels have no cockpit: always use the external view, otherwise the
 	// internal camera would be attached to a vessel without a cockpit and crash.
@@ -146,8 +205,9 @@ bool WreckIsVessel (Vessel *vessel)
 
 void WreckDestroyVessel (Vessel *vessel, int reason, const char *otherName)
 {
-	// DISABLED (wreck/camera system removed for ship-parameter tuning):
-	// no vessel deletion, no wreck anchor, no camera switching.
+	// Legacy entry point: state-failure removal (immediate, no debris).
+	// All damage sources use the unified WreckDamageVessel() dispatch below.
+	WreckDamageVessel (vessel, WRECK_DAMAGE_FAILURE, reason, otherName);
 }
 
 
@@ -222,6 +282,10 @@ static int    g_wreckSliceCounter = 0;         // global slice mesh counter
 static int g_pendingWreckOffsetCount = 0;
 static char g_pendingDeleteVessel[64] = {0};   // vessel to delete once wrecks exist
 static char g_pendingFocusWreck[64] = {0};     // wreck vessel to focus on
+// Set when the focus vessel was destroyed by a flight accident: after the debris
+// has been created the camera is switched to the first debris piece instead of
+// falling back to another vessel.
+static bool g_focusDebrisOnSpawn = false;
 static double g_pendingWreckLng = 0.0, g_pendingWreckLat = 0.0, g_pendingWreckRad = 0.0;
 static Vector g_pendingWreckGroundVel;         // ground-relative velocity at impact
 static char g_pendingWreckParent[64] = {0};
@@ -524,9 +588,12 @@ static void WreckProcessPending ()
 	}
 	g_pendingWreckCount = 0;
 
-	// deferred: focus the first new wreck (global object handle), then delete the
-	// impacted vessel
-	if (g_pendingDeleteVessel[0]) {
+	// If the player's focus vessel was destroyed by a flight accident, move the
+	// camera to the freshly created debris (external view) instead of letting the
+	// focus fall back to another vessel. The impacted vessel itself is marked for
+	// removal by the damage handler and deleted by KillVessels() right after this
+	// phase, so switching the focus here is safe.
+	if (g_focusDebrisOnSpawn) {
 		Vessel *focusWreck = 0;
 		for (int k = g_wreckVesselCount - 1; k >= 0; k--) {
 			Vessel *wv2 = g_psys->GetVessel (g_wreckVessels[k].name);
@@ -534,14 +601,9 @@ static void WreckProcessPending ()
 		}
 		if (focusWreck) {
 			oapiSetFocusObject ((OBJHANDLE)focusWreck);   // global object handle
+			LOGOUT ("Wreck: focus switched to debris %s.", focusWreck->Name ());
 		}
-		Vessel *dv = g_psys->GetVessel (g_pendingDeleteVessel);
-		if (dv) {
-			// TEST ONLY: ship deletion is disabled on request so that one impact shows
-			// both the impacted vessel and the wreck debris (shadow verification).
-			// TODO: restore: dv->RequestDestruct ();
-		}
-		g_pendingDeleteVessel[0] = 0;
+		g_focusDebrisOnSpawn = false;
 	}
 }
 
@@ -631,11 +693,14 @@ static void WreckCleanup ()
 			}
 		}
 	}
-	// AUTO-REMOVAL DISABLED (re-enable after the visual test)
-	if (false)
+	// Auto-removal (the original timing is kept: 30 s after creation, or 10 s
+	// after the wreck settled on the ground). A wreck the player is currently
+	// observing is kept until the view is switched away (F3), so the debris does
+	// not vanish in front of the player.
 	for (int i = g_wreckVesselCount - 1; i >= 0; i--) {
 		Vessel *wv = g_psys->GetVessel (g_wreckVessels[i].name);
 		if (!wv) { g_wreckVessels[i] = g_wreckVessels[g_wreckVesselCount - 1]; g_wreckVesselCount--; continue; }
+		if (g_focusobj == wv) continue;   // player is watching this wreck: keep it
 		{
 			bool remove = false;
 			if ((double)GetTickCount64 () > g_wreckVessels[i].expire) remove = true;
@@ -671,6 +736,7 @@ static void WreckCleanup ()
 
 void WreckProcessPendingSafe ()
 {
+	WreckProcessDamageRequests ();   // apply queued damage events (main thread)
 	WreckProcessPending ();   // create queued wrecks (safe phase only)
 	WreckCleanup ();          // housekeeping only (no state writes)
 }
@@ -708,7 +774,8 @@ void WreckCollisionImpact (Vessel *vessel, const Vector &deltaV, const char *oth
 	if (vessel->KillPending()) return;
 	double dv = deltaV.length();
 	if (dv <= g_pOrbiter->Cfg()->CfgPhysicsPrm.RelCollisionDVThreshold) return;
-	WreckDestroyVessel (vessel, REL_WRECK_COLLISION, otherName);
+	// Flight accident: immediate removal + wreck debris.
+	WreckDamageVessel (vessel, WRECK_DAMAGE_IMPACT, REL_WRECK_COLLISION, otherName);
 	WreckMessageVessel (REL_WRECK_COLLISION, vessel, 0, otherName, otherDestroyed);
 }
 
@@ -731,23 +798,6 @@ void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state)
 	double vn = dotp (vrel, n);                    // negative = into the ground
 	if (vn > -10.0) return;                        // gentle contact, no wreck (normal speed > 10 m/s required)
 	s_lastImpactT = td.SimT1;
-	// queue the wreck vessels (no ship deletion, no camera switching)
-	strcpy_s (g_pendingWreckParent, 64, vessel->Name());
-	g_pendingWreckRef = cb;   // remember the impact body (the position below is body-relative)
-	// all positions inherit longitude/latitude/altitude; all velocities inherit the
-	// GROUND-relative velocity (the body spin must not be added on top)
-	{
-		double ilng = 0.0, ilat = 0.0, irad = 0.0;
-		if (!RelGetEquPos (vessel, ilng, ilat, irad)) cb->GlobalToEquatorial (state.pos, ilng, ilat, irad);
-		g_pendingWreckLng = ilng;
-		g_pendingWreckLat = ilat;
-		g_pendingWreckRad = irad;
-		// ground velocity is queried later in the SAFE phase (see
-		// WreckProcessPending) via the official oapiGetGroundspeedVector:
-		// inside the physics loop SurfParam is stale.
-		g_pendingWreckGroundVel = Vector (0, 0, 0);   // placeholder
-	}
-	WreckSpawnHull (vessel, state.pos - cb->GPos (), state.vel - cb->GVel (), 8);
 	// screen message: big centred text if this is the focus vessel, small corner text
 	// (with the ship name) for any other vessel
 	{
@@ -755,45 +805,11 @@ void WreckSurfaceImpact (Vessel *vessel, const StateVectors &state)
 		bool isFocus = (hF == (OBJHANDLE)vessel);
 		WreckMessage (REL_WRECK_SURFACE, cb->Name (), 0, false, isFocus, vessel->Name ());
 	}
-	// deferred: once the wreck vessels exist, move the focus to the first wreck and
-	// then delete the impacted vessel (recorded here, executed in the safe phase)
-	g_pendingDeleteVessel[0] = 0;
-	strcpy_s (g_pendingDeleteVessel, 64, vessel->Name ());   // position RELATIVE to the body (it moves during the release delay)
-	// mark the impacted vessel itself (kept as the wreck anchor) as LANDED
-	{
-		double alng = 0.0, alat = 0.0, arad = 0.0;
-		if (!RelGetEquPos (vessel, alng, alat, arad)) {
-			cb->GlobalToEquatorial (state.pos, alng, alat, arad);   // fallback
-		}
-		VESSELSTATUS2 als;
-		memset (&als, 0, sizeof(als));
-		als.version = 2;
-		als.rbody = (OBJHANDLE)cb;
-		als.status = 1;              // landed
-		als.surf_lng = alng;
-		als.surf_lat = alat;
-		als.surf_hdg = 0.0;
-		als.arot.x = 5.0;            // simple landed form
-		vessel->SetState2 (&als);
-	}
-	{
-		double ilng = 0.0, ilat = 0.0, irad = 0.0;
-		cb->GlobalToEquatorial (state.pos, ilng, ilat, irad);
-		// actual position of the focus vessel (the player ship, typically GL-01)
-		double flng = 0.0, flat = 0.0, frad = 0.0;
-		const char *fname = "-";
-		OBJHANDLE hF = oapiGetFocusObject ();
-		if (hF) {
-			for (DWORD iv = 0; iv < g_psys->nVessel(); iv++) {
-				Vessel *fv = g_psys->GetVessel (iv);
-				if (fv && (OBJHANDLE)fv == hF) {
-					fname = fv->Name ();
-					cb->GlobalToEquatorial (fv->GPos(), flng, flat, frad);
-					break;
-				}
-			}
-		}
-	}
+	// Flight accident: immediate removal + wreck debris. This may run on the
+	// physics thread, so only the damage request is queued here; the wreck system
+	// state (debris parameters, kill flags) is handled by the main thread in the
+	// safe phase (WreckProcessDamageRequests).
+	WreckDamageVessel (vessel, WRECK_DAMAGE_IMPACT, REL_WRECK_SURFACE, 0);
 }
 
 // Atmospheric dynamic-pressure check: a vessel hitting the atmosphere at a
@@ -828,7 +844,116 @@ void WreckAtmosphericBurnup (Vessel *vessel)
 	double q = 0.5 * density * v2;                    // dynamic pressure [Pa]
 	const double REL_BURNUP_Q = 1.0e5;                // threshold (10 kPa)
 	if (q <= REL_BURNUP_Q) return;
-	WreckDestroyVessel (vessel, REL_WRECK_BURNUP, 0);
+	WreckDamageVessel (vessel, WRECK_DAMAGE_IMPACT, REL_WRECK_BURNUP, 0);
 	WreckMessageVessel (REL_WRECK_BURNUP, vessel, 0, 0, false);
+}
+
+
+// -----------------------------------------------------------------------------
+// Unified damage entry point (reworked wreck/damage system)
+//
+// Destruction policy per failure class:
+//   WRECK_DAMAGE_FAILURE  : immediate removal, no debris (state has failed)
+//   WRECK_DAMAGE_IMPACT   : immediate removal + wreck debris (flight accident)
+//   WRECK_DAMAGE_INTERNAL : keep the vessel visible, disable player control,
+//                           remove it after the player switches the view (F3)
+// -----------------------------------------------------------------------------
+
+// Queue a debris burst for a flight accident at the vessel's current state.
+// The actual wreck vessels are created in the safe phase by WreckProcessPending;
+// the impacted vessel is removed in the same phase (KillVessels runs after the
+// pending wrecks have been created), so its state is still available here.
+static void WreckQueueImpactDebris (Vessel *vessel)
+{
+	if (!vessel || !g_psys) return;
+	CelestialBody *cb = vessel->ProxyBody();
+	if (!cb) return;
+	strcpy_s (g_pendingWreckParent, 64, vessel->Name());
+	g_pendingWreckRef = cb;
+	double lng = 0.0, lat = 0.0, rad = 0.0;
+	if (!RelGetEquPos (vessel, lng, lat, rad))
+		cb->GlobalToEquatorial (vessel->GPos(), lng, lat, rad);
+	g_pendingWreckLng = lng;
+	g_pendingWreckLat = lat;
+	g_pendingWreckRad = rad;
+	g_pendingWreckGroundVel = Vector (0, 0, 0);
+	WreckSpawnHull (vessel, vessel->GPos() - cb->GPos(), vessel->GVel() - cb->GVel(), 8);
+	// Flight accidents have NO release delay (the historical 0.3 s delay waited for
+	// the impacted parent vessel to bounce up; the vessel is removed immediately
+	// now). Without this the debris would appear ~0.3 s after the vessel was
+	// deleted, so the focus fell back to another vessel first and only switched to
+	// the debris later (visible as "view jumps to another ship, then back").
+	g_pendingWreckReleaseT = td.SimT1;   // create the debris in the same safe phase
+}
+
+void WreckDisableControl (Vessel *vessel)
+{
+	// Reserved interface for the internal-environment damage sources: the vessel
+	// stays in the simulation but the player can no longer control it.
+	if (vessel) vessel->SetControlDisabled (true);
+}
+
+void WreckDamageVessel (Vessel *vessel, int damageType, int reason, const char *otherName)
+{
+	if (!vessel) return;
+	if (WreckIsObserver (vessel)) return;
+	if (vessel->KillPending()) return;   // already being removed
+
+	// This may be called from the physics thread: only queue the request, the
+	// main thread applies it in the safe phase (WreckProcessDamageRequests).
+	std::lock_guard<std::mutex> lk (g_damageReqMutex);
+	if (g_damageReqCount >= 64) {
+		LOGOUT_ERR ("Wreck: damage request queue full, event dropped.");
+		return;
+	}
+	WreckDamageRequest &r = g_damageReq[g_damageReqCount++];
+	strcpy_s (r.name, 64, vessel->Name());
+	r.damageType = damageType;
+	r.reason = reason;
+}
+
+// Apply the queued damage events (MAIN THREAD, safe phase only).
+static void WreckProcessDamageRequests ()
+{
+	WreckDamageRequest local[64];
+	int n = 0;
+	{
+		std::lock_guard<std::mutex> lk (g_damageReqMutex);
+		n = g_damageReqCount;
+		if (n > 0) {
+			memcpy (local, g_damageReq, n * sizeof(WreckDamageRequest));
+			g_damageReqCount = 0;
+		}
+	}
+	if (!g_psys) return;
+	for (int i = 0; i < n; i++) {
+		Vessel *vessel = g_psys->GetVessel (local[i].name);
+		if (!vessel || vessel->KillPending()) continue;
+		switch (local[i].damageType) {
+		case WRECK_DAMAGE_FAILURE:
+			// FTL / numeric / strong-field failure: immediate removal, no debris.
+			vessel->RequestDestruct ();
+			break;
+		case WRECK_DAMAGE_IMPACT:
+			// Flight accident: immediate removal + wreck debris (the debris is
+			// queued first, WreckProcessPending below creates it before
+			// KillVessels removes the vessel). If the vessel was the focus object,
+			// the camera is switched to the new debris after creation.
+			if (!WreckSystemEnabled ()) continue;
+			{
+				bool isFocus = (oapiGetFocusObject () == (OBJHANDLE)vessel);
+				WreckQueueImpactDebris (vessel);
+				vessel->RequestDestruct ();
+				if (isFocus) g_focusDebrisOnSpawn = true;
+			}
+			break;
+		case WRECK_DAMAGE_INTERNAL:
+			// Internal environment failure: keep the vessel, disable the player
+			// control, remove it after the player switches the view (F3).
+			vessel->SetControlDisabled (true);
+			WreckQueueDelayedKill (vessel);
+			break;
+		}
+	}
 }
 

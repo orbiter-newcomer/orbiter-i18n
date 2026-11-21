@@ -49,7 +49,7 @@ Tile::Tile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
   last_used(0.0),
   state(Invalid),
   edgeok(false), owntex (true), ownoverlay(false)
-  , fadeAlpha(1.0f), fadeT0(0.0)
+  , fadeAlpha(1.0f), fadeT0(0.0), mergeReqT0(0.0)
 {
 	double f = 1.0 / double(1<<lvl);
 	double x = PI * (0.5 - double(ilat+1) * f);
@@ -1097,10 +1097,13 @@ LPDIRECT3DTEXTURE9 TileManager2Base::hCloudMicroNorm = NULL;
 // -----------------------------------------------------------------------
 
 TileManager2Base::TileManager2Base (vPlanet *vplanet, int _maxres, int _gridres)
-: vp(vplanet), gridRes(_gridres), ElevMode(eElevMode::DontCare), ElevModeLvl(0), elvstat{}, prevstat{}
+: vp(vplanet), gridRes(_gridres), ElevMode(eElevMode::DontCare), ElevModeLvl(0), elvstat{}, prevstat{}, bFadeTiles(false)
 {
 	// set persistent parameters
 	TilesLoaded = 0;
+	tileCountSmooth = -1.0;	// initialised on the first UpdateTileCountSmooth call
+	tileCountT = 0.0;
+	tilesRenderedCur = tilesRenderedPrev = 0;
 	prm.maxlvl = max (0, _maxres-4);
 	obj = vp->Object();
 	obj_size = oapiGetSize (obj);
@@ -1120,6 +1123,42 @@ TileManager2Base::~TileManager2Base ()
 {
 	LogAlw("Deleting TileManagerBase %s ...", _PTR(this));
 	if (loader) loader->Unqueue(this);
+}
+
+// -----------------------------------------------------------------------
+
+void TileManager2Base::UpdateTileCountSmooth ()
+{
+	// Dynamic LOD limiter input. The limiter must limit the number of tiles that
+	// are actually rendered - using the number of ALLOCATED tile objects
+	// (TilesLoaded) was wrong: it is dominated by cached/preloaded tiles and
+	// changes in big steps while the terrain streams in. That injected a step of
+	// up to ~0.7 LOD levels into the target level, enough to push tiles across
+	// the hysteresis dead band, so they flipped back and forth between the
+	// coarse parent and the refined children (visible as pumping / flicker).
+	//
+	// This function is called once per render pass (from the templated Render
+	// methods). The rendered leaf tile count is collected in ProcessNode during
+	// the main scene pass only, so the update and the reset are also restricted
+	// to the main scene pass (other passes render different views / env maps and
+	// must not distort the count).
+	Scene *scene = GetScene();
+	if (!scene || scene->GetRenderPass() != RENDERPASS_MAINSCENE) return;
+
+	int rendered = tilesRenderedCur;
+	tilesRenderedCur = 0;	// start counting the next main scene pass
+	tilesRenderedPrev = rendered;
+
+	double now = oapiGetSysTime();
+	double dt = now - tileCountT;
+	if (tileCountSmooth < 0.0 || dt <= 0.0 || dt > 1.0) {
+		tileCountSmooth = (double)rendered;
+		tileCountT = now;
+		return;
+	}
+	double a = (dt > 0.25 ? 0.25 : dt);	// ~1 s time constant at frame rate
+	tileCountSmooth += a * ((double)rendered - tileCountSmooth);
+	tileCountT = now;
 }
 
 // -----------------------------------------------------------------------

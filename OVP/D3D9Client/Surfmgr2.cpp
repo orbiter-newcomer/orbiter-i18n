@@ -65,6 +65,12 @@ SurfTile::SurfTile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
 : Tile (_mgr, _lvl, _ilat, _ilng)
 {
 	smgr = static_cast<TileManager2<SurfTile>* > (_mgr);
+	_mgr->bFadeTiles = true;	// surface tiles support the LOD cross fade
+	morphLow = NULL;
+	morphHigh = NULL;
+	morphT0 = 0.0;
+	lastMorphEnd = 0.0;
+	morphHoldLevel = -1;
 	node = 0;
 	elev = NULL;
 	ggelev = NULL;
@@ -83,6 +89,8 @@ SurfTile::SurfTile (TileManager2Base *_mgr, int _lvl, int _ilat, int _ilng)
 
 SurfTile::~SurfTile ()
 {
+	if (morphLow) { delete[] morphLow; morphLow = NULL; }
+	if (morphHigh) { delete[] morphHigh; morphHigh = NULL; }
 	smgr->GetPlanet()->TileDeleted(this);
 
 	if (elev) g_pMemgr_f->Free(elev);
@@ -506,7 +514,23 @@ bool SurfTile::LoadElevationData ()
 	DWORD phy_lvl = mgr->GetPlanet()->GetPhysicsPatchRes();
 	int ndat = TILE_ELEVSTRIDE*TILE_ELEVSTRIDE;
 
-	elev_file = ReadElevationFile (mgr->CbodyName(), lvl + 4, ilat, ilng);
+	// High altitude / low LOD: skip reading the elevation file and build the
+	// elevation grid from the ancestor data instead. The fine elevation detail
+	// cannot be displayed at this LOD anyway, and the elevation file is a
+	// significant part of the tile load. Level 0 is always read to keep an
+	// elevation base for the ancestor interpolation.
+	// (Restored from commit 04fe67f5; it was removed together with the terrain
+	// changes in the shadow system rollback, while the config parameters
+	// TerrainElevMinLevel / TerrainElevSkipAlt were left behind unused.)
+	bool skipElevFile = false;
+	if (Config && Config->TerrainElevMinLevel > 0 && lvl > 0 && lvl < Config->TerrainElevMinLevel) {
+		vPlanet *vp = mgr->GetPlanet();
+		double calt = (vp ? vp->CameraAltitude() : 0.0);
+		if (Config->TerrainElevSkipAlt <= 0 || calt > (double)Config->TerrainElevSkipAlt)
+			skipElevFile = true;
+	}
+	if (!skipElevFile)
+		elev_file = ReadElevationFile (mgr->CbodyName(), lvl + 4, ilat, ilng);
 	double tgt_res = mgr->ElevRes();
 
 	if (elev_file) has_elevfile = true;
@@ -758,12 +782,134 @@ void SurfTile::StepIn ()
 
 
 // -----------------------------------------------------------------------
+// Geometric LOD morph (CPU vertex interpolation, thread safe)
+//
+// PrepareMorph() only marks the transition start (called from the render
+// thread while the tile tree is locked). All vertex data processing happens
+// lazily in UpdateMorph() from the tile OWN vertices, so no cross-thread
+// access to the parent tile (and no loader race) is involved.
+//
+// Restored verbatim from commit 04fe67f5. The two known failure modes of an
+// earlier version are handled by the "sticky" morphHoldLevel (a morph is done
+// only once per level, so small LOD flips cannot restart it and the terrain
+// does not pulsate) and the 3 second cooldown. A morph must only be started on
+// a real LOD switch - see the PrepareMorph call site in Tilemgr2_imp.hpp.
+// -----------------------------------------------------------------------
+void SurfTile::PrepareMorph ()
+{
+	if (!mesh || !mesh->vtx || lvl <= 0) return;
+	if (!(Config && Config->TerrainTransitionMs > 0)) return;
+	if (morphT0 > 0.0) return;			// already running
+	// Sticky morph: a morph is done only once per level. Small LOD flips around the
+	// same level (caused by the tile count limiter oscillating) must NOT restart it,
+	// otherwise the terrain visibly "pulses". The hold level is reset when the tile
+	// object is destroyed (= real loading/removal from the tree).
+	if (morphHoldLevel >= 0 && lvl <= morphHoldLevel) return;
+	if (lastMorphEnd > 0.0 && (oapiGetSysTime() - lastMorphEnd) < 3.0) return;	// cooldown (second line of defence)
+	morphHoldLevel = lvl;
+	morphT0 = oapiGetSysTime();
+}
+
+void SurfTile::UpdateMorph ()
+{
+	if (morphT0 <= 0.0) return;
+	if (!mesh || !mesh->vtx) { morphT0 = 0.0; return; }
+
+	int res = mgr->GridRes();
+	int n = (res+1)*(res+1);
+	if ((int)mesh->nv < n) { morphT0 = 0.0; return; }
+
+	double dur = (Config && Config->TerrainTransitionMs > 0) ? Config->TerrainTransitionMs * 0.001 : 0.0;
+	if (dur <= 0.0) { morphT0 = 0.0; return; }
+
+	// first call: build the low pass filtered ("coarse") vertex positions from the
+	// tile own full detail geometry. No other tile is touched here.
+	// The filter radius must match the resolution of the parent tile that was
+	// displayed before the switch: the parent's mesh vertices in this tile's area
+	// are 2 grid steps apart (each linear tile dimension is half of the parent's),
+	// so the coarse geometry is a 2x2 downsample - a 3x3 average (filt=1) is the
+	// closest approximation. The previous filt=2 (5x5 average) over-smoothed the
+	// start geometry and showed up as a geometric "flattening" at the start of
+	// every morph.
+	if (!morphLow || !morphHigh) {
+		if (!morphLow) morphLow = new float[n*3];
+		if (!morphHigh) morphHigh = new float[n*3];
+		const int filt = 1;
+		for (int i = 0; i <= res; i++) {
+			for (int j = 0; j <= res; j++) {
+				int ci = i*(res+1)+j;
+				VERTEX_2TEX &v = mesh->vtx[ci];
+				morphHigh[3*ci+0] = v.x; morphHigh[3*ci+1] = v.y; morphHigh[3*ci+2] = v.z;
+				// low pass elevation around this vertex
+				float sum = 0.0f; int cnt = 0;
+				for (int di = -filt; di <= filt; di++) {
+					int ii = i + di; if (ii < 0 || ii > res) continue;
+					for (int dj = -filt; dj <= filt; dj++) {
+						int jj = j + dj; if (jj < 0 || jj > res) continue;
+						sum += mesh->vtx[ii*(res+1)+jj].e; cnt++;
+					}
+				}
+				float eLow = (cnt > 0 ? sum / (float)cnt : v.e);
+				// Low resolution position: move the vertex along the planet radius
+				// direction by the elevation difference (eLow - v.e).
+				//
+				// The vertex coordinates are stored RELATIVE TO THE TILE ORIGIN
+				// (shift_origin is used for lvl>=4, see Tile::CreateMesh_quadpatch),
+				// so the radial direction must be computed from the planet-centred
+				// position (v + vtxshift). Using v alone (the old implementation)
+				// produced a displacement in the wrong direction, which showed up as
+				// a geometric "twitch" at the start of every morph.
+				float wx = (float)(v.x + vtxshift.x);
+				float wy = (float)(v.y + vtxshift.y);
+				float wz = (float)(v.z + vtxshift.z);
+				float len = sqrtf(wx*wx + wy*wy + wz*wz);
+				float k = (len > 1.0f ? (eLow - v.e) / len : 0.0f);
+				morphLow[3*ci+0] = v.x + wx * k;
+				morphLow[3*ci+1] = v.y + wy * k;
+				morphLow[3*ci+2] = v.z + wz * k;
+			}
+		}
+	}
+
+	double el = oapiGetSysTime() - morphT0;
+	float m = (float)(el / dur);
+	if (m < 0.0f) m = 0.0f;
+	if (m > 1.0f) m = 1.0f;
+	// Only INTERIOR vertices are morphed. Border vertices keep their full detail
+	// position so that they always match the neighbouring tiles (no tearing).
+	for (int mi = 1; mi < res; mi++) {
+		for (int mj = 1; mj < res; mj++) {
+			int ci = mi*(res+1)+mj;
+			mesh->vtx[ci].x = morphLow[3*ci+0] + (morphHigh[3*ci+0]-morphLow[3*ci+0])*m;
+			mesh->vtx[ci].y = morphLow[3*ci+1] + (morphHigh[3*ci+1]-morphLow[3*ci+1])*m;
+			mesh->vtx[ci].z = morphLow[3*ci+2] + (morphHigh[3*ci+2]-morphLow[3*ci+2])*m;
+		}
+	}
+	mesh->MapVertices(mgr->Dev());
+	if (m >= 1.0f) {
+		// restore the full detail positions and release the morph buffers
+		for (int ci = 0; ci < n; ci++) {
+			mesh->vtx[ci].x = morphHigh[3*ci+0];
+			mesh->vtx[ci].y = morphHigh[3*ci+1];
+			mesh->vtx[ci].z = morphHigh[3*ci+2];
+		}
+		mesh->MapVertices(mgr->Dev());
+		delete[] morphLow; morphLow = NULL;
+		delete[] morphHigh; morphHigh = NULL;
+		morphT0 = 0.0;
+		lastMorphEnd = oapiGetSysTime();
+	}
+}
+
+// -----------------------------------------------------------------------
 
 void SurfTile::Render ()
 {
 	Tile::Render();
 
 	if (!mesh) return; // DEBUG : TEMPORARY
+
+	UpdateMorph();	// geometric LOD morph (CPU vertex interpolation)
 
 	LPDIRECT3DDEVICE9 pDev = mgr->Dev();
 	vPlanet *vPlanet = mgr->GetPlanet();
@@ -1164,6 +1310,33 @@ void SurfTile::Render ()
 
 	pShader->UpdateTextures();
 
+	// -------------------------------------------------------------------
+	// Terrain LOD cross fade. The tile is rendered normally (opaque); the
+	// pixel shader samples its texture with a coarser mip level at the start of
+	// the transition and sharpens it towards the end, so the LOD switch does not
+	// appear as a sudden texture sharpness jump.
+	//
+	// The old implementation faded the tile with alpha blending over the parent
+	// tile drawn as a background (RenderFadeTiles). That produced dark /
+	// transparent patches: where the coarser parent geometry did not cover the
+	// child tile, the semi-transparent child was blended against the cleared
+	// background, and it also left holes in the depth buffer. It was disabled
+	// for that reason. The transition framework (AddFadeTile / fadeTiles /
+	// TerrainTransitionMs) is reused unchanged.
+	float fadeAlpha = 1.0f;
+	if (fadeT0 > 0.0 && Config && Config->TerrainTransitionMs > 0) {
+		double dur = Config->TerrainTransitionMs * 0.001;
+		if (dur > 0.0) {
+			double el = oapiGetSysTime() - fadeT0;
+			fadeAlpha = (el <= 0.0 ? 0.0f : (el >= dur ? 1.0f : (float)(el / dur)));
+			if (fadeAlpha >= 1.0f) fadeT0 = 0.0;
+		}
+		else fadeT0 = 0.0;
+		if (fadeAlpha < 0.0f) fadeAlpha = 0.0f;
+		if (fadeAlpha > 1.0f) fadeAlpha = 1.0f;
+	}
+	pShader->SetPSConstants("TerrainTileFade", &fadeAlpha, sizeof(float));
+
 	pDev->SetStreamSource(0, mesh->pVB, 0, sizeof(VERTEX_2TEX));
 	pDev->SetIndices(mesh->pIB);
 	pDev->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, mesh->nv, 0, mesh->nf);
@@ -1422,6 +1595,7 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 
 	// set generic parameters
 	SetRenderPrm (dwmat, 0, use_zbuf, rprm);
+	UpdateTileCountSmooth();	// once per pass, for the dynamic LOD limiter
 
 	int i;
 	class Scene *scene = GetClient()->GetScene();
@@ -1549,15 +1723,15 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	pShader->Setup(pPatchVertexDecl, bUseZ, 0);
 	pShader->GetDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 
-	// default transition alpha (1 = fully visible); individual tiles override it
-	// while they fade in after a LOD switch
+	// default transition state (1 = fully sharp); individual tiles override it
+	// while they fade in after a LOD switch (see SurfTile::Render)
 	float fadeOne = 1.0f;
 	pShader->SetPSConstants("TerrainTileFade", &fadeOne, sizeof(float));
 
-	// Terrain LOD cross fade: draw the fading coarser parent tiles first (they are
-	// the background for the new tiles which fade in), then the current tree.
+	// Terrain LOD cross fade: the texture sharpening is done per tile inside
+	// SurfTile::Render (opaque, no background pass needed), so the old
+	// RenderFadeTiles() background draw is intentionally not called anymore.
 	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_DRAW);
-	RenderFadeTiles();
 
 	// render the tree
 	for (i = 0; i < 2; i++)

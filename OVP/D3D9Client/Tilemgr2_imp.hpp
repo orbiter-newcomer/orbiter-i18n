@@ -147,7 +147,22 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 	// LOD hysteresis: remember whether the tile is currently subdivided, so
 	// that the switch decision can use a dead band (avoids flickering)
 	bool wasActive = (tile->state == Tile::Active);
+	// Whether the tile was actually rendered as a leaf in the previous frame.
+	// This has to be sampled BEFORE the state is overwritten below: only a real
+	// LOD switch (a rendered leaf being subdivided) may start the cross fade
+	// (or, once re-implemented, the geometric morph). Reading the state after
+	// the assignment always returned true.
+	bool wasForRender = (tile->state == Tile::ForRender);
 	tile->state = Tile::ForRender;
+	// Edge matching must be checked again every frame while the tile is
+	// rendered: the LOD layout of the neighbours can change at any time (they
+	// are subdivided/merged independently of this tile). MatchEdges() only
+	// rewrites the shared edge vertices when the neighbour layout really
+	// changed, so this does not cost the full geometric match every frame -
+	// but the check itself is required, otherwise a tile keeps stale edge
+	// heights after a neighbour switched LOD and the seams between the tiles
+	// stay visible (dark cracks, especially while the terrain is loading).
+	tile->edgeok = false;
 
 	// check if patch is visible from camera position
 	VECTOR3 &cnt = tile->cnt;                   // tile centre in unit planet frame
@@ -207,8 +222,12 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (Config->MaxTiles == 0) maxtiles = 600.0;
 		if (Config->MaxTiles == 2) maxtiles = 2400.0;
 
-		// Dynamic tile count limiter, start reducing above 900 tiles
-		double tc = double(TilesLoaded - (maxtiles*0.75)) / 500;
+		// Dynamic tile count limiter, start reducing above 900 tiles. The count
+		// is smoothed once per render pass in UpdateTileCountSmooth() (called
+		// from the templated Render methods) - a per-node update would follow
+		// TilesLoaded almost instantly. See there for the consequences.
+		if (tileCountSmooth < 0.0) tileCountSmooth = (double)TilesLoaded;	// safety
+		double tc = (tileCountSmooth - (maxtiles*0.75)) / 500;
 		double fc = tc < 0 ? 1.0 : 1.0 + tc * tc;
 
 		// This doesn't work with narrow FOV, added max() to set low limit
@@ -219,9 +238,13 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		if (tgtresF < 0.0) tgtresF = 0.0;
 		if (tgtresF > (double)maxlvl) tgtresF = (double)maxlvl;
 		tgtres = (int)tgtresF;
-		// LOD hysteresis (dead band around the switch threshold)
-		const double hystUp = 0.55;		// switch up threshold offset
-		const double hystDown = 0.35;	// switch down threshold offset
+		// LOD hysteresis (dead band around the switch threshold). The dead band
+		// is kept intentionally wide: it must absorb the residual noise of
+		// tgtresF (camera motion, the smoothed tile count limiter, numeric
+		// jitter) so a tile cannot flip back and forth between levels. The morph
+		// / cross fade then only runs on a real, stable level switch.
+		const double hystUp = 0.70;		// switch up threshold offset
+		const double hystDown = 0.30;	// switch down threshold offset
 		bstepdown = wasActive ? (tgtresF > lvl + hystDown) : (tgtresF > lvl + hystUp);
 		tile->tgtscale = pow(2.0f, float(tgtres - lvl));
 	}
@@ -244,6 +267,24 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		}
 	}
 	
+	// Anti-flapping: a merge (falling back to the coarse parent) must be
+	// requested continuously for a while before it is executed. The hysteresis
+	// dead band alone was not enough in practice: when the target level hovers
+	// around the switch threshold (camera motion, tile count limiter, numeric
+	// noise), a tile could subdivide one frame and merge back the next one, and
+	// every flip restarted the morph / cross fade - visible as pumping / jitter.
+	// Subdivision itself is NOT delayed (approaching terrain must become
+	// detailed immediately); only the fallback is damped.
+	if (wasActive && !bstepdown) {
+		double now = oapiGetSysTime();
+		if (tile->mergeReqT0 <= 0.0) tile->mergeReqT0 = now;
+		if (now - tile->mergeReqT0 < 2.0)
+			bstepdown = true;	// hold: stay subdivided for now
+	}
+	else {
+		tile->mergeReqT0 = 0.0;
+	}
+
 	// Recursion to next level: subdivide into 2x2 patch
 	if (bstepdown)
 	{
@@ -261,10 +302,21 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 				subcomplete = false;
 		}
 		if (subcomplete) {
-			bool wasForRender = (tile->state == Tile::ForRender);
-			// Prepare the geometric LOD morph ONLY on the actual switch (the tile was
-			// rendered before). Doing it every frame would restart the morph as soon
-			// as it finished, producing a periodic geometry "pulsation".
+			// Terrain LOD cross fade: keep the coarser parent tile rendered as
+			// an opaque background for the transition period while the new child
+			// tiles fade in (see TileManager2Base::RenderFadeTiles and the
+			// per-tile alpha in SurfTile::Render). Only a real switch may start
+			// the transition - AddFadeTile resets the start time, so calling it
+			// every frame would restart the fade and it would never finish.
+			if (wasForRender && bFadeTiles && Config && Config->TerrainTransitionMs > 0)
+				AddFadeTile(tile, oapiGetSysTime());
+
+			// Geometric LOD morph (implemented in SurfTile, restored from commit
+			// 04fe67f5, see Tilemgr2.h). It must only be started on a real LOD
+			// switch - hence the wasForRender guard above (the old code read
+			// tile->state after it had already been set to ForRender, so the
+			// guard was always true and the "pulsation" had to be suppressed by
+			// the morphHoldLevel/cooldown logic inside the implementation).
 			if (wasForRender && Config && Config->TerrainTransitionMs > 0) {
 				for (i = 0; i < 4; i++) {
 					TileType *mct = node->Child(i) ? node->Child(i)->Entry() : NULL;
@@ -278,6 +330,12 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		}
 	}
 	else {
+		// Count the leaf tiles that are actually rendered in the main scene
+		// pass (input for the dynamic LOD limiter, see UpdateTileCountSmooth).
+		// Only ForRender tiles are drawn by RenderNode; Invisible ones are not.
+		if (scene->GetRenderPass() == RENDERPASS_MAINSCENE && tile->state == Tile::ForRender)
+			tilesRenderedCur++;
+
 		// ---- terrain LOD preloading (frontier prefetch) ---------------------
 		// Load the child tiles one or more levels ahead of the render requirement
 		// so that the LOD switch does not have to wait for the disk load. The
@@ -305,7 +363,18 @@ void TileManager2Base::ProcessNode (QuadTreeNode<TileType> *node)
 		// start the fade-in for newly rendered leaves whose parent is fading out
 		if (Config && Config->TerrainTransitionMs > 0 && tile->fadeT0 == 0.0 && node->Parent()) {
 			TileType *pt = node->Parent()->Entry();
-			if (pt && IsFadeTile(pt)) tile->fadeT0 = oapiGetSysTime();
+			if (pt && IsFadeTile(pt)) {
+				// Take over the parent's transition start time instead of starting
+				// a new fade now: the child must fade in in sync with the parent
+				// background. A child that only appears late during the transition
+				// must not start a fresh fade after the parent background has
+				// already been dropped (that would show a frame of transparent
+				// terrain - the other cause of the historical "transparent
+				// patches").
+				for (size_t fi = 0; fi < fadeTiles.size(); fi++) {
+					if (fadeTiles[fi].tile == pt) { tile->fadeT0 = fadeTiles[fi].t0; break; }
+				}
+			}
 		}
 
 		bool bDelete = true;

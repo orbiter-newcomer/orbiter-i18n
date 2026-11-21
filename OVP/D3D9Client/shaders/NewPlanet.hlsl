@@ -121,7 +121,10 @@ struct PerObjectParams
 
 uniform extern PerObjectParams Prm;
 
-// Terrain LOD cross fade: transition alpha of the currently rendered tile
+// Terrain LOD cross fade: 1 = fully sharp (normal rendering), 0 = maximum
+// low-pass (start of the transition). The fade is done by sampling the tile's
+// own texture with a coarser mip level during the transition (opaque, no extra
+// sampler and no alpha blending), see TerrainPS.
 uniform extern float TerrainTileFade;
 
 
@@ -455,7 +458,28 @@ float4 TerrainPS(TileVS frg) : COLOR
 
 	// Fetch Main Textures
 	float4 cTex = float4(0.5, 0.5, 0.5, 1.0);
-	if (Flow.bTexture) cTex = tex2D(tDiff, vUVSrf);
+	if (Flow.bTexture) {
+		if (TerrainTileFade < 1.0f) {
+			// Terrain LOD cross fade: sample the texture with a coarser mip level
+			// and sharpen it during the transition. This is an opaque fade inside
+			// the pixel shader (no alpha blending, no background tile, no extra
+			// sampler - the ps_3_0 sampler limit is already reached in some
+			// shader variants), so it cannot produce the transparent / dark
+			// patches of the old alpha based implementation.
+			//
+			// The start of the transition matches the resolution of the coarser
+			// parent tile. The parent covers 4x the AREA of this tile (each linear
+			// dimension is 2x) with the same texture size, so its effective
+			// texture resolution in this tile's area is mip+1 (NOT mip+2): the
+			// texel-to-screen-pixel ratio is twice as large as for this tile.
+			// A start blur of +2 mip levels made the switch visible as a dip in
+			// sharpness before the tile got sharper. 2x gradient scale = 1 mip.
+			float2 dx = ddx(vUVSrf);
+			float2 dy = ddy(vUVSrf) * (1.0f + 1.0f * (1.0f - TerrainTileFade));
+			cTex = tex2D(tDiff, vUVSrf, dx, dy);
+		}
+		else cTex = tex2D(tDiff, vUVSrf);
+	}
 
 	float4 cMsk = float4(0, 0, 0, 1);
 	if (Flow.bMask) cMsk = tex2D(tMask, vUVSrf);

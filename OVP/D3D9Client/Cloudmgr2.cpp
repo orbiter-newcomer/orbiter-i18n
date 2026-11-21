@@ -148,6 +148,7 @@ void TileManager2<CloudTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlan
 {
 	// set generic parameters
 	SetRenderPrm (dwmat, rprm.cloudrot, use_zbuf, rprm);
+	UpdateTileCountSmooth();	// once per pass, for the dynamic LOD limiter
 
 	int i;
 	class Scene *scene = GetClient()->GetScene();

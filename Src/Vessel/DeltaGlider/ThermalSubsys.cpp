@@ -43,14 +43,14 @@ const double ThermalSubsystem::Ax_fuselage = 27.6;
 const double ThermalSubsystem::Ay_fuselage = 62.4;
 const double ThermalSubsystem::Az_fuselage = 10.6;
 const double ThermalSubsystem::Ay_wing = 58.8;
-const double ThermalSubsystem::A_radiatorpanel1 = 3.58;
-const double ThermalSubsystem::A_radiatorpanel2 = 4.4;
+const double ThermalSubsystem::A_radiatorpanel1 = 5.0;
+const double ThermalSubsystem::A_radiatorpanel2 = 5.0;
 const double ThermalSubsystem::A_maintank = 30.0;
 const double ThermalSubsystem::A_cabin = 80.0;
 const double ThermalSubsystem::A_avionics = 5.0;
 const double ThermalSubsystem::alpha_upper = 0.5;
 const double ThermalSubsystem::alpha_lower = 0.6;
-const double ThermalSubsystem::alpha_radiator = 0.2;
+const double ThermalSubsystem::alpha_radiator = 0.1;
 const double ThermalSubsystem::eps_radiator = 0.95;
 const double ThermalSubsystem::k_upper = 0.34;
 const double ThermalSubsystem::k_lower = 0.034;
@@ -564,7 +564,7 @@ CoolantLoop::CoolantLoop (ThermalSubsystem *_subsys)
 	node[EXCHANGER_AVIONICSCOLDPLATE].upstream[0] = &node[EXCHANGER_CABIN];
 	node[EXCHANGER_AVIONICSCOLDPLATE].dnstream[0] = &node[PUMP];
 	node[EXCHANGER_AVIONICSCOLDPLATE].cprm = &ssys_th->cprm[ThermalSubsystem::AVIONICS];
-	node[EXCHANGER_AVIONICSCOLDPLATE].k = 10.0;
+	node[EXCHANGER_AVIONICSCOLDPLATE].k = 120.0;
 
 	// default propellant temperature
 	for (int i = 0; i < nnode; i++) {

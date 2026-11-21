@@ -9,6 +9,14 @@
 // docs/handover/dual-thread-route-a.md)
 #define DUAL_THREAD_EXPERIMENT 1
 
+// ---- temporary diagnostics for the physics/render jitter investigation ----
+// DUAL_THREAD_DIAG: log vessel state discontinuities between physics frames
+//                   and check whether the stable state changes during a render.
+// DUAL_THREAD_SERIAL_EXPERIMENT: 1 = render while the physics thread is parked
+//                   (removes the render/physics overlap window; diagnosis only)
+#define DUAL_THREAD_DIAG 1
+#define DUAL_THREAD_SERIAL_EXPERIMENT 0
+
 // Enable visual styles. Source: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773175(v=vs.85).aspx
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -823,6 +831,14 @@ HWND Orbiter::CreateRenderWindow (Config *pCfg, const char *scenario)
 	RigidBody::GlobalSetup();
 
 	td.Reset (pState->Mjd());
+	// Reset the user-selected time acceleration for the new session. The
+	// relativistic warp scaling (see UpdateRelativityWarp) keeps
+	// m_relUserWarp across sessions, but a freshly loaded scenario must start
+	// at 1x (original Orbiter behaviour). Otherwise a high warp left over from
+	// the previous session makes the first simulation step enormous
+	// (fixed step x warp), so the relativistic propagator diverges: NaN vessel
+	// states are reported by the numerical guard and the simulation stalls.
+	m_relUserWarp = 1.0;
 	if (Cfg()->CfgCmdlinePrm.FixedStep > 0.0)
 		td.SetFixedStep(Cfg()->CfgCmdlinePrm.FixedStep);
 	else if (Cfg()->CfgDebugPrm.FixedStep > 0.0)
@@ -2362,7 +2378,10 @@ HRESULT Orbiter::UserInput ()
 	DIJOYSTATE2 js;
 	if (pDI->PollJoystick (&js)) {
 		UserJoyInput_System (&js);                  // general joystick functions
-		if (bRunning) UserJoyInput_OnRunning (&js); // joystick vessel control functions
+		// internal-damage interface: no vessel control (the coolie hat camera /
+		// panel functions in UserJoyInput_System stay active)
+		if (bRunning && !(g_focusobj && g_focusobj->IsControlDisabled()))
+			UserJoyInput_OnRunning (&js); // joystick vessel control functions
 		for (i = 0; i < 15; i++) ctrlTotal[i] += ctrlJoystick[i]; // update thrust requests
 	}
 
@@ -2527,8 +2546,14 @@ void Orbiter::KbdInputImmediate_System (char *kstate)
 //-----------------------------------------------------------------------------
 void Orbiter::KbdInputImmediate_OnRunning (char *kstate)
 {
-	if (g_focusobj->ConsumeDirectKey (kstate)) return;  // key is consumed by focus vessel
+	// Internal-damage interface: a vessel whose player control is disabled does
+	// not receive control input. View/camera and MFD keys are handled elsewhere
+	// (System/buffered handlers) and stay active.
+	const bool ctrlDis = (g_focusobj && g_focusobj->IsControlDisabled());
 
+	if (!ctrlDis && g_focusobj->ConsumeDirectKey (kstate)) return;  // key is consumed by focus vessel
+
+	if (!ctrlDis) {
 	// main/retro/hover thruster settings
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_IncMainThrust))   g_focusobj->IncMainRetroLevel ( 0.2*td.SimDT);
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_DecMainThrust))   g_focusobj->IncMainRetroLevel (-0.2*td.SimDT);
@@ -2576,8 +2601,9 @@ void Orbiter::KbdInputImmediate_OnRunning (char *kstate)
 	// Wheel brake control
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_WheelbrakeLeft))  g_focusobj->SetWBrakeLevel (1.0, 1, false);
 	if (keymap.IsLogicalKey (kstate, OAPI_LKEY_WheelbrakeRight)) g_focusobj->SetWBrakeLevel (1.0, 2, false);
+	} // end of the player-control block
 
-	// left/right MFD control
+	// left/right MFD control (interface only: not affected by damage)
 	if (KEYMOD_SHIFT (kstate)) {
 		if (KEYMOD_LSHIFT (kstate) && g_pane->MFD(0)) g_pane->MFD(0)->ConsumeKeyImmediate (kstate);
 		if (KEYMOD_RSHIFT (kstate) && g_pane->MFD(1)) g_pane->MFD(1)->ConsumeKeyImmediate (kstate);
@@ -2658,7 +2684,10 @@ void Orbiter::KbdInputBuffered_OnRunning (char *kstate, DIDEVICEOBJECTDATA *dod,
 		DWORD key = dod[i].dwOfs;
 		bool bdown = (dod[i].dwData & 0x80) != 0;
 
-		if (g_focusobj->ConsumeBufferedKey (key, bdown, kstate)) // offer key to vessel for processing
+		// Internal-damage interface: no vessel control input for a damaged vessel
+		// (the simulation-speed and interface keys below stay active).
+		if (!g_focusobj->IsControlDisabled() &&
+		    g_focusobj->ConsumeBufferedKey (key, bdown, kstate)) // offer key to vessel for processing
 			continue;
 		if (!bdown) // only process key down events
 			continue;

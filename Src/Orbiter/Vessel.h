@@ -293,6 +293,13 @@ public:
 	inline bool KillPending() const
 	{ return kill_pending; }
 
+	// Internal-damage interface: the player can no longer control this vessel
+	// (camera/view switching is not affected). See WreckDisableControl().
+	inline void SetControlDisabled (bool b)
+	{ bControlDisabled = b; }
+	inline bool IsControlDisabled() const
+	{ return bControlDisabled; }
+
 	inline bool bPlayback() const
 	{ return bFRplayback; }
 
@@ -1712,6 +1719,7 @@ private:
 		double alt;            //   hover hold target altitude
 		double palt;           //   hover hold previous altitude
 		double valt;
+		double valt_f;         //   low-pass filtered vertical acceleration (autopilot D-term)
 		double T;
 		bool terrain;          //   hold true altitude?
 	} hoverhold;
@@ -1848,6 +1856,7 @@ protected:
 
 	int killrot_delay;   // delay counter for killrot terminate
 	bool kill_pending;
+	bool bControlDisabled;   // player control disabled (internal damage, see WreckDamageVessel)
 	static bool rpressure;      // flag for applying radiation pressure effects
 	int orthoaxis;       // auxiliary flag
 	int animcount;       // animation request ref count

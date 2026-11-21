@@ -6,6 +6,7 @@
 #include "Planet.h"
 #include "Orbiter.h"
 #include <filesystem>
+#include <thread>
 
 using std::min;
 using std::max;
@@ -17,6 +18,7 @@ static int MAXLVL_LIMIT = SURF_MAX_PATCHLEVEL2 - 7;
 extern Orbiter *g_pOrbiter;
 extern TimeData td;
 extern char DBG_MSG[256];
+extern std::thread::id g_mainThreadId;   // defined in Orbiter.cpp (dual-thread mode)
 
 #pragma pack(push,1)
 
@@ -323,7 +325,22 @@ double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vec
 	// Dual-thread support: serialise elevation queries. The physics thread
 	// (vessel surface parameters/contact) and the main render thread (camera,
 	// base visuals, graphics client depth queries) both enter here.
-	std::lock_guard<std::recursive_mutex> elevLk (elev_lock);
+	//
+	// TEMPORARY diagnostics: measure the lock wait / locked-section time and the
+	// expensive sub-paths (cache miss file load, graphics client filter
+	// callback) to locate the frame time bottlenecks.
+	LARGE_INTEGER _fq, _q0, _q1, _q2;
+	QueryPerformanceFrequency(&_fq);
+	QueryPerformanceCounter(&_q0);
+	std::unique_lock<std::recursive_mutex> elevLk (elev_lock);
+	QueryPerformanceCounter(&_q1);
+	const unsigned long long _waitUs = (unsigned long long)(double(_q1.QuadPart - _q0.QuadPart) * 1e6 / double(_fq.QuadPart));
+	qstats.calls++;
+	if (std::this_thread::get_id() == g_mainThreadId) qstats.callsMain++;
+	else qstats.callsPhys++;
+	qstats.waitUs += _waitUs;
+	if (_waitUs > qstats.maxWaitUs) qstats.maxWaitUs = _waitUs;
+
 	double e = 0.0;
 	if (reslvl) *reslvl = 0;
 	reqlvl = (reqlvl ? min (max(0,reqlvl-7), maxlvl) : maxlvl);
@@ -364,6 +381,7 @@ double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vec
 			}
 		}
 		if (!t) { // correct tile not in list - need to load from file
+			qstats.misses++;
 			t = tile;  // find oldest tile
 			for (i = 1; i < ntile; i++) 
 				if (tile[i].last_access < t->last_access)
@@ -371,6 +389,8 @@ double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vec
 
 			if (t->data) t->Clear();
 
+			LARGE_INTEGER _l0, _l1;
+			QueryPerformanceCounter(&_l0);
 			for (lvl = reqlvl; lvl >= 0; lvl--) {
 				TileIdx (lat, lng, lvl, &ilat, &ilng);
 				t->data = LoadElevationTile (lvl+4, ilat, ilng, elev_res);
@@ -405,10 +425,18 @@ double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vec
 
 					// still need to store emin and emax
 					auto gc = g_pOrbiter->GetGraphicsClient();
-					if (gc) gc->clbkFilterElevation((OBJHANDLE)cbody, ilat, ilng, lvl, elev_res, t->data);
+					if (gc) {
+						LARGE_INTEGER _c0, _c1;
+						QueryPerformanceCounter(&_c0);
+						gc->clbkFilterElevation((OBJHANDLE)cbody, ilat, ilng, lvl, elev_res, t->data);
+						QueryPerformanceCounter(&_c1);
+						qstats.cbUs += (unsigned long long)(double(_c1.QuadPart - _c0.QuadPart) * 1e6 / double(_fq.QuadPart));
+					}
 					break;
 				}
 			}
+			QueryPerformanceCounter(&_l1);
+			qstats.loadUs += (unsigned long long)(double(_l1.QuadPart - _l0.QuadPart) * 1e6 / double(_fq.QuadPart));
 			t->lat0 = t->lng0 = t->nmlidx = -1;
 		}
 
@@ -508,6 +536,20 @@ double ElevationManager::Elevation (double lat, double lng, int reqlvl, std::vec
 			t->lng0 = lng0;
 			if (reslvl) *reslvl = t->lvl+7;
 		}
+	}
+
+	// TEMPORARY diagnostics: accumulate and log every 2 s
+	QueryPerformanceCounter(&_q2);
+	qstats.insideUs += (unsigned long long)(double(_q2.QuadPart - _q1.QuadPart) * 1e6 / double(_fq.QuadPart));
+	double _nowS = double(_q2.QuadPart) / double(_fq.QuadPart);
+	if (qstatsLogT == 0.0) qstatsLogT = _nowS;
+	else if (_nowS - qstatsLogT >= 2.0) {
+		oapiWriteLogV("[ELEV] calls=%llu main=%llu phys=%llu wait=%.2fms maxwait=%.2fms inside=%.2fms miss=%llu load=%.2fms cb=%.2fms",
+			qstats.calls, qstats.callsMain, qstats.callsPhys,
+			double(qstats.waitUs) * 1e-3, double(qstats.maxWaitUs) * 1e-3, double(qstats.insideUs) * 1e-3,
+			qstats.misses, double(qstats.loadUs) * 1e-3, double(qstats.cbUs) * 1e-3);
+		qstats = QueryStats();
+		qstatsLogT = _nowS;
 	}
 	return e*elev_res;
 }

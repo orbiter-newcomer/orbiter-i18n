@@ -92,6 +92,22 @@ private:
 	// both query elevations, so Elevation() serialises on this mutex.
 	// recursive: the client callback may query elevations again.
 	mutable std::recursive_mutex elev_lock;
+
+	// --- TEMPORARY performance diagnostics (elevation query path) ---
+	// All fields are only touched while elev_lock is held, so no atomics are
+	// needed. Logged every 2 s from inside Elevation() and then reset.
+	struct QueryStats {
+		unsigned long long calls = 0;      // total Elevation() calls
+		unsigned long long callsMain = 0;  // calls from the main/render thread
+		unsigned long long callsPhys = 0;  // calls from any other thread
+		unsigned long long waitUs = 0;     // total time waiting for elev_lock
+		unsigned long long maxWaitUs = 0;  // longest single lock wait
+		unsigned long long insideUs = 0;   // total time inside the locked section
+		unsigned long long misses = 0;     // elevation tile not in cache (file load)
+		unsigned long long loadUs = 0;     // tile load (IO/decode) total time
+		unsigned long long cbUs = 0;       // graphics client filter callback total
+	} mutable qstats;
+	mutable double qstatsLogT = 0.0;       // last log time [s]
 };
 
 #endif // !__ELEVMGR_H
