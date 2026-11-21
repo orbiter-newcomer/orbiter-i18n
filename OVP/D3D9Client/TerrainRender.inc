@@ -714,20 +714,24 @@ bool ElevationSampler::Init (const std::string &dataRoot, double rplanet, double
 	if (!treeElev) return false;
 	treeMod = ZTreeMgr::CreateFromFile(root.c_str(), ZTreeMgr::LAYER_ELEVMOD);
 
-	// Find the finest elevation level that has data everywhere (probe a few
-	// positions spread over the planet).
+	// Archive level limit: the finest level present at ANY of the probe points.
+	// (Local availability can be coarser, Sample() falls back level by level.)
+	// Note: the probe must NOT require the level at all probe points: the
+	// archives contain finer levels only in parts of the planet, and using the
+	// common denominator would throw away most of the available detail.
 	static const double plats[5] = { 0.6, -0.6, 0.0, 0.35, -0.35 };
 	static const double plngs[5] = { 0.0, 1.2, -2.0, 2.6, -1.1 };
+	fineLvl = -1;
 	for (int l = 16; l >= 4; l--) {
-		bool all = true;
-		for (int i = 0; i < 5 && all; i++) {
+		bool any = false;
+		for (int i = 0; i < 5 && !any; i++) {
 			int ilat, ilng;
 			TileIdx(plats[i], plngs[i], l, ilat, ilng);
-			if (treeElev->Idx(l, ilat, ilng) == (DWORD)-1) all = false;
+			if (treeElev->Idx(l, ilat, ilng) != (DWORD)-1) any = true;
 		}
-		if (all) { fineLvl = l; break; }
+		if (any) { fineLvl = l; break; }
 	}
-	if (fineLvl < 0) return false;
+	if (fineLvl < 4) return false;
 	return true;
 }
 
