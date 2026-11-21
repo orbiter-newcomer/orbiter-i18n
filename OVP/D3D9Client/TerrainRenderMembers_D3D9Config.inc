@@ -39,4 +39,5 @@ public:
 	int TerrainHorizonMinLevel;		///< Only bake tiles at this LOD level or finer (default 4)
 	int TerrainHorizonUpdate;		///< Tile requirement scan interval \[frames\] (1...16, default 4)
 	int TerrainHorizonContour;		///< Debug contour line interval \[m\] in the overlay debug views (0=off, 10...2000, default 200)
+	int TerrainHorizonShadowFloor;	///< Minimum brightness kept inside the horizon shadows \[%\] (0...90, default 40): the shadowed terrain keeps this fraction of the lit brightness (sky/ambient light), so the shadow centre is never pitch black
 

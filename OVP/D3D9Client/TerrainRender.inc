@@ -566,6 +566,7 @@ struct Cfg {
 	int    minLevel;
 	int    updateFrames;
 	double contourM;		// debug contour line interval [m] (0=off)
+	double shadowFloor;		// minimum brightness kept inside the shadows (0..1)
 };
 
 static Cfg  g_cfg;
@@ -587,6 +588,7 @@ static void ReadCfg ()
 	c.minLevel    = Config->TerrainHorizonMinLevel;
 	c.updateFrames = Config->TerrainHorizonUpdate;
 	c.contourM    = double(Config->TerrainHorizonContour);
+	c.shadowFloor = double(Config->TerrainHorizonShadowFloor) * 0.01;
 	if (c.fieldSize < 16)  c.fieldSize = 16;
 	if (c.fieldSize > 128) c.fieldSize = 128;
 	if (c.dirs < 8)  c.dirs = 8;
@@ -1544,7 +1546,7 @@ void System::BeginPass (LPDIRECT3DDEVICE9 dev, vPlanet *vp)
 	pMask->SetPSConstants(hConstPS, cp, sizeof(ConstParams));
 	float prm[4] = { (float)g_cfg.fieldSize, (float)g_cfg.dirs, (float)g_cfg.strength, (float)g_cfg.debug };
 	pMask->SetPSConstants(hHorPrm, prm, sizeof(prm));
-	float prm1[4] = { (float)g_cfg.contourM, 0.0f, 0.0f, 0.0f };
+	float prm1[4] = { (float)g_cfg.contourM, (float)g_cfg.shadowFloor, 0.0f, 0.0f };
 	pMask->SetPSConstants(hHorPrm1, prm1, sizeof(prm1));
 
 	dev->SetRenderState(D3DRS_ZENABLE, TRUE);

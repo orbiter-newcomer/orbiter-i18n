@@ -110,6 +110,7 @@ void D3D9Config::Reset ()
 	TerrainHorizonMinLevel = 4;
 	TerrainHorizonUpdate = 4;
 	TerrainHorizonContour = 200;
+	TerrainHorizonShadowFloor = 40;
 	LabelDisplayFlags	= LABEL_DISPLAY_RECORD | LABEL_DISPLAY_REPLAY;
 	CloudMicro			= 1;
 	GDIOverlay			= 0;
@@ -209,6 +210,7 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonMinLevel", i))		TerrainHorizonMinLevel = max(0, min(20, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonUpdate", i))		TerrainHorizonUpdate = max(1, min(16, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonContour", i))		TerrainHorizonContour = max(0, min(5000, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonShadowFloor", i))	TerrainHorizonShadowFloor = max(0, min(90, i));
 
 	if (oapiReadItem_int   (hFile, (char*)"EnableMeshDbg", i))			EnableMeshDbg = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TileMipmaps", i))			TileMipmaps = max(0, min(2, i));
@@ -326,6 +328,7 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonMinLevel", TerrainHorizonMinLevel);
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonUpdate", TerrainHorizonUpdate);
 	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonContour", TerrainHorizonContour);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonShadowFloor", TerrainHorizonShadowFloor);
 
 	oapiWriteItem_int   (hFile, (char*)"EnableGlass", EnableGlass);
 	oapiWriteItem_int   (hFile, (char*)"EnableMeshDbg", EnableMeshDbg);

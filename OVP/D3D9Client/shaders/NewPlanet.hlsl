@@ -1096,6 +1096,7 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	float K = HorizonPrm0.y;
 	float strength = HorizonPrm0.z;
 	float debug = HorizonPrm0.w;
+	float shadowFloor = HorizonPrm1.y;		// minimum brightness kept inside the shadows
 	float2 uv = frg.texUV;
 
 	float3 vVrt = Const.CamPos + frg.posW;
@@ -1148,6 +1149,7 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	// blend) - the view for checking the shadow physics against the terrain.
 	if (debug >= 2.5f) {
 		float fV = 1.0f - (1.0f - vis) * strength;
+		fV = max(fV, shadowFloor);
 		if (sunAlt <= 0.0f) fV = 1.0f;
 		float g = fV * (1.0f - cline * 0.85f);
 		return float4(g, g, g, 1.0f);
@@ -1170,6 +1172,7 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	if (sunAlt <= 0.0f) return float4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	float fVis = 1.0f - (1.0f - vis) * strength;
+	fVis = max(fVis, shadowFloor);		// keep sky/ambient light inside the shadows
 	return float4(fVis, fVis, fVis, 1.0f);
 }
 
