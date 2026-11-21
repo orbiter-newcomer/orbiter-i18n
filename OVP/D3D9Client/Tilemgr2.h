@@ -313,6 +313,7 @@ public:
 		bool bSpecular;       ///< render specular surface reflections?
 		bool bLights;         ///< render planet night lights?
 		bool bCloudShadow;    ///< render cloud shadows?
+		bool bTerrainHorizonShadow;	///< render terrain self-shadowing (horizon angle field)?
 		double lightfac;      ///< city light brightness factor
 		DWORD tileLoadFlags;  ///< 0x0001: load tiles from directory tree
 		                      ///< 0x0002: load tiles from compressed archive

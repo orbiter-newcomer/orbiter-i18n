@@ -452,6 +452,8 @@ void OptionsPage_Visual::UpdateControls(HWND hPage)
 		Cfg()->CfgVisualPrm.bClouds ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_CSHADOW, BM_SETCHECK,
 		Cfg()->CfgVisualPrm.bCloudShadows ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(hPage, IDC_OPT_VIS_TERRSHADOW, BM_SETCHECK,
+		Cfg()->CfgVisualPrm.bTerrainHorizonShadow ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_HAZE, BM_SETCHECK,
 		Cfg()->CfgVisualPrm.bHaze ? BST_CHECKED : BST_UNCHECKED, 0);
 	SendDlgItemMessage(hPage, IDC_OPT_VIS_FOG, BM_SETCHECK,
@@ -499,6 +501,7 @@ void OptionsPage_Visual::UpdateConfig(HWND hPage)
 
 	Cfg()->CfgVisualPrm.bClouds = (SendDlgItemMessage(hPage, IDC_OPT_VIS_CLOUD, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgVisualPrm.bCloudShadows = (SendDlgItemMessage(hPage, IDC_OPT_VIS_CSHADOW, BM_GETCHECK, 0, 0) == BST_CHECKED);
+	Cfg()->CfgVisualPrm.bTerrainHorizonShadow = (SendDlgItemMessage(hPage, IDC_OPT_VIS_TERRSHADOW, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgVisualPrm.bHaze = (SendDlgItemMessage(hPage, IDC_OPT_VIS_HAZE, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgVisualPrm.bFog = (SendDlgItemMessage(hPage, IDC_OPT_VIS_FOG, BM_GETCHECK, 0, 0) == BST_CHECKED);
 	Cfg()->CfgVisualPrm.bWaterreflect = (SendDlgItemMessage(hPage, IDC_OPT_VIS_REFWATER, BM_GETCHECK, 0, 0) == BST_CHECKED);
@@ -561,6 +564,14 @@ BOOL OptionsPage_Visual::OnCommand(HWND hPage, WORD ctrlId, WORD notification, H
 			{
 				bool check = (SendDlgItemMessage( hPage, IDC_OPT_VIS_CSHADOW, BM_GETCHECK, 0, 0 ) == BST_CHECKED);
 				Cfg()->CfgVisualPrm.bCloudShadows = check;
+				return FALSE;
+			}
+			break;
+		case IDC_OPT_VIS_TERRSHADOW:
+			if (notification == BN_CLICKED)
+			{
+				bool check = (SendDlgItemMessage( hPage, IDC_OPT_VIS_TERRSHADOW, BM_GETCHECK, 0, 0 ) == BST_CHECKED);
+				Cfg()->CfgVisualPrm.bTerrainHorizonShadow = check;
 				return FALSE;
 			}
 			break;

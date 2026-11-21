@@ -236,6 +236,9 @@ msgstr "云层"
 msgid "Cloud shadows"
 msgstr "云影"
 
+msgid "Terrain self-shadowing"
+msgstr "地形自投影"
+
 msgid "Horizon haze"
 msgstr "地平线雾霭"
 

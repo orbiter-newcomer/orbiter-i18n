@@ -111,6 +111,7 @@ struct CFG_VISUALPRM {
 	bool   bVesselShadows;		// render ground shadows for vessels?
 	bool   bClouds;				// render cloud layers?
 	bool   bCloudShadows;		// render cloud shadows on the ground?
+	bool   bTerrainHorizonShadow;	// render terrain self-shadowing (horizon angle field, D3D9Client extension)
 	bool   bNightlights;		// render planetary night light textures?
 	bool   bWaterreflect;		// reflecting planetary water surfaces?
 	bool   bSpecularRipple;		// ripples on specular water reflections?

@@ -72,6 +72,12 @@ typedef void *HDC;
 ///   bool
 #define CFGPRM_CLOUDSHADOWS    0x000A
 
+/// Flag for rendering terrain self-shadowing (horizon angle field based).
+/// This parameter is provided by the D3D9Client extension.
+/// \par Parameter type:
+///   bool
+#define CFGPRM_TERRAINHORIZONSHADOW 0x0027
+
 /// Bit flag for "planetarium mode" elements.
 /// For a description of the available bit flags, see \ref plnflag
 /// \par Parameter type:

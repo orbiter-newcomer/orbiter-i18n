@@ -262,6 +262,7 @@
 #define IDC_OPT_VIS_SPECULAR            1090
 #define IDC_OPT_VIS_LOCALLIGHT          1091
 #define IDC_OPT_VIS_AMBIENT             1092
+#define IDC_OPT_VIS_TERRSHADOW          1107
 #define IDC_OPT_PHYS_COMPLEXGRAV        1093
 #define IDC_OPT_PHYS_RPRESSURE          1094
 #define IDC_OPT_PHYS_DISTMASS           1095

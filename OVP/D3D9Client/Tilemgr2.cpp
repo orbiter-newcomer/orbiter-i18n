@@ -1081,6 +1081,7 @@ TileManager2Base::ConfigPrm TileManager2Base::cprm = {
 	false,				// bSpecular
 	false,				// bLights
 	false,              // bCloudShadow
+	true,               // bTerrainHorizonShadow
 	0.5                 // lightfac
 };
 oapi::D3D9Client* TileManager2Base::gc = NULL;
@@ -1142,6 +1143,7 @@ void TileManager2Base::GlobalInit (class oapi::D3D9Client *gclient)
 	cprm.bSpecular = *(bool*)gclient->GetConfigParam (CFGPRM_SURFACEREFLECT);
 	cprm.bLights = *(bool*)gclient->GetConfigParam (CFGPRM_SURFACELIGHTS);
 	cprm.bCloudShadow = *(bool*)gclient->GetConfigParam (CFGPRM_CLOUDSHADOWS);
+	cprm.bTerrainHorizonShadow = *(bool*)gclient->GetConfigParam (CFGPRM_TERRAINHORIZONSHADOW);
 	cprm.lightfac = *(double*)gclient->GetConfigParam (CFGPRM_SURFACELIGHTBRT);
 	cprm.elevMode = *(int*)gclient->GetConfigParam (CFGPRM_ELEVATIONMODE);
 	cprm.tileLoadFlags = Config->PlanetTileLoadFlags;

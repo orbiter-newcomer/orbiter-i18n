@@ -103,6 +103,7 @@ CFG_VISUALPRM CfgVisualPrm_default = {
 	true,		// bVesselShadows (generate vessel shadows)
 	true,		// bClouds (enable cloud layers)
 	false,		// bCloudShadows (no cloud shadows)
+	true,		// bTerrainHorizonShadow (terrain self-shadowing enabled)
 	true,		// bNightlights (enable city lights)
 	true,		// bWaterreflect (specular reflection from water surfaces)
 	false,		// bSpecularRipple (no ripple effects on water surfaces)
@@ -683,6 +684,7 @@ bool Config::Load(const char *fname)
 	GetBool (ifs, "EnableVesselShadows", CfgVisualPrm.bVesselShadows);
 	GetBool (ifs, "EnableClouds", CfgVisualPrm.bClouds);
 	GetBool (ifs, "EnableCloudShadows", CfgVisualPrm.bCloudShadows);
+	GetBool (ifs, "EnableTerrainHorizonShadow", CfgVisualPrm.bTerrainHorizonShadow);
 	GetBool (ifs, "EnableNightlights", CfgVisualPrm.bNightlights);
 	GetBool (ifs, "EnableWaterReflection", CfgVisualPrm.bWaterreflect);
 	GetBool (ifs, "EnableSpecularRipples", CfgVisualPrm.bSpecularRipple);
@@ -946,6 +948,8 @@ const void *Config::GetParam (DWORD paramtype) const
 		return (void*)&CfgVisualPrm.bClouds;
 	case CFGPRM_CLOUDSHADOWS:
 		return (void*)&CfgVisualPrm.bCloudShadows;
+	case CFGPRM_TERRAINHORIZONSHADOW:
+		return (void*)&CfgVisualPrm.bTerrainHorizonShadow;
 	case CFGPRM_PLANETARIUMFLAG:
 		return (void*)&CfgVisHelpPrm.flagPlanetarium;
 	case CFGPRM_SURFMARKERFLAG:
@@ -1079,6 +1083,8 @@ BOOL Config::Write (const char *fname) const
 			ofs << "EnableClouds = " << BoolStr (CfgVisualPrm.bClouds) << '\n';
 		if (CfgVisualPrm.bCloudShadows != CfgVisualPrm_default.bCloudShadows || bEchoAll)
 			ofs << "EnableCloudShadows = " << BoolStr (CfgVisualPrm.bCloudShadows) << '\n';
+		if (CfgVisualPrm.bTerrainHorizonShadow != CfgVisualPrm_default.bTerrainHorizonShadow || bEchoAll)
+			ofs << "EnableTerrainHorizonShadow = " << BoolStr (CfgVisualPrm.bTerrainHorizonShadow) << '\n';
 		if (CfgVisualPrm.bNightlights != CfgVisualPrm_default.bNightlights || bEchoAll)
 			ofs << "EnableNightlights = " << BoolStr (CfgVisualPrm.bNightlights) << '\n';
 		if (CfgVisualPrm.bWaterreflect != CfgVisualPrm_default.bWaterreflect || bEchoAll)

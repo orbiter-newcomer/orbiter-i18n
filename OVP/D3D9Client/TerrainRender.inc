@@ -1655,6 +1655,13 @@ void TerrainHorizon_RenderMask (TileManager2<SurfTile> *mgr, bool use_zbuf)
 		return;
 	}
 	if (!mgr) return;
+	// Master switch from the Launchpad video page ("Planetary effects" group);
+	// the D3D9Client.cfg TerrainHorizonShadow key can additionally disable the
+	// feature locally, both must be enabled.
+	if (!mgr->Cprm().bTerrainHorizonShadow) {
+		if (s_logState == 0) { s_logState = 6; oapiWriteLogV("TerrainHorizon: disabled by the Launchpad option"); }
+		return;
+	}
 	vPlanet *vp = mgr->GetPlanet();
 	if (!vp) { if (s_logState < 2) { s_logState = 2; oapiWriteLogV("TerrainHorizon: no camera planet"); } return; }
 	LPDIRECT3DDEVICE9 dev = mgr->Dev();
