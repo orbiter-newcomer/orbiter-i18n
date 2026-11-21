@@ -22,3 +22,17 @@ DLLEXPORT void oapiWreckReportNumericFailure (OBJHANDLE hVessel, double maxTemp,
 {
 	WreckReportNumericFailure ((Vessel*)hVessel, maxTemp, compartment);
 }
+
+// ---- vessel shadow rendering mode API (project extension) ----
+DLLEXPORT void oapiSetVesselShadowMode (OBJHANDLE hVessel, int mode)
+{
+	Body *body = (Body*)hVessel;
+	if (body && body->Type() == OBJTP_VESSEL) ((Vessel*)body)->SetShadowMode (mode);
+}
+
+DLLEXPORT int oapiGetVesselShadowMode (OBJHANDLE hVessel)
+{
+	Body *body = (Body*)hVessel;
+	if (body && body->Type() == OBJTP_VESSEL) return ((Vessel*)body)->GetShadowMode ();
+	return SHADOWMODE_DEFAULT;
+}
