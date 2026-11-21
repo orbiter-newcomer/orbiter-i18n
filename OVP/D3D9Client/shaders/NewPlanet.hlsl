@@ -1123,7 +1123,12 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	float3 polar = Const.vPolarAxis;
 	float3 north = polar - up * dot(polar, up);
 	north = normalize(north + float3(0.0f, 0.0f, 1e-5f));
-	float3 east = cross(north, up);
+	// Orbiter's planet local frame is (x, y=north pole, z): with
+	// P = (cosLat*cosLng, sinLat, cosLat*sinLng) the east direction
+	// (increasing longitude) is cross(up, north). Using cross(north, up) would
+	// give WEST, mirroring the sun azimuth and thus placing the shadows in the
+	// wrong azimuth.
+	float3 east = cross(up, north);
 
 	// Sun azimuth bin position (0 = north, increasing towards east)
 	float2 sunH = float2(dot(Const.toSun, east), dot(Const.toSun, north));
