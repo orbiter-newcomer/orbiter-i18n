@@ -866,7 +866,14 @@ int ElevationSampler::FindLevel (double lat, double lng, int lvlFrom)
 	for (int l = lvlFrom; l >= 4; l--) {
 		int ilat, ilng;
 		TileIdx(lat, lng, l, ilat, ilng);
-		if (treeElev->Idx(l, ilat, ilng) != (DWORD)-1) return l;
+		DWORD idx = treeElev->Idx(l, ilat, ilng);
+		if (idx == (DWORD)-1) continue;
+		// A node can exist in the tree but only carry child nodes (no elevation
+		// data of its own). Reading such a node fails; the old code then silently
+		// returned an elevation of 0 m, which produced bogus large horizon angles
+		// (and thus large dead-black shadow patches) in those areas.
+		if (treeElev->NodeSizeInflated(idx) == 0) continue;
+		return l;
 	}
 	return -1;
 }
@@ -893,25 +900,28 @@ float ElevationSampler::Sample (double lat, double lng, int lvl)
 	}
 
 	int level = FindLevel(lat, lng, lvl);
-	if (level < 0) return 0.0f;
-	int ilat, ilng;
-	TileIdx(lat, lng, level, ilat, ilng);
-	TileData *t = GetTile(level, ilat, ilng);
-	if (!t || !t->valid) return 0.0f;
-
-	const ELEVFILEHEADER &h = t->hdr;
-	double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
-	double v = (lat - h.latmin) / (h.latmax - h.latmin);
-	if (u < 0.0) u = 0.0; if (u > 1.0) u = 1.0;
-	if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
-	double fx = u * 256.0, fy = v * 256.0;
-	int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
-	int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
-	float ax = (float)(fx - ix), ay = (float)(fy - iy);
-	const float *d = t->data.data();
-	int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
-	float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
-	return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
+	while (level >= 4) {
+		int ilat, ilng;
+		TileIdx(lat, lng, level, ilat, ilng);
+		TileData *t = GetTile(level, ilat, ilng);
+		if (t && t->valid) {
+			const ELEVFILEHEADER &h = t->hdr;
+			double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
+			double v = (lat - h.latmin) / (h.latmax - h.latmin);
+			if (u < 0.0) u = 0.0; if (u > 1.0) u = 1.0;
+			if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+			double fx = u * 256.0, fy = v * 256.0;
+			int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
+			int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
+			float ax = (float)(fx - ix), ay = (float)(fy - iy);
+			const float *d = t->data.data();
+			int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
+			float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
+			return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
+		}
+		level--;
+	}
+	return 0.0f;
 }
 
 // ============================================================================
