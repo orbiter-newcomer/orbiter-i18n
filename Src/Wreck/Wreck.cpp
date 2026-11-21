@@ -173,7 +173,7 @@ void Wreck::GenerateRandomMesh ()
 	double rs[12];
 	double scale = 3.5;    // keeps the polyhedron span below 10 m (max vertex radius ~4.7 m)
 	for (int i = 0; i < 12; i++) {
-		double r = 0.65 + 0.7 * ((double)rand() / RAND_MAX);
+		double r = 0.65 + 0.7 * (oapiRand());
 		double l = sqrt (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
 		v[i][0] = v[i][0] / l * r;
 		v[i][1] = v[i][1] / l * r;
@@ -256,7 +256,6 @@ void Wreck::GenerateRandomMesh ()
 
 DLLCLBK void InitModule (HINSTANCE hModule)
 {
-	srand ((unsigned)GetTickCount ());
 }
 
 DLLCLBK void ExitModule (HINSTANCE hModule)

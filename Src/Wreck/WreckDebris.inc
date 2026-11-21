@@ -301,16 +301,16 @@ static Vector RelWreckScatterVelocity (const Vector &nrm, double vnImpact)
 {
 	Vector v (0, 0, 0);
 	// random scatter
-	Vector dir ( (double)rand()/RAND_MAX - 0.5,
-	             (double)rand()/RAND_MAX - 0.5,
-	             (double)rand()/RAND_MAX - 0.5 );
+	Vector dir ( oapiRand() - 0.5,
+	             oapiRand() - 0.5,
+	             oapiRand() - 0.5 );
 	if (dir.length () < 1e-6) dir = Vector (0, 1, 0);
 	v += dir.unit () * (REL_WRECK_SCATTER_MAX * ((double)rand ()/RAND_MAX));
 	// lateral splash (ground tangent plane)
 	if (vnImpact < 0.0) {
-		Vector tanDir ( (double)rand()/RAND_MAX - 0.5,
-		                (double)rand()/RAND_MAX - 0.5,
-		                (double)rand()/RAND_MAX - 0.5 );
+		Vector tanDir ( oapiRand() - 0.5,
+		                oapiRand() - 0.5,
+		                oapiRand() - 0.5 );
 		tanDir -= nrm * dotp (tanDir, nrm);
 		if (tanDir.length () > 1e-6) tanDir = tanDir.unit ();
 		else tanDir = Vector (1, 0, 0);
@@ -598,26 +598,6 @@ static void WreckProcessPending ()
 		}
 		g_focusDebrisOnSpawn = false;
 	}
-}
-
-
-// Called after the state-update phase: creating wreck vessels is only valid
-// outside the update loop.
-// Terrain normal (global frame) from the official surface-elevation API: the
-// returned normal is in the local horizon frame (x=east, y=up, z=north). It is
-// converted to the planet-fixed frame and then to the global frame.
-static Vector RelTerrainNormal (CelestialBody *cb, double lng, double lat)
-{
-	VECTOR3 nml;
-	nml.x = nml.y = nml.z = 0.0;
-	oapiSurfaceElevationEx ((OBJHANDLE)cb, lng, lat, 0, 0, &nml);
-	double slng = sin (lng), clng = cos (lng);
-	double slat = sin (lat), clat = cos (lat);
-	Vector n_pf (
-		-slng*nml.x + clat*clng*nml.y - slat*clng*nml.z,
-		           + slat*nml.y        + clat*nml.z,
-		 clng*nml.x + clat*slng*nml.y - slat*slng*nml.z);
-	return mul (cb->GRot (), n_pf);              // to global frame
 }
 
 
