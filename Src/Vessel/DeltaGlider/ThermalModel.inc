@@ -712,3 +712,462 @@ void CoolantLoop::ParseNodeTemperatures (const char *line)
 }
 
 // ==============================================================
+
+// ==============================================================
+// Thermal functions moved out of the official ThermalSubsys.cpp
+// (project extension). The official file only keeps the include hook
+// and the few parameter fixes that have to stay in place.
+// ==============================================================
+
+ThermalSubsystem::ThermalSubsystem (DeltaGlider *v)
+  : DGSubsystem (v)
+{
+	// Compartment masses are derived from the vessel's true empty mass in
+	// UpdateStructuralMasses() (project extension, ThermalSolver.inc). They must
+	// not be computed here: at construction time (inside the vessel module
+	// initialisation) the core vessel still holds the generic default empty mass.
+	InitCompartmentParams ();
+
+	// compartment heat capacity coefficients
+	cprm[SURFUPPERFUSELAGE].cp      = c_metal;
+	cprm[SURFLOWERFUSELAGE].cp      = c_ceramic;
+	cprm[SURFUPPERLEFTWING].cp      = c_metal;
+	cprm[SURFLOWERLEFTWING].cp      = c_ceramic;
+	cprm[SURFUPPERRIGHTWING].cp     = c_metal;
+	cprm[SURFLOWERRIGHTWING].cp     = c_ceramic;
+	cprm[INTERIORFUSELAGE].cp       = c_metal;
+	cprm[AVIONICS].cp               = c_metal;
+	cprm[CABIN].cp                  = c_air;
+	cprm[PROPELLANT_LEFTWING].cp    = c_propellant;
+	cprm[PROPELLANT_RIGHTWING].cp   = c_propellant;
+	cprm[PROPELLANT_MAIN].cp        = c_propellant;
+	cprm[RADIATOR].cp               = c_radiator;
+
+	// thermal parameter state defaults - overwritten by scenario
+	for (Compartment c = SURFUPPERFUSELAGE; c <= RADIATOR; c = (Compartment)(c+1))
+		cprm[c].T = 293.0;
+	cprm[PROPELLANT_LEFTWING].T = 240.0;
+	cprm[PROPELLANT_RIGHTWING].T = 240.0;
+	cprm[PROPELLANT_MAIN].T = 240.0;
+	cprm[AVIONICS].T = 500.0;
+
+	// structural equivalent thermal masses of the dynamically loaded compartments
+	// are computed in UpdateStructuralMasses() (from the vessel's true empty mass)
+
+	eps = 0.7;
+	sr_updt = -1e10;
+
+	hSun = NULL;
+	hSunRef = NULL;
+	Spos = _V(0, 0, 0);
+
+	bNumericFailureReported = false;
+
+	// create component instances
+	AddSubsystem (coolantloop = new CoolantLoop (this));
+	AddSubsystem (radiatorctrl = new RadiatorControl (this));
+}
+
+void ThermalSubsystem::clbkPreStep (double simt, double simdt, double mjd)
+{
+	if (!simdt) return; // sanity check
+	// thermal state update (explicit / half-implicit, project extension)
+	UpdateThermalStep (simt, simdt, mjd);
+}
+
+bool ThermalSubsystem::clbkParseScenarioLine (const char *line)
+{
+	if (!_strnicmp(line, "COMPARTMENT_TEMP", 16)) {
+		sscanf(line+16, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+			&cprm[0].T, &cprm[1].T, &cprm[2].T, &cprm[3].T, &cprm[4].T, &cprm[5].T,
+			&cprm[6].T, &cprm[7].T, &cprm[8].T, &cprm[9].T, &cprm[10].T, &cprm[11].T,
+			&cprm[12].T);
+		return true;
+	}
+	return DGSubsystem::clbkParseScenarioLine (line);
+}
+
+double ThermalSubsystem::SolarRadiation(VECTOR3 *sdir)
+{
+	// distance from the sun (relative to its actual global position)
+	VECTOR3 Vpos, Vrel;
+	DG()->GetGlobalPos(Vpos);
+	Vrel = Vpos - Spos;
+	double vdist = length(Vrel);
+	double srad = (hSun ? oapiGetSize(hSun) : 0.0);
+	if (vdist < srad) vdist = srad;   // inside the sun: surface flux (physical bound)
+
+	// Check if we are in the shadow of the closest celestial bodies
+	OBJHANDLE hObj = DG()->GetSurfaceRef();
+	while (hObj && oapiGetObjectType(hObj) == OBJTP_PLANET) {
+		VECTOR3 Ppos, Prel;
+		double prad = oapiGetSize(hObj);
+		oapiGetGlobalPos(hObj, &Ppos);
+		Prel = Ppos - Spos;
+		double pdist = length(Prel);
+		if (vdist > pdist) {
+			double d = length(crossp(Prel, Ppos-Vpos))/vdist;
+			if (d < prad) return 0.0;
+		}
+		hObj = oapiGetGbodyParent(hObj);
+	}
+	if (sdir) {
+		MATRIX3 Vrot;
+		DG()->GetRotationMatrix(Vrot);
+		*sdir = tmul(Vrot, Vrel / -vdist);
+	}
+	const double Hsun = 62499432.6; // solar surface flux [W/m^2] (sigma * T_sun^4)
+	return Hsun * (srad*srad)/(vdist*vdist);
+}
+
+double ThermalSubsystem::PlanetRadiation(VECTOR3 *pdir)
+{
+	OBJHANDLE hObj = DG()->GetSurfaceRef();
+	if (!hObj) return 0.0;
+
+	VECTOR3 Ppos, Vpos, rel;
+	double prad = oapiGetSize(hObj);
+	oapiGetGlobalPos(hObj, &Ppos);
+	DG()->GetGlobalPos(Vpos);
+	rel = Ppos - Vpos;
+	double pdist = length(rel);
+	if (pdist < prad) pdist = prad;   // inside the body: surface value (physical bound)
+	if (pdir) {
+		// The irradiance functions interpret their direction argument in the
+		// vessel frame (the sun direction is converted the same way in
+		// SolarRadiation). Convert the planet direction from global to vessel frame.
+		MATRIX3 Vrot;
+		DG()->GetRotationMatrix(Vrot);
+		*pdir = tmul(Vrot, rel/pdist);
+	}
+	double alt_ratio = prad/pdist;
+	const double Hplanet = 237.0; // W/m^2; only true for Earth
+	return Hplanet * (alt_ratio*alt_ratio);
+}
+
+void ThermalSubsystem::AddAlbedoReflection (double rPower, const VECTOR3 &dir, double *compartmentQ) const
+{
+	const double albedo = 0.3;  // for now
+
+	VECTOR3 Ppos, Vpos, rel, toSun;
+	OBJHANDLE hObj = DG()->GetSurfaceRef();
+	oapiGetGlobalPos(hObj, &Ppos);
+	DG()->GetGlobalPos(Vpos);
+	double prad = oapiGetSize(hObj);
+	rel = Vpos - Ppos;
+	double d = length(rel);
+	if (d < prad) d = prad;   // inside the body: surface value (physical bound)
+	toSun = Spos - Ppos;      // planet -> sun direction (actual sun position)
+	if (length(toSun) < 1e-3) return;
+	double cosphi = dotp(rel/d, unit(toSun));
+	if (cosphi < 0.0) cosphi = 0.0;
+	double irelalt = prad/d;
+	rPower *= albedo * irelalt*irelalt * cosphi;
+	AddIrradiance (rPower, dir, compartmentQ);
+}
+
+void ThermalSubsystem::AtmosphericConvection (double *compartmentQ)
+{
+	double dq;
+	dq = (cprm[SURFLOWERFUSELAGE].T - atm_T) * k_convect * atm_p * Ay_fuselage;
+	compartmentQ[SURFLOWERFUSELAGE] -= dq;
+	dq = (cprm[SURFUPPERFUSELAGE].T - atm_T) * k_convect * atm_p * (Ay_fuselage + 2.0*Ax_fuselage + 2.0*Az_fuselage);
+	compartmentQ[SURFUPPERFUSELAGE] -= dq;
+	dq = (cprm[SURFUPPERLEFTWING].T - atm_T) * k_convect * atm_p * Ay_wing;
+	compartmentQ[SURFUPPERLEFTWING] -= dq;
+	dq = (cprm[SURFLOWERLEFTWING].T - atm_T) * k_convect * atm_p * Ay_wing;
+	compartmentQ[SURFLOWERLEFTWING] -= dq;
+	dq = (cprm[SURFUPPERRIGHTWING].T - atm_T) * k_convect * atm_p * Ay_wing;
+	compartmentQ[SURFUPPERRIGHTWING] -= dq;
+	dq = (cprm[SURFLOWERRIGHTWING].T - atm_T) * k_convect * atm_p * Ay_wing;
+	compartmentQ[SURFLOWERRIGHTWING] -= dq;
+	
+	double rstate = RadiatorState().State();
+	if (rstate) {
+		static double A_radiator = A_radiatorpanel2 + 4.0*A_radiatorpanel1;
+		dq = (cprm[RADIATOR].T - atm_T) * k_convect * atm_p * A_radiator;
+		compartmentQ[RADIATOR] -= dq;
+	}
+
+	const PressureSubsystem *pssys = DG()->SubsysPressure();
+	if (pssys->HatchState().IsOpen() || (pssys->OLockState().IsOpen() && pssys->ILockState().IsOpen())) {
+		dq = (cprm[CABIN].T - atm_T) * k_convect * atm_p * cprm[CABIN].mass_air;
+		compartmentQ[CABIN] -= dq;
+	}
+}
+
+void ThermalSubsystem::HeatConduction (double *compartmentQ) const
+{
+	double q;
+
+	//   left wing surface <--> left wing tank
+	if (cprm[PROPELLANT_LEFTWING].mass) {
+		q = (cprm[SURFUPPERLEFTWING].T - cprm[PROPELLANT_LEFTWING].T) * k_upper * Ay_wing;
+		compartmentQ[SURFUPPERLEFTWING] -= q;   compartmentQ[PROPELLANT_LEFTWING] += q;
+		q = (cprm[SURFLOWERLEFTWING].T - cprm[PROPELLANT_LEFTWING].T) * k_lower * Ay_wing;
+		compartmentQ[SURFLOWERLEFTWING] -= q;   compartmentQ[PROPELLANT_LEFTWING] += q;
+	}
+	//   right wing surface <--> right wing tank
+	if (cprm[PROPELLANT_RIGHTWING].mass) {
+		q = (cprm[SURFUPPERRIGHTWING].T - cprm[PROPELLANT_RIGHTWING].T) * k_upper * Ay_wing;
+		compartmentQ[SURFUPPERRIGHTWING] -= q;   compartmentQ[PROPELLANT_RIGHTWING] += q;
+		q = (cprm[SURFLOWERRIGHTWING].T - cprm[PROPELLANT_RIGHTWING].T) * k_lower * Ay_wing;
+		compartmentQ[SURFLOWERRIGHTWING] -= q;   compartmentQ[PROPELLANT_RIGHTWING] += q;
+	}
+	// fuselage surface <--> fuselage interior
+	q = (cprm[SURFUPPERFUSELAGE].T - cprm[INTERIORFUSELAGE].T) * k_upper * (Ax_fuselage*2.0 + Ay_fuselage + Az_fuselage*2.0);
+	compartmentQ[SURFUPPERFUSELAGE] -= q;   compartmentQ[INTERIORFUSELAGE] += q;
+	q = (cprm[SURFLOWERFUSELAGE].T - cprm[INTERIORFUSELAGE].T) * k_lower * Ay_fuselage;
+	compartmentQ[SURFLOWERFUSELAGE] -= q;   compartmentQ[INTERIORFUSELAGE] += q;
+	// fuselage <--> wings
+	q = (cprm[SURFUPPERFUSELAGE].T - cprm[SURFUPPERLEFTWING].T) * k_upper * 3.0;
+	compartmentQ[SURFUPPERFUSELAGE] -= q;   compartmentQ[SURFUPPERLEFTWING] += q;
+	q = (cprm[SURFUPPERFUSELAGE].T - cprm[SURFUPPERRIGHTWING].T) * k_upper * 3.0;
+	compartmentQ[SURFUPPERFUSELAGE] -= q;   compartmentQ[SURFUPPERRIGHTWING] += q;
+	q = (cprm[SURFLOWERFUSELAGE].T - cprm[SURFLOWERLEFTWING].T) * k_lower * 3.0;
+	compartmentQ[SURFLOWERFUSELAGE] -= q;   compartmentQ[SURFLOWERLEFTWING] += q;
+	q = (cprm[SURFLOWERFUSELAGE].T - cprm[SURFLOWERRIGHTWING].T) * k_lower * 3.0;
+	compartmentQ[SURFLOWERFUSELAGE] -= q;   compartmentQ[SURFLOWERRIGHTWING] += q;
+	// fuselage interior <--> interior tank
+	if (cprm[PROPELLANT_MAIN].mass) {
+		q = (cprm[INTERIORFUSELAGE].T - cprm[PROPELLANT_MAIN].T) * k_upper * A_maintank;
+		compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[PROPELLANT_MAIN] += q;
+	}
+	// fuselage interior <--> cabin
+	q = (cprm[INTERIORFUSELAGE].T - cprm[CABIN].T) * k_cabin * A_cabin * cprm[CABIN].mass_air;
+	compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[CABIN] += q;
+	// fuselage interior <--> avionics
+	q = (cprm[INTERIORFUSELAGE].T - cprm[AVIONICS].T) * k_upper * A_avionics;
+	compartmentQ[INTERIORFUSELAGE] -= q;   compartmentQ[AVIONICS] += q;
+	// cabin <--> avionics
+	q = (cprm[CABIN].T - cprm[AVIONICS].T) * k_cabin * A_avionics * cprm[CABIN].mass_air;
+	compartmentQ[CABIN] -= q;   compartmentQ[AVIONICS] += q;
+	// radiator <--> fuselage exterior
+	double rstate = RadiatorState().State();
+	if (!rstate) {
+		q = (cprm[RADIATOR].T - cprm[SURFUPPERFUSELAGE].T) * 0.02 * A_radiatorpanel2;
+		compartmentQ[RADIATOR] -= q;   compartmentQ[SURFUPPERFUSELAGE] += q;
+	}
+}
+
+CoolantLoop::CoolantLoop (ThermalSubsystem *_subsys)
+  : DGSubsystem(_subsys), ssys_th(_subsys), nnode(12)
+{
+	extern GDIParams g_Param;
+
+	bPumpActive = false;
+	ELID_PUMPSWITCH = AddElement (psw = new CoolantPumpSwitch (this));
+	ELID_PUMPDIAL = AddElement (pdial = new CoolantPumpDial (this));
+	ELID_REFTEMPDIAL = AddElement (tdial = new CoolantReftempDial (this));
+	ELID_DISPLAY = AddElement (disp = new CoolantLoopDisplay (this, g_Param.surf));
+
+	// pump dial animation
+	static UINT PumpDialGrp = GRP_COOLING_PUMP_DIAL_VC;
+	static MGROUP_ROTATE PumpDialTransform (1, &PumpDialGrp, 1,
+		VC_COOLING_PUMP_DIAL_ref, VC_COOLING_PUMP_DIAL_axis, (float)(-280*RAD));
+	anim_vc_pumpdial = DG()->CreateAnimation (0.5);
+	DG()->AddAnimationComponent (anim_vc_pumpdial, 0, 1, &PumpDialTransform);
+
+	// reference temperature dial animation
+	static UINT ReftempDialGrp = GRP_COOLING_REFTEMP_DIAL_VC;
+	static MGROUP_ROTATE ReftempDialTransform (1, &ReftempDialGrp, 1,
+		VC_COOLING_REFTEMP_DIAL_ref, VC_COOLING_REFTEMP_DIAL_axis, (float)(-280*RAD));
+	anim_vc_reftempdial = DG()->CreateAnimation (0.5);
+	DG()->AddAnimationComponent (anim_vc_reftempdial, 0, 1, &ReftempDialTransform);
+
+	// configure connections
+	node[PUMP].nodetype = NodeParam::PUMP;
+	node[PUMP].upstream[0] = &node[EXCHANGER_AVIONICSCOLDPLATE];
+	node[PUMP].dnstream[0] = &node[SPLITTER_HEATSINKBYPASS];
+	node[PUMP].pumprate = 0.0;
+
+	node[SPLITTER_HEATSINKBYPASS].nodetype = NodeParam::SPLITTER;
+	node[SPLITTER_HEATSINKBYPASS].upstream[0] = &node[PUMP];
+	node[SPLITTER_HEATSINKBYPASS].dnstream[0] = &node[EXCHANGER_RADIATOR];
+	node[SPLITTER_HEATSINKBYPASS].dnstream[1] = &node[MERGER_HEATSINKBYPASS];
+	node[SPLITTER_HEATSINKBYPASS].split = 1.0;
+
+	node[EXCHANGER_RADIATOR].nodetype = NodeParam::EXCHANGER;
+	node[EXCHANGER_RADIATOR].upstream[0] = &node[SPLITTER_HEATSINKBYPASS];
+	node[EXCHANGER_RADIATOR].dnstream[0] = &node[SPLITTER_WINGBYPASS];
+	node[EXCHANGER_RADIATOR].cprm = &ssys_th->cprm[ThermalSubsystem::RADIATOR];
+	node[EXCHANGER_RADIATOR].k = 300.0;
+
+	node[SPLITTER_WINGBYPASS].nodetype = NodeParam::SPLITTER;
+	node[SPLITTER_WINGBYPASS].upstream[0] = &node[EXCHANGER_RADIATOR];
+	node[SPLITTER_WINGBYPASS].dnstream[0] = &node[SPLITTER_WINGDISTRIBUTE];
+	node[SPLITTER_WINGBYPASS].dnstream[1] = &node[MERGER_WINGBYPASS];
+	node[SPLITTER_WINGBYPASS].split = 1.0;
+
+	node[SPLITTER_WINGDISTRIBUTE].nodetype = NodeParam::SPLITTER;
+	node[SPLITTER_WINGDISTRIBUTE].upstream[0] = &node[SPLITTER_WINGBYPASS];
+	node[SPLITTER_WINGDISTRIBUTE].dnstream[0] = &node[EXCHANGER_PROPLWING];
+	node[SPLITTER_WINGDISTRIBUTE].dnstream[1] = &node[EXCHANGER_PROPRWING];
+	node[SPLITTER_WINGDISTRIBUTE].split = 0.5;
+
+	node[EXCHANGER_PROPLWING].nodetype = NodeParam::EXCHANGER;
+	node[EXCHANGER_PROPLWING].upstream[0] = &node[SPLITTER_WINGDISTRIBUTE];
+	node[EXCHANGER_PROPLWING].dnstream[0] = &node[MERGER_WINGDISTRIBUTE];
+	node[EXCHANGER_PROPLWING].cprm = &ssys_th->cprm[ThermalSubsystem::PROPELLANT_LEFTWING];
+	node[EXCHANGER_PROPLWING].k = 40.0;
+
+	node[EXCHANGER_PROPRWING].nodetype = NodeParam::EXCHANGER;
+	node[EXCHANGER_PROPRWING].upstream[0] = &node[SPLITTER_WINGDISTRIBUTE];
+	node[EXCHANGER_PROPRWING].dnstream[0] = &node[MERGER_WINGDISTRIBUTE];
+	node[EXCHANGER_PROPRWING].cprm = &ssys_th->cprm[ThermalSubsystem::PROPELLANT_RIGHTWING];
+	node[EXCHANGER_PROPRWING].k = 40.0;
+
+	node[MERGER_WINGDISTRIBUTE].nodetype = NodeParam::MERGER;
+	node[MERGER_WINGDISTRIBUTE].upstream[0] = &node[EXCHANGER_PROPLWING];
+	node[MERGER_WINGDISTRIBUTE].upstream[1] = &node[EXCHANGER_PROPRWING];
+	node[MERGER_WINGDISTRIBUTE].dnstream[0] = &node[MERGER_WINGBYPASS];
+
+	node[MERGER_WINGBYPASS].nodetype = NodeParam::MERGER;
+	node[MERGER_WINGBYPASS].upstream[0] = &node[MERGER_WINGDISTRIBUTE];
+	node[MERGER_WINGBYPASS].upstream[1] = &node[SPLITTER_WINGBYPASS];
+	node[MERGER_WINGBYPASS].dnstream[0] = &node[MERGER_HEATSINKBYPASS];
+
+	node[MERGER_HEATSINKBYPASS].nodetype = NodeParam::MERGER;
+	node[MERGER_HEATSINKBYPASS].upstream[0] = &node[MERGER_WINGBYPASS];
+	node[MERGER_HEATSINKBYPASS].upstream[1] = &node[SPLITTER_HEATSINKBYPASS];
+	node[MERGER_HEATSINKBYPASS].dnstream[0] = &node[EXCHANGER_CABIN];
+
+	node[EXCHANGER_CABIN].nodetype = NodeParam::EXCHANGER;
+	node[EXCHANGER_CABIN].upstream[0] = &node[MERGER_HEATSINKBYPASS];
+	node[EXCHANGER_CABIN].dnstream[0] = &node[EXCHANGER_AVIONICSCOLDPLATE];
+	node[EXCHANGER_CABIN].cprm = &ssys_th->cprm[ThermalSubsystem::CABIN];
+	node[EXCHANGER_CABIN].k = 100.0;
+
+	node[EXCHANGER_AVIONICSCOLDPLATE].nodetype = NodeParam::EXCHANGER;
+	node[EXCHANGER_AVIONICSCOLDPLATE].upstream[0] = &node[EXCHANGER_CABIN];
+	node[EXCHANGER_AVIONICSCOLDPLATE].dnstream[0] = &node[PUMP];
+	node[EXCHANGER_AVIONICSCOLDPLATE].cprm = &ssys_th->cprm[ThermalSubsystem::AVIONICS];
+	node[EXCHANGER_AVIONICSCOLDPLATE].k = 120.0;
+
+	// default propellant temperature
+	for (int i = 0; i < nnode; i++) {
+		node[i].T0 = node[i].T1 = 293.0;
+		node[i].Q = 0.0;
+	}
+
+	Tref_tgt = 287.0;
+	pumprate = 0.5;
+}
+
+void CoolantLoop::SetPumprate (double rate)
+{
+	// clamp to the valid range (also guards against malformed scenario values)
+	pumprate = max (0.0, min (1.0, rate));
+	if (bPumpActive) node[PUMP].pumprate = pumprate;
+	DG()->SetAnimation (anim_vc_pumpdial, pumprate*1.0);
+	disp->Refresh();
+}
+
+void CoolantLoop::SetReftemp (double temp)
+{
+	// clamp to the valid range (also guards against malformed scenario values)
+	Tref_tgt = max (282.0, min (292.0, temp));
+	DG()->SetAnimation (anim_vc_reftempdial, (Tref_tgt-282.0)*0.1);
+	disp->Refresh();
+}
+
+void CoolantLoop::clbkPreStep (double simt, double simdt, double mjd)
+{
+	// update the loop for the current step (project extension: explicit update)
+	UpdateExplicit (simdt);
+}
+
+void CoolantLoop::clbkSaveState (FILEHANDLE scn)
+{
+	char cbuf[1024];
+	sprintf (cbuf, "%d %0.3lf %0.3lf", bPumpActive ? 1:0, pumprate, Tref_tgt);
+	oapiWriteScenario_string (scn, (char*)"COOLANT_STATE", cbuf);
+	// node temperatures (entry/exit of each loop node: project extension)
+	SaveNodeTemperatures (scn);
+	DGSubsystem::clbkSaveState (scn);
+}
+
+bool CoolantLoop::clbkParseScenarioLine (const char *line)
+{
+	if (!_strnicmp(line, "COOLANT_STATE", 13)) {
+		int pump = 0;
+		double rate = pumprate, temp = Tref_tgt;
+		int got = sscanf (line+13, "%d%lf%lf", &pump, &rate, &temp);
+		if (got >= 1) ActivatePump (pump != 0);
+		if (got >= 2) SetPumprate (rate);
+		if (got >= 3) SetReftemp (temp);
+		return true;
+	}
+	if (!_strnicmp(line, "COOLANT_NODES", 13)) {
+		// optional node temperatures (project extension); missing values keep the
+		// defaults (293 K)
+		ParseNodeTemperatures (line);
+		return true;
+	}
+	return DGSubsystem::clbkParseScenarioLine (line);
+}
+
+void CoolantLoop::NodeParam::Update (double simdt)
+{
+	Q = 0.0;
+	switch (nodetype) {
+	case PUMP:
+	case SPLITTER:
+		if (upstream[0]->Flowrate(this))
+			T0 = T1 = upstream[0]->T1;
+		break;
+	case MERGER: {
+		double flow0 = upstream[0]->Flowrate(this);
+		double flow1 = upstream[1]->Flowrate(this);
+		double flow = flow0 + flow1;
+		if (flow)
+			T0 = T1 = (upstream[0]->T1*flow0 + upstream[1]->T1*flow1)/flow;
+		}
+		break;
+	case EXCHANGER:
+		if (cprm) {
+			double T = cprm->T; // reservoir temperature
+			double flowrate = Flowrate(this);
+			if (flowrate) {
+				T0 = upstream[0]->T1;
+				double efficiency = flowrate*cp;   // transfer efficiency
+				double dTrel = exp(-k/efficiency); // 0: T1=T(reservoir); 1: T1=T0
+				T1 = T + dTrel*(T0-T);             // coolant exit temp
+				double q = (T1-T0)*efficiency;     // heat flow from reservoir into coolant [W]
+				Q = q;
+				// Update the reservoir temperature. In the quasi-static path (simdt==0)
+				// the reservoir temperature is left to the equilibrium solver. The
+				// mass guard prevents a division by zero if a compartment has no mass
+				// (empty tank, vacuum cabin) - the structural equivalent masses make
+				// this a safety net for future changes.
+				if (simdt != 0.0 && cprm->mass > 1e-9)
+					cprm->T -= q * simdt / (cprm->mass * cprm->cp);
+			} else {
+				// no flow: no heat exchange; keep the previous node temperatures
+			}
+		}
+		break;
+	}
+}
+
+CoolantLoopDisplay::CoolantLoopDisplay (CoolantLoop *comp, SURFHANDLE blitsrc)
+: PanelElement(comp->DG()), component(comp), bsrc(blitsrc)
+{
+	btgt = 0;
+	upt = 0.0;
+	// initialise the readout cache (the 2D panel path does not call ResetVC)
+	for (int i = 0; i < 15; i++)
+		for (int j = 0; j < 8; j++)
+			label[i][j] = ' ';
+}
+
+bool RadiatorSwitch::ProcessMouseVC (int event, VECTOR3 &p)
+{
+	if (DGSwitch1::ProcessMouseVC (event, p)) {
+		if (GetState() == DGSwitch1::UP) component->OpenRadiator();
+		else                             component->CloseRadiator();
+		return true;
+	}
+	return false;
+}
+
