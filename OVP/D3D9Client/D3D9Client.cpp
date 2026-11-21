@@ -29,6 +29,7 @@
 #include "Surfmgr2.h"
 // terrain rendering features (load wait etc.): TerrainRender.inc (project extension)
 #define TERRAINRENDER_LOADWAIT
+#define TERRAINRENDER_HORIZON
 #include "TerrainRender.inc"
 #include "PerfStats.inc"         // feature hook: frame profiler (PerfStats.h/.inc)
 #include "Mesh.h"
@@ -882,6 +883,10 @@ void D3D9Client::clbkCloseSession(bool fastclose)
 	// Disable rendering and some other systems
 	//
 	bRunning = false;
+
+	// Terrain horizon self shadowing overlay: stop the bake worker threads and
+	// release the device resources while the device is still alive.
+	TerrainHorizon_Exit();
 
 	// At first, shutdown tile loaders -------------------------------------------------------
 	//

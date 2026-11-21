@@ -98,6 +98,17 @@ void D3D9Config::Reset ()
 	TerrainElevMinLevel = 10;
 	TerrainElevSkipAlt = 50000;
 	TerrainLoadThreads = 1;
+	TerrainHorizonShadow = 1;
+	TerrainHorizonDebug = 1;
+	TerrainHorizonFieldSize = 32;
+	TerrainHorizonDirs = 16;
+	TerrainHorizonRangeKm = 300;
+	TerrainHorizonStrength = 100;
+	TerrainHorizonThreads = 1;
+	TerrainHorizonCacheMB = 64;
+	TerrainHorizonMaxAlt = 50000;
+	TerrainHorizonMinLevel = 4;
+	TerrainHorizonUpdate = 4;
 	LabelDisplayFlags	= LABEL_DISPLAY_RECORD | LABEL_DISPLAY_REPLAY;
 	CloudMicro			= 1;
 	GDIOverlay			= 0;
@@ -185,6 +196,17 @@ bool D3D9Config::ReadParams ()
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevMinLevel", i))	TerrainElevMinLevel = max(0, min(20, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainElevSkipAlt", i))	TerrainElevSkipAlt = max(0, min(1000000, i));
 	if (oapiReadItem_int   (hFile, (char*)"TerrainLoadThreads", i))	TerrainLoadThreads = max(1, min(4, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonShadow", i))		TerrainHorizonShadow = max(0, min(1, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonDebug", i))			TerrainHorizonDebug = max(0, min(2, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonFieldSize", i))	TerrainHorizonFieldSize = max(16, min(128, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonDirs", i))			TerrainHorizonDirs = max(8, min(32, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonRangeKm", i))		TerrainHorizonRangeKm = max(50, min(500, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonStrength", i))		TerrainHorizonStrength = max(0, min(100, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonThreads", i))		TerrainHorizonThreads = max(1, min(3, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonCacheMB", i))		TerrainHorizonCacheMB = max(8, min(512, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonMaxAlt", i))		TerrainHorizonMaxAlt = max(0, min(1000000, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonMinLevel", i))		TerrainHorizonMinLevel = max(0, min(20, i));
+	if (oapiReadItem_int   (hFile, (char*)"TerrainHorizonUpdate", i))		TerrainHorizonUpdate = max(1, min(16, i));
 
 	if (oapiReadItem_int   (hFile, (char*)"EnableMeshDbg", i))			EnableMeshDbg = max(0, min(1, i));
 	if (oapiReadItem_int   (hFile, (char*)"TileMipmaps", i))			TileMipmaps = max(0, min(2, i));
@@ -290,6 +312,17 @@ void D3D9Config::WriteParams ()
 	oapiWriteItem_int   (hFile, (char*)"TerrainElevMinLevel", TerrainElevMinLevel);
 	oapiWriteItem_int   (hFile, (char*)"TerrainElevSkipAlt", TerrainElevSkipAlt);
 	oapiWriteItem_int   (hFile, (char*)"TerrainLoadThreads", TerrainLoadThreads);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonShadow", TerrainHorizonShadow);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonDebug", TerrainHorizonDebug);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonFieldSize", TerrainHorizonFieldSize);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonDirs", TerrainHorizonDirs);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonRangeKm", TerrainHorizonRangeKm);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonStrength", TerrainHorizonStrength);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonThreads", TerrainHorizonThreads);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonCacheMB", TerrainHorizonCacheMB);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonMaxAlt", TerrainHorizonMaxAlt);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonMinLevel", TerrainHorizonMinLevel);
+	oapiWriteItem_int   (hFile, (char*)"TerrainHorizonUpdate", TerrainHorizonUpdate);
 
 	oapiWriteItem_int   (hFile, (char*)"EnableGlass", EnableGlass);
 	oapiWriteItem_int   (hFile, (char*)"EnableMeshDbg", EnableMeshDbg);

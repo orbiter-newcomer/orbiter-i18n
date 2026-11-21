@@ -23,3 +23,19 @@ public:
 public:
 	int  RelCacheEnabled;			///< Relativity render cache: skip the cubemap/composite rendering when the input parameters are unchanged (0=off, 1=on, default=1)
 
+public:
+	// Terrain self shadowing via horizon angle field overlay (see TerrainRender.inc,
+	// part TERRAINRENDER_HORIZON). The overlay is a second terrain pass that
+	// multiplies the sun visibility of each terrain pixel (0=shadow, 1=lit).
+	int TerrainHorizonShadow;		///< Enable terrain horizon field self shadowing overlay (0=off, 1=on, default=1)
+	int TerrainHorizonDebug;		///< Debug view: 0=off, 1=sun visibility red(dark)/yellow(lit) + tile grid, 2=horizon angle field, default=1
+	int TerrainHorizonFieldSize;	///< Horizon field resolution per tile edge (16...128, default 32)
+	int TerrainHorizonDirs;			///< Number of horizon azimuth directions (8...32, default 16)
+	int TerrainHorizonRangeKm;		///< Maximum horizon search distance \[km\] (50...500, default 300)
+	int TerrainHorizonStrength;		///< Shadow strength \[%\] (0...100, default 100)
+	int TerrainHorizonThreads;		///< Bake worker threads (1...3, default 1)
+	int TerrainHorizonCacheMB;		///< Horizon texture cache budget \[MB\] (8...512, default 64)
+	int TerrainHorizonMaxAlt;		///< Camera altitude above which the overlay is disabled \[m\] (default 50000)
+	int TerrainHorizonMinLevel;		///< Only bake tiles at this LOD level or finer (default 4)
+	int TerrainHorizonUpdate;		///< Tile requirement scan interval \[frames\] (1...16, default 4)
+

@@ -1,20 +1,37 @@
-// ============================================================================
-// TerrainRender.inc (D3D9Client)
-//
-// Terrain-rendering features kept outside the official sources. The file is
-// included by the official .cpp files at the hook points; a compile-time
-// selector decides which part belongs to which translation unit:
-//
-//   Surfmgr2.cpp  : #define TERRAINRENDER_SURF     -> tile LOD morph / fade
-//   Tilemgr2.cpp  : #define TERRAINRENDER_TILES    -> LOD counter / fade bookkeeping
-//   D3D9Client.cpp: #define TERRAINRENDER_LOADWAIT -> terrain load wait state machine
-//
-// The official shadow systems are used unchanged (Scene::RenderShadowMap and
-// the projected ground shadow in VVessel.cpp/VBase.cpp). The fork-specific
-// unified scene shadow (G1) has been removed.
-// ============================================================================
+// ============================================================================
+// TerrainRender.inc (D3D9Client)
+//
+// Terrain-rendering features kept outside the official sources. The file is
+// included by the official .cpp files at the hook points; a compile-time
+// selector decides which part belongs to which translation unit:
+//
+//   Surfmgr2.cpp  : #define TERRAINRENDER_SURF     -> tile LOD morph / fade
+//   Tilemgr2.cpp  : #define TERRAINRENDER_TILES    -> LOD counter / fade bookkeeping
+//   D3D9Client.cpp: #define TERRAINRENDER_LOADWAIT -> terrain load wait state machine
+//
+// The official shadow systems are used unchanged (Scene::RenderShadowMap and
+// the projected ground shadow in VVessel.cpp/VBase.cpp). The fork-specific
+// unified scene shadow (G1) has been removed.
+// ============================================================================
 #ifndef D3D9CLIENT_TERRAINRENDER_INC
 #define D3D9CLIENT_TERRAINRENDER_INC
+
+
+// ----------------------------------------------------------------------------
+// Terrain self shadowing overlay (horizon angle field).
+//
+// The implementation lives in the D3D9Client translation unit (part
+// TERRAINRENDER_HORIZON below). The terrain tile manager calls the mask pass
+// after the terrain has been rendered; the client calls TerrainHorizon_Exit()
+// when the simulation/session is closed (device resources must be released
+// while the device is still alive).
+// ----------------------------------------------------------------------------
+class SurfTile;
+class vPlanet;
+template<class T> class TileManager2;
+
+void TerrainHorizon_RenderMask (TileManager2<SurfTile> *mgr, bool use_zbuf);
+void TerrainHorizon_Exit ();
 
 
 
@@ -495,5 +512,1175 @@ void D3D9Client::DrawTerrainLoadWaitLabel ()
 }
 
 #endif // TERRAINRENDER_LOADWAIT
+
+// ============================================================================
+// PART: HORIZON - terrain self shadowing via horizon angle field (D3D9Client.cpp)
+//
+// Terrain self shadowing ("mountain shadows") computed analytically instead of
+// with a shadow map:
+//
+//  1. For every rendered terrain tile a per-tile "horizon field" is baked on
+//     worker threads: for R x R field points the terrain horizon elevation
+//     angle is computed in K azimuth directions (max over distance, including
+//     the planetary curvature drop d^2/(2R)). The data is sun independent.
+//  2. In the renderer the field is uploaded to a small R32F texture
+//     (width R, height R*K) and applied in a second terrain pass as a
+//     multiplicative "sun visibility mask": the sun altitude above the local
+//     horizontal plane at each pixel is compared with the horizon angle for the
+//     pixel's sun azimuth. The pass is independent of the official shadow
+//     systems (the official near field shadow map and the projected vessel
+//     shadows are used unchanged).
+//
+// Config: TerrainHorizon* (see TerrainRenderMembers_D3D9Config.inc).
+// Debug: TerrainHorizonDebug = 1 -> red/yellow sun visibility map + tile grid,
+//        2 -> horizon angle field. Blue = no horizon field (not baked yet).
+// ============================================================================
+#if defined(TERRAINRENDER_HORIZON)
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <deque>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include "Spherepatch.h"	// VBMESH
+#include "Log.h"			// LogAlw / LogErr
+
+namespace THZ {
+
+// ----------------------------------------------------------------------------
+// configuration snapshot
+// ----------------------------------------------------------------------------
+struct Cfg {
+	bool   enabled;
+	int    debug;
+	int    fieldSize;		// R
+	int    dirs;			// K
+	double rangeM;			// maximum horizon distance [m]
+	double strength;		// 0..1
+	int    threads;
+	size_t cacheBytes;
+	double maxAlt;
+	int    minLevel;
+	int    updateFrames;
+};
+
+static Cfg  g_cfg;
+static bool g_cfgValid = false;
+
+static void ReadCfg ()
+{
+	if (!Config) return;
+	Cfg c;
+	c.enabled     = (Config->TerrainHorizonShadow != 0);
+	c.debug       = Config->TerrainHorizonDebug;
+	c.fieldSize   = Config->TerrainHorizonFieldSize;
+	c.dirs        = Config->TerrainHorizonDirs;
+	c.rangeM      = double(Config->TerrainHorizonRangeKm) * 1000.0;
+	c.strength    = double(Config->TerrainHorizonStrength) * 0.01;
+	c.threads     = Config->TerrainHorizonThreads;
+	c.cacheBytes  = (size_t)Config->TerrainHorizonCacheMB * 1024u * 1024u;
+	c.maxAlt      = double(Config->TerrainHorizonMaxAlt);
+	c.minLevel    = Config->TerrainHorizonMinLevel;
+	c.updateFrames = Config->TerrainHorizonUpdate;
+	if (c.fieldSize < 16)  c.fieldSize = 16;
+	if (c.fieldSize > 128) c.fieldSize = 128;
+	if (c.dirs < 8)  c.dirs = 8;
+	if (c.dirs > 32) c.dirs = 32;
+	if (c.dirs & 1)  c.dirs++;			// keep the number of dirs even
+	if (c.threads < 1) c.threads = 1;
+	if (c.threads > 3) c.threads = 3;
+	if (c.updateFrames < 1) c.updateFrames = 1;
+	g_cfg = c;
+	g_cfgValid = true;
+}
+
+// ----------------------------------------------------------------------------
+// tile key
+// ----------------------------------------------------------------------------
+struct Key {
+	int lvl, ilat, ilng;
+	Key () : lvl(-1), ilat(0), ilng(0) {}
+	Key (int l, int a, int g) : lvl(l), ilat(a), ilng(g) {}
+	bool operator== (const Key &o) const { return lvl==o.lvl && ilat==o.ilat && ilng==o.ilng; }
+};
+
+struct KeyHash {
+	size_t operator() (const Key &k) const {
+		return ((size_t)(unsigned)k.lvl * 73856093u) ^
+		       ((size_t)(unsigned)k.ilat * 19349663u) ^
+		       ((size_t)(unsigned)k.ilng * 83492791u);
+	}
+};
+
+// ============================================================================
+// Elevation pyramid sampler (bake threads only)
+//
+// Reads the planet elevation archives (Textures2\<planet>\Archive\Elev.tree and
+// Elev_mod.tree) through an own ZTreeMgr instance, decodes the ELEVFILEHEADER
+// grid (INT16 raw * scale + offset), applies the Elev_mod layer and bilinearly
+// samples the global height field at arbitrary lat/lng. A small LRU tile cache
+// keeps the hot tiles resident.
+// ============================================================================
+class ElevationSampler
+{
+public:
+	struct TileData {
+		ELEVFILEHEADER hdr;
+		std::vector<float> data;	// TILE_ELEVSTRIDE^2 values [m]
+		bool valid;
+		TileData () : valid(false) { memset(&hdr, 0, sizeof(hdr)); }
+	};
+
+	ElevationSampler ()
+		: treeElev(NULL), treeMod(NULL), rp(0.0), elevRes(1.0), fineLvl(-1),
+		  cacheLimit(48), lastTile(NULL) {}
+
+	bool Init (const std::string &dataRoot, double rplanet, double elevRes);
+	void Exit ();
+
+	// Bilinear height sample [m]. 'lvl' is the preferred elevation pyramid
+	// level; if the tile does not exist there a coarser level is used.
+	float Sample (double lat, double lng, int lvl);
+
+	int FinestLevel () const { return fineLvl; }
+	double PlanetRadius () const { return rp; }
+
+	int LevelForResolution (double meters) const
+	{
+		// Archive level L stores 256x256 cells over a tile covering PI/2^(L-3)
+		// radians (the archive root tiles are at level 4 = two hemispheres).
+		if (meters <= 0.0) return fineLvl;
+		double need = PI * rp / (256.0 * meters);	// 2^(L-3)
+		int k = 0;
+		while ((double)(1u << k) < need && k < 20) k++;
+		int l = k + 3;
+		if (l > fineLvl) l = fineLvl;
+		if (l < 4) l = 4;
+		return l;
+	}
+
+	static void TileIdx (double lat, double lng, int lvl, int &ilat, int &ilng)
+	{
+		// The elevation archives store their root tiles at archive level 4 (two
+		// hemispheres), and a node at archive level L has the tile index range of
+		// render level L-4: nlat = 1<<(L-4), nlng = 2<<(L-4).
+		int renderLvl = lvl - 4;
+		if (renderLvl < 0) renderLvl = 0;
+		int nlat = 1 << renderLvl;
+		int nlng = 2 << renderLvl;
+		ilat = (int)floor((PI05 - lat) / PI * (double)nlat);
+		ilng = (int)floor((lng + PI) / PI2 * (double)nlng);
+		if (ilat < 0) ilat = 0;
+		if (ilat >= nlat) ilat = nlat - 1;
+		if (ilng < 0) ilng = 0;
+		if (ilng >= nlng) ilng = nlng - 1;
+	}
+
+private:
+	ZTreeMgr *treeElev;
+	ZTreeMgr *treeMod;
+	double    rp;
+	double    elevRes;
+	int       fineLvl;
+	int       cacheLimit;
+	std::string root;
+
+	std::unordered_map<Key, TileData, KeyHash> cache;
+	std::deque<Key> lru;
+	Key       lastKey;
+	TileData *lastTile;
+
+	TileData *GetTile (int lvl, int ilat, int ilng);
+	int  FindLevel (double lat, double lng, int lvlFrom);
+	static bool ParseElev (const BYTE *buf, DWORD nbytes, ELEVFILEHEADER &hdr, std::vector<float> &data);
+	static void ApplyElevMod (const BYTE *buf, DWORD nbytes, std::vector<float> &data);
+};
+
+bool ElevationSampler::Init (const std::string &dataRoot, double rplanet, double _elevRes)
+{
+	root = dataRoot;
+	rp = rplanet;
+	elevRes = _elevRes;
+	fineLvl = -1;
+	cacheLimit = 48;
+	lastTile = NULL;
+	lastKey = Key();
+
+	if (root.empty()) return false;
+	treeElev = ZTreeMgr::CreateFromFile(root.c_str(), ZTreeMgr::LAYER_ELEV);
+	if (!treeElev) return false;
+	treeMod = ZTreeMgr::CreateFromFile(root.c_str(), ZTreeMgr::LAYER_ELEVMOD);
+
+	// Find the finest elevation level that has data everywhere (probe a few
+	// positions spread over the planet).
+	static const double plats[5] = { 0.6, -0.6, 0.0, 0.35, -0.35 };
+	static const double plngs[5] = { 0.0, 1.2, -2.0, 2.6, -1.1 };
+	for (int l = 16; l >= 4; l--) {
+		bool all = true;
+		for (int i = 0; i < 5 && all; i++) {
+			int ilat, ilng;
+			TileIdx(plats[i], plngs[i], l, ilat, ilng);
+			if (treeElev->Idx(l, ilat, ilng) == (DWORD)-1) all = false;
+		}
+		if (all) { fineLvl = l; break; }
+	}
+	if (fineLvl < 0) return false;
+	return true;
+}
+
+void ElevationSampler::Exit ()
+{
+	cache.clear();
+	lru.clear();
+	lastTile = NULL;
+	if (treeElev) { delete treeElev; treeElev = NULL; }
+	if (treeMod)  { delete treeMod;  treeMod = NULL; }
+}
+
+bool ElevationSampler::ParseElev (const BYTE *buf, DWORD nbytes, ELEVFILEHEADER &hdr, std::vector<float> &data)
+{
+	if (!buf || nbytes < sizeof(ELEVFILEHEADER)) return false;
+	memcpy(&hdr, buf, sizeof(ELEVFILEHEADER));
+	if (hdr.hdrsize < (int)sizeof(ELEVFILEHEADER) || hdr.hdrsize > (int)nbytes) return false;
+
+	const int n = TILE_ELEVSTRIDE * TILE_ELEVSTRIDE;
+	data.assign(n, 0.0f);
+	const BYTE *p = buf + hdr.hdrsize;
+	const DWORD avail = nbytes - hdr.hdrsize;
+	const float scale = (float)hdr.scale;
+	const float offset = (float)hdr.offset;
+
+	switch (hdr.dtype) {
+	case 0:		// flat tile
+		for (int i = 0; i < n; i++) data[i] = offset;
+		return true;
+	case 8:
+		if (avail < (DWORD)n) return false;
+		for (int i = 0; i < n; i++) data[i] = p[i] * scale + offset;
+		return true;
+	case -16: {
+		if (avail < (DWORD)(n * 2)) return false;
+		const INT16 *s = (const INT16*)p;
+		for (int i = 0; i < n; i++) data[i] = (float)s[i] * scale + offset;
+		return true; }
+	case 16: {
+		if (avail < (DWORD)(n * 2)) return false;
+		const UINT16 *s = (const UINT16*)p;
+		for (int i = 0; i < n; i++) data[i] = (float)s[i] * scale + offset;
+		return true; }
+	}
+	return false;
+}
+
+void ElevationSampler::ApplyElevMod (const BYTE *buf, DWORD nbytes, std::vector<float> &data)
+{
+	if (!buf || nbytes < sizeof(ELEVFILEHEADER)) return;
+	ELEVFILEHEADER hdr;
+	memcpy(&hdr, buf, sizeof(ELEVFILEHEADER));
+	if (hdr.hdrsize < (int)sizeof(ELEVFILEHEADER) || hdr.hdrsize > (int)nbytes) return;
+
+	const int n = TILE_ELEVSTRIDE * TILE_ELEVSTRIDE;
+	const BYTE *p = buf + hdr.hdrsize;
+	const DWORD avail = nbytes - hdr.hdrsize;
+	const float scale = (float)hdr.scale;
+	const float offset = (float)hdr.offset;
+
+	switch (hdr.dtype) {
+	case 0:
+		for (int i = 0; i < n; i++) data[i] = offset;
+		break;
+	case 8: {
+		if (avail < (DWORD)n) return;
+		const BYTE mask = 255;
+		for (int i = 0; i < n; i++) if (p[i] != mask) data[i] = p[i] * scale + offset;
+		break; }
+	case -16: {
+		if (avail < (DWORD)(n * 2)) return;
+		const INT16 mask = SHRT_MAX;
+		const INT16 *s = (const INT16*)p;
+		for (int i = 0; i < n; i++) if (s[i] != mask) data[i] = (float)s[i] * scale + offset;
+		break; }
+	}
+}
+
+ElevationSampler::TileData *ElevationSampler::GetTile (int lvl, int ilat, int ilng)
+{
+	Key k(lvl, ilat, ilng);
+	auto it = cache.find(k);
+	if (it != cache.end()) {
+		lastKey = k;
+		lastTile = &it->second;
+		return lastTile;
+	}
+
+	TileData td;
+	BYTE *buf = NULL;
+	DWORD nd = treeElev->ReadData(lvl, ilat, ilng, &buf);
+	bool ok = false;
+	if (nd) {
+		ok = ParseElev(buf, nd, td.hdr, td.data);
+		treeElev->ReleaseData(buf);
+	}
+	if (ok && treeMod) {
+		BYTE *mbuf = NULL;
+		DWORD nm = treeMod->ReadData(lvl, ilat, ilng, &mbuf);
+		if (nm) {
+			ApplyElevMod(mbuf, nm, td.data);
+			treeMod->ReleaseData(mbuf);
+		}
+	}
+	td.valid = ok;
+
+	// LRU eviction
+	while (cache.size() >= (size_t)cacheLimit && !lru.empty()) {
+		Key old = lru.front();
+		lru.pop_front();
+		if (lastTile && old == lastKey) lastTile = NULL;	// don't leave a dangling fast-path pointer
+		cache.erase(old);
+	}
+	lru.push_back(k);
+	auto res = cache.insert(std::make_pair(k, std::move(td)));
+	if (!res.second) return NULL;
+	lastKey = k;
+	lastTile = &res.first->second;
+	return lastTile;
+}
+
+int ElevationSampler::FindLevel (double lat, double lng, int lvlFrom)
+{
+	// The elevation archives have their root nodes at level 4; levels 0-3 do
+	// not exist (trying them would alias the root nodes in ZTreeMgr::Idx).
+	if (lvlFrom > fineLvl) lvlFrom = fineLvl;
+	if (lvlFrom < 4) lvlFrom = 4;
+	for (int l = lvlFrom; l >= 4; l--) {
+		int ilat, ilng;
+		TileIdx(lat, lng, l, ilat, ilng);
+		if (treeElev->Idx(l, ilat, ilng) != (DWORD)-1) return l;
+	}
+	return -1;
+}
+
+float ElevationSampler::Sample (double lat, double lng, int lvl)
+{
+	// Fast path: the last tile covers the requested position
+	if (lastTile && lastTile->valid) {
+		const ELEVFILEHEADER &h = lastTile->hdr;
+		if (lng >= h.lngmin && lng <= h.lngmax && lat >= h.latmin && lat <= h.latmax) {
+			double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
+			double v = (lat - h.latmin) / (h.latmax - h.latmin);
+			if (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0) {
+				double fx = u * 256.0, fy = v * 256.0;
+				int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
+				int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
+				float ax = (float)(fx - ix), ay = (float)(fy - iy);
+				const float *d = lastTile->data.data();
+				int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
+				float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
+				return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
+			}
+		}
+	}
+
+	int level = FindLevel(lat, lng, lvl);
+	if (level < 0) return 0.0f;
+	int ilat, ilng;
+	TileIdx(lat, lng, level, ilat, ilng);
+	TileData *t = GetTile(level, ilat, ilng);
+	if (!t || !t->valid) return 0.0f;
+
+	const ELEVFILEHEADER &h = t->hdr;
+	double u = (lng - h.lngmin) / (h.lngmax - h.lngmin);
+	double v = (lat - h.latmin) / (h.latmax - h.latmin);
+	if (u < 0.0) u = 0.0; if (u > 1.0) u = 1.0;
+	if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+	double fx = u * 256.0, fy = v * 256.0;
+	int ix = (int)fx; if (ix > 255) ix = 255; if (ix < 0) ix = 0;
+	int iy = (int)fy; if (iy > 255) iy = 255; if (iy < 0) iy = 0;
+	float ax = (float)(fx - ix), ay = (float)(fy - iy);
+	const float *d = t->data.data();
+	int i0 = (iy + 1) * TILE_ELEVSTRIDE + (ix + 1);
+	float d00 = d[i0], d10 = d[i0 + 1], d01 = d[i0 + TILE_ELEVSTRIDE], d11 = d[i0 + TILE_ELEVSTRIDE + 1];
+	return d00 * (1-ax) * (1-ay) + d10 * ax * (1-ay) + d01 * (1-ax) * ay + d11 * ax * ay;
+}
+
+// ============================================================================
+// Horizon field bake
+// ============================================================================
+struct BakeJob {
+	Key    key;
+	double latmin, latmax, lngmin, lngmax;
+	double planetR;
+	double rangeM;
+	int    R, K;
+	int    nearLvl, farLvl;
+	int    priority;
+	std::string dataRoot;
+	double elevRes;
+	OBJHANDLE planet;
+};
+
+struct BakeResult {
+	Key    key;
+	OBJHANDLE planet;
+	std::vector<float> values;	// R*R*K angles [rad], row index y = k*R + i
+	int    ms;
+	bool   ok;
+	BakeResult () : planet(NULL), ms(0), ok(false) {}
+};
+
+// Far field silhouette sample
+struct FarSample {
+	double d;
+	float  h;
+};
+
+static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<float> &out, int &ms)
+{
+	unsigned t0 = GetTickCount();
+
+	const int R = job.R;
+	const int K = job.K;
+	const double rp = job.planetR;
+	const double dmax = job.rangeM;
+
+	out.assign((size_t)R * R * K, 0.0f);
+
+	const double latc = (job.latmin + job.latmax) * 0.5;
+	const double lngc = (job.lngmin + job.lngmax) * 0.5;
+	const double tileSize = max(job.latmax - job.latmin, job.lngmax - job.lngmin) * rp;
+	const double texelWorld = tileSize / double(R);
+	const double dNear0 = min(dmax, max(8.0 * tileSize, 3000.0));
+
+	// ---- far field silhouette profiles (per azimuth, from the tile centre) ----
+	std::vector<std::vector<FarSample>> profs(K);
+	const double coslatc = max(cos(latc), 0.05);
+	for (int k = 0; k < K; k++) {
+		double phi = PI2 * double(k) / double(K);
+		double dy = cos(phi), dx = sin(phi);
+		double d = dNear0;
+		while (d < dmax) {
+			double dlat = d * dy / rp;
+			double dlng = d * dx / (rp * coslatc);
+			float h = es.Sample(latc + dlat, lngc + dlng, job.farLvl);
+			FarSample fs;
+			fs.d = d;
+			fs.h = h;
+			profs[k].push_back(fs);
+			d += max(400.0, d * 0.22);
+		}
+	}
+
+	// ---- per field point ----
+	const double latStep = (job.latmax - job.latmin) / double(R);
+	const double lngStep = (job.lngmax - job.lngmin) / double(R);
+	const double step0 = max(texelWorld * 0.5, 1.0);
+
+	for (int i = 0; i < R; i++) {
+		double lat = job.latmin + (i + 0.5) * latStep;
+		double coslat = max(cos(lat), 0.02);
+		for (int j = 0; j < R; j++) {
+			double lng = job.lngmin + (j + 0.5) * lngStep;
+			float h0 = es.Sample(lat, lng, job.nearLvl);
+
+			for (int k = 0; k < K; k++) {
+				double phi = PI2 * double(k) / double(K);
+				double dy = cos(phi), dx = sin(phi);
+				double best = 0.0;			// negative horizon = no self occlusion
+
+				// near field: per field point ray march
+				double d = step0;
+				while (d < dNear0) {
+					double dlat = d * dy / rp;
+					double dlng = d * dx / (rp * coslat);
+					float h = es.Sample(lat + dlat, lng + dlng, job.nearLvl);
+					double drop = d * d / (2.0 * rp);
+					double ang = atan2((double)h - (double)h0 - drop, d);
+					if (ang > best) best = ang;
+					d += max(step0, d * 0.15);
+				}
+
+				// far field: shared silhouette profile
+				const std::vector<FarSample> &pr = profs[k];
+				for (size_t q = 0; q < pr.size(); q++) {
+					double dd = pr[q].d;
+					double drop = dd * dd / (2.0 * rp);
+					double ang = atan2((double)pr[q].h - (double)h0 - drop, dd);
+					if (ang > best) best = ang;
+				}
+
+				if (best < 0.0) best = 0.0;
+				if (best > PI05) best = PI05;
+				out[((size_t)k * R + i) * R + j] = (float)best;
+			}
+		}
+	}
+
+	ms = (int)(GetTickCount() - t0);
+}
+
+// ============================================================================
+// Runtime: texture cache, bake worker threads and the mask pass
+// ============================================================================
+static const int  MAX_JOBS = 512;
+static const int  MAX_UPLOADS_PER_FRAME = 3;
+
+// Elevation level that provides a texel size of about 'meters'
+// (archive level L stores 256 cells over PI/2^(L-3) radians)
+static int LevelForResolution (double rp, double meters, int maxLvl)
+{
+	if (meters <= 0.0) return maxLvl;
+	double need = PI * rp / (256.0 * meters);	// 2^(L-3)
+	int k = 0;
+	while ((double)(1u << k) < need && k < 20) k++;
+	int l = k + 3;
+	if (l > maxLvl) l = maxLvl;
+	if (l < 4) l = 4;
+	return l;
+}
+
+class System
+{
+public:
+	System ();
+	~System ();
+
+	bool Init (LPDIRECT3DDEVICE9 dev);
+	void Exit ();
+
+	void BeginFrame (TileManager2<SurfTile> *mgr, vPlanet *vp, double camAlt);
+	bool EnsurePlanet (TileManager2<SurfTile> *mgr, vPlanet *vp);
+	void BeginPass (LPDIRECT3DDEVICE9 dev, vPlanet *vp);
+	void EndPass (LPDIRECT3DDEVICE9 dev);
+	void DrawTile (SurfTile *t);
+
+private:
+	enum { N_SAVED_STATES = 11 };
+
+	LPDIRECT3DDEVICE9 pDev;
+	ShaderClass      *pMask;
+	HANDLE            hMaskWorld, hHorPrm, hReady, hTex, hConstVS, hConstPS;
+	LPDIRECT3DTEXTURE9 pMissing;
+	bool              bDeviceValid;
+	bool              bDisabled;
+	bool              bFilter;
+
+	OBJHANDLE         hPlanet;
+	std::string       dataRoot;
+	double            planetR;
+	double            elevRes;
+
+	struct Entry {
+		LPDIRECT3DTEXTURE9 tex;
+		bool     ready;
+		unsigned frame;
+		Entry () : tex(NULL), ready(false), frame(0) {}
+	};
+	std::unordered_map<Key, Entry, KeyHash> cache;
+	size_t            cacheBytes;
+
+	std::vector<std::thread> threads;
+	std::mutex        mtx;
+	std::condition_variable cv;
+	std::deque<BakeJob>   jobs;
+	std::deque<BakeResult> done;
+	std::atomic<bool> quit;
+	std::atomic<int>  jobCount;
+	bool              bThreads;
+
+	int               scanCountdown;
+	unsigned          frameId;
+	DWORD             savedStates[N_SAVED_STATES];
+
+	int               statReady;
+	int               bakeCount;
+	long long         bakeMs;
+
+	void StartWorkers ();
+	void StopWorkers ();
+	void Clear ();
+	void WorkerLoop ();
+	void UploadDone ();
+	void UploadResult (BakeResult &res);
+	void ScanTree (TileManager2<SurfTile> *mgr);
+	void ScanNode (const QuadTreeNode<SurfTile> *node);
+	void Request (SurfTile *tile);
+	void Evict ();
+};
+
+static System g_sys;
+
+System::System ()
+{
+	pDev = NULL;
+	pMask = NULL;
+	hMaskWorld = hHorPrm = hReady = hTex = hConstVS = hConstPS = NULL;
+	pMissing = NULL;
+	bDeviceValid = false;
+	bDisabled = false;
+	bFilter = false;
+	hPlanet = NULL;
+	planetR = 0.0;
+	elevRes = 1.0;
+	cacheBytes = 0;
+	quit = false;
+	jobCount = 0;
+	bThreads = false;
+	scanCountdown = 0;
+	frameId = 0;
+	statReady = 0;
+	bakeCount = 0;
+	bakeMs = 0;
+	memset(savedStates, 0, sizeof(savedStates));
+}
+
+System::~System ()
+{
+	Exit();
+}
+
+bool System::Init (LPDIRECT3DDEVICE9 dev)
+{
+	if (bDeviceValid) return true;
+	if (bDisabled) return false;
+	if (!dev) return false;
+	oapiWriteLogV("TerrainHorizon: init begin");
+	pDev = dev;
+
+	// R32F textures are required for the horizon field / mask shader
+	LPDIRECT3DTEXTURE9 probe = NULL;
+	if (FAILED(dev->CreateTexture(4, 4, 1, 0, D3DFMT_R32F, D3DPOOL_MANAGED, &probe, NULL)) || !probe) {
+		oapiWriteLogV("TerrainHorizon: R32F textures not supported -> disabled");
+		bDisabled = true;
+		return false;
+	}
+	probe->Release();
+
+	D3DCAPS9 caps;
+	if (FAILED(dev->GetDeviceCaps(&caps))) return false;
+	{
+		IDirect3D9 *pD3D = NULL;
+		bFilter = false;
+		if (SUCCEEDED(dev->GetDirect3D(&pD3D)) && pD3D) {
+			bFilter = SUCCEEDED(pD3D->CheckDeviceFormat(caps.AdapterOrdinal, caps.DeviceType,
+				D3DFMT_X8R8G8B8, D3DUSAGE_QUERY_FILTER, D3DRTYPE_TEXTURE, D3DFMT_R32F)) ? true : false;
+			pD3D->Release();
+		}
+	}
+
+	// 1x1 dummy texture for tiles without a baked field
+	if (FAILED(dev->CreateTexture(1, 1, 1, D3DUSAGE_DYNAMIC, D3DFMT_R32F, D3DPOOL_DEFAULT, &pMissing, NULL))) {
+		bDisabled = true;
+		return false;
+	}
+	D3DLOCKED_RECT lr;
+	if (SUCCEEDED(pMissing->LockRect(0, &lr, NULL, 0))) {
+		*(float*)lr.pBits = 0.0f;
+		pMissing->UnlockRect(0);
+	}
+
+	pMask = new ShaderClass(dev, "Modules/D3D9Client/NewPlanet.hlsl", "TerrainMaskVS", "TerrainMaskPS", "TerrainMask", "");
+	if (!pMask) return false;
+	hMaskWorld = pMask->GetVSHandle("HorizonWorld");
+	hConstVS   = pMask->GetVSHandle("Const");
+	hConstPS   = pMask->GetPSHandle("Const");
+	hHorPrm    = pMask->GetPSHandle("HorizonPrm0");
+	hReady     = pMask->GetPSHandle("HorizonReady");
+	hTex       = pMask->GetPSHandle("tHorizon");
+	if (!hMaskWorld || !hConstVS || !hConstPS || !hHorPrm || !hReady || !hTex) {
+		oapiWriteLogV("TerrainHorizon: mask shader constants missing -> disabled");
+		SAFE_DELETE(pMask);
+		bDisabled = true;
+		return false;
+	}
+
+	bDeviceValid = true;
+	oapiWriteLogV("TerrainHorizon: overlay initialized (R32F filter=%d)", bFilter ? 1 : 0);
+	return true;
+}
+
+void System::Exit ()
+{
+	oapiWriteLogV("TerrainHorizon: exit (bakes=%d)", bakeCount);
+	StopWorkers();
+	Clear();
+	SAFE_RELEASE(pMissing);
+	SAFE_DELETE(pMask);
+	hMaskWorld = hHorPrm = hReady = hTex = hConstVS = hConstPS = NULL;
+	bDeviceValid = false;
+	bDisabled = false;
+	hPlanet = NULL;
+}
+
+void System::Clear ()
+{
+	for (auto &it : cache) SAFE_RELEASE(it.second.tex);
+	cache.clear();
+	cacheBytes = 0;
+	statReady = 0;
+}
+
+bool System::EnsurePlanet (TileManager2<SurfTile> *mgr, vPlanet *vp)
+{
+	OBJHANDLE h = vp->Object();
+	if (h == hPlanet && !dataRoot.empty()) return true;
+
+	StopWorkers();
+	Clear();
+	hPlanet = h;
+	dataRoot = mgr->DataRootDir();
+	planetR = oapiGetSize(h);
+	elevRes = mgr->ElevRes();
+	statReady = 0;
+	bakeCount = 0;
+	bakeMs = 0;
+
+	if (dataRoot.empty() || planetR <= 0.0) return false;
+
+	// Bodies without an elevation archive cannot have a horizon field.
+	ZTreeMgr *probe = ZTreeMgr::CreateFromFile(dataRoot.c_str(), ZTreeMgr::LAYER_ELEV);
+	if (!probe) {
+		oapiWriteLogV("TerrainHorizon: no elevation archive for %s -> overlay disabled", dataRoot.c_str());
+		hPlanet = NULL;
+		return false;
+	}
+	delete probe;
+
+	StartWorkers();
+	oapiWriteLogV("TerrainHorizon: body [%s], R=%.0f m, elevRes=%.2f m, field %dx%d, dirs %d",
+		dataRoot.c_str(), planetR, elevRes, g_cfg.fieldSize, g_cfg.fieldSize, g_cfg.dirs);
+	return true;
+}
+
+void System::StartWorkers ()
+{
+	quit = false;
+	jobCount = 0;
+	for (int i = 0; i < g_cfg.threads; i++) threads.emplace_back(&System::WorkerLoop, this);
+	bThreads = true;
+}
+
+void System::StopWorkers ()
+{
+	if (!bThreads) return;
+	{
+		std::lock_guard<std::mutex> lk(mtx);
+		quit = true;
+	}
+	cv.notify_all();
+	for (auto &t : threads) if (t.joinable()) t.join();
+	threads.clear();
+	bThreads = false;
+	{
+		std::lock_guard<std::mutex> lk(mtx);
+		jobs.clear();
+		done.clear();
+	}
+}
+
+void System::WorkerLoop ()
+{
+	ElevationSampler es;
+	std::string root;
+	bool samplerReady = false;
+
+	for (;;) {
+		BakeJob job;
+		{
+			std::unique_lock<std::mutex> lk(mtx);
+			cv.wait(lk, [this] { return quit.load() || !jobs.empty(); });
+			if (quit) return;
+			job = jobs.front();
+			jobs.pop_front();
+			jobCount.fetch_sub(1);
+		}
+		if (!samplerReady || root != job.dataRoot) {
+			es.Exit();
+			samplerReady = es.Init(job.dataRoot, job.planetR, job.elevRes);
+			root = job.dataRoot;
+		}
+		BakeResult res;
+		res.key = job.key;
+		res.planet = job.planet;
+		if (samplerReady) {
+			BakeTile(es, job, res.values, res.ms);
+			res.ok = true;
+		}
+		else res.ok = false;
+		{
+			std::lock_guard<std::mutex> lk(mtx);
+			done.push_back(std::move(res));
+		}
+	}
+}
+
+void System::UploadResult (BakeResult &res)
+{
+	const int R = g_cfg.fieldSize;
+	const int K = g_cfg.dirs;
+	const int W = R;
+	const int H = R * K;
+	if ((int)res.values.size() != W * H) return;
+
+	LPDIRECT3DTEXTURE9 tex = NULL;
+	if (FAILED(pDev->CreateTexture(W, H, 1, D3DUSAGE_DYNAMIC, D3DFMT_R32F, D3DPOOL_DEFAULT, &tex, NULL)) || !tex) return;
+	D3DLOCKED_RECT lr;
+	if (FAILED(tex->LockRect(0, &lr, NULL, 0))) { tex->Release(); return; }
+	float *dst = (float*)lr.pBits;
+	const int pitch = lr.Pitch / (int)sizeof(float);
+	const float *src = res.values.data();
+	for (int y = 0; y < H; y++) {
+		memcpy(dst + (size_t)y * pitch, src + (size_t)y * W, (size_t)W * sizeof(float));
+	}
+	tex->UnlockRect(0);
+
+	auto it = cache.find(res.key);
+	if (it != cache.end()) {
+		SAFE_RELEASE(it->second.tex);
+		it->second.tex = tex;
+		it->second.ready = true;
+		it->second.frame = frameId;
+		cacheBytes += (size_t)W * H * sizeof(float);
+		if (statReady >= 0) statReady++;
+	}
+	else tex->Release();
+
+	bakeCount++;
+	bakeMs += res.ms;
+	if (bakeCount == 1 || (bakeCount % 50) == 0) {
+		oapiWriteLogV("TerrainHorizon: uploaded L%d [%d,%d] %d ms (bakes=%d, ready=%d)",
+			res.key.lvl, res.key.ilat, res.key.ilng, res.ms, bakeCount, statReady);
+	}
+	// Diagnostics: horizon angle statistics of the field (should be > 0 deg for
+	// real terrain; a constant 0 means the elevation sampling failed).
+	if (bakeCount <= 3 || (bakeCount % 100) == 0) {
+		float hmin = 1e9f, hmax = -1e9f;
+		double hsum = 0.0;
+		for (size_t i = 0; i < res.values.size(); i++) {
+			float v = res.values[i];
+			if (v < hmin) hmin = v;
+			if (v > hmax) hmax = v;
+			hsum += v;
+		}
+		oapiWriteLogV("TerrainHorizon: field stats L%d [%d,%d]: min=%.3f max=%.3f avg=%.3f deg",
+			res.key.lvl, res.key.ilat, res.key.ilng,
+			hmin * 57.29578f, hmax * 57.29578f,
+			(res.values.empty() ? 0.0 : hsum / res.values.size()) * 57.29578);
+	}
+}
+
+void System::UploadDone ()
+{
+	int n = 0;
+	while (n < MAX_UPLOADS_PER_FRAME) {
+		BakeResult res;
+		{
+			std::lock_guard<std::mutex> lk(mtx);
+			if (done.empty()) break;
+			res = std::move(done.front());
+			done.pop_front();
+		}
+		if (res.planet != hPlanet) continue;		// stale (planet changed)
+		auto it = cache.find(res.key);
+		if (it == cache.end()) continue;			// no longer requested
+		if (!res.ok) {
+			cache.erase(it);						// retry on the next scan
+			statReady = (statReady > 0 ? statReady - 1 : 0);
+			continue;
+		}
+		UploadResult(res);
+		n++;
+	}
+}
+
+void System::BeginFrame (TileManager2<SurfTile> *mgr, vPlanet *vp, double camAlt)
+{
+	frameId++;
+	UploadDone();
+
+	if (camAlt <= g_cfg.maxAlt) {
+		if (scanCountdown-- <= 0) {
+			scanCountdown = g_cfg.updateFrames;
+			ScanTree(mgr);
+		}
+	}
+
+	if (cacheBytes > g_cfg.cacheBytes) Evict();
+
+	if ((frameId % 240) == 0) {
+		oapiWriteLogV("TerrainHorizon: ready=%d jobs=%d cache=%.1f MB bakes=%d avg=%.1f ms",
+			statReady, jobCount.load(), double(cacheBytes) / 1048576.0,
+			bakeCount, (bakeCount ? double(bakeMs) / double(bakeCount) : 0.0));
+	}
+}
+
+void System::ScanTree (TileManager2<SurfTile> *mgr)
+{
+	for (int i = 0; i < 2; i++) ScanNode(mgr->TileTree(i));
+}
+
+void System::ScanNode (const QuadTreeNode<SurfTile> *node)
+{
+	if (!node) return;
+	SurfTile *t = node->Entry();
+	if (!t) return;
+	if ((t->State() & TILE_VALID) == 0) return;
+	if (t->State() == Tile::Active) {
+		for (int i = 0; i < 4; i++) ScanNode(node->Child(i));
+		return;
+	}
+	if (t->State() != Tile::ForRender) return;
+	Request(t);
+}
+
+void System::Request (SurfTile *tile)
+{
+	const int lvl = tile->Level();
+	if (lvl < g_cfg.minLevel) return;
+
+	int ilng, ilat;
+	tile->GetIndex(&ilng, &ilat);
+	Key k(lvl, ilat, ilng);
+
+	auto it = cache.find(k);
+	if (it != cache.end()) {
+		it->second.frame = frameId;
+		return;
+	}
+	if (jobCount.load() >= MAX_JOBS) return;
+
+	double latmin, latmax, lngmin, lngmax;
+	tile->Extents(&latmin, &latmax, &lngmin, &lngmax);
+	if (!(latmax > latmin) || !(lngmax > lngmin)) return;
+	if (lngmax - lngmin > PI || latmax - latmin > PI) return;	// seam tile
+	if (latmin < -PI05) latmin = -PI05;
+	if (latmax > PI05) latmax = PI05;
+
+	const double sizeLat = (latmax - latmin) * planetR;
+	const double sizeLng = (lngmax - lngmin) * planetR * max(cos(0.5 * (latmin + latmax)), 0.02);
+	const double tileSize = max(sizeLat, sizeLng);
+	if (tileSize <= 0.0) return;
+
+	const int R = g_cfg.fieldSize;
+	const double texelWorld = tileSize / double(R);
+
+	BakeJob job;
+	job.key = k;
+	job.latmin = latmin;
+	job.latmax = latmax;
+	job.lngmin = lngmin;
+	job.lngmax = lngmax;
+	job.planetR = planetR;
+	job.rangeM = g_cfg.rangeM;
+	job.R = R;
+	job.K = g_cfg.dirs;
+	job.nearLvl = LevelForResolution(planetR, texelWorld * 0.5, 14);
+	job.farLvl  = LevelForResolution(planetR, max(1000.0, texelWorld * 16.0), 12);
+	job.priority = -lvl;
+	job.dataRoot = dataRoot;
+	job.elevRes = elevRes;
+	job.planet = hPlanet;
+
+	Entry e;
+	e.frame = frameId;
+	cache.insert(std::make_pair(k, e));
+
+	{
+		std::lock_guard<std::mutex> lk(mtx);
+		jobs.push_back(job);
+		jobCount.fetch_add(1);
+	}
+	cv.notify_one();
+}
+
+void System::Evict ()
+{
+	// Drop the least recently used ready textures until the budget is met
+	while (cacheBytes > g_cfg.cacheBytes) {
+		unsigned bestFrame = UINT_MAX;
+		auto best = cache.end();
+		for (auto it = cache.begin(); it != cache.end(); ++it) {
+			if (!it->second.ready) continue;
+			if (it->second.frame < bestFrame) { bestFrame = it->second.frame; best = it; }
+		}
+		if (best == cache.end()) break;
+		SAFE_RELEASE(best->second.tex);
+		cacheBytes -= (size_t)g_cfg.fieldSize * g_cfg.fieldSize * g_cfg.dirs * sizeof(float);
+		cache.erase(best);
+		if (statReady > 0) statReady--;
+	}
+	// Also drop pending entries that never completed (worker restart etc.)
+	int pending = 0;
+	for (auto it = cache.begin(); it != cache.end(); ) {
+		if (!it->second.ready && it->second.frame + 1200 < frameId && pending < 8) {
+			it = cache.erase(it);
+			pending++;
+		}
+		else ++it;
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Mask pass
+// ----------------------------------------------------------------------------
+static void DrawMaskNode (const QuadTreeNode<SurfTile> *node, System &sys)
+{
+	if (!node) return;
+	SurfTile *t = node->Entry();
+	if (!t) return;
+	if ((t->State() & TILE_VALID) == 0) return;
+	if (t->State() == Tile::Active) {
+		for (int i = 0; i < 4; i++) DrawMaskNode(node->Child(i), sys);
+		return;
+	}
+	if (t->State() != Tile::ForRender) return;
+	sys.DrawTile(t);
+}
+
+void System::BeginPass (LPDIRECT3DDEVICE9 dev, vPlanet *vp)
+{
+	static const D3DRENDERSTATETYPE saveIds[N_SAVED_STATES] = {
+		D3DRS_ZENABLE, D3DRS_ZWRITEENABLE, D3DRS_ZFUNC, D3DRS_CULLMODE,
+		D3DRS_ALPHATESTENABLE, D3DRS_ALPHABLENDENABLE, D3DRS_SRCBLEND,
+		D3DRS_DESTBLEND, D3DRS_BLENDOP, D3DRS_SEPARATEALPHABLENDENABLE,
+		D3DRS_COLORWRITEENABLE
+	};
+	for (int i = 0; i < N_SAVED_STATES; i++) {
+		DWORD v = 0;
+		dev->GetRenderState(saveIds[i], &v);
+		savedStates[i] = v;
+	}
+
+	ConstParams *cp = vp->GetScatterConst();
+	pMask->Setup(pPatchVertexDecl, true, 0);
+	pMask->SetVSConstants(hConstVS, cp, sizeof(ConstParams));
+	pMask->SetPSConstants(hConstPS, cp, sizeof(ConstParams));
+	float prm[4] = { (float)g_cfg.fieldSize, (float)g_cfg.dirs, (float)g_cfg.strength, (float)g_cfg.debug };
+	pMask->SetPSConstants(hHorPrm, prm, sizeof(prm));
+
+	dev->SetRenderState(D3DRS_ZENABLE, TRUE);
+	dev->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+	dev->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+	dev->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	dev->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	dev->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+	dev->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+	if (g_cfg.debug > 0) {
+		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+	}
+	else {
+		dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+		dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+	}
+}
+
+void System::EndPass (LPDIRECT3DDEVICE9 dev)
+{
+	static const D3DRENDERSTATETYPE saveIds[N_SAVED_STATES] = {
+		D3DRS_ZENABLE, D3DRS_ZWRITEENABLE, D3DRS_ZFUNC, D3DRS_CULLMODE,
+		D3DRS_ALPHATESTENABLE, D3DRS_ALPHABLENDENABLE, D3DRS_SRCBLEND,
+		D3DRS_DESTBLEND, D3DRS_BLENDOP, D3DRS_SEPARATEALPHABLENDENABLE,
+		D3DRS_COLORWRITEENABLE
+	};
+	for (int i = 0; i < N_SAVED_STATES; i++) dev->SetRenderState(saveIds[i], savedStates[i]);
+}
+
+void System::DrawTile (SurfTile *t)
+{
+	if (!pMask || !pDev) return;
+	VBMESH *mesh = t->GetMesh();
+	if (!mesh || !mesh->pVB || !mesh->pIB || mesh->nv == 0) return;
+
+	int ilng, ilat;
+	t->GetIndex(&ilng, &ilat);
+	Key k(t->Level(), ilat, ilng);
+
+	LPDIRECT3DTEXTURE9 tex = pMissing;
+	float ready = 0.0f;
+	auto it = cache.find(k);
+	if (it != cache.end() && it->second.ready && it->second.tex) {
+		tex = it->second.tex;
+		ready = 1.0f;
+		it->second.frame = frameId;
+	}
+
+	D3DXMATRIX mW;
+	t->GetWorldMatrix(&mW);
+
+	pDev->SetStreamSource(0, mesh->pVB, 0, sizeof(VERTEX_2TEX));
+	pDev->SetIndices(mesh->pIB);
+	pMask->SetVSConstants(hMaskWorld, &mW, sizeof(mW));
+	pMask->SetPSConstants(hReady, &ready, sizeof(ready));
+	pMask->SetTexture(hTex, tex, IPF_CLAMP | (bFilter ? IPF_LINEAR : IPF_POINT));
+	pMask->UpdateTextures();
+	pDev->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, mesh->nv, 0, mesh->nf);
+}
+
+} // namespace THZ
+
+
+// ============================================================================
+// Entry points (invoked from Surfmgr2.cpp / D3D9Client.cpp)
+// ============================================================================
+void TerrainHorizon_RenderMask (TileManager2<SurfTile> *mgr, bool use_zbuf)
+{
+	if (!THZ::g_cfgValid) THZ::ReadCfg();
+	static int s_logState = 0;
+	if (!THZ::g_cfg.enabled) {
+		if (s_logState == 0) { s_logState = 1; oapiWriteLogV("TerrainHorizon: disabled by config"); }
+		return;
+	}
+	if (!mgr) return;
+	vPlanet *vp = mgr->GetPlanet();
+	if (!vp) { if (s_logState < 2) { s_logState = 2; oapiWriteLogV("TerrainHorizon: no camera planet"); } return; }
+	LPDIRECT3DDEVICE9 dev = mgr->Dev();
+	if (!dev) return;
+
+	Scene *scene = mgr->GetScene();
+	if (scene && scene->GetRenderPass() != RENDERPASS_MAINSCENE) return;
+	// The horizon overlay is a per camera-planet feature: the tile manager is
+	// also rendered for other bodies visible in the distance (e.g. the Moon from
+	// the Earth surface). Ignore those: a body switch would rebuild the whole
+	// bake/cache state and thrash the worker threads.
+	if (scene && scene->GetCameraProxyVisual() != vp) return;
+
+	THZ::System &sys = THZ::g_sys;
+	if (!sys.Init(dev)) {
+		if (s_logState < 3) { s_logState = 3; oapiWriteLogV("TerrainHorizon: init failed -> disabled"); }
+		return;
+	}
+	double camAlt = (scene ? scene->GetCameraAltitude() : 0.0);
+	if (!sys.EnsurePlanet(mgr, vp)) {
+		if (s_logState < 4) { s_logState = 4; oapiWriteLogV("TerrainHorizon: planet setup failed"); }
+		return;
+	}
+	if (s_logState < 5) {
+		s_logState = 5;
+		oapiWriteLogV("TerrainHorizon: mask pass active (alt=%.0f m, R=%d, K=%d, debug=%d, zbuf=%d)",
+			camAlt, THZ::g_cfg.fieldSize, THZ::g_cfg.dirs, THZ::g_cfg.debug, use_zbuf ? 1 : 0);
+	}
+
+	sys.BeginFrame(mgr, vp, camAlt);
+
+	if (!use_zbuf) return;						// overlay only in the z-buffered near surface mode
+	if (camAlt > THZ::g_cfg.maxAlt) return;
+
+	sys.BeginPass(dev, vp);
+	for (int i = 0; i < 2; i++) THZ::DrawMaskNode(mgr->TileTree(i), sys);
+	sys.EndPass(dev);
+}
+
+void TerrainHorizon_Exit ()
+{
+	THZ::g_sys.Exit();
+	THZ::g_cfgValid = false;
+}
+
+#endif // TERRAINRENDER_HORIZON
 #endif // D3D9CLIENT_TERRAINRENDER_INC
 

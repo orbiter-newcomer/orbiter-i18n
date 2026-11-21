@@ -1013,4 +1013,116 @@ float4 GiantCloudPS(CldVS frg) : COLOR
 }
 
 
+// ============================================================================
+// Terrain horizon field self shadowing overlay (fork extension)
+//
+// A second terrain pass that multiplies the already rendered terrain colour
+// with the sun visibility (0 = shadow, 1 = lit) derived from the per-tile
+// horizon angle field. Normal mode returns (vis,vis,vis) for a dst*src blend.
+// The debug modes output a red (dark) / yellow (lit) sun visibility map with
+// the tile grid, or the raw horizon angle field, for solver validation.
+// Horizon field generation/texture management: TerrainRender.inc
+// (part TERRAINRENDER_HORIZON).
+// ============================================================================
+
+uniform extern float4x4 HorizonWorld;	// tile world matrix
+uniform extern float4 HorizonPrm0;		// x=field size R, y=dirs K, z=strength(0..1), w=debug mode
+uniform extern float HorizonReady;		// 1 = horizon field texture ready for this tile
+sampler tHorizon;						// horizon angle field [rad] (R32F), layout: width R, height R*K
+
+struct HZVERTEX
+{
+	float4 posH  : POSITION0;
+	float2 texUV : TEXCOORD0;	// tile local uv [0,1]
+	float3 posW  : TEXCOORD1;	// camera relative world position
+};
+
+HZVERTEX TerrainMaskVS (TILEVERTEX vrt)
+{
+	HZVERTEX o = (HZVERTEX)0;
+	float3 posW = mul(float4(vrt.posL, 1.0f), HorizonWorld).xyz;
+	o.posH  = mul(float4(posW, 1.0f), Const.mVP);
+	o.posW  = posW;
+	o.texUV = vrt.tex0.xy;
+	return o;
+}
+
+// Horizon angle for azimuth bin 'k' at tile local position 'uv'
+float HorizonAngleAt (float2 uv, float k, float R, float K)
+{
+	// The field is baked with row 0 = south (tile latmin); the tile mesh uv has
+	// v = 0 at the north edge -> flip v. The +-0.5 converts the tile uv to the
+	// field texel centre coordinates.
+	float j = clamp(uv.x * R - 0.5f, 0.0f, R - 1.0f);
+	float i = clamp((1.0f - uv.y) * R - 0.5f, 0.0f, R - 1.0f);
+	float2 tuv = float2((j + 0.5f) / R, (k * R + i + 0.5f) / (R * K));
+	return tex2D(tHorizon, tuv).r;
+}
+
+float4 TerrainMaskPS (HZVERTEX frg) : COLOR
+{
+	const float PI2 = 6.28318530718f;
+	float R = HorizonPrm0.x;
+	float K = HorizonPrm0.y;
+	float strength = HorizonPrm0.z;
+	float debug = HorizonPrm0.w;
+	float2 uv = frg.texUV;
+
+	// No horizon field (not baked yet / disabled for this tile)
+	if (HorizonReady < 0.5f) {
+		if (debug >= 0.5f) return float4(0.0f, 0.0f, 1.0f, 1.0f);	// blue = no field
+		return float4(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	// Local east/north frame of the surface point
+	float3 up = normalize(Const.CamPos + frg.posW);
+	float3 polar = Const.vPolarAxis;
+	float3 north = polar - up * dot(polar, up);
+	north = normalize(north + float3(0.0f, 0.0f, 1e-5f));
+	float3 east = cross(north, up);
+
+	// Sun azimuth bin position (0 = north, increasing towards east)
+	float2 sunH = float2(dot(Const.toSun, east), dot(Const.toSun, north));
+	float az = atan2(sunH.x, sunH.y);
+	if (az < 0.0f) az += PI2;
+	float kf = az * (K / PI2);
+	float k0 = floor(kf);
+	float kfrac = kf - k0;
+	float k1 = fmod(k0 + 1.0f, K);
+	float h = lerp(HorizonAngleAt(uv, fmod(k0, K), R, K), HorizonAngleAt(uv, k1, R, K), kfrac);
+
+	// Sun elevation above the local horizontal plane
+	float sunAlt = asin(clamp(dot(up, Const.toSun), -1.0f, 1.0f));
+	float vis = saturate((sunAlt - h) / (2.0f * 0.0047f) + 0.5f);	// 0.27 deg sun radius
+
+	if (debug >= 1.5f) {
+		// horizon angle field: blue = 0 rad, red = 90 deg
+		float q = saturate(h * 0.63661977f);
+		float3 col = float3(q, 0.1f, 1.0f - q);
+		float2 fg = frac(uv * R);
+		float fe = min(min(fg.x, fg.y), min(1.0f - fg.x, 1.0f - fg.y));
+		if (fe < 0.02f) col = lerp(col, float3(0.2f, 0.2f, 0.2f), 0.5f);
+		return float4(col, 1.0f);
+	}
+	if (debug >= 0.5f) {
+		// sun visibility: red = dark (shadow), yellow = lit
+		float3 col = lerp(float3(1.0f, 0.0f, 0.0f), float3(1.0f, 1.0f, 0.0f), vis);
+		float edge = min(min(uv.x, uv.y), min(1.0f - uv.x, 1.0f - uv.y));
+		if (edge < 0.006f) col = float3(0.0f, 0.0f, 0.0f);
+		else {
+			float2 fg = frac(uv * R);
+			float fe = min(min(fg.x, fg.y), min(1.0f - fg.x, 1.0f - fg.y));
+			if (fe < 0.02f) col = lerp(col, float3(0.35f, 0.35f, 0.35f), 0.6f);
+		}
+		return float4(col, 1.0f);
+	}
+
+	// Normal mode: the sun is below the local horizon -> no self shadowing term
+	if (sunAlt <= 0.0f) return float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	float fVis = 1.0f - (1.0f - vis) * strength;
+	return float4(fVis, fVis, fVis, 1.0f);
+}
+
+
 

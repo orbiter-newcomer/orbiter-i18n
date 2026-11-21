@@ -24,6 +24,11 @@
 #include "D3D9Surface.h"
 #include "PerfStats.h"
 
+// Terrain horizon self shadowing overlay: multiplicative sun visibility mask
+// drawn as a second terrain pass. Implementation in TerrainRender.inc
+// (part TERRAINRENDER_HORIZON, project extension).
+void TerrainHorizon_RenderMask (TileManager2<SurfTile> *mgr, bool use_zbuf);
+
 // =======================================================================
 extern void FilterElevationGraphics(OBJHANDLE hPlanet, int lvl, int ilat, int ilng, float *elev);
 
@@ -1548,6 +1553,11 @@ void TileManager2<SurfTile>::Render (MATRIX4 &dwmat, bool use_zbuf, const vPlane
 	// render the tree
 	for (i = 0; i < 2; i++)
 		RenderNode (tiletree+i);
+
+	// Terrain self shadowing overlay (horizon angle field). Drawn as a second
+	// pass over the rendered terrain (multiplicative sun visibility mask).
+	// Implementation: TerrainRender.inc part TERRAINRENDER_HORIZON.
+	TerrainHorizon_RenderMask (this, bUseZ);
 
 	if (bPerf) Perf_Mark(PERF_STAGE_TERRAIN_TAIL);
 	UpdateFadeTiles();
