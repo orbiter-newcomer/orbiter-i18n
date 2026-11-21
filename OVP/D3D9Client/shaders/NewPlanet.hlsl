@@ -1027,7 +1027,7 @@ float4 GiantCloudPS(CldVS frg) : COLOR
 
 uniform extern float4x4 HorizonWorld;	// tile world matrix
 uniform extern float4 HorizonPrm0;		// x=field size R, y=dirs K, z=strength(0..1), w=debug mode
-uniform extern float4 HorizonPrm1;		// x=debug contour line interval [m] (0=off)
+uniform extern float4 HorizonPrm1;		// x=debug contour interval [m], y=shadow floor(0..1), z=penumbra half angle [rad]
 uniform extern float HorizonReady;		// 1 = horizon field texture ready for this tile
 sampler tHorizon;						// horizon angle field [rad] (R32F), layout: width R, height R*K
 
@@ -1097,6 +1097,7 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 	float strength = HorizonPrm0.z;
 	float debug = HorizonPrm0.w;
 	float shadowFloor = HorizonPrm1.y;		// minimum brightness kept inside the shadows
+	float softRad = max(HorizonPrm1.z, 1.0e-5f);	// penumbra half angle [rad] (configurable)
 	float2 uv = frg.texUV;
 
 	float3 vVrt = Const.CamPos + frg.posW;
@@ -1143,7 +1144,9 @@ float4 TerrainMaskPS (HZVERTEX frg) : COLOR
 
 	// Sun elevation above the local horizontal plane
 	float sunAlt = asin(clamp(dot(up, Const.toSun), -1.0f, 1.0f));
-	float vis = saturate((sunAlt - h) / (2.0f * 0.0047f) + 0.5f);	// 0.27 deg sun radius
+	// Soft term: the transition width is the penumbra angle, which is the sun
+	// disc radius by default (0.27 deg) but can be widened to soften the shadow.
+	float vis = saturate((sunAlt - h) / (2.0f * softRad) + 0.5f);
 
 	// Debug 3: normal shading with the contour lines burnt in (multiplicative
 	// blend) - the view for checking the shadow physics against the terrain.
