@@ -1,16 +1,16 @@
-# 重构交接（死代码清理 + 官方文件剥离）
+# 重构交接（死代码清理 / 官方文件剥离 / 阴影回归官方）
 
-> 日期：2026-11-21
+> 更新日期：2026-11-21
 > 仓库：`D:\AI_projet\orbiter\orbiter`
-> 分支：`refactor/deadcode-strip`（HEAD `6ee7367b`，未推送远端）
+> 分支：`refactor/deadcode-strip`（HEAD `447d63ba`，**未推送远端**）
 > 基线：`revert/official-shadow`（`d11e1a4f`，重构前）
-> 状态：7 个重构提交完成，构建/冒烟通过；**有一个阴影渲染回退 bug 待排查**（见 §3）。
+> 状态：构建通过、current state 冒烟 PASS、`install64` 已部署。**阴影逻辑已全部回归官方，自研场景阴影(G1)已删除。**
 
 ---
 
-## 0. 当前状态一句话
+## 0. 一句话现状
 
-死代码清理 + 官方文件剥离已完成（官方文件新增行 +3,290 → +1,660，约 −49.5%）；构建通过、current state 冒烟 PASS、`install64` 已部署重构完成版；发现“飞船阴影没有投在正确平面”的渲染 bug，已排除部分原因，移交给下一条鱼排查。
+死代码清理 + 官方文件剥离 + 阴影回归官方已完成（官方文件新增行相对 v1.3.0 从 +3,290 降到 **+1,394（−57.6%）**）；地形投影（地形阴影）将作为**新独立功能**开发，开发入口与注意事项见 §4。
 
 ## 1. 环境与常用命令
 
@@ -22,66 +22,93 @@ $cmake = 'D:/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions
 # 部署
 Copy-Item build64\Release\Orbiter.exe install64\Orbiter\Orbiter.exe -Force
 Copy-Item build64\Modules\Plugin\D3D9Client.dll install64\Orbiter\Modules\Plugin\D3D9Client.dll -Force
-Copy-Item OVP\D3D9Client\shaders\*.hlsl install64\Orbiter\Modules\D3D9Client\ -Force   # shader 是运行时从安装目录加载！
+Copy-Item OVP\D3D9Client\shaders\*.hlsl install64\Orbiter\Modules\D3D9Client\ -Force   # shader 运行时从安装目录加载
 # 冒烟（current state 场景，自动判 PASS/FAIL，约 25s）
 powershell -ExecutionPolicy Bypass -File .\tools\smoke_test.ps1 -KillExisting
 ```
 
-开发规则要点（必须遵守）：中文思考/回复；不删除未明确授权的文件；保存必须用 git，本地提交可以自便，**不准推送远端**；官方文件修改最小化并每次报告改动量；测试只测 current state 场景（正常启动 + 截图确认无恶性渲染 bug），新场景测试先给用户方法由用户测；游戏启动 ≤30s，不要长期跑后台任务。
+开发规则要点：中文；不动未授权的文件/不删未授权文件；git 本地提交可以自便，**禁止推送远端**；官方文件修改最小化并在每次改动后报告改动量；测试只测 current state 场景（正常启动+截图无恶性渲染 bug），新场景/新功能测试方法先告知用户由用户测；游戏启动 ≤30s，后台任务不要长跑。
 
-## 2. 已完成的重构（7 个本地提交）
+## 2. 已完成的工作（14 个本地提交，`d11e1a4f..HEAD`）
 
-| 提交 | 内容 | 官方文件改动 |
-|---|---|---|
-| `2c5e36a4` | 阶段1：删死代码（路线B残骸、UpdateEffectShadows、eLVP2组句柄、夜面简化死链、死配置/成员、PerfCore+PERF日志、死SDK声明、BuildEquilibrium、WreckDestroyVessel、RenderFadeTiles 等） | 16 文件 −461 行 |
-| `6db25ca6` | 热控：17 个函数从官方 `ThermalSubsys.cpp` 搬入 **`ThermalModel.inc`** | −436 行 |
-| `d34e1b3b` | i18n 布局/对话框 API：实现→`i18n/core/DlgLayoutApi.inc`，声明→`Orbitersdk/include/I18nAPI.h` | OrbiterAPI.cpp −337、.h −116 |
-| `46c3ba5f` | 地形：morph/fade/LOD/高程跳过/加载等待等 → **`OVP/D3D9Client/TerrainRender.inc`**（PART 分段）+ **`shaders/TerrainRender.inc.hlsl`**；删除独立 `TerrainLoadWait.inc` | Surfmgr2 −114、Tilemgr2 −65、NewPlanet.hlsl −67、D3D9Client −1 |
-| `f306344f` | Vessel 并行更新函数→`Src/Orbiter/VesselUpdate.inc`；`Scene::RenderMainScene2D`→`OVP/D3D9Client/SceneRender2D.inc` | Vessel.cpp −331、Scene.cpp −222 |
-| `9981b9f2` | Batch2：头文件成员声明搬入类内 include 的成员块（Orbiter/Vessel/Scene/D3D9Client/D3D9Config/热控/项目配置），共 9 个 `*Members_*.inc` | 6 个官方头文件 −221 |
-| `6ee7367b` | 接触模型对话框资源→`ContactDialogRes.rc`/`ContactDialogLang.rc`/`ContactResources.h`；D3D9Client 成员块 | Orbiter.rc/resource*.h −52、D3D9Client.h −21 |
+| 提交 | 内容 |
+|---|---|
+| `2c5e36a4` | 阶段1 删死代码（路线B残骸、UpdateEffectShadows、eLVP2 组句柄、夜面简化死链、死配置/成员、PerfCore+PERF 日志、死 SDK 声明、BuildEquilibrium、WreckDestroyVessel、RenderFadeTiles 等，官方 −461 行） |
+| `6db25ca6` | 热控 17 个函数从官方 `ThermalSubsys.cpp` 搬入 **`ThermalModel.inc`**（官方 −436 行） |
+| `d34e1b3b` | i18n 布局/对话框 API 实现→**`i18n/core/DlgLayoutApi.inc`**，声明→**`Orbitersdk/include/I18nAPI.h`** |
+| `46c3ba5f` | 地形实现→**`OVP/D3D9Client/TerrainRender.inc`**（PART 分段）+ 当时新增的 shader 文件；独立 `TerrainLoadWait.inc` 删除 |
+| `f306344f` | Vessel 并行更新→`Src/Orbiter/VesselUpdate.inc`；`Scene::RenderMainScene2D`→`OVP/D3D9Client/SceneRender2D.inc` |
+| `9981b9f2` | 头文件成员声明搬入类内 include 成员块（9 个 `*Members_*.inc`） |
+| `6ee7367b` | 接触模型对话框资源→`ContactDialog{Res,Lang}.rc`+`ContactResources.h`；D3D9Client 成员块 |
+| `ef97f044` | 第一版重构交接文档（已被本文件取代） |
+| `fb43470b` | 外部修复：投影地面阴影/近场阴影路径回归官方 |
+| `eb70593c` | **删除自研 G1 场景阴影系统 + 阴影模式 API**（−1,336 行）：`TerrainRender.inc` SCENE 段、`TerrainRender.inc.hlsl` 整文件、NewPlanet.hlsl 的 G1 接收/投射、Scene 的 smapT/ShadowSystem、D3D9Effect G1 句柄、8 个 G1 配置、`oapiSet/GetVesselShadowMode`+`SHADOWMODE_*` |
+| `0af3ac3c` | 删死函数 `RelTerrainNormal`；R4 改用官方 `Config::GetItemBool`；P7 改用官方 `oapiRand()` 并删除 `srand(GetTickCount())` |
+| `e7c83eab` | 删除未接线死特性链（内伤禁用/延迟销毁），Orbiter 输入处理恢复官方 |
+| `77f985f3` | 删除临时诊断：`PerfDiag.h`（101 处埋点）、`DUAL_THREAD_DIAG`、`[PT]` 性能日志（−511 行） |
+| `447d63ba` | 删除过时阴影 handover 文档，README/README_EN 阴影条目同步 |
 
-重构后官方文件基本只保留 `#define xxx` + `#include "模块.inc"` 钩子；地形只剩 `TerrainRender.inc`（1218 行）+ `TerrainRender.inc.hlsl`（78 行）两个文件，热控只剩 `ThermalModel.inc`（1173 行）。
+**官方文件修改程度（vs v1.3.0）**：79 个官方文件 **+1,394 / −1,650**；总 diff 165 文件 +10,077/−2,177。
 
-> 说明：`temp/` 目录是本次重构的临时 Python 脚本（未跟踪、未提交，可删）。
+## 3. 当前代码结构（阴影回归官方后的地形/渲染相关）
 
-## 3. ⚠ 待排查 bug：阴影没有投在正确平面
+- `OVP/D3D9Client/TerrainRender.inc`（514 行）：**只剩非阴影**地形功能 PART：
+  - `TERRAINRENDER_SURF`（Surfmgr2.cpp）：瓦片 LOD morph / 淡入 / **地形 LOD 动态计数**等
+  - `TERRAINRENDER_TILES`（Tilemgr2.cpp）：`UpdateTileCountSmooth`、fade 记账
+  - `TERRAINRENDER_LOADWAIT`（D3D9Client.cpp）：地形加载等待状态机
+  - 采用在官方 .cpp 末尾 `#define TERRAINRENDER_xxx` + `#include "TerrainRender.inc"` 的钩子模式。
+- `OVP/D3D9Client/shaders/NewPlanet.hlsl`：官方地形 shader（含官方近场阴影接收 `_SHDMAP`/`SampleShadows`/`bShadows`；已无任何 G1 代码）。
+- **官方阴影路径（必须保持官方，不要再改）**：
+  - 近场阴影：`Scene::RenderShadowMap`（Scene.cpp）、`SHADOWMAPPARAM smap`（Scene.h）、参数设置 `VPlanet.cpp` 约 977-987、`eLVP/eShadowMap/eSHD/eShadowToggle`（D3D9Effect）
+  - 官方投影地面阴影：`vVessel::RenderGroundShadow`（VVessel.cpp）、`vBase::RenderGroundShadow`（VBase.cpp）
+  - 地形接收：`NewPlanet.hlsl` 的 `_SHDMAP` 分支；飞船接收：Vessel.fx/PBR.fx + Common.hlsl
+  - 配置：`ShadowMapMode` / `ShadowMapSize` / `TerrainShadowing`（官方项）
+- 其余项目模块：`ThermalModel.inc`（热控）、`i18n/core/DlgLayoutApi.inc` + `Orbitersdk/include/I18nAPI.h`（汉化布局）、`Src/Orbiter/VesselUpdate.inc`、`OVP/D3D9Client/SceneRender2D.inc`、9 个 `*Members_*.inc` 成员块、`ContactDialog*.rc`/`ContactResources.h`。
 
-**现象**（用户截图）：两架 DG 悬停时，阴影被拉长/投到远处地面，而不是机腹正下方的地面。用户反馈“此前是可以的”。
+## 4. 给"地形投影（地形阴影）"开发者的交接
 
-**已排除**：在重构完成版基础上恢复阶段1删除的阴影参数代码后仍然异常（恢复项：`Scene::UpdateEffectShadows`、`eLVP2/eShadowMap2/eSHD2/eSHDT2`、G1→近场参数写入块、`RenderSceneShadow` 末尾调用）→ 不是/不仅是那段代码。恢复已撤销，工作区=纯重构完成版。
+### 目标
+把地形投影/地形阴影作为**新独立功能**开发，不恢复也不修改已删除的 G1 系统；官方阴影逻辑保持原样。
 
-**可疑提交（按怀疑度）**：
-1. `46c3ba5f` 地形收敛（改动最大：TerrainRender.inc 结构 +517、Surfmgr2/Tilemgr2 函数搬移、NewPlanet.hlsl shader include 搬移）— **首选**
-2. `f306344f` Vessel/Scene 搬移
-3. `9981b9f2` Batch2 成员块（Vessel.h/Scene.h/D3D9Config.h 成员位置变化）
-4. `2c5e36a4` 死代码删除（已部分排除）
-
-**定位方法**：
+### 可参考的已删除实现（git 历史里能找到）
 ```powershell
-# 基线（重构前）
-git checkout revert/official-shadow          # = d11e1a4f
-# 或逐个提交试验（不产生提交）：
-git revert --no-commit <hash> && 构建+部署 && 用户测阴影
-git checkout -- .                             # 撤销试验
+# 删除前（6ee7367b）的完整 G1 实现：
+git show 6ee7367b:OVP/D3D9Client/TerrainRender.inc          # 原 SCENE 段（ShadowSystem、RenderSceneShadow、地形 caster）
+git show 6ee7367b:OVP/D3D9Client/shaders/TerrainRender.inc.hlsl  # G1 shader（SampleShadowsT / caster VS/PS / fade uniform）
+git show 6ee7367b:OVP/D3D9Client/shaders/NewPlanet.hlsl      # 当时的 G1 接收块
+git show 6ee7367b:OVP/D3D9Client/SceneMembers_Scene.inc      # smapT/pShadows/RenderSceneShadow 声明
+git show 6ee7367b:OVP/D3D9Client/D3D9Effect.cpp              # eLVP2/eShadowMap2/eSHD2/eSHDT2 查找
 ```
-或用 `git bisect start; git bisect bad refactor/deadcode-strip; git bisect good revert/official-shadow`（7 个提交，3 次构建可定位）。
+已知的旧 G1 坑（当时审计发现、未修）：`Surfmgr2.cpp` 中 `bShadows`（官方近场）与 `bShadowsT`（G1）双置位、且唯一 `tShadowMap` 采样器被覆盖绑定 → 地形可能用近场矩阵采样 G1 贴图；新实现建议**独立 sampler 或独立接收路径**，并注意 ps_3_0 采样器上限（16）。
 
-**阴影系统速查（重构后位置）**：
-- G1 场景阴影（地形自阴影/投影）：`TerrainRender.inc` SCENE 段（`Scene::RenderSceneShadow`、`ShadowSystem` 等）；接收端 shader 在 `NewPlanet.hlsl` 的 TerrainPS 内嵌块（未搬）+ `TerrainRender.inc.hlsl`（`SampleShadowsT`、caster `ShadowVS/PS`、`TerrainTileFade`）；`Surfmgr2.cpp` 中 G1 接收块直接写 `PObjectParams`（mLVP2/vSHD2/vSHDT）+ `bShadowsT`。
-- G0 近场阴影（飞船/基地）：官方 `Scene::RenderShadowMap`（Scene.cpp）+ `VPlanet.cpp:977-987` 参数设置；`NewPlanet.hlsl` 顶部 `tShadowMap` 后新增了 `#include "TerrainRender.inc.hlsl"`（重点检查该 include 位置/编译期 effect include 路径）。
-- 飞船旧投影地面阴影（用户截图最像这条）：`TerrainRender.inc` VESSEL 段（`vVessel::UpdateShadowPlane` / `RenderGroundShadow`，参考平面 = 实际渲染表面，含 2s/1m 缓存）+ `VVessel.cpp:21-22` include 钩子。
-- 已知隐患（未修）：`Surfmgr2.cpp` 里 `bShadows=true`（近场）与 `bShadowsT=true`（G1）同时置位、且唯一 `tShadowMap` 采样器被覆盖绑定到 G1 贴图 → 地形可能用近场矩阵采样 G1 图。
-- 也可能不是重构引起（v1.3.0 就有的参考平面缓存/悬停低太阳角问题），先做基线对比。
+### 建议入口（按官方文件最小化原则）
+1. 新建独立模块：`OVP/D3D9Client/TerrainShadow.inc`（C++）+ `OVP/D3D9Client/shaders/TerrainShadow.inc.hlsl`（shader），在官方文件用钩子 include（参考 `TerrainRender.inc` 的 selector 模式）。
+2. 阴影贴图/投影矩阵等基础设施可复用官方 `SHADOWMAPPARAM` 结构和 `D3D9Effect` effect 句柄机制；新增的 map/RT 在模块内自管（旧 G1 的 `ShadowSystem` 可作参考）。
+3. 地形接收在 `NewPlanet.hlsl` 的 `TerrainPS` 中插入调用（旧 G1 是在此加第二套 uniform/采样，注意上面坑）。
+4. caster 可参考官方 `NewMesh.hlsl ShdMapVS/ShdMapPS`。
+5. 改动完成后按规则报告官方文件改动量；构建+冒烟+（新功能效果）用户实测。
 
-## 4. 第二轮待办（清过一波后还剩 12 项）
+### 关键入口速查（当前代码）
+- 地形渲染主流程：`Surfmgr2.cpp TileManager2<SurfTile>::Render` / `SurfTile::Render` / `RenderNode`
+- 地形 shader：`NewPlanet.hlsl`（`TerrainVS` / `TerrainPS`）
+- 官方近场阴影生成：`Scene::RenderShadowMap`（Scene.cpp）、`Scene::RenderShadowMap` 调用点
+- D3D9Effect 句柄：`D3D9Effect.cpp`（官方 eLVP/eShadowMap/eSHD/eShadowToggle）
+- 配置读写：`D3D9Config.cpp`（官方 Read/WriteParams，新增地形投影配置加在这里，注意官方文件最小化——可放独立 .inc 钩子）
 
-确认重复 5 项：R1 G1 阴影管线合并官方 `RenderShadowMap`；R2 地形接收端第二套 uniform/采样合并（先修 bShadows 双置位隐患）；R3 caster shader 复用官方 `ShdMapVS/ShdMapPS`；R4 `RelativityConfig.inc` 自写精确键解析→官方 `Config::GetItem*`；P7 Wreck `rand()/srand`→官方 `oapiRand()`（`srand(GetTickCount())` 破坏官方 `srand(12345)` 确定性）。
-部分重复 7 项：P1 PerfDiag 101 处埋点/裸 QPC 收口；P2 瓦片计数三套 vs `D3D9Stats.TilesRendered`；P3 地平系法线旋转手写两遍（其中 `WreckDebris.inc:610 RelTerrainNormal` 还是第一轮漏删的死函数）；P4 `oapiSurfaceElevationEx` 未用 `InitTileCache`；P5 编码转换三份；P6 `EstimateWidth` vs 官方 `GetTextWidth`；P8 PerfStats 与 `_D3D9Stats` 语义重叠。
-其他遗留：死 API `oapiZhFitControlText/Row/Height`、`oapiZhLayoutDialogButtons`、`oapiGetLayoutFloat` 无调用者（保留/删需用户定）；死特性链（内伤禁用/延迟销毁/飞行中等待/数值故障队列）未接线；临时诊断默认开启无开关（PerfDiag、DUAL_THREAD_DIAG、[ELEV]、PhysicsThread [PT] 日志）；aap.lua 整定与 VideoTab inline 汉化策略待用户定。
+## 5. 剩余待办 / 已决定不动
 
-## 5. 沟通注意
+| 项 | 状态 |
+|---|---|
+| 死 API（`oapiZhFitControlText/Row/Height`、`oapiZhLayoutDialogButtons`、`oapiGetLayoutFloat`、`oapiGetWreckAnchorVessel`） | **保留不动**（用户决定） |
+| P2 瓦片计数收口（自维护 vs 官方 `D3D9Stats.TilesRendered`） | **不做**（用途不同、收益低，用户决定） |
+| P8 PerfStats 自累计计数器收口 | 未做（PerfLog 默认 0，低优先） |
+| P5 编码转换统一（`TextCodec`→核心 API） | 未做（可选小改） |
+| P6 `EstimateWidth`→官方 `GetTextWidth` | 建议保留手估（性能取舍） |
+| `[ELEV]` 临时诊断清理 | 未做（试过会破坏 elevmgr.h，已回滚，需精细处理） |
+| aap.lua 整定 / VideoTab inline 汉化 | 策略待定 |
 
-- 用户偏好：中文、直接、少啰嗦；先给结论/数据，不要长篇探索过程。
-- 不做未授权的事；改官方文件后要报告改动量；本地提交不推送。
-- 用户会帮做人工验证（测试规范限制），需要复现步骤时说清楚。
+## 6. 其他说明
+
+- `temp/` 是本次整理的临时 Python 脚本（未跟踪、未提交，可删）。
+- 基线分支 `revert/official-shadow`（`d11e1a4f`）保留，可随时对比重构前状态。
+- 分支未推送远端；提测/发布前需用户决定推送与打 tag。
