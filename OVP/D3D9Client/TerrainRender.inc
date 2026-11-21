@@ -937,12 +937,6 @@ struct BakeResult {
 	BakeResult () : planet(NULL), ms(0), ok(false) {}
 };
 
-// Far field silhouette sample
-struct FarSample {
-	double d;
-	float  h;
-};
-
 static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<float> &out, int &ms)
 {
 	unsigned t0 = GetTickCount();
@@ -954,32 +948,10 @@ static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<floa
 
 	out.assign((size_t)R * R * K, 0.0f);
 
-	const double latc = (job.latmin + job.latmax) * 0.5;
-	const double lngc = (job.lngmin + job.lngmax) * 0.5;
 	const double tileSize = max(job.latmax - job.latmin, job.lngmax - job.lngmin) * rp;
 	const double texelWorld = tileSize / double(R);
 	const double dNear0 = min(dmax, max(8.0 * tileSize, 3000.0));
 
-	// ---- far field silhouette profiles (per azimuth, from the tile centre) ----
-	std::vector<std::vector<FarSample>> profs(K);
-	const double coslatc = max(cos(latc), 0.05);
-	for (int k = 0; k < K; k++) {
-		double phi = PI2 * double(k) / double(K);
-		double dy = cos(phi), dx = sin(phi);
-		double d = dNear0;
-		while (d < dmax) {
-			double dlat = d * dy / rp;
-			double dlng = d * dx / (rp * coslatc);
-			float h = es.Sample(latc + dlat, lngc + dlng, job.farLvl);
-			FarSample fs;
-			fs.d = d;
-			fs.h = h;
-			profs[k].push_back(fs);
-			d += max(400.0, d * 0.22);
-		}
-	}
-
-	// ---- per field point ----
 	const double latStep = (job.latmax - job.latmin) / double(R);
 	const double lngStep = (job.lngmax - job.lngmin) / double(R);
 	const double step0 = max(texelWorld * 0.5, 1.0);
@@ -994,7 +966,7 @@ static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<floa
 			for (int k = 0; k < K; k++) {
 				double phi = PI2 * double(k) / double(K);
 				double dy = cos(phi), dx = sin(phi);
-				double best = 0.0;			// negative horizon = no self occlusion
+				double best = 0.0;			// negative horizon angle = no self occlusion
 
 				// near field: per field point ray march
 				double d = step0;
@@ -1008,13 +980,19 @@ static void BakeTile (ElevationSampler &es, const BakeJob &job, std::vector<floa
 					d += max(step0, d * 0.15);
 				}
 
-				// far field: shared silhouette profile
-				const std::vector<FarSample> &pr = profs[k];
-				for (size_t q = 0; q < pr.size(); q++) {
-					double dd = pr[q].d;
-					double drop = dd * dd / (2.0 * rp);
-					double ang = atan2((double)pr[q].h - (double)h0 - drop, dd);
+				// far field: also computed per field point. A shared tile-centre
+				// profile would make the horizon (and with a low sun the shadow
+				// boundary) discontinuous between neighbouring tiles, which showed
+				// up as straight-edged shadow steps at the tile borders.
+				double df = dNear0;
+				while (df < dmax) {
+					double dlat = df * dy / rp;
+					double dlng = df * dx / (rp * coslat);
+					float h = es.Sample(lat + dlat, lng + dlng, job.farLvl);
+					double drop = df * df / (2.0 * rp);
+					double ang = atan2((double)h - (double)h0 - drop, df);
 					if (ang > best) best = ang;
+					df += max(400.0, df * 0.25);
 				}
 
 				if (best < 0.0) best = 0.0;
