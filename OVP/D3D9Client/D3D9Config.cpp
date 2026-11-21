@@ -99,7 +99,7 @@ void D3D9Config::Reset ()
 	TerrainElevSkipAlt = 50000;
 	TerrainLoadThreads = 1;
 	TerrainHorizonShadow = 1;
-	TerrainHorizonDebug = 1;
+	TerrainHorizonDebug = 0;
 	TerrainHorizonFieldSize = 32;
 	TerrainHorizonDirs = 16;
 	TerrainHorizonRangeKm = 300;

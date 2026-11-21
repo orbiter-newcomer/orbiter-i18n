@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Relativity: D3D9Client configuration defaults and file I/O.
 //
 // Implementation moved out of the official D3D9Config.cpp (included there).
@@ -40,7 +40,10 @@ static void RelD3D9ConfigRead (FILEHANDLE hFile, D3D9Config *cfg)
 		else cfg->LensCubemapSize = 1024;
 	}
 	if (oapiReadItem_int   (hFile, (char*)"RelativityRenderCache", i))	cfg->RelCacheEnabled = max(0, min(1, i));
-		cfg->LensBlendStart = max(0.0, min(45.0, d)); 	if (oapiReadItem_float (hFile, (char*)"LensBlendEnd", d))		cfg->LensBlendEnd = max(0.0, min(90.0, d)); 	if (oapiReadItem_float (hFile, (char*)"LensBrightness", d))		cfg->LensBrightness = max(-10.0, min(4.0, d));   // negative = debug: show the raw lens cubemap 	if (cfg->LensBlendEnd <= cfg->LensBlendStart) 		cfg->LensBlendEnd = cfg->LensBlendStart + 0.1;
+	if (oapiReadItem_float (hFile, (char*)"LensBlendStart", d))		cfg->LensBlendStart = max(0.0, min(45.0, d));
+	if (oapiReadItem_float (hFile, (char*)"LensBlendEnd", d))		cfg->LensBlendEnd = max(0.0, min(90.0, d));
+	if (oapiReadItem_float (hFile, (char*)"LensBrightness", d))		cfg->LensBrightness = max(-10.0, min(4.0, d));   // negative = debug: show the raw lens cubemap
+	if (cfg->LensBlendEnd <= cfg->LensBlendStart) 		cfg->LensBlendEnd = cfg->LensBlendStart + 0.1;
 }
 
 static void RelD3D9ConfigWrite (FILEHANDLE hFile, const D3D9Config *cfg)
@@ -49,6 +52,7 @@ static void RelD3D9ConfigWrite (FILEHANDLE hFile, const D3D9Config *cfg)
 	oapiWriteItem_float (hFile, (char*)"RelNearGuard", cfg->RelNearGuard);
 
 	oapiWriteItem_int   (hFile, (char*)"RelativityRenderCache", cfg->RelCacheEnabled);
+	oapiWriteItem_int   (hFile, (char*)"LensCubemapSize", cfg->LensCubemapSize);
 	oapiWriteItem_float (hFile, (char*)"LensBlendStart", cfg->LensBlendStart);
 	oapiWriteItem_float (hFile, (char*)"LensBlendEnd", cfg->LensBlendEnd);
 	oapiWriteItem_float (hFile, (char*)"LensBrightness", cfg->LensBrightness);

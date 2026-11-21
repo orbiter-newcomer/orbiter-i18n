@@ -76,7 +76,7 @@ typedef void *HDC;
 /// This parameter is provided by the D3D9Client extension.
 /// \par Parameter type:
 ///   bool
-#define CFGPRM_TERRAINHORIZONSHADOW 0x0027
+#define CFGPRM_TERRAINHORIZONSHADOW 0x0037
 
 /// Bit flag for "planetarium mode" elements.
 /// For a description of the available bit flags, see \ref plnflag

@@ -164,6 +164,9 @@ private:
 		// splitter parameters
 		double split;       // downstream flow split: outflow[0] = inflow*(1-split); outflow[1] = inflow*split
 
+		double Q;           // exchanger heat flow from the reservoir into the coolant [W]
+		                    // (computed by Update; used by the quasi-static path)
+
 		double Flowrate(const NodeParam *dn=0); // outgoing flowrate (only splitters use branch!=0)
 		void Update (double simdt);             // update node
 	} node[12];
