@@ -1,0 +1,10 @@
+// Contact-model dialog: language/DIALOG block (project extension).
+// Included by Orbiter.rc; the official file only keeps the include line.
+
+    IDD_EXTRA_CONTACT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 369
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 241
+    END

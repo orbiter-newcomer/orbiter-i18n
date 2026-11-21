@@ -132,7 +132,6 @@
 #define IDD_EXTRA_PERFORMANCE1          301
 #define IDD_EXTRA_LAUNCHPAD             301
 #define IDD_EXTRA_DBGRENDER             302
-#define IDD_EXTRA_CONTACT               304
 #define IDLAUNCH                        1000
 #define IDEXIT                          1001
 #define IDC_MAINTAB                     1002

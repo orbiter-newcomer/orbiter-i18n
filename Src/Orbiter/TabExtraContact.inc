@@ -1,3 +1,4 @@
+#include "ContactResources.h"   // project extension: contact dialog IDs
 // ==============================================================
 // TabExtraContact.inc
 // Launchpad "Extra" page: contact model configuration (implementation).
